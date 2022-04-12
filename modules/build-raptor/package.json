@@ -1,0 +1,25 @@
+{
+  "name": "build-raptor",
+  "version": "1.0.1",
+  "description": "main package of the build-raptor project",
+  "keywords": [],
+  "license": "MIT",
+  "author": "",
+  "main": "dist/src/index.js",
+  "scripts": {
+    "build": "tsc -b",
+    "ncc": "ncc build/src/index.js -o build/src/index.node.js",
+    "test": "jest"
+  },
+  "dependencies": {
+    "build-raptor-core": "1.0.0",
+    "logger": "1.0.0",
+    "misc": "1.0.0",
+    "yargs": "^17.3.0",
+    "yarn-repo-protocol": "1.0.0"
+  },
+  "devDependencies": {
+    "@types/yargs": "^17.0.7",
+    "@vercel/ncc": "^0.33.1"
+  }
+}

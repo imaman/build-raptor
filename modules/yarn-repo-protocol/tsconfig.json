@@ -1,0 +1,22 @@
+{
+  "extends": "../../tsconfig-base.json",
+  "compilerOptions": {
+    "composite": true,
+    "outDir": "dist"
+  },
+  "references": [
+    {
+      "path": "../logger"
+    },
+    {
+      "path": "../misc"
+    },
+    {
+      "path": "../repo-protocol"
+    },
+    {
+      "path": "../task-name"
+    }
+  ],
+  "include": ["src/**/*", "tests/**/*"]
+}

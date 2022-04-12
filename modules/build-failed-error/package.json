@@ -1,0 +1,18 @@
+{
+  "name": "build-failed-error",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "keywords": [],
+  "license": "ISC",
+  "author": "",
+  "main": "dist/src/index.js",
+  "files": [
+    "dist/src"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "test": "jest"
+  },
+  "dependencies": {}
+}

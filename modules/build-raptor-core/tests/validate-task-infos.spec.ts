@@ -1,0 +1,70 @@
+import { TaskName } from 'task-name'
+
+import { TaskInfo } from '../src/task-info'
+import { validateTaskInfos } from '../src/validate-task-infos'
+
+describe('validate-task-infos', () => {
+  const base = { deps: [], inputsInDeps: [], inputsInUnit: [], shadowing: false }
+  test('an empty list of task-info is always allowed', () => {
+    const input: TaskInfo[] = []
+    expect(validateTaskInfos(input)).toBeTruthy()
+  })
+  describe('task name collision', () => {
+    test('yells on two (or more) tasks with the same name', () => {
+      const input: TaskInfo[] = [
+        { ...base, taskName: TaskName().parse('u:k'), outputLocations: ['foo'] },
+        { ...base, taskName: TaskName().parse('u:k'), outputLocations: ['boo'] },
+        { ...base, taskName: TaskName().parse('u:j'), outputLocations: ['too'] },
+        { ...base, taskName: TaskName().parse('u:k'), outputLocations: ['goo'] },
+      ]
+      expect(() => validateTaskInfos(input)).toThrowError(`Task name collison: u:k (3 occurences)`)
+    })
+    test('does allow tasks with different kinds in the same unit', () => {
+      const input: TaskInfo[] = [
+        { ...base, taskName: TaskName().parse('u:k'), outputLocations: ['foo'] },
+        { ...base, taskName: TaskName().parse('u:j'), outputLocations: ['too'] },
+      ]
+      expect(validateTaskInfos(input)).toBeTruthy()
+    })
+  })
+  describe('output collision', () => {
+    test('allows two tasks to declare the same output location if they are in different units', () => {
+      const input: TaskInfo[] = [
+        { ...base, taskName: TaskName().parse('a:T_1'), outputLocations: ['foo'] },
+        { ...base, taskName: TaskName().parse('b:T_1'), outputLocations: ['foo'] },
+      ]
+      expect(validateTaskInfos(input)).toBeTruthy()
+    })
+    test('allows multiple tasks in the same unit as long as the output locations are distinct', () => {
+      const input: TaskInfo[] = [
+        { ...base, taskName: TaskName().parse('a:T_1'), outputLocations: ['foo'] },
+        { ...base, taskName: TaskName().parse('a:T_2'), outputLocations: ['boo'] },
+        { ...base, taskName: TaskName().parse('a:T_3'), outputLocations: ['goo'] },
+        { ...base, taskName: TaskName().parse('a:T_4'), outputLocations: ['zoo'] },
+      ]
+      expect(validateTaskInfos(input)).toBeTruthy()
+    })
+    test('yells on two tasks in the same unit which decalre the same output location', () => {
+      const input: TaskInfo[] = [
+        { ...base, taskName: TaskName().parse('a:T_1'), outputLocations: ['foo'] },
+        { ...base, taskName: TaskName().parse('a:T_2'), outputLocations: ['bar'] },
+        { ...base, taskName: TaskName().parse('a:T_3'), outputLocations: ['foo'] },
+      ]
+      expect(() => validateTaskInfos(input)).toThrowError(
+        `Output collison: tasks a:T_1, a:T_3 both declare output 'foo'`,
+      )
+    })
+    test(`yells on two tasks in the same unit if one of them outputs to a sub-directory which is under the other's output directory`, () => {
+      const input: TaskInfo[] = [
+        { ...base, taskName: TaskName().parse('a:T_1'), outputLocations: ['foo'] },
+        { ...base, taskName: TaskName().parse('a:T_2'), outputLocations: ['bar/too/zoo'] },
+        { ...base, taskName: TaskName().parse('a:T_3'), outputLocations: ['goo'] },
+        { ...base, taskName: TaskName().parse('a:T_4'), outputLocations: ['bar'] },
+      ]
+      expect(() => validateTaskInfos(input)).toThrowError(
+        `Output collison: tasks a:T_2, a:T_4 both declare output 'bar'`,
+      )
+    })
+  })
+  test.todo('every input is the output of some other task?')
+})

@@ -1,0 +1,23 @@
+{
+  "name": "logger",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "keywords": [],
+  "license": "ISC",
+  "author": "",
+  "main": "dist/src/index.js",
+  "files": [
+    "dist/src"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "test": "jest"
+  },
+  "dependencies": {
+    "logform": "^2.3.0",
+    "misc": "1.0.0",
+    "safe-stable-stringify": "^2.3.1",
+    "winston": "^3.3.3"
+  }
+}

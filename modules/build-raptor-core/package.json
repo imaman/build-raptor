@@ -1,0 +1,40 @@
+{
+  "name": "build-raptor-core",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "keywords": [],
+  "author": "",
+  "main": "dist/src/index.js",
+  "files": [
+    "dist/src"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "test": "jest"
+  },
+  "dependencies": {
+    "brand": "1.0.0",
+    "build-failed-error": "1.0.0",
+    "build-run-id": "1.0.0",
+    "fs-extra": "^9.0.0",
+    "ignore": "^5.1.9",
+    "logger": "1.0.0",
+    "misc": "1.0.0",
+    "repo-protocol": "1.0.0",
+    "tar-fs": "^2.1.1",
+    "tar-stream": "^2.2.0",
+    "task-name": "1.0.0",
+    "tmp-promise": "^3.0.3",
+    "type-fest": "^2.8.0",
+    "unit-metadata": "1.0.0",
+    "uuid": "^8.3.2"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^9.0.0",
+    "@types/tar-fs": "^2.0.1",
+    "@types/tar-stream": "^2.2.2",
+    "@types/tmp": "^0.2.2",
+    "@types/uuid": "^8.0.0"
+  }
+}

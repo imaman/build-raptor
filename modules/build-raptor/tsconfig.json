@@ -1,0 +1,22 @@
+{
+  "extends": "../../tsconfig-base.json",
+  "compilerOptions": {
+    "composite": true,
+    "outDir": "dist"
+  },
+  "references": [
+    {
+      "path": "../build-raptor-core"
+    },
+    {
+      "path": "../logger"
+    },
+    {
+      "path": "../misc"
+    },
+    {
+      "path": "../yarn-repo-protocol"
+    }
+  ],
+  "include": ["src/**/*", "tests/**/*"]
+}

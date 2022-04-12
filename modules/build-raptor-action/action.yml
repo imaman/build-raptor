@@ -1,0 +1,10 @@
+name: 'build-raptor'
+description: 'run build-raptor'
+inputs:
+  concurrency:
+    description: 'a limit on the number of tasks to run concurrently'
+    required: false
+    default: 10
+runs:
+  using: 'node16'
+  main: 'dist/ncc/index.js'
