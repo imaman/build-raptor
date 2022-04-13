@@ -1,7 +1,7 @@
 {
   "name": "build-raptor",
-  "version": "1.0.1",
-  "description": "main package of the build-raptor project",
+  "version": "1.0.2",
+  "description": "CLI for super-fast monorepo builds",
   "keywords": [],
   "license": "MIT",
   "author": "",
