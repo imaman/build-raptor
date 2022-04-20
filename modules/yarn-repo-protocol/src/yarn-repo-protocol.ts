@@ -125,12 +125,12 @@ export class YarnRepoProtocol implements RepoProtocol {
           inputsInUnit: ['dist/src', 'dist/tests'],
           inputsInDeps: ['dist/src'],
         },
-        // {
-        //   taskKind: pack,
-        //   // outputs: ['dist/pack'],
-        //   inputsInUnit: ['dist/src'],
-        //   inputsInDeps: ['dist/src'],
-        // },
+        {
+          taskKind: pack,
+          outputs: ['dist/pack'],
+          inputsInUnit: ['dist/src'],
+          inputsInDeps: ['dist/src'],
+        },
       ],
     }
   }
