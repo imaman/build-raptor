@@ -104,6 +104,7 @@ export class YarnRepoProtocol implements RepoProtocol {
 
   async getTasks(): Promise<CatalogOfTasks> {
     const build = TaskKind('build')
+    const pack = TaskKind('pack')
     const test = TaskKind('test')
 
     return {
@@ -124,6 +125,12 @@ export class YarnRepoProtocol implements RepoProtocol {
           inputsInUnit: ['dist/src', 'dist/tests'],
           inputsInDeps: ['dist/src'],
         },
+        // {
+        //   taskKind: pack,
+        //   // outputs: ['dist/pack'],
+        //   inputsInUnit: ['dist/src'],
+        //   inputsInDeps: ['dist/src'],
+        // },
       ],
     }
   }

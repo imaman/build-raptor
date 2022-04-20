@@ -13,6 +13,7 @@ import { Task } from './task'
 import { TaskStore } from './task-store'
 import { TaskTracker } from './task-tracker'
 
+// TODO(imaman): explain.
 export class TaskExecutor {
   constructor(
     private readonly taskName: TaskName,
