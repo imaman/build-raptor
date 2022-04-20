@@ -61,6 +61,10 @@ export class YarnRepoProtocol implements RepoProtocol {
       return await this.run('yarn', ['jest', ...testsToRun, '--json', '--outputFile', jestOutputFile], dir, outputFile)
     }
 
+    if (task === 'pack') {
+      return await this.run('yarn', ['pack'], dir, outputFile)
+    }
+
     throw new Error(`Unknown task ${task} (at ${dir})`)
   }
 
@@ -110,6 +114,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     return {
       inUnit: {
         [test]: [build],
+        [pack]: [build],
       },
       onDeps: {},
       tasks: [
