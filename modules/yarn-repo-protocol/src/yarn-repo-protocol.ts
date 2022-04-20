@@ -115,7 +115,7 @@ export class YarnRepoProtocol implements RepoProtocol {
       tasks: [
         {
           taskKind: build,
-          outputs: ['dist'],
+          outputs: ['dist/src', 'dist/tests', 'dist/tsconfig.tsbuildinfo'],
           shadowing: false,
           inputsInDeps: ['dist/src'],
         },
