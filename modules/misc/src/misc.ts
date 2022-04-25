@@ -28,6 +28,10 @@ export function aTimeoutOf(ms: number): Timeout {
 }
 
 export async function dumpFile(inputPath: string, output: NodeJS.WritableStream) {
+  if (!(await fse.pathExists(inputPath))) {
+    // TODO(imaman): cover.
+    throw new Error(`File does not exist: ${inputPath}`)
+  }
   return new Promise<void>((res, rej) => {
     const inputStream = fse.createReadStream(inputPath)
     inputStream.on('end', () => {
