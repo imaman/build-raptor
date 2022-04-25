@@ -8,7 +8,7 @@ import { ExitStatus, RepoProtocol } from 'repo-protocol'
 import { CatalogOfTasks } from 'repo-protocol'
 import { TaskKind } from 'task-name'
 import { UnitId, UnitMetadata } from 'unit-metadata'
-import webpack from 'webpack'
+import webpack, { Stats } from 'webpack'
 import { z } from 'zod'
 
 const yarnWorkspacesInfoSchema = z.record(
@@ -63,21 +63,27 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
 
     if (task === 'pack') {
-      return await this.pack(dir)
+      const stat = await this.pack(dir)
+      if (stat?.hasErrors()) {
+        await fse.writeFile(outputFile, JSON.stringify(stat?.toJson('errors-only'), null, 2))
+      } else {
+        await fse.writeFile(outputFile, '')
+      }
+      return stat?.hasErrors ? 'FAIL' : 'OK'
     }
 
     throw new Error(`Unknown task ${task} (at ${dir})`)
   }
 
-  private async pack(dir: string): Promise<ExitStatus> {
+  private async pack(dir: string): Promise<Stats | undefined> {
     const inrepo: string[] = this.computeUnits().map(u => u.id)
-    return new Promise<ExitStatus>(resolve => {
+    return new Promise<Stats | undefined>(resolve => {
       webpack(
         {
           context: dir,
           entry: './dist/src/index.js',
           output: {
-            filename: 'dist/pack/main.js',
+            filename: 'pack/main.js',
             path: dir,
           },
           mode: 'development',
@@ -101,16 +107,13 @@ export class YarnRepoProtocol implements RepoProtocol {
             },
           ],
         },
-        (err, stats) => {
+        async (err, stats) => {
           if (err) {
-            return resolve('CRASH')
+            this.logger.error(`packing of ${dir} failed`, err)
+            throw new Error(`packing ${dir} failed`)
           }
 
-          if (stats?.hasErrors()) {
-            return resolve('FAIL')
-          }
-
-          resolve('OK')
+          resolve(stats)
         },
       )
     })
@@ -172,7 +175,7 @@ export class YarnRepoProtocol implements RepoProtocol {
       tasks: [
         {
           taskKind: build,
-          outputs: ['dist/src', 'dist/tests', 'dist/tsconfig.tsbuildinfo'],
+          outputs: ['dist'],
           shadowing: false,
           inputsInDeps: ['dist/src'],
         },
@@ -184,7 +187,7 @@ export class YarnRepoProtocol implements RepoProtocol {
         },
         {
           taskKind: pack,
-          outputs: ['dist/pack'],
+          outputs: ['pack'],
           inputsInUnit: ['dist/src'],
           inputsInDeps: ['dist/src'],
         },
