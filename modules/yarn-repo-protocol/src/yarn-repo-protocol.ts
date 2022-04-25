@@ -8,6 +8,7 @@ import { ExitStatus, RepoProtocol } from 'repo-protocol'
 import { CatalogOfTasks } from 'repo-protocol'
 import { TaskKind } from 'task-name'
 import { UnitId, UnitMetadata } from 'unit-metadata'
+import webpack from 'webpack'
 import { z } from 'zod'
 
 const yarnWorkspacesInfoSchema = z.record(
@@ -62,10 +63,57 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
 
     if (task === 'pack') {
-      return await this.run('yarn', ['pack'], dir, outputFile)
+      return await this.pack(dir)
     }
 
     throw new Error(`Unknown task ${task} (at ${dir})`)
+  }
+
+  private async pack(dir: string): Promise<ExitStatus> {
+    const inrepo: string[] = this.computeUnits().map(u => u.id)
+    return new Promise<ExitStatus>(resolve => {
+      webpack(
+        {
+          context: dir,
+          entry: './dist/src/index.js',
+          output: {
+            filename: 'dist/pack/main.js',
+            path: dir,
+          },
+          mode: 'development',
+          externals: [
+            function (arg, callback) {
+              const req = arg.request ?? ''
+              let decision = 'R'
+              if (req.startsWith('.')) {
+                decision = 'bundle'
+              }
+
+              if (inrepo.includes(req)) {
+                decision = 'bundle'
+              }
+
+              if (decision === 'bundle') {
+                callback()
+              } else {
+                callback(undefined, 'commonjs ' + req)
+              }
+            },
+          ],
+        },
+        (err, stats) => {
+          if (err) {
+            return resolve('CRASH')
+          }
+
+          if (stats?.hasErrors()) {
+            return resolve('FAIL')
+          }
+
+          resolve('OK')
+        },
+      )
+    })
   }
 
   private async getYarnInfo(rootDir: string): Promise<YarnWorkspacesInfo> {
@@ -97,6 +145,10 @@ export class YarnRepoProtocol implements RepoProtocol {
   }
 
   async getUnits() {
+    return this.computeUnits()
+  }
+
+  private computeUnits() {
     const typed = this.yarnInfo ?? failMe('yarnInfo')
     const ret: UnitMetadata[] = []
     for (const [p, data] of Object.entries(typed)) {
