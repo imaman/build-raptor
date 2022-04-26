@@ -1,4 +1,5 @@
 import * as fse from 'fs-extra'
+import * as path from 'path'
 import * as Tmp from 'tmp-promise'
 
 import { computeObjectHash, dumpFile } from '../src/misc'
@@ -49,6 +50,12 @@ describe('misc', () => {
       await fse.writeFile(src, longString)
       const content = await runDumpFile(src)
       expect(content).toEqual(longString)
+    })
+    test('error message', async () => {
+      const nonExistingPath = path.join((await Tmp.dir()).path, 'foo')
+      await expect(runDumpFile(nonExistingPath)).rejects.toThrowError(
+        `Cannot dump non existing file: ${nonExistingPath}`,
+      )
     })
   })
 })
