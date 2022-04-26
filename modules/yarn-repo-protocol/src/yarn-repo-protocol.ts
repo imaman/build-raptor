@@ -2,11 +2,12 @@ import escapeStringRegexp from 'escape-string-regexp'
 import execa from 'execa'
 import * as fse from 'fs-extra'
 import { Logger } from 'logger'
-import { failMe, Graph, uniqueBy } from 'misc'
+import { failMe, Graph, pairsToRecord, promises, recordToPairs, uniqueBy } from 'misc'
 import * as path from 'path'
 import { ExitStatus, RepoProtocol } from 'repo-protocol'
 import { CatalogOfTasks } from 'repo-protocol'
 import { TaskKind } from 'task-name'
+import { PackageJson } from 'type-fest'
 import { UnitId, UnitMetadata } from 'unit-metadata'
 import webpack, { Stats } from 'webpack'
 import { z } from 'zod'
@@ -21,12 +22,27 @@ const yarnWorkspacesInfoSchema = z.record(
 type YarnWorkspacesInfo = z.infer<typeof yarnWorkspacesInfoSchema>
 
 export class YarnRepoProtocol implements RepoProtocol {
-  constructor(private readonly logger: Logger, private readonly buildOutputLocations: string[] = []) {}
+  constructor(private readonly logger: Logger) {}
 
   private yarnInfo: YarnWorkspacesInfo | undefined
+  private graph: Graph<UnitId> | undefined
+  private rootDir: string | undefined
 
   async initialize(rootDir: string): Promise<void> {
-    this.yarnInfo = await this.getYarnInfo(rootDir)
+    const yarnInfo = await this.getYarnInfo(rootDir)
+
+    const typed = yarnInfo ?? failMe('yarnInfo')
+    const graph = new Graph<UnitId>(x => x)
+    for (const [p, data] of Object.entries(typed)) {
+      const uid = UnitId(p)
+      graph.vertex(uid)
+      for (const dep of data.workspaceDependencies) {
+        graph.edge(uid, UnitId(dep))
+      }
+    }
+    this.yarnInfo = yarnInfo
+    this.graph = graph
+    this.rootDir = rootDir
   }
 
   async close() {}
@@ -51,7 +67,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
   }
 
-  async execute(_u: UnitMetadata, dir: string, task: TaskKind, outputFile: string): Promise<ExitStatus> {
+  async execute(u: UnitMetadata, dir: string, task: TaskKind, outputFile: string): Promise<ExitStatus> {
     if (task === 'build') {
       return await this.run('npm', ['run', 'build'], dir, outputFile)
     }
@@ -63,7 +79,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
 
     if (task === 'pack') {
-      const stat = await this.pack(dir)
+      const stat = await this.pack(u, dir)
       if (stat?.hasErrors()) {
         await fse.writeFile(outputFile, JSON.stringify(stat?.toJson('errors-only'), null, 2))
       } else {
@@ -75,15 +91,63 @@ export class YarnRepoProtocol implements RepoProtocol {
     throw new Error(`Unknown task ${task} (at ${dir})`)
   }
 
-  private async pack(dir: string): Promise<Stats | undefined> {
+  async computePackingPackageJson(unitId: UnitId) {
+    const units = this.computeUnits()
+
+    const findUnit = (uid: UnitId) => units.find(u => u.id == uid) ?? failMe(`Unit ID not found (${uid})`)
+
+    const readPackageJson = async (uid: UnitId) => {
+      const um = findUnit(uid)
+      const p = path.join(this.rootDir ?? failMe(`rootDir was not set`), um.pathInRepo, 'package.json')
+      const content = await fse.readJSON(p)
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+      return content as PackageJson
+    }
+
+    const packageDef = await readPackageJson(unitId)
+
+    const g = this.graph ?? failMe('graph is missing')
+    const allDeps = g.traverseFrom(unitId)
+
+    const packageDefs = await promises(allDeps)
+      .map(async d => await readPackageJson(d))
+      .reify(20)
+    const inrepo = new Set<string>(units.map(u => u.id))
+
+    const map = new Map<string, string>()
+    for (const at of packageDefs) {
+      for (const [d, v] of recordToPairs(at.dependencies ?? {})) {
+        if (!inrepo.has(d)) {
+          map.set(d, v)
+        }
+      }
+    }
+
+    packageDef['dependencies'] = pairsToRecord(map.entries())
+    return packageDef
+
+    // const cleanDeps = (s: 'dependencies' | 'devDependencies') => {
+    //   const obj = packageDef[s]
+    //   if (!obj) {
+    //     return
+    //   }
+
+    //   packageDef[s] = pairsToRecord(recordToPairs(obj).filter(([d]) => !inrepo.has(d)))
+    // }
+
+    // cleanDeps('dependencies')
+    // cleanDeps('devDependencies')
+  }
+
+  private async pack(u: UnitMetadata, dir: string): Promise<Stats | undefined> {
     const inrepo: string[] = this.computeUnits().map(u => u.id)
-    return new Promise<Stats | undefined>(resolve => {
+    const ret = await new Promise<Stats | undefined>(resolve => {
       webpack(
         {
           context: dir,
           entry: './dist/src/index.js',
           output: {
-            filename: 'pack/main.js',
+            filename: `${PACK_DIR}/main.js`,
             path: dir,
           },
           mode: 'development',
@@ -110,13 +174,25 @@ export class YarnRepoProtocol implements RepoProtocol {
         async (err, stats) => {
           if (err) {
             this.logger.error(`packing of ${dir} failed`, err)
-            throw new Error(`packing ${dir} failed`)
+            throw new Error(`packing ${u.id} failed`)
           }
 
           resolve(stats)
         },
       )
     })
+
+    const packageDef = await this.computePackingPackageJson(u.id)
+    this.logger.info(`updated packagejson is ${JSON.stringify(packageDef)}`)
+    const packageJsonPath = path.join(dir, PACK_DIR, 'package.json')
+
+    try {
+      await fse.writeFile(packageJsonPath, JSON.stringify(packageDef, null, 2))
+    } catch (e) {
+      throw new Error(`Failed to write new package definition at ${packageJsonPath}: ${e}`)
+    }
+
+    return ret
   }
 
   private async getYarnInfo(rootDir: string): Promise<YarnWorkspacesInfo> {
@@ -135,23 +211,14 @@ export class YarnRepoProtocol implements RepoProtocol {
   }
 
   async getGraph() {
-    const typed = this.yarnInfo ?? failMe('yarnInfo')
-    const ret = new Graph<UnitId>(x => x)
-    for (const [p, data] of Object.entries(typed)) {
-      const uid = UnitId(p)
-      ret.vertex(uid)
-      for (const dep of data.workspaceDependencies) {
-        ret.edge(uid, UnitId(dep))
-      }
-    }
-    return ret
+    return this.graph ?? failMe('graph')
   }
 
   async getUnits() {
     return this.computeUnits()
   }
 
-  private computeUnits() {
+  private computeUnits(): UnitMetadata[] {
     const typed = this.yarnInfo ?? failMe('yarnInfo')
     const ret: UnitMetadata[] = []
     for (const [p, data] of Object.entries(typed)) {
@@ -187,7 +254,7 @@ export class YarnRepoProtocol implements RepoProtocol {
         },
         {
           taskKind: pack,
-          outputs: ['pack'],
+          outputs: [PACK_DIR],
           inputsInUnit: ['dist/src'],
           inputsInDeps: ['dist/src'],
         },
@@ -287,3 +354,5 @@ const jestJsonSchema = z.object({
 })
 
 type JestJson = z.infer<typeof jestJsonSchema>
+
+const PACK_DIR = 'pack'
