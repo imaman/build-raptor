@@ -25,7 +25,7 @@ describe('yarn-repo-protocol', () => {
         version: '1.0.0',
         dependencies: {
           b: '1.0.0',
-          bar: '400.500.600',
+          goo: '400.500.600',
         },
       },
     })
@@ -38,6 +38,7 @@ describe('yarn-repo-protocol', () => {
       name: 'a',
       version: '1.0.0',
       dependencies: {
+        goo: '400.500.600',
         foo: '100.200.300',
       },
     })
