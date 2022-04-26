@@ -23,6 +23,7 @@
     "repo-protocol": "1.0.0",
     "task-name": "1.0.0",
     "unit-metadata": "1.0.0",
+    "webpack": "^5.72.0",
     "zod": "^3.11.6"
   }
 }

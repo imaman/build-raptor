@@ -1,4 +1,5 @@
 import * as fse from 'fs-extra'
+import * as path from 'path'
 import * as Tmp from 'tmp-promise'
 
 import { computeObjectHash, dumpFile } from '../src/misc'
@@ -23,34 +24,38 @@ describe('misc', () => {
     })
   })
   describe('dumpFile', () => {
+    async function runDumpFile(src: string) {
+      const f = (await Tmp.file()).path
+      const stream = fse.createWriteStream(f)
+      try {
+        await dumpFile(src, stream)
+        const content = await fse.readFile(f, 'utf-8')
+        return content
+      } finally {
+        stream.close()
+      }
+    }
+
     test('copies the content of a file to the given output stream', async () => {
       const src = (await Tmp.file()).path
       await fse.writeFile(src, 'we choose to go to the moon')
+      const content = await runDumpFile(src)
 
-      const f = (await Tmp.file()).path
-      const stream = fse.createWriteStream(f)
-      try {
-        await dumpFile(src, stream)
-        const content = await fse.readFile(f, 'utf-8')
-        expect(content).toEqual('we choose to go to the moon')
-      } finally {
-        stream.close()
-      }
+      expect(content).toEqual('we choose to go to the moon')
     })
     test('can cope with files which are hundreds of KBs in size', async () => {
       const longString = chaoticDeterministicString(300 * 1000, 'x')
+
       const src = (await Tmp.file()).path
       await fse.writeFile(src, longString)
-
-      const f = (await Tmp.file()).path
-      const stream = fse.createWriteStream(f)
-      try {
-        await dumpFile(src, stream)
-        const content = await fse.readFile(f, 'utf-8')
-        expect(content).toEqual(longString)
-      } finally {
-        stream.close()
-      }
+      const content = await runDumpFile(src)
+      expect(content).toEqual(longString)
+    })
+    test('error message', async () => {
+      const nonExistingPath = path.join((await Tmp.dir()).path, 'foo')
+      await expect(runDumpFile(nonExistingPath)).rejects.toThrowError(
+        `Cannot dump non existing file: ${nonExistingPath}`,
+      )
     })
   })
 })

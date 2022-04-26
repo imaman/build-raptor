@@ -8,6 +8,7 @@ import { ExitStatus, RepoProtocol } from 'repo-protocol'
 import { CatalogOfTasks } from 'repo-protocol'
 import { TaskKind } from 'task-name'
 import { UnitId, UnitMetadata } from 'unit-metadata'
+import webpack, { Stats } from 'webpack'
 import { z } from 'zod'
 
 const yarnWorkspacesInfoSchema = z.record(
@@ -61,7 +62,61 @@ export class YarnRepoProtocol implements RepoProtocol {
       return await this.run('yarn', ['jest', ...testsToRun, '--json', '--outputFile', jestOutputFile], dir, outputFile)
     }
 
+    if (task === 'pack') {
+      const stat = await this.pack(dir)
+      if (stat?.hasErrors()) {
+        await fse.writeFile(outputFile, JSON.stringify(stat?.toJson('errors-only'), null, 2))
+      } else {
+        await fse.writeFile(outputFile, '')
+      }
+      return stat?.hasErrors ? 'FAIL' : 'OK'
+    }
+
     throw new Error(`Unknown task ${task} (at ${dir})`)
+  }
+
+  private async pack(dir: string): Promise<Stats | undefined> {
+    const inrepo: string[] = this.computeUnits().map(u => u.id)
+    return new Promise<Stats | undefined>(resolve => {
+      webpack(
+        {
+          context: dir,
+          entry: './dist/src/index.js',
+          output: {
+            filename: 'pack/main.js',
+            path: dir,
+          },
+          mode: 'development',
+          externals: [
+            function (arg, callback) {
+              const req = arg.request ?? ''
+              let decision = 'R'
+              if (req.startsWith('.')) {
+                decision = 'bundle'
+              }
+
+              if (inrepo.includes(req)) {
+                decision = 'bundle'
+              }
+
+              if (decision === 'bundle') {
+                callback()
+              } else {
+                callback(undefined, 'commonjs ' + req)
+              }
+            },
+          ],
+        },
+        async (err, stats) => {
+          if (err) {
+            this.logger.error(`packing of ${dir} failed`, err)
+            throw new Error(`packing ${dir} failed`)
+          }
+
+          resolve(stats)
+        },
+      )
+    })
   }
 
   private async getYarnInfo(rootDir: string): Promise<YarnWorkspacesInfo> {
@@ -93,6 +148,10 @@ export class YarnRepoProtocol implements RepoProtocol {
   }
 
   async getUnits() {
+    return this.computeUnits()
+  }
+
+  private computeUnits() {
     const typed = this.yarnInfo ?? failMe('yarnInfo')
     const ret: UnitMetadata[] = []
     for (const [p, data] of Object.entries(typed)) {
@@ -104,11 +163,13 @@ export class YarnRepoProtocol implements RepoProtocol {
 
   async getTasks(): Promise<CatalogOfTasks> {
     const build = TaskKind('build')
+    const pack = TaskKind('pack')
     const test = TaskKind('test')
 
     return {
       inUnit: {
         [test]: [build],
+        [pack]: [build],
       },
       onDeps: {},
       tasks: [
@@ -122,6 +183,12 @@ export class YarnRepoProtocol implements RepoProtocol {
           taskKind: test,
           outputs: ['jest-output.json'],
           inputsInUnit: ['dist/src', 'dist/tests'],
+          inputsInDeps: ['dist/src'],
+        },
+        {
+          taskKind: pack,
+          outputs: ['pack'],
+          inputsInUnit: ['dist/src'],
           inputsInDeps: ['dist/src'],
         },
       ],

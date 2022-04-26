@@ -1,4 +1,5 @@
 dist
+pack
 node_modules
 build-raptor.log
 .build-raptor
