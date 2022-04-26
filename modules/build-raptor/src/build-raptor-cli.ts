@@ -37,7 +37,7 @@ async function run(options: Options) {
   await fse.rm(buildRaptorDirTasks, { recursive: true, force: true })
 
   const storageClient = await createStorageClient()
-  const repoProtocol = new YarnRepoProtocol(logger, options.buildOutputLocation)
+  const repoProtocol = new YarnRepoProtocol(logger)
   const bootstrapper = await EngineBootstrapper.create(rootDir, storageClient, repoProtocol, t0, '', logger)
 
   bootstrapper.subscribable.on('executionStarted', tn => {
