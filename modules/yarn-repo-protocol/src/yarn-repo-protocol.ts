@@ -104,7 +104,7 @@ export class YarnRepoProtocol implements RepoProtocol {
       return content as PackageJson
     }
 
-    const packageDef = await readPackageJson(unitId)
+    const ret = await readPackageJson(unitId)
 
     const g = this.graph ?? failMe('graph is missing')
     const allDeps = g.traverseFrom(unitId)
@@ -123,20 +123,8 @@ export class YarnRepoProtocol implements RepoProtocol {
       }
     }
 
-    packageDef['dependencies'] = pairsToRecord(map.entries())
-    return packageDef
-
-    // const cleanDeps = (s: 'dependencies' | 'devDependencies') => {
-    //   const obj = packageDef[s]
-    //   if (!obj) {
-    //     return
-    //   }
-
-    //   packageDef[s] = pairsToRecord(recordToPairs(obj).filter(([d]) => !inrepo.has(d)))
-    // }
-
-    // cleanDeps('dependencies')
-    // cleanDeps('devDependencies')
+    ret['dependencies'] = pairsToRecord(map.entries())
+    return ret
   }
 
   private async pack(u: UnitMetadata, dir: string): Promise<Stats | undefined> {
