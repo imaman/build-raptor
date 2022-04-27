@@ -77,7 +77,7 @@ describe('yarn-repo-protocol', () => {
       'package.json': { workspaces: ['modules/*'], private: true },
       'modules/a/package.json': { name: 'a', version: '1.0.0', devDependencies: { b: '1.0.0' } },
       'modules/b/package.json': { name: 'b', version: '1.0.0', dependencies: { c: '1.0.0', x: '100.1.0' } },
-      'modules/c/package.json': { name: 'c', version: '1.0.0', devdependencies: { y: '200.1.0' } },
+      'modules/c/package.json': { name: 'c', version: '1.0.0', devDependencies: { y: '200.1.0' } },
     })
 
     const yrp = new YarnRepoProtocol(logger)

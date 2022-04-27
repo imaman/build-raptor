@@ -93,6 +93,7 @@ export class YarnRepoProtocol implements RepoProtocol {
 
   async computePackingPackageJson(unitId: UnitId) {
     const units = this.computeUnits()
+    const inrepo = new Set<string>(units.map(u => u.id))
 
     const findUnit = (uid: UnitId) => units.find(u => u.id == uid) ?? failMe(`Unit ID not found (${uid})`)
 
@@ -105,14 +106,29 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
 
     const ret = await readPackageJson(unitId)
+    const visited = new Set<UnitId>()
 
-    const g = this.graph ?? failMe('this.graph is not set')
-    const allDeps = g.traverseFrom(unitId)
+    const scan = async (u: string) => {
+      if (!inrepo.has(u)) {
+        return
+      }
+
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+      const uid = u as UnitId
+      if (visited.has(uid)) {
+        return
+      }
+      visited.add(uid)
+
+      const pd = await readPackageJson(uid)
+      await promises(Object.keys(pd.dependencies ?? {})).forEach(20, async at => await scan(at))
+    }
+    await scan(unitId)
+    const allDeps = [...visited]
 
     const packageDefs = await promises(allDeps)
       .map(async d => await readPackageJson(d))
       .reify(20)
-    const inrepo = new Set<string>(units.map(u => u.id))
 
     const map = new Map<string, string>()
     for (const at of packageDefs) {
@@ -123,7 +139,8 @@ export class YarnRepoProtocol implements RepoProtocol {
       }
     }
 
-    ret['dependencies'] = pairsToRecord(sortBy(map.entries(), ([d]) => d))
+    ret.dependencies = pairsToRecord(sortBy(map.entries(), ([d]) => d))
+    delete ret.devDependencies
     return ret
   }
 
