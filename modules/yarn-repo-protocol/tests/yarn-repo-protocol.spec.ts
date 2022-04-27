@@ -17,7 +17,7 @@ describe('yarn-repo-protocol', () => {
         version: '1.0.0',
         dependencies: {
           b: '1.0.0',
-          foo: '100.200.300',
+          foo: '400.1.0',
         },
       },
       'modules/b/package.json': {
@@ -25,7 +25,8 @@ describe('yarn-repo-protocol', () => {
         version: '1.0.0',
         dependencies: {
           b: '1.0.0',
-          goo: '400.500.600',
+          goo: '100.1.0',
+          boo: '200.1.0',
         },
       },
     })
@@ -38,8 +39,9 @@ describe('yarn-repo-protocol', () => {
       name: 'a',
       version: '1.0.0',
       dependencies: {
-        goo: '400.500.600',
-        foo: '100.200.300',
+        boo: '200.1.0',
+        foo: '400.1.0',
+        goo: '100.1.0',
       },
     })
   })
