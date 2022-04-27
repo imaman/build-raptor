@@ -2,7 +2,7 @@ import escapeStringRegexp from 'escape-string-regexp'
 import execa from 'execa'
 import * as fse from 'fs-extra'
 import { Logger } from 'logger'
-import { failMe, Graph, pairsToRecord, promises, recordToPairs, uniqueBy } from 'misc'
+import { failMe, Graph, pairsToRecord, promises, recordToPairs, sortBy, uniqueBy } from 'misc'
 import * as path from 'path'
 import { ExitStatus, RepoProtocol } from 'repo-protocol'
 import { CatalogOfTasks } from 'repo-protocol'
@@ -106,7 +106,7 @@ export class YarnRepoProtocol implements RepoProtocol {
 
     const ret = await readPackageJson(unitId)
 
-    const g = this.graph ?? failMe('graph is missing')
+    const g = this.graph ?? failMe('this.graph is not set')
     const allDeps = g.traverseFrom(unitId)
 
     const packageDefs = await promises(allDeps)
@@ -123,7 +123,7 @@ export class YarnRepoProtocol implements RepoProtocol {
       }
     }
 
-    ret['dependencies'] = pairsToRecord(map.entries())
+    ret['dependencies'] = pairsToRecord(sortBy(map.entries(), ([d]) => d))
     return ret
   }
 
