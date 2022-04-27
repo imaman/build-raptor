@@ -9,7 +9,8 @@ import { CatalogOfTasks } from 'repo-protocol'
 import { TaskKind } from 'task-name'
 import { PackageJson } from 'type-fest'
 import { UnitId, UnitMetadata } from 'unit-metadata'
-import webpack, { Stats } from 'webpack'
+import webpack, { Stats, WebpackPluginInstance } from 'webpack'
+import ShebangPlugin from 'webpack-shebang-plugin'
 import { z } from 'zod'
 
 const yarnWorkspacesInfoSchema = z.record(
@@ -157,6 +158,8 @@ export class YarnRepoProtocol implements RepoProtocol {
             path: dir,
           },
           mode: 'development',
+          // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+          plugins: [new ShebangPlugin() as WebpackPluginInstance],
           externals: [
             function (arg, callback) {
               const req = arg.request ?? ''
