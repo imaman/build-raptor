@@ -140,6 +140,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
 
     ret.dependencies = pairsToRecord(sortBy(map.entries(), ([d]) => d))
+    ret.main = MAIN_FILE_NAME
     delete ret.devDependencies
     return ret
   }
@@ -152,7 +153,7 @@ export class YarnRepoProtocol implements RepoProtocol {
           context: dir,
           entry: './dist/src/index.js',
           output: {
-            filename: `${PACK_DIR}/main.js`,
+            filename: `${PACK_DIR}/${MAIN_FILE_NAME}`,
             path: dir,
           },
           mode: 'development',
@@ -361,3 +362,4 @@ const jestJsonSchema = z.object({
 type JestJson = z.infer<typeof jestJsonSchema>
 
 const PACK_DIR = 'pack'
+const MAIN_FILE_NAME = 'main.js'
