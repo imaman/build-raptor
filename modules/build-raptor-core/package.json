@@ -26,7 +26,7 @@
     "tar-stream": "^2.2.0",
     "task-name": "1.0.0",
     "tmp-promise": "^3.0.3",
-    "type-fest": "^2.8.0",
+    "type-fest": "^2.12.2",
     "unit-metadata": "1.0.0",
     "uuid": "^8.3.2"
   },
