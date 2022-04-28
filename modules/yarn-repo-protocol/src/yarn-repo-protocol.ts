@@ -22,17 +22,24 @@ const yarnWorkspacesInfoSchema = z.record(
 
 type YarnWorkspacesInfo = z.infer<typeof yarnWorkspacesInfoSchema>
 
+interface State {
+  readonly yarnInfo: YarnWorkspacesInfo
+  readonly graph: Graph<UnitId>
+  readonly rootDir: string
+}
 export class YarnRepoProtocol implements RepoProtocol {
   constructor(private readonly logger: Logger) {}
 
-  private yarnInfo: YarnWorkspacesInfo | undefined
-  private graph: Graph<UnitId> | undefined
-  private rootDir: string | undefined
+  private state_: State | undefined
+
+  private get state() {
+    return this.state_ ?? failMe('state was not set')
+  }
 
   async initialize(rootDir: string): Promise<void> {
     const yarnInfo = await this.getYarnInfo(rootDir)
 
-    const typed = yarnInfo ?? failMe('yarnInfo')
+    const typed = yarnInfo
     const graph = new Graph<UnitId>(x => x)
     for (const [p, data] of Object.entries(typed)) {
       const uid = UnitId(p)
@@ -41,9 +48,7 @@ export class YarnRepoProtocol implements RepoProtocol {
         graph.edge(uid, UnitId(dep))
       }
     }
-    this.yarnInfo = yarnInfo
-    this.graph = graph
-    this.rootDir = rootDir
+    this.state_ = { yarnInfo, graph, rootDir }
   }
 
   async close() {}
@@ -100,7 +105,7 @@ export class YarnRepoProtocol implements RepoProtocol {
 
     const readPackageJson = async (uid: UnitId) => {
       const um = findUnit(uid)
-      const p = path.join(this.rootDir ?? failMe(`rootDir was not set`), um.pathInRepo, 'package.json')
+      const p = path.join(this.state.rootDir, um.pathInRepo, 'package.json')
       const content = await fse.readJSON(p)
       // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       return content as PackageJson
@@ -220,7 +225,7 @@ export class YarnRepoProtocol implements RepoProtocol {
   }
 
   async getGraph() {
-    return this.graph ?? failMe('graph')
+    return this.state.graph
   }
 
   async getUnits() {
@@ -228,7 +233,7 @@ export class YarnRepoProtocol implements RepoProtocol {
   }
 
   private computeUnits(): UnitMetadata[] {
-    const typed = this.yarnInfo ?? failMe('yarnInfo')
+    const typed = this.state.yarnInfo
     const ret: UnitMetadata[] = []
     for (const [p, data] of Object.entries(typed)) {
       const uid = UnitId(p)
