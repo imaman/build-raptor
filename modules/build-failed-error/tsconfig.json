@@ -4,5 +4,6 @@
     "composite": true,
     "outDir": "dist"
   },
+  "references": [],
   "include": ["src/**/*", "tests/**/*"]
 }
