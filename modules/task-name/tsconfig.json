@@ -1,0 +1,19 @@
+{
+  "extends": "../../tsconfig-base.json",
+  "compilerOptions": {
+    "composite": true,
+    "outDir": "dist"
+  },
+  "references": [
+    {
+      "path": "../brand"
+    },
+    {
+      "path": "../misc"
+    },
+    {
+      "path": "../unit-metadata"
+    }
+  ],
+  "include": ["src/**/*", "tests/**/*"]
+}
