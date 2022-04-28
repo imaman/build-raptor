@@ -27,7 +27,9 @@ interface State {
   readonly graph: Graph<UnitId>
   readonly rootDir: string
   readonly units: UnitMetadata[]
+  readonly packageByUnitId: Map<UnitId, PackageJson>
 }
+
 export class YarnRepoProtocol implements RepoProtocol {
   constructor(private readonly logger: Logger) {}
 
@@ -40,6 +42,9 @@ export class YarnRepoProtocol implements RepoProtocol {
   async initialize(rootDir: string): Promise<void> {
     const yarnInfo = await this.getYarnInfo(rootDir)
 
+    const units = computeUnits(yarnInfo)
+    const packageByUnitId = await readPackages(rootDir, units)
+
     const graph = new Graph<UnitId>(x => x)
     for (const [p, data] of Object.entries(yarnInfo)) {
       const uid = UnitId(p)
@@ -48,7 +53,7 @@ export class YarnRepoProtocol implements RepoProtocol {
         graph.edge(uid, UnitId(dep))
       }
     }
-    this.state_ = { yarnInfo, graph, rootDir, units: computeUnits(yarnInfo) }
+    this.state_ = { yarnInfo, graph, rootDir, units, packageByUnitId }
   }
 
   async close() {}
@@ -368,5 +373,17 @@ function computeUnits(yarnInfo: YarnWorkspacesInfo): UnitMetadata[] {
     const uid = UnitId(p)
     ret.push(new UnitMetadata(data.location, uid))
   }
+  return ret
+}
+
+async function readPackages(rootDir: string, units: UnitMetadata[]) {
+  const ret = new Map<UnitId, PackageJson>()
+  await promises(units).forEach(20, async um => {
+    const p = path.join(rootDir, um.pathInRepo, 'package.json')
+    const content = await fse.readJSON(p)
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+    ret.set(um.id, content as PackageJson)
+  })
+
   return ret
 }
