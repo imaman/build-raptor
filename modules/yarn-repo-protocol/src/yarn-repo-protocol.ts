@@ -26,6 +26,7 @@ interface State {
   readonly yarnInfo: YarnWorkspacesInfo
   readonly graph: Graph<UnitId>
   readonly rootDir: string
+  readonly units: UnitMetadata[]
 }
 export class YarnRepoProtocol implements RepoProtocol {
   constructor(private readonly logger: Logger) {}
@@ -47,7 +48,7 @@ export class YarnRepoProtocol implements RepoProtocol {
         graph.edge(uid, UnitId(dep))
       }
     }
-    this.state_ = { yarnInfo, graph, rootDir }
+    this.state_ = { yarnInfo, graph, rootDir, units: computeUnits(yarnInfo) }
   }
 
   async close() {}
@@ -97,7 +98,7 @@ export class YarnRepoProtocol implements RepoProtocol {
   }
 
   async computePackingPackageJson(unitId: UnitId) {
-    const units = this.computeUnits()
+    const units = this.state.units
     const inrepo = new Set<string>(units.map(u => u.id))
 
     const findUnit = (uid: UnitId) => units.find(u => u.id == uid) ?? failMe(`Unit ID not found (${uid})`)
@@ -151,7 +152,7 @@ export class YarnRepoProtocol implements RepoProtocol {
   }
 
   private async pack(u: UnitMetadata, dir: string): Promise<Stats | undefined> {
-    const inrepo: string[] = this.computeUnits().map(u => u.id)
+    const inrepo: string[] = this.state.units.map(u => u.id)
     const ret = await new Promise<Stats | undefined>(resolve => {
       webpack(
         {
@@ -228,16 +229,7 @@ export class YarnRepoProtocol implements RepoProtocol {
   }
 
   async getUnits() {
-    return this.computeUnits()
-  }
-
-  private computeUnits(): UnitMetadata[] {
-    const ret: UnitMetadata[] = []
-    for (const [p, data] of Object.entries(this.state.yarnInfo)) {
-      const uid = UnitId(p)
-      ret.push(new UnitMetadata(data.location, uid))
-    }
-    return ret
+    return this.state.units
   }
 
   async getTasks(): Promise<CatalogOfTasks> {
@@ -369,3 +361,12 @@ type JestJson = z.infer<typeof jestJsonSchema>
 
 const PACK_DIR = 'pack'
 const MAIN_FILE_NAME = 'main.js'
+
+function computeUnits(yarnInfo: YarnWorkspacesInfo): UnitMetadata[] {
+  const ret: UnitMetadata[] = []
+  for (const [p, data] of Object.entries(yarnInfo)) {
+    const uid = UnitId(p)
+    ret.push(new UnitMetadata(data.location, uid))
+  }
+  return ret
+}
