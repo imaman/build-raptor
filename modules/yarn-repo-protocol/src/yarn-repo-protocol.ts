@@ -102,24 +102,18 @@ export class YarnRepoProtocol implements RepoProtocol {
     throw new Error(`Unknown task ${task} (at ${dir})`)
   }
 
+  private getPackageJson(uid: UnitId) {
+    return this.state.packageByUnitId.get(uid) ?? failMe(`Unit ID not found (${uid})`)
+  }
+
   async computePackingPackageJson(unitId: UnitId) {
     const units = this.state.units
     const inrepo = new Set<string>(units.map(u => u.id))
 
-    const findUnit = (uid: UnitId) => units.find(u => u.id == uid) ?? failMe(`Unit ID not found (${uid})`)
-
-    const readPackageJson = async (uid: UnitId) => {
-      const um = findUnit(uid)
-      const p = path.join(this.state.rootDir, um.pathInRepo, 'package.json')
-      const content = await fse.readJSON(p)
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-      return content as PackageJson
-    }
-
-    const ret = await readPackageJson(unitId)
+    const ret = this.getPackageJson(unitId)
     const visited = new Set<UnitId>()
 
-    const scan = async (u: string) => {
+    const scan = (u: string) => {
       if (!inrepo.has(u)) {
         return
       }
@@ -131,15 +125,16 @@ export class YarnRepoProtocol implements RepoProtocol {
       }
       visited.add(uid)
 
-      const pd = await readPackageJson(uid)
-      await promises(Object.keys(pd.dependencies ?? {})).forEach(20, async at => await scan(at))
+      const pd = this.getPackageJson(uid)
+      for (const d of Object.keys(pd.dependencies ?? {})) {
+        scan(d)
+      }
     }
-    await scan(unitId)
+
+    scan(unitId)
     const allDeps = [...visited]
 
-    const packageDefs = await promises(allDeps)
-      .map(async d => await readPackageJson(d))
-      .reify(20)
+    const packageDefs = allDeps.map(d => this.getPackageJson(d))
 
     const map = new Map<string, string>()
     for (const at of packageDefs) {
