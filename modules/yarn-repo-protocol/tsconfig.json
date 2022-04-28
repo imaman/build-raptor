@@ -6,6 +6,9 @@
   },
   "references": [
     {
+      "path": "../build-failed-error"
+    },
+    {
       "path": "../logger"
     },
     {
