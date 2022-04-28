@@ -28,6 +28,7 @@ interface State {
   readonly rootDir: string
   readonly units: UnitMetadata[]
   readonly packageByUnitId: Map<UnitId, PackageJson>
+  readonly versionByPackageId: Map<string, string>
 }
 
 export class YarnRepoProtocol implements RepoProtocol {
@@ -44,6 +45,7 @@ export class YarnRepoProtocol implements RepoProtocol {
 
     const units = computeUnits(yarnInfo)
     const packageByUnitId = await readPackages(rootDir, units)
+    const versionByPackageId = computeVersions([...packageByUnitId.values()])
 
     const graph = new Graph<UnitId>(x => x)
     for (const [p, data] of Object.entries(yarnInfo)) {
@@ -53,7 +55,7 @@ export class YarnRepoProtocol implements RepoProtocol {
         graph.edge(uid, UnitId(dep))
       }
     }
-    this.state_ = { yarnInfo, graph, rootDir, units, packageByUnitId }
+    this.state_ = { yarnInfo, graph, rootDir, units, packageByUnitId, versionByPackageId }
   }
 
   async close() {}
@@ -388,6 +390,25 @@ async function readPackages(rootDir: string, units: UnitMetadata[]) {
     // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     ret.set(um.id, content as PackageJson)
   })
+
+  return ret
+}
+
+function computeVersions(packages: PackageJson[]) {
+  const ret = new Map<string, string>()
+
+  const register = (d: string, v: string) => {
+    ret.set(d, v)
+  }
+
+  for (const p of packages) {
+    for (const [d, v] of Object.entries(p.dependencies ?? {})) {
+      register(d, v)
+    }
+    for (const [d, v] of Object.entries(p.devDependencies ?? {})) {
+      register(d, v)
+    }
+  }
 
   return ret
 }
