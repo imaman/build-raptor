@@ -1,8 +1,9 @@
+import { BuildFailedError } from 'build-failed-error'
 import escapeStringRegexp from 'escape-string-regexp'
 import execa from 'execa'
 import * as fse from 'fs-extra'
 import { Logger } from 'logger'
-import { failMe, Graph, pairsToRecord, promises, recordToPairs, sortBy, uniqueBy } from 'misc'
+import { failMe, Graph, hardGet, pairsToRecord, promises, uniqueBy } from 'misc'
 import * as path from 'path'
 import { ExitStatus, RepoProtocol } from 'repo-protocol'
 import { CatalogOfTasks } from 'repo-protocol'
@@ -13,6 +14,8 @@ import webpack, { Stats, WebpackPluginInstance } from 'webpack'
 import ShebangPlugin from 'webpack-shebang-plugin'
 import { z } from 'zod'
 
+import { JestJson } from './jest-json'
+
 const yarnWorkspacesInfoSchema = z.record(
   z.object({
     location: z.string(),
@@ -22,28 +25,40 @@ const yarnWorkspacesInfoSchema = z.record(
 
 type YarnWorkspacesInfo = z.infer<typeof yarnWorkspacesInfoSchema>
 
+interface State {
+  readonly yarnInfo: YarnWorkspacesInfo
+  readonly graph: Graph<UnitId>
+  readonly rootDir: string
+  readonly units: UnitMetadata[]
+  readonly packageByUnitId: Map<UnitId, PackageJson>
+  readonly versionByPackageId: Map<string, string>
+}
+
 export class YarnRepoProtocol implements RepoProtocol {
   constructor(private readonly logger: Logger) {}
 
-  private yarnInfo: YarnWorkspacesInfo | undefined
-  private graph: Graph<UnitId> | undefined
-  private rootDir: string | undefined
+  private state_: State | undefined
+
+  private get state() {
+    return this.state_ ?? failMe('state was not set')
+  }
 
   async initialize(rootDir: string): Promise<void> {
     const yarnInfo = await this.getYarnInfo(rootDir)
 
-    const typed = yarnInfo ?? failMe('yarnInfo')
+    const units = computeUnits(yarnInfo)
+    const packageByUnitId = await readPackages(rootDir, units)
+    const versionByPackageId = computeVersions([...packageByUnitId.values()])
+
     const graph = new Graph<UnitId>(x => x)
-    for (const [p, data] of Object.entries(typed)) {
+    for (const [p, data] of Object.entries(yarnInfo)) {
       const uid = UnitId(p)
       graph.vertex(uid)
       for (const dep of data.workspaceDependencies) {
         graph.edge(uid, UnitId(dep))
       }
     }
-    this.yarnInfo = yarnInfo
-    this.graph = graph
-    this.rootDir = rootDir
+    this.state_ = { yarnInfo, graph, rootDir, units, packageByUnitId, versionByPackageId }
   }
 
   async close() {}
@@ -92,62 +107,69 @@ export class YarnRepoProtocol implements RepoProtocol {
     throw new Error(`Unknown task ${task} (at ${dir})`)
   }
 
-  async computePackingPackageJson(unitId: UnitId) {
-    const units = this.computeUnits()
-    const inrepo = new Set<string>(units.map(u => u.id))
+  private getPackageJson(uid: UnitId) {
+    return this.state.packageByUnitId.get(uid) ?? failMe(`Unit ID not found (${uid})`)
+  }
 
-    const findUnit = (uid: UnitId) => units.find(u => u.id == uid) ?? failMe(`Unit ID not found (${uid})`)
-
-    const readPackageJson = async (uid: UnitId) => {
-      const um = findUnit(uid)
-      const p = path.join(this.rootDir ?? failMe(`rootDir was not set`), um.pathInRepo, 'package.json')
-      const content = await fse.readJSON(p)
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-      return content as PackageJson
+  private toUnitId(packageName: string): UnitId | undefined {
+    const ret = UnitId(packageName)
+    if (this.state.packageByUnitId.has(ret)) {
+      return ret
     }
+    return undefined
+  }
 
-    const ret = await readPackageJson(unitId)
+  private isInRepo(packageName: string): boolean {
+    return this.toUnitId(packageName) !== undefined
+  }
+
+  async computePackingPackageJson(unitId: UnitId) {
     const visited = new Set<UnitId>()
-
-    const scan = async (u: string) => {
-      if (!inrepo.has(u)) {
+    const scan = (u: string) => {
+      const uid = this.toUnitId(u)
+      if (!uid) {
         return
       }
 
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-      const uid = u as UnitId
       if (visited.has(uid)) {
         return
       }
       visited.add(uid)
 
-      const pd = await readPackageJson(uid)
-      await promises(Object.keys(pd.dependencies ?? {})).forEach(20, async at => await scan(at))
-    }
-    await scan(unitId)
-    const allDeps = [...visited]
-
-    const packageDefs = await promises(allDeps)
-      .map(async d => await readPackageJson(d))
-      .reify(20)
-
-    const map = new Map<string, string>()
-    for (const at of packageDefs) {
-      for (const [d, v] of recordToPairs(at.dependencies ?? {})) {
-        if (!inrepo.has(d)) {
-          map.set(d, v)
-        }
+      const pd = this.getPackageJson(uid)
+      for (const d of Object.keys(pd.dependencies ?? {})) {
+        scan(d)
       }
     }
 
-    ret.dependencies = pairsToRecord(sortBy(map.entries(), ([d]) => d))
+    scan(unitId)
+    const allDeps = [...visited]
+
+    const packageDefs = allDeps.map(d => this.getPackageJson(d))
+
+    const outOfRepoDeps: string[] = []
+    for (const at of packageDefs) {
+      for (const d of Object.keys(at.dependencies ?? {})) {
+        if (!this.isInRepo(d)) {
+          outOfRepoDeps.push(d)
+        }
+      }
+    }
+    // TODO(imaman): cover (the cloning).
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+    const ret = JSON.parse(JSON.stringify(this.getPackageJson(unitId))) as PackageJson
+    ret.dependencies = pairsToRecord(outOfRepoDeps.sort().map(d => [d, this.getVersionOfDep(d)]))
     ret.main = MAIN_FILE_NAME
     delete ret.devDependencies
     return ret
   }
 
+  private getVersionOfDep(d: string) {
+    return hardGet(this.state.versionByPackageId, d)
+  }
+
   private async pack(u: UnitMetadata, dir: string): Promise<Stats | undefined> {
-    const inrepo: string[] = this.computeUnits().map(u => u.id)
+    const inrepo: string[] = this.state.units.map(u => u.id)
     const ret = await new Promise<Stats | undefined>(resolve => {
       webpack(
         {
@@ -220,21 +242,11 @@ export class YarnRepoProtocol implements RepoProtocol {
   }
 
   async getGraph() {
-    return this.graph ?? failMe('graph')
+    return this.state.graph
   }
 
   async getUnits() {
-    return this.computeUnits()
-  }
-
-  private computeUnits(): UnitMetadata[] {
-    const typed = this.yarnInfo ?? failMe('yarnInfo')
-    const ret: UnitMetadata[] = []
-    for (const [p, data] of Object.entries(typed)) {
-      const uid = UnitId(p)
-      ret.push(new UnitMetadata(data.location, uid))
-    }
-    return ret
+    return this.state.units
   }
 
   async getTasks(): Promise<CatalogOfTasks> {
@@ -279,7 +291,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
 
     const parsed = await fse.readJSON(resolved)
-    const jestJson: JestJson = jestJsonSchema.parse(parsed)
+    const jestJson: JestJson = JestJson.parse(parsed)
 
     const failedTests = jestJson.testResults.filter(x => x.status !== 'passed')
     this.logger.info(
@@ -308,61 +320,51 @@ export class YarnRepoProtocol implements RepoProtocol {
   }
 }
 
-/*
-{
-  "numFailedTestSuites": 1,
-  "numFailedTests": 1,
-  "numPassedTestSuites": 15,
-  ...
-  "startTime": 1642003231059,
-  "success": false,
-  "testResults": [
-    {
-      "assertionResults": [
-        {
-          "ancestorTitles": [
-            "misc",
-            "computeObjectHash"
-          ],
-          "failureMessages": [],
-          "fullName": "misc computeObjectHash object hash of two identical objects is identical",
-          "location": null,
-          "status": "passed",
-          "title": "object hash of two identical objects is identical"
-        },
-        {
-          "ancestorTitles": [
-            "misc",
-            "computeObjectHash"
-          ],
-          "failureMessages": [],
-          "fullName": "misc computeObjectHash object hash of two object with different order of keys is the same",
-          "location": null,
-          "status": "passed",
-          "title": "object hash of two object with different order of keys is the same"
-        }
-      ],
-      "endTime": 1642003231453,
-      "message": "\u001b[1m\u001b[31m  \u001b[1m● \u001b[22m\u001b[1mmisc › dumpFile › copies the content of a file to the given output stream\u001b[39m\u001b[22m\n\n    \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n    Expected: \u001b[32m\"we choose to go to the moon\u001b[7m_\u001b[27m\"\u001b[39m\n    Received: \u001b[31m\"we choose to go to the moon\"\u001b[39m\n\u001b[2m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 33 |\u001b[39m         \u001b[36mawait\u001b[39m dumpFile(src\u001b[33m,\u001b[39m stream)\u001b[0m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 34 |\u001b[39m         \u001b[36mconst\u001b[39m content \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m fse\u001b[33m.\u001b[39mreadFile(f\u001b[33m,\u001b[39m \u001b[32m'utf-8'\u001b[39m)\u001b[0m\u001b[22m\n\u001b[2m    \u001b[0m\u001b[31m\u001b[1m>\u001b[22m\u001b[2m\u001b[39m\u001b[90m 35 |\u001b[39m         expect(content)\u001b[33m.\u001b[39mtoEqual(\u001b[32m'we choose to go to the moon_'\u001b[39m)\u001b[0m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m    |\u001b[39m                         \u001b[31m\u001b[1m^\u001b[22m\u001b[2m\u001b[39m\u001b[0m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 36 |\u001b[39m       } \u001b[36mfinally\u001b[39m {\u001b[0m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 37 |\u001b[39m         stream\u001b[33m.\u001b[39mclose()\u001b[0m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 38 |\u001b[39m       }\u001b[0m\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.<anonymous> (\u001b[22m\u001b[2m\u001b[0m\u001b[36mmodules/misc/tests/misc.spec.ts\u001b[39m\u001b[0m\u001b[2m:35:25)\u001b[22m\u001b[2m\u001b[22m\n",
-      "name": "/Users/itay_maman/code/imaman/build-raptor/modules/misc/dist/tests/misc.spec.js",
-      "startTime": 1642003231237,
-      "status": "failed",
-      "summary": ""
-    }
-  ]
-*/
-const jestJsonSchema = z.object({
-  testResults: z
-    .object({
-      status: z.string(),
-      name: z.string(),
-      message: z.string(),
-      assertionResults: z.object({ fullName: z.string(), status: z.string() }).array(),
-    })
-    .array(),
-})
-
-type JestJson = z.infer<typeof jestJsonSchema>
-
 const PACK_DIR = 'pack'
 const MAIN_FILE_NAME = 'main.js'
+
+function computeUnits(yarnInfo: YarnWorkspacesInfo): UnitMetadata[] {
+  const ret: UnitMetadata[] = []
+  for (const [p, data] of Object.entries(yarnInfo)) {
+    const uid = UnitId(p)
+    ret.push(new UnitMetadata(data.location, uid))
+  }
+  return ret
+}
+
+async function readPackages(rootDir: string, units: UnitMetadata[]) {
+  const ret = new Map<UnitId, PackageJson>()
+  await promises(units).forEach(20, async um => {
+    const p = path.join(rootDir, um.pathInRepo, 'package.json')
+    const content = await fse.readJSON(p)
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+    ret.set(um.id, content as PackageJson)
+  })
+
+  return ret
+}
+
+function computeVersions(packages: PackageJson[]) {
+  const ret = new Map<string, string>()
+
+  const register = (d: string, v: string) => {
+    const preexisting = ret.get(d)
+    if (preexisting && preexisting !== v) {
+      const arr = [preexisting, v].sort()
+      throw new BuildFailedError(`Inconsistent version for depenedency "${d}": ${arr.join(', ')}`)
+    }
+
+    ret.set(d, v)
+  }
+
+  for (const p of packages) {
+    for (const [d, v] of Object.entries(p.dependencies ?? {})) {
+      register(d, v)
+    }
+    for (const [d, v] of Object.entries(p.devDependencies ?? {})) {
+      register(d, v)
+    }
+  }
+
+  return ret
+}

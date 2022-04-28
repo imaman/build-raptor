@@ -129,7 +129,7 @@ function withBuildOptions<T>(y: yargs.Argv<T>) {
       describe: 'a limit on the number of tasks to run concurrently',
       type: 'number',
       demandOption: false,
-      default: 30,
+      default: 8,
     })
     .options('compact', {
       describe: 'whether to list only executing tasks (i.e., do not print skipped tasks)',
