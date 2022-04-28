@@ -15,7 +15,7 @@ describe('yarn-repo-protocol', () => {
       })
 
       const yrp = new YarnRepoProtocol(logger)
-      await expect(yrp.initialize(d)).rejects.toThrow('---')
+      await expect(yrp.initialize(d)).rejects.toThrow('Inconsistent version for depenedency "foo": 3.20.0, 3.20.1')
     })
   })
   describe('computePackingPackageJson', () => {
