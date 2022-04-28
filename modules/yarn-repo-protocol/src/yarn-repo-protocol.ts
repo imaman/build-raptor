@@ -349,7 +349,8 @@ function computeVersions(packages: PackageJson[]) {
   const register = (d: string, v: string) => {
     const preexisting = ret.get(d)
     if (preexisting && preexisting !== v) {
-      throw new Error(`Inconsistent version for depenedency "${d}": ${preexisting}, ${v}`)
+      const arr = [preexisting, v].sort()
+      throw new Error(`Inconsistent version for depenedency "${d}": ${arr.join(', ')}`)
     }
 
     ret.set(d, v)
