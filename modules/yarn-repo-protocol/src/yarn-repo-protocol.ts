@@ -13,7 +13,7 @@ import webpack, { Stats, WebpackPluginInstance } from 'webpack'
 import ShebangPlugin from 'webpack-shebang-plugin'
 import { z } from 'zod'
 
-import { JestJson, jestJsonSchema } from './jest-json'
+import { JestJson } from './jest-json'
 
 const yarnWorkspacesInfoSchema = z.record(
   z.object({
@@ -287,7 +287,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
 
     const parsed = await fse.readJSON(resolved)
-    const jestJson: JestJson = jestJsonSchema.parse(parsed)
+    const jestJson: JestJson = JestJson.parse(parsed)
 
     const failedTests = jestJson.testResults.filter(x => x.status !== 'passed')
     this.logger.info(
