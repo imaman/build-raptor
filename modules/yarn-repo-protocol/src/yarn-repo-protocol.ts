@@ -2,7 +2,7 @@ import escapeStringRegexp from 'escape-string-regexp'
 import execa from 'execa'
 import * as fse from 'fs-extra'
 import { Logger } from 'logger'
-import { failMe, Graph, pairsToRecord, promises, recordToPairs, sortBy, uniqueBy } from 'misc'
+import { failMe, Graph, hardGet, pairsToRecord, promises, uniqueBy } from 'misc'
 import * as path from 'path'
 import { ExitStatus, RepoProtocol } from 'repo-protocol'
 import { CatalogOfTasks } from 'repo-protocol'
@@ -146,22 +146,25 @@ export class YarnRepoProtocol implements RepoProtocol {
 
     const packageDefs = allDeps.map(d => this.getPackageJson(d))
 
-    const map = new Map<string, string>()
+    const outOfRepoDeps: string[] = []
     for (const at of packageDefs) {
-      for (const [d, v] of recordToPairs(at.dependencies ?? {})) {
+      for (const d of Object.keys(at.dependencies ?? {})) {
         if (!this.isInRepo(d)) {
-          map.set(d, v)
+          outOfRepoDeps.push(d)
         }
       }
     }
-
     // TODO(imaman): cover (the cloning).
     // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     const ret = JSON.parse(JSON.stringify(this.getPackageJson(unitId))) as PackageJson
-    ret.dependencies = pairsToRecord(sortBy(map.entries(), ([d]) => d))
+    ret.dependencies = pairsToRecord(outOfRepoDeps.sort().map(d => [d, this.getVersionOfDep(d)]))
     ret.main = MAIN_FILE_NAME
     delete ret.devDependencies
     return ret
+  }
+
+  private getVersionOfDep(d: string) {
+    return hardGet(this.state.versionByPackageId, d)
   }
 
   private async pack(u: UnitMetadata, dir: string): Promise<Stats | undefined> {
