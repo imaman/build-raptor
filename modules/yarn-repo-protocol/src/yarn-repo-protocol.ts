@@ -39,9 +39,8 @@ export class YarnRepoProtocol implements RepoProtocol {
   async initialize(rootDir: string): Promise<void> {
     const yarnInfo = await this.getYarnInfo(rootDir)
 
-    const typed = yarnInfo
     const graph = new Graph<UnitId>(x => x)
-    for (const [p, data] of Object.entries(typed)) {
+    for (const [p, data] of Object.entries(yarnInfo)) {
       const uid = UnitId(p)
       graph.vertex(uid)
       for (const dep of data.workspaceDependencies) {
@@ -233,9 +232,8 @@ export class YarnRepoProtocol implements RepoProtocol {
   }
 
   private computeUnits(): UnitMetadata[] {
-    const typed = this.state.yarnInfo
     const ret: UnitMetadata[] = []
-    for (const [p, data] of Object.entries(typed)) {
+    for (const [p, data] of Object.entries(this.state.yarnInfo)) {
       const uid = UnitId(p)
       ret.push(new UnitMetadata(data.location, uid))
     }
