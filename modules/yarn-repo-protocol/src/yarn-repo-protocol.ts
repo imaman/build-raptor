@@ -8,7 +8,7 @@ import * as path from 'path'
 import { ExitStatus, RepoProtocol } from 'repo-protocol'
 import { CatalogOfTasks } from 'repo-protocol'
 import { TaskKind } from 'task-name'
-import { PackageJson } from 'type-fest'
+import { PackageJson, TsConfigJson } from 'type-fest'
 import { UnitId, UnitMetadata } from 'unit-metadata'
 import webpack, { Stats, WebpackPluginInstance } from 'webpack'
 import ShebangPlugin from 'webpack-shebang-plugin'
@@ -58,9 +58,39 @@ export class YarnRepoProtocol implements RepoProtocol {
         graph.edge(uid, UnitId(dep))
       }
     }
+
+    await this.generateTsConfigFiles(rootDir, units, graph)
     this.state_ = { yarnInfo, graph, rootDir, units, packageByUnitId, versionByPackageId }
   }
 
+  private async generateTsConfigFiles(rootDir: string, units: UnitMetadata[], graph: Graph<UnitId>) {
+    for (const u of units) {
+      const deps = graph.neighborsOf(u.id)
+      const tsconf: TsConfigJson = {
+        extends: '../../tsconfig-base.json',
+        compilerOptions: {
+          composite: true,
+          outDir: 'dist',
+        },
+        references: deps.map(d => {
+          const dp =
+            units.find(at => at.id === d) ?? failMe(`Unit not found: ${d} (when generating tsconfig.json for ${u.id})`)
+          return {
+            path: path.relative(u.pathInRepo, dp.pathInRepo),
+          }
+        }),
+        include: ['src/**/*', 'tests/**/*'],
+      }
+      const content = JSON.stringify(tsconf, null, 2)
+      const p = path.join(rootDir, u.pathInRepo, 'gen-tsconfig.json')
+      const existing = await fse.readFile(p, 'utf-8')
+      if (existing.trim() === content.trim()) {
+        continue
+      }
+
+      await fse.writeFile(p, content)
+    }
+  }
   async close() {}
 
   private async run(cmd: string, args: string[], dir: string, outputFile: string): Promise<ExitStatus> {
