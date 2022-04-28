@@ -27,6 +27,19 @@ describe('yarn-repo-protocol', () => {
       const yrp = new YarnRepoProtocol(logger)
       await expect(yrp.initialize(d)).rejects.toThrow('Inconsistent version for depenedency "boo": 4.20.0, 4.20.1')
     })
+    test('does not yell if the versions are consistent', async () => {
+      const d = await folderify({
+        'package.json': { workspaces: ['modules/*'], private: true },
+        'modules/a/package.json': { name: 'a', version: '1', dependencies: { w: '1' }, devDependencies: { w: '1' } },
+        'modules/b/package.json': { name: 'b', version: '1', dependencies: { x: '2' }, devDependencies: {} },
+        'modules/c/package.json': { name: 'c', version: '1', dependencies: { x: '2' }, devDependencies: { x: '2' } },
+        'modules/d/package.json': { name: 'd', version: '1', dependencies: { y: '3' } },
+        'modules/e/package.json': { name: 'e', version: '1', dependencies: { y: '3' } },
+      })
+
+      const yrp = new YarnRepoProtocol(logger)
+      expect(await yrp.initialize(d)).toBeUndefined()
+    })
   })
   describe('computePackingPackageJson', () => {
     test('includes out-of-repo deps of all in-repo deps (sorted)', async () => {
