@@ -347,6 +347,11 @@ function computeVersions(packages: PackageJson[]) {
   const ret = new Map<string, string>()
 
   const register = (d: string, v: string) => {
+    const preexisting = ret.get(d)
+    if (preexisting && preexisting !== v) {
+      throw new Error(`Inconsistent version for depenedency "${d}": ${preexisting}, ${v}`)
+    }
+
     ret.set(d, v)
   }
 
