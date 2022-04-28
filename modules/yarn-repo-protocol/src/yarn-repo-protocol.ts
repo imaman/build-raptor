@@ -1,3 +1,4 @@
+import { BuildFailedError } from 'build-failed-error'
 import escapeStringRegexp from 'escape-string-regexp'
 import execa from 'execa'
 import * as fse from 'fs-extra'
@@ -350,7 +351,7 @@ function computeVersions(packages: PackageJson[]) {
     const preexisting = ret.get(d)
     if (preexisting && preexisting !== v) {
       const arr = [preexisting, v].sort()
-      throw new Error(`Inconsistent version for depenedency "${d}": ${arr.join(', ')}`)
+      throw new BuildFailedError(`Inconsistent version for depenedency "${d}": ${arr.join(', ')}`)
     }
 
     ret.set(d, v)
