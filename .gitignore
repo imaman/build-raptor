@@ -4,3 +4,4 @@ node_modules
 build-raptor.log
 .build-raptor
 jest-output.json
+tsconfig.json
