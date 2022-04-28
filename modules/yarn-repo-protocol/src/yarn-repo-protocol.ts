@@ -106,20 +106,26 @@ export class YarnRepoProtocol implements RepoProtocol {
     return this.state.packageByUnitId.get(uid) ?? failMe(`Unit ID not found (${uid})`)
   }
 
+  private toUnitId(packageName: string): UnitId | undefined {
+    const ret = UnitId(packageName)
+    if (this.state.packageByUnitId.has(ret)) {
+      return ret
+    }
+    return undefined
+  }
+
+  private isInRepo(packageName: string): boolean {
+    return this.toUnitId(packageName) !== undefined
+  }
+
   async computePackingPackageJson(unitId: UnitId) {
-    const units = this.state.units
-    const inrepo = new Set<string>(units.map(u => u.id))
-
-    const ret = this.getPackageJson(unitId)
     const visited = new Set<UnitId>()
-
     const scan = (u: string) => {
-      if (!inrepo.has(u)) {
+      const uid = this.toUnitId(u)
+      if (!uid) {
         return
       }
 
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-      const uid = u as UnitId
       if (visited.has(uid)) {
         return
       }
@@ -139,12 +145,15 @@ export class YarnRepoProtocol implements RepoProtocol {
     const map = new Map<string, string>()
     for (const at of packageDefs) {
       for (const [d, v] of recordToPairs(at.dependencies ?? {})) {
-        if (!inrepo.has(d)) {
+        if (!this.isInRepo(d)) {
           map.set(d, v)
         }
       }
     }
 
+    // TODO(imaman): cover (the cloning).
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+    const ret = JSON.parse(JSON.stringify(this.getPackageJson(unitId))) as PackageJson
     ret.dependencies = pairsToRecord(sortBy(map.entries(), ([d]) => d))
     ret.main = MAIN_FILE_NAME
     delete ret.devDependencies
