@@ -111,6 +111,8 @@
 - [ ] when there is a task which decalres output location 'dist' and another one which decalres output-location 'dist-foo' build-raptor emits an "output collision error". apparently we compares prefixes instead of comparing path-segments.
 - [ ] this error message is confusing: 'this build-raptor run has crashed due to an unexpected error Error: Output location <xdist-pack> does not exist (under </home/imaman/code/imaman/build-raptor/modules/build-failed-error>)'
 - [ ] get rid of the --build-output-locations flag
+- [ ] compute next version (with max on existing version) from npm reg
+- [ ] e2e tests for yarn-repo-protocol
 
 ## Maybe TODO
 
