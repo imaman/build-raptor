@@ -25,7 +25,6 @@ type YarnWorkspacesInfo = z.infer<typeof yarnWorkspacesInfoSchema>
 export class YarnRepoProtocol implements RepoProtocol {
   constructor(private readonly logger: Logger) {}
 
-  // TODO(imaman): introduce a single state object (to improve exception safety).
   private yarnInfo: YarnWorkspacesInfo | undefined
   private graph: Graph<UnitId> | undefined
   private rootDir: string | undefined
