@@ -7,7 +7,7 @@ import { YarnRepoProtocol } from '../src/yarn-repo-protocol'
 describe('yarn-repo-protocol', () => {
   const logger = createDefaultLogger('/tmp/abc')
   describe('initialize()', () => {
-    test('rejects repos with inconsistent versions of third-party deps', async () => {
+    test('rejects repos with inconsistent versions of out-of-repo deps', async () => {
       const d = await folderify({
         'package.json': { workspaces: ['modules/*'], private: true },
         'modules/a/package.json': { name: 'a', version: '1.0.0', dependencies: { foo: '3.20.0' } },
