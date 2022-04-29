@@ -1,5 +1,7 @@
+import * as fse from 'fs-extra'
 import { createDefaultLogger } from 'logger'
 import { folderify, slurpDir } from 'misc'
+import * as path from 'path'
 import { UnitId } from 'unit-metadata'
 
 import { YarnRepoProtocol } from '../src/yarn-repo-protocol'
@@ -294,23 +296,19 @@ describe('yarn-repo-protocol', () => {
         const d = await folderify({
           'package.json': { workspaces: ['modules/*'], private: true },
           'modules/a/package.json': { name: 'a', version: '1.0.0' },
-          'modules/a/tsconfig.json': {
-            compilerOptions: {
-              composite: false,
-              outDir: 'compiled',
-            },
-          },
         })
 
-        const yrp = new YarnRepoProtocol(logger)
-        await yrp.initialize(d)
+        const yrpA = new YarnRepoProtocol(logger)
+        await yrpA.initialize(d)
 
-        const actual = await slurpDir(d)
-        expect(JSON.parse(actual['modules/a/tsconfig.json'])).toEqual({
-          extends: '../../tsconfig-base.json',
-          compilerOptions: { composite: true, outDir: 'dist' },
-          include: ['src/**/*', 'tests/**/*'],
-        })
+        const p = path.join(d, 'modules/a/tsconfig.json')
+        const statA = await fse.stat(p)
+
+        const yrpB = new YarnRepoProtocol(logger)
+        await yrpB.initialize(d)
+
+        const statB = await fse.stat(p)
+        expect(statA.mtimeMs).toEqual(statB.mtimeMs)
       })
     })
   })
