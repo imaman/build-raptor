@@ -134,9 +134,9 @@ describe('yarn-repo-protocol', () => {
     test('foo', async () => {
       const d = await folderify({
         'package.json': { workspaces: ['modules/*'], private: true },
-        'modules/a/package.json': { name: 'a', version: '1.0.0' },
-        'modules/b/package.json': { name: 'b', version: '1.0.0', dependencies: { c: '1.0.0', x: '100.1.0' } },
-        'modules/c/package.json': { name: 'c', version: '1.0.0', dependencies: { y: '200.1.0' } },
+        'modules/a/package.json': { name: 'a', version: '1.0.0', dependencies: { b: '1.0.0', c: '1.0.0', x: '3' } },
+        'modules/b/package.json': { name: 'b', version: '1.0.0', dependencies: { c: '1.0.0', x: '3' } },
+        'modules/c/package.json': { name: 'c', version: '1.0.0', dependencies: { y: '2' } },
       })
 
       const yrp = new YarnRepoProtocol(logger)
@@ -144,6 +144,18 @@ describe('yarn-repo-protocol', () => {
 
       const actual = await slurpDir(d)
       expect(JSON.parse(actual['modules/a/tsconfig.json'])).toEqual({
+        extends: '../../tsconfig-base.json',
+        compilerOptions: { composite: true, outDir: 'dist' },
+        include: ['src/**/*', 'tests/**/*'],
+        references: [{ path: '../b' }, { path: '../c' }],
+      })
+      expect(JSON.parse(actual['modules/b/tsconfig.json'])).toEqual({
+        extends: '../../tsconfig-base.json',
+        compilerOptions: { composite: true, outDir: 'dist' },
+        include: ['src/**/*', 'tests/**/*'],
+        references: [{ path: '../c' }],
+      })
+      expect(JSON.parse(actual['modules/c/tsconfig.json'])).toEqual({
         extends: '../../tsconfig-base.json',
         compilerOptions: { composite: true, outDir: 'dist' },
         include: ['src/**/*', 'tests/**/*'],
