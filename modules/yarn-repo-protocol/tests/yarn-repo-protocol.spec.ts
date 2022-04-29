@@ -132,7 +132,7 @@ describe('yarn-repo-protocol', () => {
   })
   test.todo('yells if in-repo desp are not 1.0.0')
   describe('generation of tsconfig.json files', () => {
-    test(`reflect the package's dependencies`, async () => {
+    test(`basics`, async () => {
       const d = await folderify({
         'package.json': { workspaces: ['modules/*'], private: true },
         'modules/a/package.json': { name: 'a', version: '1.0.0' },
@@ -185,12 +185,7 @@ describe('yarn-repo-protocol', () => {
         await yrp.initialize(d)
 
         const actual = await slurpDir(d)
-        expect(JSON.parse(actual['modules/a/tsconfig.json'])).toEqual({
-          extends: '../../tsconfig-base.json',
-          compilerOptions: { composite: true, outDir: 'dist' },
-          include: ['src/**/*', 'tests/**/*'],
-          references: [{ path: '../b' }],
-        })
+        expect(JSON.parse(actual['modules/a/tsconfig.json']).references).toEqual([{ path: '../b' }])
       })
       test(`reflect only in-repo dependencies`, async () => {
         const d = await folderify({
@@ -204,18 +199,8 @@ describe('yarn-repo-protocol', () => {
         await yrp.initialize(d)
 
         const actual = await slurpDir(d)
-        expect(JSON.parse(actual['modules/a/tsconfig.json'])).toEqual({
-          extends: '../../tsconfig-base.json',
-          compilerOptions: { composite: true, outDir: 'dist' },
-          include: ['src/**/*', 'tests/**/*'],
-          references: [{ path: '../b' }],
-        })
-        expect(JSON.parse(actual['modules/b/tsconfig.json'])).toEqual({
-          extends: '../../tsconfig-base.json',
-          compilerOptions: { composite: true, outDir: 'dist' },
-          include: ['src/**/*', 'tests/**/*'],
-          references: [{ path: '../c' }],
-        })
+        expect(JSON.parse(actual['modules/a/tsconfig.json']).references).toEqual([{ path: '../b' }])
+        expect(JSON.parse(actual['modules/b/tsconfig.json']).references).toEqual([{ path: '../c' }])
       })
       test(`are omitted if there are no in-repo dependencies nor in-repo dev-dependencies`, async () => {
         const d = await folderify({
