@@ -37,6 +37,7 @@ interface State {
 export class YarnRepoProtocol implements RepoProtocol {
   constructor(private readonly logger: Logger) {}
 
+  private readonly tsconfigBasePathInRepo: string = 'tsconfig-base.json'
   private state_: State | undefined
 
   private get state() {
@@ -76,7 +77,7 @@ export class YarnRepoProtocol implements RepoProtocol {
       })
 
       const tsconf: TsConfigJson = {
-        extends: '../../tsconfig-base.json',
+        extends: path.relative(u.pathInRepo, this.tsconfigBasePathInRepo),
         compilerOptions: {
           composite: true,
           outDir: 'dist',
