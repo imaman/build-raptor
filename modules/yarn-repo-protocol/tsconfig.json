@@ -4,6 +4,7 @@
     "composite": true,
     "outDir": "dist"
   },
+  "include": ["src/**/*", "tests/**/*"],
   "references": [
     {
       "path": "../build-failed-error"
@@ -23,6 +24,5 @@
     {
       "path": "../unit-metadata"
     }
-  ],
-  "include": ["src/**/*", "tests/**/*"]
+  ]
 }

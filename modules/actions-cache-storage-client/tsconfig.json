@@ -4,6 +4,7 @@
     "composite": true,
     "outDir": "dist"
   },
+  "include": ["src/**/*", "tests/**/*"],
   "references": [
     {
       "path": "../logger"
@@ -11,6 +12,5 @@
     {
       "path": "../misc"
     }
-  ],
-  "include": ["src/**/*", "tests/**/*"]
+  ]
 }

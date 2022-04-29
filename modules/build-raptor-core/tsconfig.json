@@ -4,6 +4,7 @@
     "composite": true,
     "outDir": "dist"
   },
+  "include": ["src/**/*", "tests/**/*"],
   "references": [
     {
       "path": "../brand"
@@ -29,6 +30,5 @@
     {
       "path": "../unit-metadata"
     }
-  ],
-  "include": ["src/**/*", "tests/**/*"]
+  ]
 }

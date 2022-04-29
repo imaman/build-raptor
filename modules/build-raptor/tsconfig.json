@@ -4,6 +4,7 @@
     "composite": true,
     "outDir": "dist"
   },
+  "include": ["src/**/*", "tests/**/*"],
   "references": [
     {
       "path": "../build-raptor-core"
@@ -17,6 +18,5 @@
     {
       "path": "../yarn-repo-protocol"
     }
-  ],
-  "include": ["src/**/*", "tests/**/*"]
+  ]
 }
