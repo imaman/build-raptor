@@ -87,25 +87,24 @@ export class YarnRepoProtocol implements RepoProtocol {
     for (const u of units) {
       const deps = graph.neighborsOf(u.id)
 
-      const references: TsConfigJson.References[] = deps.map(d => {
-        const dp =
-          units.find(at => at.id === d) ?? failMe(`Unit not found: ${d} (when generating tsconfig.json for ${u.id})`)
-        return {
-          path: path.relative(u.pathInRepo, dp.pathInRepo),
-        }
-      })
-
       const tsconf: TsConfigJson = {
         extends: path.relative(u.pathInRepo, this.tsconfigBasePathInRepo),
         compilerOptions: {
           composite: true,
           outDir: 'dist',
         },
+        references: deps.map(d => {
+          const dp =
+            units.find(at => at.id === d) ?? failMe(`Unit not found: ${d} (when generating tsconfig.json for ${u.id})`)
+          return {
+            path: path.relative(u.pathInRepo, dp.pathInRepo),
+          }
+        }),
         include: ['src/**/*', 'tests/**/*'],
       }
 
-      if (references.length) {
-        tsconf.references = references
+      if (!tsconf.references?.length) {
+        delete tsconf.references
       }
 
       const content = JSON.stringify(tsconf, null, 2)

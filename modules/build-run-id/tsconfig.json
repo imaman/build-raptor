@@ -4,10 +4,10 @@
     "composite": true,
     "outDir": "dist"
   },
-  "include": ["src/**/*", "tests/**/*"],
   "references": [
     {
       "path": "../brand"
     }
-  ]
+  ],
+  "include": ["src/**/*", "tests/**/*"]
 }

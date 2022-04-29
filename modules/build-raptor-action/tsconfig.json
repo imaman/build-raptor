@@ -4,7 +4,6 @@
     "composite": true,
     "outDir": "dist"
   },
-  "include": ["src/**/*", "tests/**/*"],
   "references": [
     {
       "path": "../actions-cache-storage-client"
@@ -21,5 +20,6 @@
     {
       "path": "../yarn-repo-protocol"
     }
-  ]
+  ],
+  "include": ["src/**/*", "tests/**/*"]
 }
