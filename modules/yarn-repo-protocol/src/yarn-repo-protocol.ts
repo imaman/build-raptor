@@ -8,7 +8,7 @@ import * as path from 'path'
 import { ExitStatus, RepoProtocol } from 'repo-protocol'
 import { CatalogOfTasks } from 'repo-protocol'
 import { TaskKind } from 'task-name'
-import { PackageJson } from 'type-fest'
+import { PackageJson, TsConfigJson } from 'type-fest'
 import { UnitId, UnitMetadata } from 'unit-metadata'
 import webpack, { Stats, WebpackPluginInstance } from 'webpack'
 import ShebangPlugin from 'webpack-shebang-plugin'
@@ -20,6 +20,7 @@ const yarnWorkspacesInfoSchema = z.record(
   z.object({
     location: z.string(),
     workspaceDependencies: z.string().array(),
+    mismatchedWorkspaceDependencies: z.string().array(),
   }),
 )
 
@@ -37,6 +38,7 @@ interface State {
 export class YarnRepoProtocol implements RepoProtocol {
   constructor(private readonly logger: Logger) {}
 
+  private readonly tsconfigBasePathInRepo: string = 'tsconfig-base.json'
   private state_: State | undefined
 
   private get state() {
@@ -50,6 +52,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     const packageByUnitId = await readPackages(rootDir, units)
     const versionByPackageId = computeVersions([...packageByUnitId.values()])
 
+    const violations: [UnitId, UnitId][] = []
     const graph = new Graph<UnitId>(x => x)
     for (const [p, data] of Object.entries(yarnInfo)) {
       const uid = UnitId(p)
@@ -57,10 +60,68 @@ export class YarnRepoProtocol implements RepoProtocol {
       for (const dep of data.workspaceDependencies) {
         graph.edge(uid, UnitId(dep))
       }
+
+      for (const d of data.mismatchedWorkspaceDependencies) {
+        violations.push([uid, UnitId(d)])
+      }
     }
+
+    const violation = violations.find(Boolean)
+    if (violation) {
+      const [consumer, supplier] = violation
+
+      const ps = hardGet(packageByUnitId, supplier)
+      // We assume that there is a consistent version for all dependencies so we lookup that version, instead of looking
+      // into the package.json of the consumer and digging the exact version that is specified there.
+      const v = hardGet(versionByPackageId, supplier)
+      // TODO(imaman): generate a comprehensive error message that lists *all* violations.
+      throw new BuildFailedError(
+        `Version mismatch for dependency "${supplier}" of "${consumer}": ${ps.version} vs. ${v}`,
+      )
+    }
+
+    await this.generateTsConfigFiles(rootDir, units, graph)
     this.state_ = { yarnInfo, graph, rootDir, units, packageByUnitId, versionByPackageId }
   }
 
+  private async generateTsConfigFiles(rootDir: string, units: UnitMetadata[], graph: Graph<UnitId>) {
+    for (const u of units) {
+      const deps = graph.neighborsOf(u.id)
+
+      const tsconf: TsConfigJson = {
+        extends: path.relative(u.pathInRepo, this.tsconfigBasePathInRepo),
+        compilerOptions: {
+          composite: true,
+          outDir: 'dist',
+        },
+        references: deps.map(d => {
+          const dp =
+            units.find(at => at.id === d) ?? failMe(`Unit not found: ${d} (when generating tsconfig.json for ${u.id})`)
+          return {
+            path: path.relative(u.pathInRepo, dp.pathInRepo),
+          }
+        }),
+        include: ['src/**/*', 'tests/**/*'],
+      }
+
+      if (!tsconf.references?.length) {
+        delete tsconf.references
+      }
+
+      const content = JSON.stringify(tsconf, null, 2)
+      const p = path.join(rootDir, u.pathInRepo, 'tsconfig.json')
+      if (await fse.pathExists(p)) {
+        const existing = JSON.stringify(await fse.readJSON(p, 'utf-8'), null, 2)
+        if (existing.trim() === content.trim()) {
+          this.logger.info(`skipping generation of tsconfig.json in ${u.id} - no changes`)
+          continue
+        }
+      }
+
+      this.logger.info(`updating the tsconfig.json file of ${u.id}`)
+      await fse.writeFile(p, content)
+    }
+  }
   async close() {}
 
   private async run(cmd: string, args: string[], dir: string, outputFile: string): Promise<ExitStatus> {

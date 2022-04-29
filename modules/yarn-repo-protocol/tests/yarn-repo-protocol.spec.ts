@@ -1,5 +1,7 @@
+import * as fse from 'fs-extra'
 import { createDefaultLogger } from 'logger'
-import { folderify } from 'misc'
+import { folderify, slurpDir } from 'misc'
+import * as path from 'path'
 import { UnitId } from 'unit-metadata'
 
 import { YarnRepoProtocol } from '../src/yarn-repo-protocol'
@@ -39,6 +41,16 @@ describe('yarn-repo-protocol', () => {
 
       const yrp = new YarnRepoProtocol(logger)
       expect(await yrp.initialize(d)).toBeUndefined()
+    })
+    test('rejects repos with a version mismatch on an in-repo dep', async () => {
+      const d = await folderify({
+        'package.json': { workspaces: ['modules/*'], private: true },
+        'modules/a/package.json': { name: 'a', version: '1.0.0', devDependencies: { b: '1.0.0' } },
+        'modules/b/package.json': { name: 'b', version: '1.0.1' },
+      })
+
+      const yrp = new YarnRepoProtocol(logger)
+      await expect(yrp.initialize(d)).rejects.toThrow('Version mismatch for dependency "b" of "a": 1.0.1 vs. 1.0.0')
     })
   })
   describe('computePackingPackageJson', () => {
@@ -128,6 +140,176 @@ describe('yarn-repo-protocol', () => {
       version: '1.0.0',
       main: 'main.js',
       dependencies: {},
+    })
+  })
+  describe('generation of tsconfig.json files', () => {
+    test(`basics`, async () => {
+      const d = await folderify({
+        'package.json': { workspaces: ['modules/*'], private: true },
+        'modules/a/package.json': { name: 'a', version: '1.0.0' },
+      })
+
+      const yrp = new YarnRepoProtocol(logger)
+      await yrp.initialize(d)
+
+      const actual = await slurpDir(d)
+      expect(JSON.parse(actual['modules/a/tsconfig.json'])).toEqual({
+        extends: '../../tsconfig-base.json',
+        compilerOptions: { composite: true, outDir: 'dist' },
+        include: ['src/**/*', 'tests/**/*'],
+      })
+    })
+    test(`the .extends field specifies the relative path to the base tsconfig`, async () => {
+      const d = await folderify({
+        'package.json': { workspaces: ['libs/*', 'apps/mobile/*', 'apps/web/**'], private: true },
+        'libs/a/package.json': { name: 'a', version: '1.0.0' },
+        'apps/mobile/b/package.json': { name: 'b', version: '1.0.0' },
+        'apps/web/static/c/package.json': { name: 'c', version: '1.0.0' },
+        'apps/web/fullstack/d/package.json': { name: 'd', version: '1.0.0' },
+      })
+
+      const yrp = new YarnRepoProtocol(logger)
+      await yrp.initialize(d)
+
+      const actual = await slurpDir(d)
+      expect(JSON.parse(actual['libs/a/tsconfig.json']).extends).toEqual('../../tsconfig-base.json')
+      expect(JSON.parse(actual['apps/mobile/b/tsconfig.json']).extends).toEqual('../../../tsconfig-base.json')
+      expect(JSON.parse(actual['apps/web/static/c/tsconfig.json']).extends).toEqual('../../../../tsconfig-base.json')
+      expect(JSON.parse(actual['apps/web/fullstack/d/tsconfig.json']).extends).toEqual('../../../../tsconfig-base.json')
+    })
+    describe('references', () => {
+      test(`reflect the package's dependencies`, async () => {
+        const d = await folderify({
+          'package.json': { workspaces: ['modules/*'], private: true },
+          'modules/a/package.json': { name: 'a', version: '1.0.0', dependencies: { b: '1.0.0', c: '1.0.0' } },
+          'modules/b/package.json': { name: 'b', version: '1.0.0', dependencies: { c: '1.0.0' } },
+          'modules/c/package.json': { name: 'c', version: '1.0.0' },
+        })
+
+        const yrp = new YarnRepoProtocol(logger)
+        await yrp.initialize(d)
+
+        const actual = await slurpDir(d)
+        expect(JSON.parse(actual['modules/a/tsconfig.json'])).toEqual({
+          extends: '../../tsconfig-base.json',
+          compilerOptions: { composite: true, outDir: 'dist' },
+          include: ['src/**/*', 'tests/**/*'],
+          references: [{ path: '../b' }, { path: '../c' }],
+        })
+        expect(JSON.parse(actual['modules/b/tsconfig.json'])).toEqual({
+          extends: '../../tsconfig-base.json',
+          compilerOptions: { composite: true, outDir: 'dist' },
+          include: ['src/**/*', 'tests/**/*'],
+          references: [{ path: '../c' }],
+        })
+      })
+      test(`correctly computes the relative path to the dependecy`, async () => {
+        const d = await folderify({
+          'package.json': { workspaces: ['modules/**'], private: true },
+          'modules/web/fullstack/a/package.json': { name: 'a', version: '1.0.0', dependencies: { d: '1.0.0' } },
+          'modules/web/static/b/package.json': { name: 'b', version: '1.0.0', dependencies: { d: '1.0.0' } },
+          'modules/web/utils/c/package.json': { name: 'c', version: '1.0.0', dependencies: {} },
+          'modules/libs/d/package.json': { name: 'd', version: '1.0.0', dependencies: { c: '1.0.0' } },
+        })
+
+        const yrp = new YarnRepoProtocol(logger)
+        await yrp.initialize(d)
+
+        const actual = await slurpDir(d)
+        expect(JSON.parse(actual['modules/web/fullstack/a/tsconfig.json']).references).toEqual([
+          { path: '../../../libs/d' },
+        ])
+        expect(JSON.parse(actual['modules/web/static/b/tsconfig.json']).references).toEqual([
+          { path: '../../../libs/d' },
+        ])
+        expect(JSON.parse(actual['modules/libs/d/tsconfig.json']).references).toEqual([{ path: '../../web/utils/c' }])
+      })
+      test(`reflect also the package's dev-dependencies`, async () => {
+        const d = await folderify({
+          'package.json': { workspaces: ['modules/*'], private: true },
+          'modules/a/package.json': { name: 'a', version: '1.0.0', devDependencies: { b: '1.0.0' } },
+          'modules/b/package.json': { name: 'b', version: '1.0.0' },
+        })
+
+        const yrp = new YarnRepoProtocol(logger)
+        await yrp.initialize(d)
+
+        const actual = await slurpDir(d)
+        expect(JSON.parse(actual['modules/a/tsconfig.json']).references).toEqual([{ path: '../b' }])
+      })
+      test(`reflect only in-repo dependencies`, async () => {
+        const d = await folderify({
+          'package.json': { workspaces: ['modules/*'], private: true },
+          'modules/a/package.json': { name: 'a', version: '1.0.0', dependencies: { b: '1.0.0', x: '3' } },
+          'modules/b/package.json': { name: 'b', version: '1.0.0', dependencies: { c: '1.0.0', y: '2' } },
+          'modules/c/package.json': { name: 'c', version: '1.0.0' },
+        })
+
+        const yrp = new YarnRepoProtocol(logger)
+        await yrp.initialize(d)
+
+        const actual = await slurpDir(d)
+        expect(JSON.parse(actual['modules/a/tsconfig.json']).references).toEqual([{ path: '../b' }])
+        expect(JSON.parse(actual['modules/b/tsconfig.json']).references).toEqual([{ path: '../c' }])
+      })
+      test(`are omitted if there are no in-repo dependencies nor in-repo dev-dependencies`, async () => {
+        const d = await folderify({
+          'package.json': { workspaces: ['modules/*'], private: true },
+          'modules/a/package.json': { name: 'a', version: '1.0.0', dependencies: { c: '1.0.0' } },
+          'modules/b/package.json': { name: 'b', version: '1.0.0', devDependencies: { c: '1.0.0' } },
+          'modules/c/package.json': { name: 'c', version: '1.0.0', dependencies: { x: '1.0.0' } },
+          'modules/d/package.json': { name: 'd', version: '1.0.0', devDependencies: { x: '1.0.0' } },
+        })
+
+        const yrp = new YarnRepoProtocol(logger)
+        await yrp.initialize(d)
+
+        const actual = await slurpDir(d)
+        expect(JSON.parse(actual['modules/a/tsconfig.json']).references).toEqual([{ path: '../c' }])
+        expect(JSON.parse(actual['modules/b/tsconfig.json']).references).toEqual([{ path: '../c' }])
+        expect(JSON.parse(actual['modules/c/tsconfig.json']).references).toBeUndefined()
+        expect(JSON.parse(actual['modules/d/tsconfig.json']).references).toBeUndefined()
+      })
+      test(`overwrites a pre-existing tsconfig.json if its content is stale`, async () => {
+        const d = await folderify({
+          'package.json': { workspaces: ['modules/*'], private: true },
+          'modules/a/package.json': { name: 'a', version: '1.0.0' },
+          'modules/a/tsconfig.json': {
+            compilerOptions: {
+              composite: false,
+              outDir: 'compiled',
+            },
+          },
+        })
+
+        const yrp = new YarnRepoProtocol(logger)
+        await yrp.initialize(d)
+
+        const actual = await slurpDir(d)
+        expect(JSON.parse(actual['modules/a/tsconfig.json'])).toEqual({
+          extends: '../../tsconfig-base.json',
+          compilerOptions: { composite: true, outDir: 'dist' },
+          include: ['src/**/*', 'tests/**/*'],
+        })
+      })
+      test(`does not overwrite a pre-existing tsconfig.json if its content is correct`, async () => {
+        const d = await folderify({
+          'package.json': { workspaces: ['modules/*'], private: true },
+          'modules/a/package.json': { name: 'a', version: '1.0.0' },
+        })
+
+        const yrpA = new YarnRepoProtocol(logger)
+        await yrpA.initialize(d)
+
+        const p = path.join(d, 'modules/a/tsconfig.json')
+        const statA = await fse.stat(p)
+
+        const yrpB = new YarnRepoProtocol(logger)
+        await yrpB.initialize(d)
+
+        const statB = await fse.stat(p)
+        expect(statB.mtimeMs).toEqual(statA.mtimeMs)
+      })
     })
   })
 })
