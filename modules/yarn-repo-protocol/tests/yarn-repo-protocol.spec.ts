@@ -1,5 +1,5 @@
 import { createDefaultLogger } from 'logger'
-import { folderify } from 'misc'
+import { folderify, slurpDir } from 'misc'
 import { UnitId } from 'unit-metadata'
 
 import { YarnRepoProtocol } from '../src/yarn-repo-protocol'
@@ -128,6 +128,27 @@ describe('yarn-repo-protocol', () => {
       version: '1.0.0',
       main: 'main.js',
       dependencies: {},
+    })
+  })
+  describe('generation of tsconfig.json files', () => {
+    test('foo', async () => {
+      const d = await folderify({
+        'package.json': { workspaces: ['modules/*'], private: true },
+        'modules/a/package.json': { name: 'a', version: '1.0.0' },
+        'modules/b/package.json': { name: 'b', version: '1.0.0', dependencies: { c: '1.0.0', x: '100.1.0' } },
+        'modules/c/package.json': { name: 'c', version: '1.0.0', dependencies: { y: '200.1.0' } },
+      })
+
+      const yrp = new YarnRepoProtocol(logger)
+      await yrp.initialize(d)
+
+      const actual = await slurpDir(d)
+      expect(JSON.parse(actual['modules/a/tsconfig.json'])).toEqual({
+        extends: '../../tsconfig-base.json',
+        compilerOptions: { composite: true, outDir: 'dist' },
+        include: ['src/**/*', 'tests/**/*'],
+        references: [],
+      })
     })
   })
 })
