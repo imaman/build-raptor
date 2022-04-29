@@ -268,6 +268,50 @@ describe('yarn-repo-protocol', () => {
         expect(JSON.parse(actual['modules/c/tsconfig.json']).references).toBeUndefined()
         expect(JSON.parse(actual['modules/d/tsconfig.json']).references).toBeUndefined()
       })
+      test(`overwrites a pre-existing tsconfig.json if its content is stale`, async () => {
+        const d = await folderify({
+          'package.json': { workspaces: ['modules/*'], private: true },
+          'modules/a/package.json': { name: 'a', version: '1.0.0' },
+          'modules/a/tsconfig.json': {
+            compilerOptions: {
+              composite: false,
+              outDir: 'compiled',
+            },
+          },
+        })
+
+        const yrp = new YarnRepoProtocol(logger)
+        await yrp.initialize(d)
+
+        const actual = await slurpDir(d)
+        expect(JSON.parse(actual['modules/a/tsconfig.json'])).toEqual({
+          extends: '../../tsconfig-base.json',
+          compilerOptions: { composite: true, outDir: 'dist' },
+          include: ['src/**/*', 'tests/**/*'],
+        })
+      })
+      test(`does not overwrite a pre-existing tsconfig.json if its content is correct`, async () => {
+        const d = await folderify({
+          'package.json': { workspaces: ['modules/*'], private: true },
+          'modules/a/package.json': { name: 'a', version: '1.0.0' },
+          'modules/a/tsconfig.json': {
+            compilerOptions: {
+              composite: false,
+              outDir: 'compiled',
+            },
+          },
+        })
+
+        const yrp = new YarnRepoProtocol(logger)
+        await yrp.initialize(d)
+
+        const actual = await slurpDir(d)
+        expect(JSON.parse(actual['modules/a/tsconfig.json'])).toEqual({
+          extends: '../../tsconfig-base.json',
+          compilerOptions: { composite: true, outDir: 'dist' },
+          include: ['src/**/*', 'tests/**/*'],
+        })
+      })
     })
   })
 })
