@@ -74,6 +74,7 @@ export class YarnRepoProtocol implements RepoProtocol {
       // We assume that there is a consistent version for all dependencies so we lookup that version, instead of looking
       // into the package.json of the consumer and digging the exact version that is specified there.
       const v = hardGet(versionByPackageId, supplier)
+      // TODO(imaman): generate a comprehensive error message that lists *all* violations.
       throw new BuildFailedError(
         `Version mismatch for dependency "${supplier}" of "${consumer}": ${ps.version} vs. ${v}`,
       )
