@@ -40,6 +40,16 @@ describe('yarn-repo-protocol', () => {
       const yrp = new YarnRepoProtocol(logger)
       expect(await yrp.initialize(d)).toBeUndefined()
     })
+    test('rejects repos with a version mismatch on an in-repo dep', async () => {
+      const d = await folderify({
+        'package.json': { workspaces: ['modules/*'], private: true },
+        'modules/a/package.json': { name: 'a', version: '1.0.0', devDependencies: { b: '1.0.0' } },
+        'modules/b/package.json': { name: 'b', version: '1.0.1' },
+      })
+
+      const yrp = new YarnRepoProtocol(logger)
+      await expect(yrp.initialize(d)).rejects.toThrow('Version mismatch for dependency "b" of "a": 1.0.1 vs. 1.0.0')
+    })
   })
   describe('computePackingPackageJson', () => {
     test('includes out-of-repo deps of all in-repo deps (sorted)', async () => {
@@ -130,7 +140,6 @@ describe('yarn-repo-protocol', () => {
       dependencies: {},
     })
   })
-  test.todo('yells if in-repo desp are not 1.0.0')
   describe('generation of tsconfig.json files', () => {
     test(`basics`, async () => {
       const d = await folderify({
