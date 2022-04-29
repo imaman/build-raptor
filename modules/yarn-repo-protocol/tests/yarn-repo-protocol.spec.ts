@@ -308,7 +308,7 @@ describe('yarn-repo-protocol', () => {
         await yrpB.initialize(d)
 
         const statB = await fse.stat(p)
-        expect(statA.mtimeMs).toEqual(statB.mtimeMs)
+        expect(statB.mtimeMs).toEqual(statA.mtimeMs)
       })
     })
   })
