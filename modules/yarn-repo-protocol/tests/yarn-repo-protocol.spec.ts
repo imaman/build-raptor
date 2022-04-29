@@ -192,6 +192,27 @@ describe('yarn-repo-protocol', () => {
           references: [{ path: '../c' }],
         })
       })
+      test(`correctly computes the relative path to the dependecy`, async () => {
+        const d = await folderify({
+          'package.json': { workspaces: ['modules/**'], private: true },
+          'modules/web/fullstack/a/package.json': { name: 'a', version: '1.0.0', dependencies: { d: '1.0.0' } },
+          'modules/web/static/b/package.json': { name: 'b', version: '1.0.0', dependencies: { d: '1.0.0' } },
+          'modules/web/utils/c/package.json': { name: 'c', version: '1.0.0', dependencies: {} },
+          'modules/libs/d/package.json': { name: 'd', version: '1.0.0', dependencies: { c: '1.0.0' } },
+        })
+
+        const yrp = new YarnRepoProtocol(logger)
+        await yrp.initialize(d)
+
+        const actual = await slurpDir(d)
+        expect(JSON.parse(actual['modules/web/fullstack/a/tsconfig.json']).references).toEqual([
+          { path: '../../../libs/d' },
+        ])
+        expect(JSON.parse(actual['modules/web/static/b/tsconfig.json']).references).toEqual([
+          { path: '../../../libs/d' },
+        ])
+        expect(JSON.parse(actual['modules/libs/d/tsconfig.json']).references).toEqual([{ path: '../../web/utils/c' }])
+      })
       test(`reflect also the package's dev-dependencies`, async () => {
         const d = await folderify({
           'package.json': { workspaces: ['modules/*'], private: true },
