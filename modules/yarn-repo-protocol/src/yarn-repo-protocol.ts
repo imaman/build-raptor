@@ -84,7 +84,7 @@ export class YarnRepoProtocol implements RepoProtocol {
       const content = JSON.stringify(tsconf, null, 2)
       const p = path.join(rootDir, u.pathInRepo, 'tsconfig.json')
       if (await fse.pathExists(p)) {
-        const existing = await fse.readFile(p, 'utf-8')
+        const existing = JSON.stringify(await fse.readJSON(p, 'utf-8'), null, 2)
         if (existing.trim() === content.trim()) {
           this.logger.info(`skipping generation of tsconfig.json in ${u.id} - no changes`)
           continue
