@@ -130,8 +130,9 @@ describe('yarn-repo-protocol', () => {
       dependencies: {},
     })
   })
+  test.todo('yells if in-repo desp are not 1.0.0')
   describe('generation of tsconfig.json files', () => {
-    test('foo', async () => {
+    test(`references fields reflects the package's dependencies`, async () => {
       const d = await folderify({
         'package.json': { workspaces: ['modules/*'], private: true },
         'modules/a/package.json': { name: 'a', version: '1.0.0', dependencies: { b: '1.0.0', c: '1.0.0', x: '3' } },
@@ -156,6 +157,30 @@ describe('yarn-repo-protocol', () => {
         references: [{ path: '../c' }],
       })
       expect(JSON.parse(actual['modules/c/tsconfig.json'])).toEqual({
+        extends: '../../tsconfig-base.json',
+        compilerOptions: { composite: true, outDir: 'dist' },
+        include: ['src/**/*', 'tests/**/*'],
+        references: [],
+      })
+    })
+    test(`references fields reflects the package's dev-dependencies`, async () => {
+      const d = await folderify({
+        'package.json': { workspaces: ['modules/*'], private: true },
+        'modules/a/package.json': { name: 'a', version: '1.0.0', devDependencies: { b: '1.0.0' } },
+        'modules/b/package.json': { name: 'b', version: '1.0.0' },
+      })
+
+      const yrp = new YarnRepoProtocol(logger)
+      await yrp.initialize(d)
+
+      const actual = await slurpDir(d)
+      expect(JSON.parse(actual['modules/a/tsconfig.json'])).toEqual({
+        extends: '../../tsconfig-base.json',
+        compilerOptions: { composite: true, outDir: 'dist' },
+        include: ['src/**/*', 'tests/**/*'],
+        references: [{ path: '../b' }],
+      })
+      expect(JSON.parse(actual['modules/b/tsconfig.json'])).toEqual({
         extends: '../../tsconfig-base.json',
         compilerOptions: { composite: true, outDir: 'dist' },
         include: ['src/**/*', 'tests/**/*'],
