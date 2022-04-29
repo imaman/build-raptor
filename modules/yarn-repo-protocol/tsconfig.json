@@ -19,6 +19,9 @@
     },
     {
       "path": "../task-name"
+    },
+    {
+      "path": "../unit-metadata"
     }
   ],
   "include": ["src/**/*", "tests/**/*"]
