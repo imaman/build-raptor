@@ -133,7 +133,7 @@ describe('yarn-repo-protocol', () => {
   test.todo('yells if in-repo desp are not 1.0.0')
   describe('generation of tsconfig.json files', () => {
     describe('references', () => {
-      test(`references field reflects the package's dependencies`, async () => {
+      test(`reflect the package's dependencies`, async () => {
         const d = await folderify({
           'package.json': { workspaces: ['modules/*'], private: true },
           'modules/a/package.json': { name: 'a', version: '1.0.0', dependencies: { b: '1.0.0', c: '1.0.0' } },
@@ -158,7 +158,7 @@ describe('yarn-repo-protocol', () => {
           references: [{ path: '../c' }],
         })
       })
-      test(`references field reflects also the package's dev-dependencies`, async () => {
+      test(`reflect also the package's dev-dependencies`, async () => {
         const d = await folderify({
           'package.json': { workspaces: ['modules/*'], private: true },
           'modules/a/package.json': { name: 'a', version: '1.0.0', devDependencies: { b: '1.0.0' } },
@@ -176,7 +176,7 @@ describe('yarn-repo-protocol', () => {
           references: [{ path: '../b' }],
         })
       })
-      test(`references field reflects only in-repo dependencies`, async () => {
+      test(`reflect only in-repo dependencies`, async () => {
         const d = await folderify({
           'package.json': { workspaces: ['modules/*'], private: true },
           'modules/a/package.json': { name: 'a', version: '1.0.0', dependencies: { b: '1.0.0', x: '3' } },
