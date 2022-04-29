@@ -61,6 +61,8 @@ export class Fingerprinter {
   private store(hasher: Hasher, active: boolean) {
     hasher.close()
 
+    this.logger.info(`hasher-closed ${hasher.name} -->`, hasher.toJSON())
+
     const ret = { hasher, active }
     if (!this.fingerprintByPathInRepo.has(hasher.name)) {
       this.fingerprintByPathInRepo.set(hasher.name, ret)
