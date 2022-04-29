@@ -148,7 +148,7 @@ describe('yarn-repo-protocol', () => {
         include: ['src/**/*', 'tests/**/*'],
       })
     })
-    test(`extends fields specifies the relative path to the base tsconfig`, async () => {
+    test(`the .extends field specifies the relative path to the base tsconfig`, async () => {
       const d = await folderify({
         'package.json': { workspaces: ['libs/*', 'apps/mobile/*', 'apps/web/**'], private: true },
         'libs/a/package.json': { name: 'a', version: '1.0.0' },
@@ -161,11 +161,7 @@ describe('yarn-repo-protocol', () => {
       await yrp.initialize(d)
 
       const actual = await slurpDir(d)
-      expect(JSON.parse(actual['libs/a/tsconfig.json'])).toEqual({
-        extends: '../../tsconfig-base.json',
-        compilerOptions: { composite: true, outDir: 'dist' },
-        include: ['src/**/*', 'tests/**/*'],
-      })
+      expect(JSON.parse(actual['libs/a/tsconfig.json']).extends).toEqual('../../tsconfig-base.json')
       expect(JSON.parse(actual['apps/mobile/b/tsconfig.json']).extends).toEqual('../../../tsconfig-base.json')
       expect(JSON.parse(actual['apps/web/static/c/tsconfig.json']).extends).toEqual('../../../../tsconfig-base.json')
       expect(JSON.parse(actual['apps/web/fullstack/d/tsconfig.json']).extends).toEqual('../../../../tsconfig-base.json')
