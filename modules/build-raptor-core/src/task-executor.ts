@@ -57,6 +57,14 @@ export class TaskExecutor {
 
     t.computeFingerprint(fps)
     const ret = t.getFingerprint()
+
+    this.logger.info(
+      `Fingerprint of task ${this.taskName} with inputs: ${JSON.stringify(t.inputs)} is ${ret} from:${JSON.stringify(
+        fps,
+        null,
+        2,
+      )}`,
+    )
     return ret
   }
 
