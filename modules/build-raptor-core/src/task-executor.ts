@@ -53,16 +53,19 @@ export class TaskExecutor {
     // TODO(imaman): test coverage for the sort-by
     // TODO(imaman): concurrent loop
 
+    const parts: Record<string, Fingerprint> = {}
+
     const sortedInputs = sortBy(t.inputs, t => t)
     for (const loc of sortedInputs) {
       const fingerprint = await this.model.fingerprintOfDir(loc)
       fps.push(fingerprint)
+      parts[loc] = fingerprint
     }
 
     t.computeFingerprint(fps)
     const ret = t.getFingerprint()
 
-    this.fingerprintLedger.updateTask(t.name, ret, sortedInputs)
+    this.fingerprintLedger.updateTask(t.name, ret, parts)
     return ret
   }
 
