@@ -11,6 +11,7 @@ import { UnitId } from 'unit-metadata'
 
 import { EngineEventScheme } from './engine-event-scheme'
 import { ExecutionPlan } from './execution-plan'
+import { FingerprintLedger } from './fingerprint-ledger'
 import { Fingerprinter } from './fingerprinter'
 import { Model } from './model'
 import { Planner } from './planner'
@@ -25,6 +26,7 @@ export interface EngineOptions {
 
 export class Engine {
   private readonly options: Required<EngineOptions>
+  private readonly fingerprintLedger
 
   /**
    *
@@ -52,9 +54,11 @@ export class Engine {
       checkGitIgnore: options.checkGitIgnore ?? true,
       concurrency: options.concurrency,
     }
+    this.fingerprintLedger = new FingerprintLedger(logger)
   }
 
   async run(buildRunId: BuildRunId) {
+    this.fingerprintLedger.updateRun(buildRunId)
     await this.repoProtocol.initialize(this.rootDir)
     try {
       const model = await this.loadModel(buildRunId)
@@ -141,6 +145,7 @@ export class Engine {
             this.taskStore,
             this.taskOutputDir,
             this.eventPublisher,
+            this.fingerprintLedger,
           )
           await taskExecutor.executeTask(tn, model, taskTracker)
         } catch (e) {
@@ -181,7 +186,9 @@ export class Engine {
 
     this.logger.info(`unit graph=\n${graph}`)
     const scanner = new DirectoryScanner(this.rootDir, { predicate: ig.createFilter() })
-    const fingerprinter = new Fingerprinter(scanner, this.logger)
+    const fingerprinter = new Fingerprinter(scanner, this.logger, async h => {
+      this.fingerprintLedger.update(h)
+    })
     return new Model(path.resolve(this.rootDir), graph, units, buildRunId, fingerprinter)
   }
 }

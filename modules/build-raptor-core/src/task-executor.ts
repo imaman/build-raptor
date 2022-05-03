@@ -8,6 +8,7 @@ import { TaskName } from 'task-name'
 
 import { EngineEventScheme } from './engine-event-scheme'
 import { Fingerprint } from './fingerprint'
+import { FingerprintLedger } from './fingerprint-ledger'
 import { Model } from './model'
 import { Task } from './task'
 import { TaskStore } from './task-store'
@@ -23,6 +24,7 @@ export class TaskExecutor {
     private readonly taskStore: TaskStore,
     private readonly taskOutputDir: string,
     private readonly eventPublisher: TypedPublisher<EngineEventScheme>,
+    private readonly fingerprintLedger: FingerprintLedger,
   ) {}
 
   private get task() {
@@ -50,7 +52,9 @@ export class TaskExecutor {
 
     // TODO(imaman): test coverage for the sort-by
     // TODO(imaman): concurrent loop
-    for (const loc of sortBy(t.inputs, t => t)) {
+
+    const sortedInputs = sortBy(t.inputs, t => t)
+    for (const loc of sortedInputs) {
       const fingerprint = await this.model.fingerprintOfDir(loc)
       fps.push(fingerprint)
     }
@@ -58,13 +62,7 @@ export class TaskExecutor {
     t.computeFingerprint(fps)
     const ret = t.getFingerprint()
 
-    this.logger.info(
-      `Fingerprint of task ${this.taskName} with inputs: ${JSON.stringify(t.inputs)} is ${ret} from:${JSON.stringify(
-        fps,
-        null,
-        2,
-      )}`,
-    )
+    this.fingerprintLedger.updateTask(t.name, ret, sortedInputs)
     return ret
   }
 
