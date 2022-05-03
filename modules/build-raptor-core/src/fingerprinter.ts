@@ -18,11 +18,11 @@ export class Fingerprinter {
   }
 
   async computeFingerprint(pathInRepo: string): Promise<Fingerprint> {
-    const { hasher } = await this.scan(pathInRepo, { p0: pathInRepo })
+    const { hasher } = await this.scan(pathInRepo)
     return hasher.digest
   }
 
-  private async scan(pathInRepo: string, ctx: unknown) {
+  private async scan(pathInRepo: string) {
     const cached = this.fingerprintByPathInRepo.get(pathInRepo)
     if (cached) {
       return cached
@@ -48,7 +48,7 @@ export class Fingerprinter {
     const dirEntries = await readDir(resolved)
     for (const at of sortBy(dirEntries, e => e.name)) {
       const subPath = path.join(pathInRepo, at.name)
-      const subResult = await this.scan(subPath, ctx)
+      const subResult = await this.scan(subPath)
       if (respectGitIgnore && !subResult.active) {
         continue
       }
