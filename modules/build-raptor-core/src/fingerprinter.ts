@@ -11,9 +11,15 @@ interface CacheEntry {
   active: boolean
 }
 
+export type OnHasherClose = (h: Hasher) => Promise<void>
+
 export class Fingerprinter {
   private readonly fingerprintByPathInRepo = new Map<string, CacheEntry>()
-  constructor(private readonly dirScanner: DirectoryScanner, private readonly logger: Logger) {
+  constructor(
+    private readonly dirScanner: DirectoryScanner,
+    private readonly logger: Logger,
+    private readonly onHasherClose: OnHasherClose = async () => {},
+  ) {
     this.logger.info('Fingerprinter: constructed')
   }
 
@@ -60,6 +66,7 @@ export class Fingerprinter {
 
   private store(hasher: Hasher, active: boolean) {
     hasher.close()
+    this.onHasherClose(hasher)
 
     this.logger.info(`hasher-closed ${hasher.name} -->`, hasher.toJSON())
 
