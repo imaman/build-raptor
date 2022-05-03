@@ -1,4 +1,5 @@
 import { BuildRunId } from 'build-run-id'
+import * as fse from 'fs-extra'
 import { Logger } from 'logger'
 import { failMe } from 'misc'
 import { TaskName } from 'task-name'
@@ -20,9 +21,11 @@ type Items = z.infer<typeof Items>
 
 export class FingerprintLedger {
   private items: Items = []
-  constructor(private readonly logger: Logger) {}
+  constructor(private readonly logger: Logger, private readonly ledgerFile: string) {}
 
-  updateRun(buildRunId: BuildRunId) {
+  async updateRun(buildRunId: BuildRunId) {
+    // Validate the stored content by reading it.
+    await this.read()
     this.items.push({ tag: 'run', buildRunId })
   }
 
@@ -39,5 +42,23 @@ export class FingerprintLedger {
     this.items.push({ tag: 'task', task, fingerprint, locations })
 
     this.logger.info(`Fingerprint of task ${task} with inputs: ${JSON.stringify(locations)} is ${fingerprint}`)
+  }
+
+  async close() {
+    const preexisting = await this.read()
+    preexisting.push(...this.items)
+    await this.write(preexisting)
+  }
+
+  private async read() {
+    if (!(await fse.pathExists(this.ledgerFile))) {
+      return []
+    }
+    const untyped = await fse.readJSON(this.ledgerFile)
+    return Items.parse(untyped)
+  }
+
+  private async write(items: Items) {
+    await fse.writeJSON(this.ledgerFile, items)
   }
 }

@@ -53,6 +53,7 @@ async function run() {
 
   const runner = await bootstrapper.makeRunner(options.command, options.units, {
     concurrency: options.concurrency,
+    buildRaptorDir,
   })
   const out = await runner()
 

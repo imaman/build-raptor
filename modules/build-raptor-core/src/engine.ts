@@ -22,6 +22,7 @@ import { TaskTracker } from './task-tracker'
 export interface EngineOptions {
   checkGitIgnore?: boolean
   concurrency: Int
+  buildRaptorDir: string
 }
 
 export class Engine {
@@ -53,12 +54,16 @@ export class Engine {
     this.options = {
       checkGitIgnore: options.checkGitIgnore ?? true,
       concurrency: options.concurrency,
+      buildRaptorDir: options.buildRaptorDir,
     }
-    this.fingerprintLedger = new FingerprintLedger(logger)
+    this.fingerprintLedger = new FingerprintLedger(
+      logger,
+      path.join(this.options.buildRaptorDir, 'fingerprint-ledger.json'),
+    )
   }
 
   async run(buildRunId: BuildRunId) {
-    this.fingerprintLedger.updateRun(buildRunId)
+    await this.fingerprintLedger.updateRun(buildRunId)
     await this.repoProtocol.initialize(this.rootDir)
     try {
       const model = await this.loadModel(buildRunId)
@@ -74,6 +79,7 @@ export class Engine {
       }
 
       const tracker = await this.execute(plan, model)
+      await this.fingerprintLedger.close()
       return tracker
     } finally {
       await this.repoProtocol.close()

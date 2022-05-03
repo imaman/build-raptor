@@ -23,6 +23,7 @@ export class EngineBootstrapper {
     readonly logger: Logger,
     readonly storageClient: StorageClient,
     readonly repoProtocol: RepoProtocol,
+    private readonly buildRaptorDir?: string,
   ) {}
 
   private async makeEngine(command: string, units: string[], options: EngineOptions) {
@@ -106,6 +107,7 @@ export class EngineBootstrapper {
     t0: number,
     name?: string,
     logger?: Logger,
+    buildRaptorDir?: string,
   ) {
     if (!logger) {
       const logFile = path.join(rootDir, 'build-raptor.log')
@@ -115,7 +117,7 @@ export class EngineBootstrapper {
       logger.print(`logging${formatted}to ${logFile}`)
     }
 
-    return new EngineBootstrapper(rootDir, t0, logger, storageClient, repoProtocol)
+    return new EngineBootstrapper(rootDir, t0, logger, storageClient, repoProtocol, buildRaptorDir)
   }
 }
 
