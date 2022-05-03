@@ -11,6 +11,7 @@ import { UnitId } from 'unit-metadata'
 
 import { EngineEventScheme } from './engine-event-scheme'
 import { ExecutionPlan } from './execution-plan'
+import { FingerprintLedger } from './fingerprint-ledger'
 import { Fingerprinter } from './fingerprinter'
 import { Model } from './model'
 import { Planner } from './planner'
@@ -21,10 +22,12 @@ import { TaskTracker } from './task-tracker'
 export interface EngineOptions {
   checkGitIgnore?: boolean
   concurrency: Int
+  buildRaptorDir: string
 }
 
 export class Engine {
   private readonly options: Required<EngineOptions>
+  private readonly fingerprintLedger
 
   /**
    *
@@ -51,10 +54,16 @@ export class Engine {
     this.options = {
       checkGitIgnore: options.checkGitIgnore ?? true,
       concurrency: options.concurrency,
+      buildRaptorDir: options.buildRaptorDir,
     }
+    this.fingerprintLedger = new FingerprintLedger(
+      logger,
+      path.join(this.options.buildRaptorDir, 'fingerprint-ledger.json'),
+    )
   }
 
   async run(buildRunId: BuildRunId) {
+    await this.fingerprintLedger.updateRun(buildRunId)
     await this.repoProtocol.initialize(this.rootDir)
     try {
       const model = await this.loadModel(buildRunId)
@@ -70,6 +79,7 @@ export class Engine {
       }
 
       const tracker = await this.execute(plan, model)
+      await this.fingerprintLedger.close()
       return tracker
     } finally {
       await this.repoProtocol.close()
@@ -141,6 +151,7 @@ export class Engine {
             this.taskStore,
             this.taskOutputDir,
             this.eventPublisher,
+            this.fingerprintLedger,
           )
           await taskExecutor.executeTask(tn, model, taskTracker)
         } catch (e) {
@@ -181,7 +192,13 @@ export class Engine {
 
     this.logger.info(`unit graph=\n${graph}`)
     const scanner = new DirectoryScanner(this.rootDir, { predicate: ig.createFilter() })
-    const fingerprinter = new Fingerprinter(scanner, this.logger)
+    const fingerprinter = new Fingerprinter(scanner, this.logger, async (h, c) => {
+      if (c) {
+        this.fingerprintLedger.updateFile(h, c)
+      } else {
+        this.fingerprintLedger.updateDirectory(h)
+      }
+    })
     return new Model(path.resolve(this.rootDir), graph, units, buildRunId, fingerprinter)
   }
 }

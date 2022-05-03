@@ -138,6 +138,7 @@ class Fork {
     const runner = await bootstrapper.makeRunner(command, units, {
       checkGitIgnore: options.checkGitIgnore ?? false,
       concurrency: concurrencyLevel,
+      buildRaptorDir: await folderify({}),
     })
     const output = await runner()
     if (expectedStatus === output.overallVerdict) {

@@ -38,7 +38,15 @@ async function run(options: Options) {
 
   const storageClient = await createStorageClient()
   const repoProtocol = new YarnRepoProtocol(logger)
-  const bootstrapper = await EngineBootstrapper.create(rootDir, storageClient, repoProtocol, t0, '', logger)
+  const bootstrapper = await EngineBootstrapper.create(
+    rootDir,
+    storageClient,
+    repoProtocol,
+    t0,
+    '',
+    logger,
+    buildRaptorDir,
+  )
 
   bootstrapper.subscribable.on('executionStarted', tn => {
     logger.print(`\n\n\n\n\n\n\n================================= ${tn} =================================`)
@@ -87,6 +95,7 @@ async function run(options: Options) {
 
   const runner = await bootstrapper.makeRunner(options.command, options.units, {
     concurrency: Int(options.concurrency),
+    buildRaptorDir,
   })
   const { exitCode } = await runner()
   // eslint-disable-next-line require-atomic-updates

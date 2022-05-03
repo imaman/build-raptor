@@ -11,18 +11,24 @@ interface CacheEntry {
   active: boolean
 }
 
+export type OnHasherClose = (h: Hasher, content?: string) => Promise<void>
+
 export class Fingerprinter {
   private readonly fingerprintByPathInRepo = new Map<string, CacheEntry>()
-  constructor(private readonly dirScanner: DirectoryScanner, private readonly logger: Logger) {
+  constructor(
+    private readonly dirScanner: DirectoryScanner,
+    private readonly logger: Logger,
+    private readonly onHasherClose: OnHasherClose = async () => {},
+  ) {
     this.logger.info('Fingerprinter: constructed')
   }
 
   async computeFingerprint(pathInRepo: string): Promise<Fingerprint> {
-    const { hasher } = await this.scan(pathInRepo, { p0: pathInRepo })
+    const { hasher } = await this.scan(pathInRepo)
     return hasher.digest
   }
 
-  private async scan(pathInRepo: string, ctx: unknown) {
+  private async scan(pathInRepo: string) {
     const cached = this.fingerprintByPathInRepo.get(pathInRepo)
     if (cached) {
       return cached
@@ -40,7 +46,7 @@ export class Fingerprinter {
 
       const hasher = new Hasher(pathInRepo)
       hasher.update(content)
-      return this.store(hasher, active)
+      return await this.store(hasher, active, content.toString('utf-8'))
     }
 
     const hasher = new Hasher(pathInRepo)
@@ -48,20 +54,25 @@ export class Fingerprinter {
     const dirEntries = await readDir(resolved)
     for (const at of sortBy(dirEntries, e => e.name)) {
       const subPath = path.join(pathInRepo, at.name)
-      const subResult = await this.scan(subPath, ctx)
+      const subResult = await this.scan(subPath)
       if (respectGitIgnore && !subResult.active) {
         continue
       }
       hasher.update(subResult.hasher)
     }
 
-    return this.store(hasher, active)
+    return await this.store(hasher, active)
   }
 
-  private store(hasher: Hasher, active: boolean) {
+  private async store(hasher: Hasher, active: boolean, content?: string) {
     hasher.close()
-
     this.logger.info(`hasher-closed ${hasher.name} -->`, hasher.toJSON())
+    try {
+      await this.onHasherClose(hasher, content)
+    } catch (e) {
+      this.logger.error(`onHasherClose() failed`, e)
+      throw e
+    }
 
     const ret = { hasher, active }
     if (!this.fingerprintByPathInRepo.has(hasher.name)) {
