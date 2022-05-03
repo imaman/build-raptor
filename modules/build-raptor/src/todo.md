@@ -113,6 +113,7 @@
 - [ ] get rid of the --build-output-locations flag
 - [ ] compute next version (with max on existing version) from npm reg
 - [ ] e2e tests for yarn-repo-protocol
+- [ ] trim size of log file, task output cache, fingerprinting audit log
 
 ## Maybe TODO
 
