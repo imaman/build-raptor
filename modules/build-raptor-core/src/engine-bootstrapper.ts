@@ -48,11 +48,6 @@ export class EngineBootstrapper {
     return this.eventPublisher
   }
 
-  async makeModel(options: EngineOptions) {
-    const engine = await this.makeEngine('', [], options)
-    return await engine.loadModel(this.newBuildRunId())
-  }
-
   private newBuildRunId() {
     return BuildRunId(uuid.v4())
   }
