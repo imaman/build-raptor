@@ -11,7 +11,7 @@ interface CacheEntry {
   active: boolean
 }
 
-export type OnHasherClose = (h: Hasher) => Promise<void>
+export type OnHasherClose = (h: Hasher, content?: string) => Promise<void>
 
 export class Fingerprinter {
   private readonly fingerprintByPathInRepo = new Map<string, CacheEntry>()
@@ -46,7 +46,7 @@ export class Fingerprinter {
 
       const hasher = new Hasher(pathInRepo)
       hasher.update(content)
-      return this.store(hasher, active)
+      return await this.store(hasher, active, content.toString('utf-8'))
     }
 
     const hasher = new Hasher(pathInRepo)
@@ -61,14 +61,18 @@ export class Fingerprinter {
       hasher.update(subResult.hasher)
     }
 
-    return this.store(hasher, active)
+    return await this.store(hasher, active)
   }
 
-  private store(hasher: Hasher, active: boolean) {
+  private async store(hasher: Hasher, active: boolean, content?: string) {
     hasher.close()
-    this.onHasherClose(hasher)
-
     this.logger.info(`hasher-closed ${hasher.name} -->`, hasher.toJSON())
+    try {
+      await this.onHasherClose(hasher, content)
+    } catch (e) {
+      this.logger.error(`onHasherClose() failed`, e)
+      throw e
+    }
 
     const ret = { hasher, active }
     if (!this.fingerprintByPathInRepo.has(hasher.name)) {

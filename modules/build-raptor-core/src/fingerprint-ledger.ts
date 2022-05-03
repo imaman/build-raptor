@@ -1,7 +1,7 @@
 import { BuildRunId } from 'build-run-id'
 import * as fse from 'fs-extra'
 import { Logger } from 'logger'
-import { failMe, recordToPairs } from 'misc'
+import { failMe } from 'misc'
 import { TaskName } from 'task-name'
 import { z } from 'zod'
 
@@ -9,7 +9,13 @@ import { Fingerprint } from './fingerprint'
 import { Hasher } from './hasher'
 
 const LedgerItem = z.union([
-  z.object({ tag: z.literal('file'), buildRunId: z.string(), location: z.string(), fingerprint: z.string() }),
+  z.object({
+    tag: z.literal('file'),
+    buildRunId: z.string(),
+    location: z.string(),
+    fingerprint: z.string(),
+    content: z.string(),
+  }),
   z.object({
     tag: z.literal('dir'),
     buildRunId: z.string(),
@@ -44,23 +50,25 @@ export class FingerprintLedger {
     this.buildRunId = buildRunId
   }
 
-  update(h: Hasher): void {
+  updateFile(h: Hasher, content: string): void {
     const json = h.toJSON()
-    const locs = recordToPairs(json.audit)
-    if (locs.length) {
-      this.items.push({
-        tag: 'dir',
-        buildRunId: this.buildRunId ?? failMe('build run ID is missing'),
-        location: json.hasherName,
-        fingerprint: json.digest ?? failMe(`got an undefined digest in ${JSON.stringify(json)}`),
-        parts: json.audit,
-      })
-    }
     this.items.push({
       tag: 'file',
       buildRunId: this.buildRunId ?? failMe('build run ID is missing'),
       location: json.hasherName,
       fingerprint: json.digest ?? failMe(`got an undefined digest in ${JSON.stringify(json)}`),
+      content,
+    })
+  }
+
+  updateDirectory(h: Hasher): void {
+    const json = h.toJSON()
+    this.items.push({
+      tag: 'dir',
+      buildRunId: this.buildRunId ?? failMe('build run ID is missing'),
+      location: json.hasherName,
+      fingerprint: json.digest ?? failMe(`got an undefined digest in ${JSON.stringify(json)}`),
+      parts: json.audit,
     })
   }
 

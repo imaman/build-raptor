@@ -60,6 +60,19 @@ describe('fingerprinter', () => {
 
     expect(captured).toMatchObject([{ hasherName: 'x/z' }, { hasherName: 'x', digest: fpx }])
   })
+  test('passes contents of files to the onHasherClose listener', async () => {
+    const captured: unknown[] = []
+    const { fingerprinter } = await create(
+      { 'x/y': 'foo', 'x/z': 'bar' },
+      p => p !== 'x/z',
+      async (h, c) => {
+        captured.push({ name: h.name, content: c })
+      },
+    )
+
+    await fingerprinter.computeFingerprint('x')
+    expect(captured).toEqual([{ name: 'x/y', content: 'foo' }, { name: 'x/z', content: 'bar' }, { name: 'x' }])
+  })
   test.todo('computes a fingerprint')
   test.todo('a change in the source code of a package changes its fingerprint')
   test.todo('takes into account only the files under the given prefixes')

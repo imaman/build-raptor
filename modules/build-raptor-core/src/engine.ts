@@ -192,8 +192,12 @@ export class Engine {
 
     this.logger.info(`unit graph=\n${graph}`)
     const scanner = new DirectoryScanner(this.rootDir, { predicate: ig.createFilter() })
-    const fingerprinter = new Fingerprinter(scanner, this.logger, async h => {
-      this.fingerprintLedger.update(h)
+    const fingerprinter = new Fingerprinter(scanner, this.logger, async (h, c) => {
+      if (c) {
+        this.fingerprintLedger.updateFile(h, c)
+      } else {
+        this.fingerprintLedger.updateDirectory(h)
+      }
     })
     return new Model(path.resolve(this.rootDir), graph, units, buildRunId, fingerprinter)
   }
