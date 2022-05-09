@@ -15,5 +15,7 @@
   "jest": {
     "preset": "../../jest.preset.js"
   },
-  "dependencies": {}
+  "dependencies": {
+    "build-raptor-core": "1.0.0"
+  }
 }

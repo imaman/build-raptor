@@ -4,5 +4,10 @@
     "composite": true,
     "outDir": "dist"
   },
+  "references": [
+    {
+      "path": "../build-raptor-core"
+    }
+  ],
   "include": ["src/**/*", "tests/**/*"]
 }
