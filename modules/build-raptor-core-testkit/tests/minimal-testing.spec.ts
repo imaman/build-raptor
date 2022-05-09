@@ -1,4 +1,4 @@
-import { Driver } from '../src/build-raptor-core-testkit'
+import { Driver } from '../src/driver'
 import { RepoProtocolTestkit } from '../src/repo-protocol-testkit'
 
 jest.setTimeout(30000)

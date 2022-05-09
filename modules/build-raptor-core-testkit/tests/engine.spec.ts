@@ -3,9 +3,9 @@ import { CatalogOfTasks, ExitStatus, RepoProtocol } from 'repo-protocol'
 import { TaskKind } from 'task-name'
 import { UnitId, UnitMetadata } from 'unit-metadata'
 
-import { Driver } from './driver'
-import { RepoProtocolTestkit } from './repo-protocol-testkit'
-import { SimpleNodeRepoProtocol } from './simple-node-repo-protocol'
+import { Driver } from '../src/driver'
+import { RepoProtocolTestkit } from '../src/repo-protocol-testkit'
+import { SimpleNodeRepoProtocol } from '../src/simple-node-repo-protocol'
 
 class FailingStorageClient implements StorageClient {
   putObject(_key: Key, _content: string): Promise<void> {
