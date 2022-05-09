@@ -1,3 +1,4 @@
+import { Breakdown, EngineBootstrapper } from 'build-raptor-core'
 import * as fse from 'fs-extra'
 import { folderify, FolderifyRecipe, InMemoryStorageClient, Int, StorageClient } from 'misc'
 import * as path from 'path'
@@ -5,8 +6,6 @@ import { RepoProtocol } from 'repo-protocol'
 import { TaskKind, TaskName } from 'task-name'
 import { UnitId } from 'unit-metadata'
 
-import { Breakdown } from '../src/breakdown'
-import { EngineBootstrapper } from '../src/engine-bootstrapper'
 import { SimpleNodeRepoProtocol } from './simple-node-repo-protocol'
 
 interface LinesOptions {
