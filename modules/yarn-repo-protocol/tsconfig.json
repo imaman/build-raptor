@@ -9,6 +9,9 @@
       "path": "../build-failed-error"
     },
     {
+      "path": "../build-raptor-core-testkit"
+    },
+    {
       "path": "../logger"
     },
     {

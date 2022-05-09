@@ -29,6 +29,7 @@
     "zod": "^3.11.6"
   },
   "devDependencies": {
+    "build-raptor-core-testkit": "1.0.0",
     "type-fest": "^2.12.2"
   }
 }
