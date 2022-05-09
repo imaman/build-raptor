@@ -2,7 +2,7 @@ import { Driver } from '../src/build-raptor-core-testkit'
 import { RepoProtocolTestkit } from '../src/repo-protocol-testkit'
 
 jest.setTimeout(30000)
-describe('build-raptor-core-testkit', () => {
+describe('minimal testing', () => {
   const testName = () => expect.getState().currentTestName
 
   test('runs only the tests of units whose code changed', async () => {
