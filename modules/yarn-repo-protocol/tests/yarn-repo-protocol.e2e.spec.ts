@@ -1,14 +1,14 @@
 import { Driver } from 'build-raptor-core-testkit'
 import { createNopLogger } from 'logger'
 
-import { YarnRepoProtocol } from '../src'
+import { YarnRepoProtocol } from '../src/yarn-repo-protocol'
 
 jest.setTimeout(30000)
-describe('b', () => {
+describe('yarn-repo-protocol.e2e', () => {
   const logger = createNopLogger()
   const testName = () => expect.getState().currentTestName
 
-  test('foo', async () => {
+  test('runs tasks and captures their output', async () => {
     const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
     const recipe = {
       'package.json': {
