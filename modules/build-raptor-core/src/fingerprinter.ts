@@ -6,15 +6,9 @@ import * as path from 'path'
 import { Fingerprint } from './fingerprint'
 import { Hasher } from './hasher'
 
-interface CacheEntry {
-  hasher: Hasher
-  active: boolean
-}
-
 export type OnHasherClose = (h: Hasher, content?: string) => Promise<void>
 
 export class Fingerprinter {
-  private readonly fingerprintByPathInRepo = new Map<string, CacheEntry>()
   constructor(
     private readonly dirScanner: DirectoryScanner,
     private readonly logger: Logger,
@@ -29,11 +23,6 @@ export class Fingerprinter {
   }
 
   private async scan(pathInRepo: string) {
-    const cached = this.fingerprintByPathInRepo.get(pathInRepo)
-    if (cached) {
-      return cached
-    }
-
     const resolved = path.join(this.dirScanner.rootDir, pathInRepo)
     const stat = await statPath(resolved)
 
@@ -50,6 +39,7 @@ export class Fingerprinter {
     }
 
     const hasher = new Hasher(pathInRepo)
+    // TODO(imaman): do not fingerprint node_modules directories (and similar directories in other ecosystems)?
 
     const dirEntries = await readDir(resolved)
     for (const at of sortBy(dirEntries, e => e.name)) {
@@ -74,11 +64,7 @@ export class Fingerprinter {
       throw e
     }
 
-    const ret = { hasher, active }
-    if (!this.fingerprintByPathInRepo.has(hasher.name)) {
-      this.fingerprintByPathInRepo.set(hasher.name, ret)
-    }
-    return ret
+    return { hasher, active }
   }
 }
 
