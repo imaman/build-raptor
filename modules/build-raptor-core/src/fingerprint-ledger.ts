@@ -38,10 +38,28 @@ type LedgerItem = z.infer<typeof LedgerItem>
 const Items = LedgerItem.array()
 type Items = z.infer<typeof Items>
 
-export class FingerprintLedger {
+export interface FingerprintLedger {
+  updateRun(buildRunId: BuildRunId): Promise<void>
+  updateFile(h: Hasher, content: string): void
+  updateDirectory(h: Hasher): void
+  updateTask(task: TaskName, fingerprint: Fingerprint, parts: Record<string, Fingerprint>): void
+  close(): Promise<void>
+}
+
+export class NopFingerprintLedger implements FingerprintLedger {
+  async updateRun(): Promise<void> {}
+  updateFile(): void {}
+  updateDirectory(): void {}
+  updateTask(): void {}
+  async close(): Promise<void> {}
+}
+
+export class PersistedFingerprintLedger implements FingerprintLedger {
   private items: Items = []
   private buildRunId?: BuildRunId
-  constructor(private readonly logger: Logger, private readonly ledgerFile: string) {}
+  constructor(private readonly logger: Logger, private readonly ledgerFile: string) {
+    this.logger.info(`fingerprint ledger initialized with file=${this.ledgerFile}`)
+  }
 
   async updateRun(buildRunId: BuildRunId) {
     // Validate the stored content by reading it.

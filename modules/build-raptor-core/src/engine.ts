@@ -11,7 +11,7 @@ import { UnitId } from 'unit-metadata'
 
 import { EngineEventScheme } from './engine-event-scheme'
 import { ExecutionPlan } from './execution-plan'
-import { FingerprintLedger } from './fingerprint-ledger'
+import { NopFingerprintLedger, PersistedFingerprintLedger } from './fingerprint-ledger'
 import { Fingerprinter } from './fingerprinter'
 import { Model } from './model'
 import { Planner } from './planner'
@@ -23,6 +23,7 @@ export interface EngineOptions {
   checkGitIgnore?: boolean
   concurrency: Int
   buildRaptorDir: string
+  fingerprintLedger?: boolean
 }
 
 export class Engine {
@@ -55,11 +56,12 @@ export class Engine {
       checkGitIgnore: options.checkGitIgnore ?? true,
       concurrency: options.concurrency,
       buildRaptorDir: options.buildRaptorDir,
+      fingerprintLedger: options.fingerprintLedger ?? false,
     }
-    this.fingerprintLedger = new FingerprintLedger(
-      logger,
-      path.join(this.options.buildRaptorDir, 'fingerprint-ledger.json'),
-    )
+    const ledgerFile = path.join(this.options.buildRaptorDir, 'fingerprint-ledger.json')
+    this.fingerprintLedger = this.options.fingerprintLedger
+      ? new PersistedFingerprintLedger(logger, ledgerFile)
+      : new NopFingerprintLedger()
   }
 
   async run(buildRunId: BuildRunId) {
