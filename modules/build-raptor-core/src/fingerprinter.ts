@@ -50,14 +50,14 @@ export class Fingerprinter {
     }
 
     const hasher = new Hasher(pathInRepo)
-    if (pathInRepo.endsWith('node_modules')) {
-      hasher.close()
-      this.logger.info(`not drilling into ${pathInRepo}`)
-      return {
-        hasher,
-        active: false,
-      }
-    }
+    // if (pathInRepo.endsWith('node_modules')) {
+    //   hasher.close()
+    //   this.logger.info(`not drilling into ${pathInRepo}`)
+    //   return {
+    //     hasher,
+    //     active: false,
+    //   }
+    // }
 
     const dirEntries = await readDir(resolved)
     for (const at of sortBy(dirEntries, e => e.name)) {
