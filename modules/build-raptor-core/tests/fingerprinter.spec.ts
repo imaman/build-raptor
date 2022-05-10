@@ -23,14 +23,14 @@ describe('fingerprinter', () => {
     expect(await fingerprinterA.computeFingerprint('x')).toEqual(await fingerprinterB.computeFingerprint('x'))
   })
   test.todo('fingerprint of a directroy with an ignored file should not change when this file changes')
-  test('same result when an ignored directory is fingerprinted directrly or via its parent', async () => {
+  test('same result when an ignored directory is fingerprinted directly or via its parent', async () => {
     const { fingerprinter: fingerprinterA } = await create({ 'x/y': 'foo', 'x/z/z1': 'bar' }, p => p !== 'x/z')
     const { fingerprinter: fingerprinterB } = await create({ 'x/y': 'foo', 'x/z/z1': 'bar' }, p => p !== 'x/z')
 
     await fingerprinterA.computeFingerprint('x')
     expect(await fingerprinterA.computeFingerprint('x/z')).toEqual(await fingerprinterB.computeFingerprint('x/z'))
   })
-  test('same result when an ignored file is fingerprinted directrly or via its parent', async () => {
+  test('same result when an ignored file is fingerprinted directly or via its parent', async () => {
     const { fingerprinter: fingerprinterA } = await create({ 'x/y': 'foo', 'x/z': 'bar' }, p => p !== 'x/z')
     const { fingerprinter: fingerprinterB } = await create({ 'x/y': 'foo', 'x/z': 'bar' }, p => p !== 'x/z')
 
@@ -58,7 +58,7 @@ describe('fingerprinter', () => {
     captured.length = 0
     const fpx = await fingerprinter.computeFingerprint('x')
 
-    expect(captured).toMatchObject([{ hasherName: 'x/z' }, { hasherName: 'x', digest: fpx }])
+    expect(captured).toMatchObject([{ hasherName: 'x/y' }, { hasherName: 'x/z' }, { hasherName: 'x', digest: fpx }])
   })
   test('passes contents of files to the onHasherClose listener', async () => {
     const captured: unknown[] = []

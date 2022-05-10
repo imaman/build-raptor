@@ -50,6 +50,14 @@ export class Fingerprinter {
     }
 
     const hasher = new Hasher(pathInRepo)
+    if (pathInRepo.endsWith('node_modules')) {
+      hasher.close()
+      this.logger.info(`not drilling into ${pathInRepo}`)
+      return {
+        hasher,
+        active: false,
+      }
+    }
 
     const dirEntries = await readDir(resolved)
     for (const at of sortBy(dirEntries, e => e.name)) {
@@ -76,7 +84,7 @@ export class Fingerprinter {
 
     const ret = { hasher, active }
     if (!this.fingerprintByPathInRepo.has(hasher.name)) {
-      this.fingerprintByPathInRepo.set(hasher.name, ret)
+      // this.fingerprintByPathInRepo.set(hasher.name, ret)
     }
     return ret
   }
