@@ -85,17 +85,18 @@ export class FingerprintLedger {
   }
 
   async close() {
-    const preexisting = await this.read()
-    preexisting.push(...this.items)
-    await this.write(preexisting)
+    // const preexisting = await this.read()
+    // preexisting.push(...this.items)
+    // await this.write(preexisting)
   }
 
   private async read() {
-    if (!(await fse.pathExists(this.ledgerFile))) {
-      return []
-    }
-    const untyped = await fse.readJSON(this.ledgerFile)
-    return Items.parse(untyped)
+    return []
+    // if (!(await fse.pathExists(this.ledgerFile))) {
+    //   return []
+    // }
+    // const untyped = await fse.readJSON(this.ledgerFile)
+    // return Items.parse(untyped)
   }
 
   private async write(items: Items) {
