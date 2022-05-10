@@ -115,6 +115,7 @@
 - [ ] e2e tests for yarn-repo-protocol
 - [ ] trim size of log file, task output cache, fingerprinting audit log
 - [ ] rethink the hasher-closed messages in the log (and the onhasherclosed event). I think that the fingerprint-ledger makes them unnecessary.
+- [ ] allow options to be read from a file.
 
 ## Maybe TODO
 
