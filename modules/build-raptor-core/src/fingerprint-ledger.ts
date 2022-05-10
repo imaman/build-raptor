@@ -85,21 +85,51 @@ export class FingerprintLedger {
   }
 
   async close() {
-    // const preexisting = await this.read()
-    // preexisting.push(...this.items)
-    // await this.write(preexisting)
+    const t0 = Date.now()
+    try {
+      const itemsToWrite = await this.read()
+      itemsToWrite.push(...this.items)
+      await this.write(itemsToWrite)
+    } finally {
+      this.logger.info(`.close() took ${((Date.now() - t0) / 1000).toFixed(1)}s`)
+    }
   }
 
+  // TODO(imaman): cover
   private async read() {
-    return []
-    // if (!(await fse.pathExists(this.ledgerFile))) {
-    //   return []
-    // }
-    // const untyped = await fse.readJSON(this.ledgerFile)
-    // return Items.parse(untyped)
+    const t0 = Date.now()
+    try {
+      if (!(await fse.pathExists(this.ledgerFile))) {
+        return []
+      }
+      const untyped = await fse.readJSON(this.ledgerFile)
+      const ret = Items.parse(untyped)
+      const len = JSON.stringify(ret).length
+      this.logger.info(`Length of content read from ${this.ledgerFile} is ${len}`)
+      if (len > TRUNCATION_THRESHOLD) {
+        this.logger.info(
+          `Discarding the preexsiting content of ${this.ledgerFile} because its length (${len}) exceeded the preset limit of ${TRUNCATION_THRESHOLD}`,
+        )
+        ret.length = 0
+      }
+      return ret
+    } finally {
+      this.logger.info(`.read() on ${this.ledgerFile} took ${((Date.now() - t0) / 1000).toFixed(1)}s`)
+    }
   }
 
   private async write(items: Items) {
-    await fse.writeJSON(this.ledgerFile, items)
+    try {
+      await fse.writeJSON(this.ledgerFile, items)
+    } catch (e) {
+      this.logger.error(`writeFile failed`, e)
+      throw new Error(`Could not save ${items.length} items to ${this.ledgerFile} due to: ${e}`)
+    }
   }
 }
+
+/**
+ * If the length of the ledger that was read from the file exceeds this value, the ledger will be purged to avoid
+ * errors on the subsequent save.
+ */
+const TRUNCATION_THRESHOLD = 200 * 1000 * 1000
