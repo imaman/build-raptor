@@ -114,6 +114,7 @@
 - [ ] compute next version (with max on existing version) from npm reg
 - [ ] e2e tests for yarn-repo-protocol
 - [ ] trim size of log file, task output cache, fingerprinting audit log
+- [ ] rethink the hasher-closed messages in the log (and the onhasherclosed event). I think that the fingerprint-ledger makes them unnecessary.
 
 ## Maybe TODO
 
