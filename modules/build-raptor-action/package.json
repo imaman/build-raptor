@@ -1,6 +1,6 @@
 {
   "name": "build-raptor-action",
-  "version": "1.0.1",
+  "version": "0.1.0",
   "description": "build-raptor as a github action",
   "keywords": [],
   "license": "MIT",
