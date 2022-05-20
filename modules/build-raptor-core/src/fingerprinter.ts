@@ -56,7 +56,6 @@ export class Fingerprinter {
 
   private async store(hasher: Hasher, active: boolean, content?: string) {
     hasher.close()
-    this.logger.info(`hasher-closed ${hasher.name} -->`, hasher.toJSON())
     try {
       await this.onHasherClose(hasher, content)
     } catch (e) {
