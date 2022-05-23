@@ -26,7 +26,7 @@ export class TaskTracker {
     this.shadowed.add(shadowed)
   }
 
-  getShadowedBy(tn: TaskName): TaskName[] {
+  getTasksShadowedBy(tn: TaskName): TaskName[] {
     return this.shadowedBy.get(tn) || []
   }
 
