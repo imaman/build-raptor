@@ -119,9 +119,7 @@ export class Engine {
           const reachable = new Set<UnitId>(model.graph.traverseFrom(t.unitId))
           reachable.delete(t.unitId)
 
-          const candidatesToWithdraw = [...shadowingCandidates].filter(cand =>
-            reachable.has(TaskName().undo(cand).unitId),
-          )
+          const candidatesToWithdraw = ts.filter(cand => reachable.has(cand.unitId)).map(cand => cand.name)
 
           for (const cand of candidatesToWithdraw) {
             shadowingCandidates.delete(cand)
