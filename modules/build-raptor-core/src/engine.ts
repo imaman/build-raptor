@@ -135,37 +135,34 @@ export class Engine {
       return ret
     }
 
-    await plan.taskGraph.execute(
-      this.options.concurrency,
-      async tn => {
-        if (taskTracker.hasVerdict(tn)) {
-          return
-        }
+    const workFunction = async (tn: TaskName) => {
+      if (taskTracker.hasVerdict(tn)) {
+        return
+      }
 
-        try {
-          taskTracker.changeStatus(tn, 'RUNNING')
-          const taskExecutor = new TaskExecutor(
-            tn,
-            model,
-            taskTracker,
-            this.logger,
-            this.repoProtocol,
-            this.taskStore,
-            this.taskOutputDir,
-            this.eventPublisher,
-            this.fingerprintLedger,
-          )
-          await taskExecutor.executeTask(tn, model, taskTracker)
-        } catch (e) {
-          this.logger.info(`crashed while running ${tn}`)
-          throw e
-        } finally {
-          taskTracker.changeStatus(tn, 'DONE')
-        }
-      },
-      batchScheduler,
-    )
+      try {
+        taskTracker.changeStatus(tn, 'RUNNING')
+        const taskExecutor = new TaskExecutor(
+          tn,
+          model,
+          taskTracker,
+          this.logger,
+          this.repoProtocol,
+          this.taskStore,
+          this.taskOutputDir,
+          this.eventPublisher,
+          this.fingerprintLedger,
+        )
+        await taskExecutor.executeTask(tn, model, taskTracker)
+      } catch (e) {
+        this.logger.info(`crashed while running ${tn}`)
+        throw e
+      } finally {
+        taskTracker.changeStatus(tn, 'DONE')
+      }
+    }
 
+    await plan.taskGraph.execute(this.options.concurrency, workFunction, batchScheduler)
     return taskTracker
   }
 
