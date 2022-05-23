@@ -90,15 +90,6 @@ export class TaskExecutor {
     throw new BuildFailedError(`Task ${this.taskName} failed to produce the following outputs:\n${formatted}`)
   }
 
-  private async purgeOutputs(taskNames: TaskName[], model: Model, taskTracker: TaskTracker) {
-    await promises(taskNames).forEach(20, async tn => {
-      const task = taskTracker.getTask(tn)
-      const unit = model.getUnit(task.unitId)
-      const dir = path.join(model.rootDir, unit.pathInRepo)
-      await this.purger.purgeOutpts(dir, task)
-    })
-  }
-
   async executeTask(taskName: TaskName, model: Model, taskTracker: TaskTracker) {
     const t = this.task
 
@@ -153,5 +144,14 @@ export class TaskExecutor {
     }
 
     shouldNeverHappen(earlierVerdict)
+  }
+
+  private async purgeOutputs(taskNames: TaskName[], model: Model, taskTracker: TaskTracker) {
+    await promises(taskNames).forEach(20, async tn => {
+      const task = taskTracker.getTask(tn)
+      const unit = model.getUnit(task.unitId)
+      const dir = path.join(model.rootDir, unit.pathInRepo)
+      await this.purger.purgeOutpts(dir, task)
+    })
   }
 }
