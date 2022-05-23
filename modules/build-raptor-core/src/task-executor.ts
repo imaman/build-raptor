@@ -15,6 +15,8 @@ import { TaskStore } from './task-store'
 import { TaskTracker } from './task-tracker'
 
 export class TaskExecutor {
+  private readonly purger
+
   constructor(
     private readonly taskName: TaskName,
     private readonly model: Model,
@@ -25,7 +27,9 @@ export class TaskExecutor {
     private readonly taskOutputDir: string,
     private readonly eventPublisher: TypedPublisher<EngineEventScheme>,
     private readonly fingerprintLedger: FingerprintLedger,
-  ) {}
+  ) {
+    this.purger = new Purger(this.logger)
+  }
 
   private get task() {
     return this.taskTracker.getTask(this.taskName)
@@ -105,7 +109,7 @@ export class TaskExecutor {
       return
     }
 
-    await new Purger(this.logger).purgeOutpts(dir, t)
+    await this.purger.purgeOutpts(dir, t)
     const earlierVerdict = await this.taskStore.restoreTask(taskName, fp, dir)
 
     if (earlierVerdict === 'OK' || earlierVerdict === 'FLAKY') {
