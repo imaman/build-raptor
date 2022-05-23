@@ -482,7 +482,7 @@ describe('engine', () => {
       )
 
       const driver = new Driver(testName(), { repoProtocol: protocol.create() })
-      const recipe = { 'a/f': '', 'a/out': 'A', 'b/f': '', 'b/out': 'B' }
+      const recipe = { 'a/f': '', 'a/out': 'A_0', 'b/f': '', 'b/out': 'B_0' }
 
       const fork = await driver.repo(recipe).fork()
 
