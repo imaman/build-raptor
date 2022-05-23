@@ -15,8 +15,6 @@ import { TaskStore } from './task-store'
 import { TaskTracker } from './task-tracker'
 
 export class TaskExecutor {
-  private readonly purger
-
   constructor(
     private readonly taskName: TaskName,
     private readonly model: Model,
@@ -27,9 +25,8 @@ export class TaskExecutor {
     private readonly taskOutputDir: string,
     private readonly eventPublisher: TypedPublisher<EngineEventScheme>,
     private readonly fingerprintLedger: FingerprintLedger,
-  ) {
-    this.purger = new Purger(this.logger)
-  }
+    private readonly purger: Purger,
+  ) {}
 
   private get task() {
     return this.taskTracker.getTask(this.taskName)

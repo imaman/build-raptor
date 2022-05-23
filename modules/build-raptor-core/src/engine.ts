@@ -15,6 +15,7 @@ import { NopFingerprintLedger, PersistedFingerprintLedger } from './fingerprint-
 import { Fingerprinter } from './fingerprinter'
 import { Model } from './model'
 import { Planner } from './planner'
+import { Purger } from './purger'
 import { TaskExecutor } from './task-executor'
 import { TaskStore } from './task-store'
 import { TaskTracker } from './task-tracker'
@@ -29,6 +30,7 @@ export interface EngineOptions {
 export class Engine {
   private readonly options: Required<EngineOptions>
   private readonly fingerprintLedger
+  private readonly purger
 
   /**
    *
@@ -62,6 +64,8 @@ export class Engine {
     this.fingerprintLedger = this.options.fingerprintLedger
       ? new PersistedFingerprintLedger(logger, ledgerFile)
       : new NopFingerprintLedger()
+
+    this.purger = new Purger(this.logger)
   }
 
   async run(buildRunId: BuildRunId) {
@@ -151,6 +155,7 @@ export class Engine {
           this.taskOutputDir,
           this.eventPublisher,
           this.fingerprintLedger,
+          this.purger,
         )
         await taskExecutor.executeTask(tn, model, taskTracker)
       } catch (e) {
