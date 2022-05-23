@@ -10,7 +10,7 @@ import { EngineEventScheme } from './engine-event-scheme'
 import { Fingerprint } from './fingerprint'
 import { FingerprintLedger } from './fingerprint-ledger'
 import { Model } from './model'
-import { Task } from './task'
+import { Purger } from './purger'
 import { TaskStore } from './task-store'
 import { TaskTracker } from './task-tracker'
 
@@ -25,6 +25,7 @@ export class TaskExecutor {
     private readonly taskOutputDir: string,
     private readonly eventPublisher: TypedPublisher<EngineEventScheme>,
     private readonly fingerprintLedger: FingerprintLedger,
+    private readonly purger: Purger,
   ) {}
 
   private get task() {
@@ -105,7 +106,9 @@ export class TaskExecutor {
       return
     }
 
-    await this.purgeOutpts(dir, t)
+    const shadowedTasks = taskTracker.getTasksShadowedBy(t.name)
+    await this.purgeOutputs([taskName, ...shadowedTasks], model, taskTracker)
+
     const earlierVerdict = await this.taskStore.restoreTask(taskName, fp, dir)
 
     if (earlierVerdict === 'OK' || earlierVerdict === 'FLAKY') {
@@ -143,10 +146,10 @@ export class TaskExecutor {
     shouldNeverHappen(earlierVerdict)
   }
 
-  private async purgeOutpts(dir: string, t: Task) {
-    await promises(t.outputLocations).forEach(20, async o => {
-      await fse.rm(path.join(dir, o), { recursive: true, force: true })
+  private async purgeOutputs(taskNames: TaskName[], model: Model, taskTracker: TaskTracker) {
+    await promises(taskNames).forEach(20, async tn => {
+      const task = taskTracker.getTask(tn)
+      await this.purger.purgeOutputsOfTask(task, model)
     })
-    this.logger.info(`purged output locations of task ${t.name}: ${t.outputLocations}`)
   }
 }

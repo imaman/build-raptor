@@ -15,6 +15,7 @@ import { NopFingerprintLedger, PersistedFingerprintLedger } from './fingerprint-
 import { Fingerprinter } from './fingerprinter'
 import { Model } from './model'
 import { Planner } from './planner'
+import { Purger } from './purger'
 import { TaskExecutor } from './task-executor'
 import { TaskStore } from './task-store'
 import { TaskTracker } from './task-tracker'
@@ -29,6 +30,7 @@ export interface EngineOptions {
 export class Engine {
   private readonly options: Required<EngineOptions>
   private readonly fingerprintLedger
+  private readonly purger
 
   /**
    *
@@ -62,6 +64,8 @@ export class Engine {
     this.fingerprintLedger = this.options.fingerprintLedger
       ? new PersistedFingerprintLedger(logger, ledgerFile)
       : new NopFingerprintLedger()
+
+    this.purger = new Purger(this.logger)
   }
 
   async run(buildRunId: BuildRunId) {
@@ -107,65 +111,61 @@ export class Engine {
 
       const grouping = groupBy(filtered, t => t.kind)
       for (const [_, ts] of recordToPairs(grouping)) {
-        const shadowingCandidates = new Set<TaskName>(ts.map(t => t.name))
+        const shadowedBy = new Map<TaskName, TaskName>()
         for (const t of ts) {
-          if (!shadowingCandidates.has(t.name)) {
+          if (shadowedBy.has(t.name)) {
             continue
           }
           const reachable = new Set<UnitId>(model.graph.traverseFrom(t.unitId))
           reachable.delete(t.unitId)
 
-          for (const cand of shadowingCandidates) {
-            const unitId = TaskName().undo(cand).unitId
-            if (!reachable.has(unitId)) {
-              continue
-            }
+          const shadowedTasks = ts.filter(cand => reachable.has(cand.unitId)).map(cand => cand.name)
 
-            shadowingCandidates.delete(cand)
-            taskTracker.addShadowed(cand)
-            plan.errorPropagationGraph.edge(cand, t.name)
-            ret.edge(cand, t.name)
+          for (const at of shadowedTasks) {
+            shadowedBy.set(at, t.name)
           }
+        }
+
+        for (const [shadowed, shadowing] of shadowedBy) {
+          taskTracker.registerShadowing(shadowed, shadowing)
+          plan.errorPropagationGraph.edge(shadowed, shadowing)
+          ret.edge(shadowed, shadowing)
         }
       }
 
       this.logger.info(`batch scheduling:\n${ret}`)
-
-      // TODO(imaman): the graph here can be further optimized.
       return ret
     }
 
-    await plan.taskGraph.execute(
-      this.options.concurrency,
-      async tn => {
-        if (taskTracker.hasVerdict(tn)) {
-          return
-        }
+    const workFunction = async (tn: TaskName) => {
+      if (taskTracker.hasVerdict(tn)) {
+        return
+      }
 
-        try {
-          taskTracker.changeStatus(tn, 'RUNNING')
-          const taskExecutor = new TaskExecutor(
-            tn,
-            model,
-            taskTracker,
-            this.logger,
-            this.repoProtocol,
-            this.taskStore,
-            this.taskOutputDir,
-            this.eventPublisher,
-            this.fingerprintLedger,
-          )
-          await taskExecutor.executeTask(tn, model, taskTracker)
-        } catch (e) {
-          this.logger.info(`crashed while running ${tn}`)
-          throw e
-        } finally {
-          taskTracker.changeStatus(tn, 'DONE')
-        }
-      },
-      batchScheduler,
-    )
+      try {
+        taskTracker.changeStatus(tn, 'RUNNING')
+        const taskExecutor = new TaskExecutor(
+          tn,
+          model,
+          taskTracker,
+          this.logger,
+          this.repoProtocol,
+          this.taskStore,
+          this.taskOutputDir,
+          this.eventPublisher,
+          this.fingerprintLedger,
+          this.purger,
+        )
+        await taskExecutor.executeTask(tn, model, taskTracker)
+      } catch (e) {
+        this.logger.info(`crashed while running ${tn}`)
+        throw e
+      } finally {
+        taskTracker.changeStatus(tn, 'DONE')
+      }
+    }
 
+    await plan.taskGraph.execute(this.options.concurrency, workFunction, batchScheduler)
     return taskTracker
   }
 

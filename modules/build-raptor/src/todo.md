@@ -114,7 +114,7 @@
 - [ ] compute next version (with max on existing version) from npm reg
 - [ ] e2e tests for yarn-repo-protocol
 - [ ] trim size of log file, task output cache, fingerprinting audit log
-- [ ] rethink the hasher-closed messages in the log (and the onhasherclosed event). I think that the fingerprint-ledger makes them unnecessary.
+- [x] get rid of the hasher-closed messages in the log.
 - [ ] allow options to be read from a file.
 - [ ] consider reintroducing caching of fingerprints (to avoid fingerprinting a directory that was fingerprinted earlier in the build run). Usually it is quite fast as is. Also, caching is tricky because output location need not be cached (a subsequently running task may change their content).
 

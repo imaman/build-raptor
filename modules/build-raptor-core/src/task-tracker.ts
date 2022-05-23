@@ -1,4 +1,4 @@
-import { Int, shouldNeverHappen, switchOn } from 'misc'
+import { assigningGet, Int, shouldNeverHappen, switchOn } from 'misc'
 import { ExitStatus } from 'repo-protocol'
 import { TaskName } from 'task-name'
 
@@ -13,6 +13,7 @@ export class TaskTracker {
   private numExecuted = 0
   private counter: SlotIndex = SlotIndex(0)
   private shadowed = new Set<TaskName>()
+  private readonly shadowedBy = new Map<TaskName, TaskName[]>()
 
   constructor(private readonly plan: ExecutionPlan) {}
 
@@ -20,8 +21,13 @@ export class TaskTracker {
     return this.plan.tasks()
   }
 
-  addShadowed(tn: TaskName) {
-    this.shadowed.add(tn)
+  registerShadowing(shadowed: TaskName, shadowing: TaskName) {
+    assigningGet(this.shadowedBy, shadowing, () => []).push(shadowed)
+    this.shadowed.add(shadowed)
+  }
+
+  getTasksShadowedBy(tn: TaskName): TaskName[] {
+    return this.shadowedBy.get(tn) || []
   }
 
   isShadowed(tn: TaskName): boolean {
