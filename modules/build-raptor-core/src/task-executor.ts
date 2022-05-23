@@ -149,9 +149,7 @@ export class TaskExecutor {
   private async purgeOutputs(taskNames: TaskName[], model: Model, taskTracker: TaskTracker) {
     await promises(taskNames).forEach(20, async tn => {
       const task = taskTracker.getTask(tn)
-      const unit = model.getUnit(task.unitId)
-      const dir = path.join(model.rootDir, unit.pathInRepo)
-      await this.purger.purgeOutpts(dir, task)
+      await this.purger.purgeOutputsOfTask(task, model)
     })
   }
 }
