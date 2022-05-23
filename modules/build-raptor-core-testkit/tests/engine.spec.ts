@@ -473,7 +473,7 @@ describe('engine', () => {
       expect(r.getSummary('c', 't')).toMatchObject({ execution: 'EXECUTED', rootCause: undefined, verdict: 'OK' })
       expect(r.getSummary('b', 't')).toMatchObject({ execution: 'CANNOT_START', rootCause: 'a:t', verdict: 'FAIL' })
     })
-    test.skip('outputs of shadowed tasks are purged', async () => {
+    test('outputs of shadowed tasks are purged', async () => {
       const protocol = new RepoProtocolTestkit(
         { a: ['b'], b: [] },
         {
