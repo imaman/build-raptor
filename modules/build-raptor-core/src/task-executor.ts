@@ -105,7 +105,7 @@ export class TaskExecutor {
       return
     }
 
-    await this.purgeOutpts(dir, t)
+    await new Purger(this.logger).purgeOutpts(dir, t)
     const earlierVerdict = await this.taskStore.restoreTask(taskName, fp, dir)
 
     if (earlierVerdict === 'OK' || earlierVerdict === 'FLAKY') {
@@ -142,8 +142,11 @@ export class TaskExecutor {
 
     shouldNeverHappen(earlierVerdict)
   }
+}
 
-  private async purgeOutpts(dir: string, t: Task) {
+class Purger {
+  constructor(private readonly logger: Logger) {}
+  async purgeOutpts(dir: string, t: Task) {
     await promises(t.outputLocations).forEach(20, async o => {
       await fse.rm(path.join(dir, o), { recursive: true, force: true })
     })
