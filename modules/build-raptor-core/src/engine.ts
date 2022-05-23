@@ -112,7 +112,6 @@ export class Engine {
       const grouping = groupBy(filtered, t => t.kind)
       for (const [_, ts] of recordToPairs(grouping)) {
         const shadowedBy = new Map<TaskName, TaskName>()
-        const shadowingCandidates = new Set<TaskName>(ts.map(t => t.name))
         for (const t of ts) {
           if (shadowedBy.has(t.name)) {
             continue
@@ -124,7 +123,6 @@ export class Engine {
 
           for (const cand of candidatesToWithdraw) {
             shadowedBy.set(cand, t.name)
-            shadowingCandidates.delete(cand)
             taskTracker.addShadowed(cand)
             plan.errorPropagationGraph.edge(cand, t.name)
             ret.edge(cand, t.name)
