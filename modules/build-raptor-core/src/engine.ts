@@ -114,7 +114,7 @@ export class Engine {
         const shadowedBy = new Map<TaskName, TaskName>()
         const shadowingCandidates = new Set<TaskName>(ts.map(t => t.name))
         for (const t of ts) {
-          if (!shadowingCandidates.has(t.name)) {
+          if (shadowedBy.has(t.name)) {
             continue
           }
           const reachable = new Set<UnitId>(model.graph.traverseFrom(t.unitId))
@@ -123,6 +123,7 @@ export class Engine {
           const candidatesToWithdraw = ts.filter(cand => reachable.has(cand.unitId)).map(cand => cand.name)
 
           for (const cand of candidatesToWithdraw) {
+            shadowedBy.set(cand, t.name)
             shadowingCandidates.delete(cand)
             taskTracker.addShadowed(cand)
             plan.errorPropagationGraph.edge(cand, t.name)
