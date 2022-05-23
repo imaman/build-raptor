@@ -10,7 +10,7 @@ import { EngineEventScheme } from './engine-event-scheme'
 import { Fingerprint } from './fingerprint'
 import { FingerprintLedger } from './fingerprint-ledger'
 import { Model } from './model'
-import { Task } from './task'
+import { Purger } from './purger'
 import { TaskStore } from './task-store'
 import { TaskTracker } from './task-tracker'
 
@@ -141,15 +141,5 @@ export class TaskExecutor {
     }
 
     shouldNeverHappen(earlierVerdict)
-  }
-}
-
-class Purger {
-  constructor(private readonly logger: Logger) {}
-  async purgeOutpts(dir: string, t: Task) {
-    await promises(t.outputLocations).forEach(20, async o => {
-      await fse.rm(path.join(dir, o), { recursive: true, force: true })
-    })
-    this.logger.info(`purged output locations of task ${t.name}: ${t.outputLocations}`)
   }
 }
