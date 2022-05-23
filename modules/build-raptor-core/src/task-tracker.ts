@@ -21,7 +21,7 @@ export class TaskTracker {
     return this.plan.tasks()
   }
 
-  addShadowed(shadowed: TaskName, shadowing: TaskName) {
+  registerShadowing(shadowed: TaskName, shadowing: TaskName) {
     assigningGet(this.shadowedBy, shadowing, () => []).push(shadowed)
     this.shadowed.add(shadowed)
   }

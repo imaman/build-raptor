@@ -127,7 +127,7 @@ export class Engine {
         }
 
         for (const [shadowed, shadowing] of shadowedBy) {
-          taskTracker.addShadowed(shadowed, shadowing)
+          taskTracker.registerShadowing(shadowed, shadowing)
           plan.errorPropagationGraph.edge(shadowed, shadowing)
           ret.edge(shadowed, shadowing)
         }
