@@ -134,8 +134,6 @@ export class Engine {
       }
 
       this.logger.info(`batch scheduling:\n${ret}`)
-
-      // TODO(imaman): the graph here can be further optimized.
       return ret
     }
 
