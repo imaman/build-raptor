@@ -501,7 +501,7 @@ describe('engine', () => {
       expect(await fork.file('b/out').lines()).toEqual(['B_1 written by a:build'])
       expect(captured).toEqual({ a: 'NONE', b: 'NONE' })
     })
-    test('correctly restores the output of a shadowed task', async () => {
+    test.skip('correctly restores the output of a shadowed task', async () => {
       const protocol = new RepoProtocolTestkit(
         { a: ['b'], b: [] },
         {

@@ -325,7 +325,7 @@ export class YarnRepoProtocol implements RepoProtocol {
         {
           taskKind: build,
           outputs: ['dist'],
-          shadowing: true,
+          shadowing: false,
           inputsInDeps: ['dist/src'],
           inputsInUnit: ['src', 'tests'],
         },

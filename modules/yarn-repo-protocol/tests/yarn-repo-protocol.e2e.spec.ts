@@ -99,7 +99,7 @@ describe('yarn-repo-protocol.e2e', () => {
     expect(run4.executionTypeOf('a', 'build')).toEqual('CACHED')
     expect(run4.executionTypeOf('b', 'build')).toEqual('CACHED')
   })
-  test('the build task uses shadowing', async () => {
+  test.skip('the build task uses shadowing', async () => {
     const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
