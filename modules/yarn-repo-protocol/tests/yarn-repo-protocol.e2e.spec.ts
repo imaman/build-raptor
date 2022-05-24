@@ -65,31 +65,29 @@ describe('yarn-repo-protocol.e2e', () => {
     expect(runB.getSummary('a', 'test')).toMatchObject({ execution: 'EXECUTED' })
     expect(await runB.outputOf('test', 'a')).toContain('mondaytuesday')
   })
-  test.skip('capture', async () => {
+  test('capture', async () => {
     const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
       'modules/a/package.json': { name: 'a', version: '1.0.0', scripts: { build, jest } },
-      'modules/a/src/a.ts': 'N/A',
-      'modules/a/tests/a.spec.ts': 'TUESDAY',
+      'modules/a/src/a.ts': 'ARGENTINA',
+      'modules/a/tests/a.spec.ts': 'ALGERIA',
+      'modules/b/package.json': { name: 'b', version: '1.0.0', scripts: { build, jest } },
+      'modules/b/src/b.ts': 'BRAZIL',
+      'modules/b/tests/b.spec.ts': 'BELGIUM',
     }
 
     const fork = await driver.repo(recipe).fork()
 
-    await fork.file('modules/a/src/a.ts').write('SUNDAY')
-    const runA = await fork.run('OK', { taskKind: 'test' })
-    expect(await fork.file('modules/a/dist/src/index.js').lines({ trimEach: true })).toEqual(['sunday'])
-    expect(await fork.file('modules/a/dist/tests/index.spec.js').lines({ trimEach: true })).toEqual(['tuesday'])
+    const runA = await fork.run('OK', { taskKind: 'build' })
+    expect(await fork.file('modules/a/dist/src/index.js').lines({ trimEach: true })).toEqual(['argentina'])
+    expect(await fork.file('modules/a/dist/tests/index.spec.js').lines({ trimEach: true })).toEqual(['algeria'])
     expect(runA.getSummary('a', 'build')).toMatchObject({ execution: 'EXECUTED' })
-    expect(runA.getSummary('a', 'test')).toMatchObject({ execution: 'EXECUTED' })
-    expect(await runA.outputOf('test', 'a')).toContain('sundaytuesday')
+    expect(runA.getSummary('b', 'build')).toMatchObject({ execution: 'EXECUTED' })
 
-    await fork.file('modules/a/src/a.ts').write('MONDAY')
-    const runB = await fork.run('OK', { taskKind: 'test' })
-    expect(await fork.file('modules/a/dist/src/index.js').lines({ trimEach: true })).toEqual(['monday'])
-    expect(await fork.file('modules/a/dist/tests/index.spec.js').lines({ trimEach: true })).toEqual(['tuesday'])
-    expect(runA.getSummary('a', 'build')).toMatchObject({ execution: 'EXECUTED' })
-    expect(runB.getSummary('a', 'test')).toMatchObject({ execution: 'EXECUTED' })
-    expect(await runB.outputOf('test', 'a')).toContain('mondaytuesday')
+    await fork.file('modules/b/src/b.ts').write('BAHAMAS')
+    const runB = await fork.run('OK', { taskKind: 'build' })
+    expect(runB.getSummary('a', 'build')).toMatchObject({ execution: 'EXECUTED' })
+    expect(runB.getSummary('b', 'build')).toMatchObject({ execution: 'EXECUTED' })
   })
 })
