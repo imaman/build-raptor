@@ -15,6 +15,9 @@ export function computeHash(input: Buffer | string): string {
   return hasher.update(input).digest('hex')
 }
 
+/**
+ * Represents an event that should happen at some point in the future.
+ */
 export class Timeout {
   constructor(private readonly promise: Promise<void>) {}
 

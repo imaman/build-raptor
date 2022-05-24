@@ -24,6 +24,9 @@ export class TaskTracker {
 
   registerShadowing(shadowed: TaskName, shadowing: TaskName) {
     assigningGet(this.shadowedBy, shadowing, () => []).push(shadowed)
+    if (shadowed === shadowing) {
+      throw new Error(`shadowed and shadowing are the same: ${shadowed}`)
+    }
     this.shadowingByShadowed.set(shadowed, shadowing)
     this.shadowed.add(shadowed)
   }

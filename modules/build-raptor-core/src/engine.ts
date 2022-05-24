@@ -7,7 +7,6 @@ import { DirectoryScanner, groupBy, Int, recordToPairs, TypedPublisher } from 'm
 import * as path from 'path'
 import { RepoProtocol } from 'repo-protocol'
 import { TaskName } from 'task-name'
-import { UnitId } from 'unit-metadata'
 import * as util from 'util'
 
 import { EngineEventScheme } from './engine-event-scheme'
@@ -112,13 +111,20 @@ export class Engine {
           if (shadowedBy.has(t.name)) {
             continue
           }
-          const reachable = new Set<UnitId>(model.graph.traverseFrom(t.unitId))
-          reachable.delete(t.unitId)
 
-          const shadowedTasks = ts.filter(cand => reachable.has(cand.unitId)).map(cand => cand.name)
+          const isShadowing = (tn: TaskName) => {
+            const back = plan.taskGraph.backNeighborsOf(tn)
+            const filtered = back.filter(b => TaskName().undo(b).taskKind === t.kind)
+            return filtered.length === 0
+          }
+          const candidateShadowing = plan.taskGraph
+            .traverseFrom(t.name, { direction: 'backwards' })
+            .filter(tn => TaskName().undo(tn).taskKind === t.kind)
+            .filter(tn => isShadowing(tn))
 
-          for (const at of shadowedTasks) {
-            shadowedBy.set(at, t.name)
+          const chosen = candidateShadowing.find(Boolean)
+          if (chosen && chosen !== t.name) {
+            shadowedBy.set(t.name, chosen)
           }
         }
       }
@@ -139,8 +145,8 @@ export class Engine {
       try {
         let current: TaskName | undefined = tn
         while (current !== undefined) {
-          const taskExecutor = new TaskExecutor(
-            tn,
+          const taskExecutor: TaskExecutor = new TaskExecutor(
+            current,
             model,
             taskTracker,
             this.logger,
