@@ -151,7 +151,11 @@ export class Engine {
             this.fingerprintLedger,
             this.purger,
           )
-          current = await taskExecutor.executeTask()
+          const next = await taskExecutor.executeTask()
+          if (next === current) {
+            throw new Error(`Task ${current} did not advance to the next task`)
+          }
+          current = next
         }
       } catch (e) {
         this.logger.info(`crashed while running ${tn}`)

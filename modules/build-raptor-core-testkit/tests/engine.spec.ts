@@ -375,7 +375,7 @@ describe('engine', () => {
     const r1 = await fork.run('FAIL')
     expect(r1.message).toEqual('Task a:T_2 failed to produce the following outputs:\n  - bar')
   })
-  describe('shadowing (transitivity)', () => {
+  describe.skip('shadowing (transitivity)', () => {
     test('a shadowing task is invoked once at least-dependent unit', async () => {
       const protocol = new RepoProtocolTestkit(
         { a: ['b'], b: ['c'], c: [] },

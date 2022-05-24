@@ -96,6 +96,11 @@ export class TaskExecutor {
       return undefined
     }
 
+    const shadowing = this.tracker.getShadowingTask(t.name)
+    if (shadowing) {
+      return shadowing
+    }
+
     await this.executeTaskGuarded()
     return undefined
   }
