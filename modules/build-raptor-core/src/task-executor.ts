@@ -101,11 +101,11 @@ export class TaskExecutor {
       return shadowing
     }
 
-    await this.executeTaskGuarded()
+    await this.executeUnshadowedTask()
     return undefined
   }
 
-  private async executeTaskGuarded() {
+  private async executeUnshadowedTask() {
     const t = this.task
     this.tracker.changeStatus(t.name, 'RUNNING')
 
