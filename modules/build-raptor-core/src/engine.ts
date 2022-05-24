@@ -136,10 +136,6 @@ export class Engine {
     }
 
     const workFunction = async (tn: TaskName) => {
-      if (taskTracker.hasVerdict(tn)) {
-        return
-      }
-
       try {
         const taskExecutor = new TaskExecutor(
           tn,

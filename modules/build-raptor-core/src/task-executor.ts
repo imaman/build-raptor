@@ -92,6 +92,10 @@ export class TaskExecutor {
 
   async executeTask() {
     const t = this.task
+    if (this.tracker.hasVerdict(t.name)) {
+      return
+    }
+
     this.tracker.changeStatus(t.name, 'RUNNING')
 
     const fp = await this.computeFingerprint()
