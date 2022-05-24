@@ -133,7 +133,7 @@ export class Engine {
         }
       }
 
-      this.logger.info(`batch scheduling:\n${ret}`)
+      this.logger.info(`batch scheduling of ${JSON.stringify(batch)} is:\n${ret}`)
       return ret
     }
 
