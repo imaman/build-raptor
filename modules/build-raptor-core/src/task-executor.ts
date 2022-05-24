@@ -91,10 +91,8 @@ export class TaskExecutor {
   }
 
   async executeTask() {
-    const taskName = this.taskName
-    this.tracker.changeStatus(taskName, 'RUNNING')
-
     const t = this.task
+    this.tracker.changeStatus(t.name, 'RUNNING')
 
     const fp = await this.computeFingerprint()
     const unit = this.unit
@@ -103,42 +101,42 @@ export class TaskExecutor {
     if (this.tracker.isShadowed(t.name)) {
       await this.validateOutputs()
       // TODO(imaman): report the shadowing task it in the event.
-      await this.eventPublisher.publish('executionShadowed', taskName)
-      this.tracker.registerShadowedVerdict(taskName, 'OK')
-      await this.taskStore.recordTask(taskName, fp, dir, t.outputLocations, 'OK')
+      await this.eventPublisher.publish('executionShadowed', t.name)
+      this.tracker.registerShadowedVerdict(t.name, 'OK')
+      await this.taskStore.recordTask(t.name, fp, dir, t.outputLocations, 'OK')
       return
     }
 
     await this.purgeOutputs()
 
-    const earlierVerdict = await this.taskStore.restoreTask(taskName, fp, dir)
+    const earlierVerdict = await this.taskStore.restoreTask(t.name, fp, dir)
 
     if (earlierVerdict === 'OK' || earlierVerdict === 'FLAKY') {
-      await this.eventPublisher.publish('executionSkipped', taskName)
-      this.tracker.registerCachedVerdict(taskName, earlierVerdict)
+      await this.eventPublisher.publish('executionSkipped', t.name)
+      this.tracker.registerCachedVerdict(t.name, earlierVerdict)
       return
     }
 
     if (earlierVerdict === 'FAIL' || earlierVerdict === 'UNKNOWN') {
-      await this.eventPublisher.publish('executionStarted', taskName)
+      await this.eventPublisher.publish('executionStarted', t.name)
       const outputFile = path.join(this.taskOutputDir, `${t.id}.stdout`)
       const status = await this.repoProtocol.execute(unit, dir, t.kind, outputFile, this.model.buildRunId)
       await this.postProcess(status, outputFile)
       if (status === 'CRASH') {
-        throw new Error(`Task ${JSON.stringify(taskName)} crashed`)
+        throw new Error(`Task ${JSON.stringify(t.name)} crashed`)
       }
 
       if (status === 'OK') {
         await this.validateOutputs()
-        this.tracker.registerVerdict(taskName, status, outputFile)
-        await this.taskStore.recordTask(taskName, fp, dir, t.outputLocations, status)
+        this.tracker.registerVerdict(t.name, status, outputFile)
+        await this.taskStore.recordTask(t.name, fp, dir, t.outputLocations, status)
         return
       }
 
       if (status === 'FAIL') {
-        this.tracker.registerVerdict(taskName, status, outputFile)
+        this.tracker.registerVerdict(t.name, status, outputFile)
         // TODO(imaman): should not record outputs if task has failed.
-        await this.taskStore.recordTask(taskName, fp, dir, t.outputLocations, status)
+        await this.taskStore.recordTask(t.name, fp, dir, t.outputLocations, status)
         return
       }
 
