@@ -137,19 +137,22 @@ export class Engine {
 
     const workFunction = async (tn: TaskName) => {
       try {
-        const taskExecutor = new TaskExecutor(
-          tn,
-          model,
-          taskTracker,
-          this.logger,
-          this.repoProtocol,
-          this.taskStore,
-          this.taskOutputDir,
-          this.eventPublisher,
-          this.fingerprintLedger,
-          this.purger,
-        )
-        await taskExecutor.executeTask()
+        let current: TaskName | undefined = tn
+        while (current !== undefined) {
+          const taskExecutor = new TaskExecutor(
+            tn,
+            model,
+            taskTracker,
+            this.logger,
+            this.repoProtocol,
+            this.taskStore,
+            this.taskOutputDir,
+            this.eventPublisher,
+            this.fingerprintLedger,
+            this.purger,
+          )
+          current = await taskExecutor.executeTask()
+        }
       } catch (e) {
         this.logger.info(`crashed while running ${tn}`)
         throw e
