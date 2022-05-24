@@ -20,6 +20,8 @@ describe('yarn-repo-protocol.e2e', () => {
           jest: `echo "testing now" && echo '{}' > jest-output.json`,
         },
       },
+      'modules/a/src/a.ts': 'N/A',
+      'modules/a/tests/a.spec.ts': 'N/A',
     }
 
     const fork = await driver.repo(recipe).fork()
@@ -83,11 +85,18 @@ describe('yarn-repo-protocol.e2e', () => {
     expect(await fork.file('modules/a/dist/src/index.js').lines({ trimEach: true })).toEqual(['argentina'])
     expect(await fork.file('modules/a/dist/tests/index.spec.js').lines({ trimEach: true })).toEqual(['algeria'])
     expect(run1.getSummary('a', 'build')).toMatchObject({ execution: 'EXECUTED' })
-    // expect(runA.getSummary('b', 'build')).toMatchObject({ execution: 'SHADOWED' })
+    expect(run1.getSummary('b', 'build')).toMatchObject({ execution: 'EXECUTED' })
 
-    // await fork.file('modules/a/src/a.ts').write('AUSTRALIA')
     const run2 = await fork.run('OK', { taskKind: 'build' })
-    expect(run2.getSummary('a', 'build')).toMatchObject({ execution: 'EXECUTED' })
+    expect(run2.getSummary('a', 'build')).toMatchObject({ execution: 'CACHED' })
     expect(run2.getSummary('b', 'build')).toMatchObject({ execution: 'CACHED' })
+
+    const run3 = await fork.run('OK', { taskKind: 'build' })
+    expect(run3.getSummary('a', 'build')).toMatchObject({ execution: 'CACHED' })
+    expect(run3.getSummary('b', 'build')).toMatchObject({ execution: 'CACHED' })
+
+    const run4 = await fork.run('OK', { taskKind: 'build' })
+    expect(run4.getSummary('a', 'build')).toMatchObject({ execution: 'CACHED' })
+    expect(run4.getSummary('b', 'build')).toMatchObject({ execution: 'CACHED' })
   })
 })
