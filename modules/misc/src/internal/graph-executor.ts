@@ -45,32 +45,33 @@ export class GraphExecutor<V> {
 
   private scheduleBatch(batch: V[]) {
     const subGraph = this.batchScheduler(batch)
-    if (subGraph) {
-      if (subGraph.isCyclic()) {
-        throw new Error(`batch scheduler returned a cyclic graph`)
-      }
-      const set = subGraph.makeVertexMap<unknown>()
+    if (!subGraph) {
       for (const v of batch) {
-        set.set(v, {})
+        this.executor.schedule(v)
       }
-
-      const subVertices = subGraph.vertices()
-      const outOfBatch = subVertices.filter(v => !set.has(v))
-      if (outOfBatch.length > 0) {
-        throw new Error(`batch scheduler returned out-of-batch vertices: ${outOfBatch.join(', ')}`)
-      }
-      if (subVertices.length !== batch.length) {
-        throw new Error(
-          `batch scheduler returned a bad grap: number of vertices is ${subVertices.length} (but it should be ${batch.length})`,
-        )
-      }
-      const subExecutor = new GraphExecutor<V>(subGraph, this.executor, () => undefined)
-      subExecutor.start()
       return
     }
-    for (const v of batch) {
-      this.executor.schedule(v)
+
+    if (subGraph.isCyclic()) {
+      throw new Error(`batch scheduler returned a cyclic graph`)
     }
+    const set = subGraph.makeVertexMap<unknown>()
+    for (const v of batch) {
+      set.set(v, {})
+    }
+
+    const subVertices = subGraph.vertices()
+    const outOfBatch = subVertices.filter(v => !set.has(v))
+    if (outOfBatch.length > 0) {
+      throw new Error(`batch scheduler returned out-of-batch vertices: ${outOfBatch.join(', ')}`)
+    }
+    if (subVertices.length !== batch.length) {
+      throw new Error(
+        `batch scheduler returned a bad grap: number of vertices is ${subVertices.length} (but it should be ${batch.length})`,
+      )
+    }
+    const subExecutor = new GraphExecutor<V>(subGraph, this.executor, () => undefined)
+    subExecutor.start()
   }
 
   private vertexExecuted(v: V) {
