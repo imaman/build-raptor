@@ -91,6 +91,8 @@ export class TaskExecutor {
   }
 
   async executeTask(taskName: TaskName, model: Model, taskTracker: TaskTracker) {
+    this.taskTracker.changeStatus(taskName, 'RUNNING')
+
     const t = this.task
 
     const fp = await this.computeFingerprint()

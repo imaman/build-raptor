@@ -3,11 +3,12 @@ import { BuildRunId } from 'build-run-id'
 import * as fse from 'fs-extra'
 import ignore from 'ignore'
 import { Logger } from 'logger'
-import { DirectoryScanner, Graph, groupBy, Int, recordToPairs, TypedPublisher } from 'misc'
+import { DirectoryScanner, groupBy, Int, recordToPairs, TypedPublisher } from 'misc'
 import * as path from 'path'
 import { RepoProtocol } from 'repo-protocol'
 import { TaskName } from 'task-name'
 import { UnitId } from 'unit-metadata'
+import * as util from 'util'
 
 import { EngineEventScheme } from './engine-event-scheme'
 import { ExecutionPlan } from './execution-plan'
@@ -104,14 +105,9 @@ export class Engine {
         return undefined
       }
 
-      const ret = new Graph<TaskName>(x => x)
-      for (const t of tasks) {
-        ret.vertex(t.name)
-      }
-
       const grouping = groupBy(filtered, t => t.kind)
+      const shadowedBy = new Map<TaskName, TaskName>()
       for (const [_, ts] of recordToPairs(grouping)) {
-        const shadowedBy = new Map<TaskName, TaskName>()
         for (const t of ts) {
           if (shadowedBy.has(t.name)) {
             continue
@@ -125,16 +121,18 @@ export class Engine {
             shadowedBy.set(at, t.name)
           }
         }
-
-        for (const [shadowed, shadowing] of shadowedBy) {
-          taskTracker.registerShadowing(shadowed, shadowing)
-          plan.errorPropagationGraph.edge(shadowed, shadowing)
-          ret.edge(shadowed, shadowing)
-        }
       }
 
-      this.logger.info(`batch scheduling of ${JSON.stringify(batch)} is:\n${ret}`)
-      return ret
+      for (const [shadowed, shadowing] of shadowedBy) {
+        taskTracker.registerShadowing(shadowed, shadowing)
+        plan.errorPropagationGraph.edge(shadowed, shadowing)
+      }
+
+      this.logger.info(`shadowing of batch ${JSON.stringify(batch)} is: ${util.inspect(shadowedBy)}`)
+      // We return undefined because we do not use the batch-scheduling functionality. we go all the information
+      // we needed from the batch and stored it in taskTracker. This information will be used to affect the actual
+      // execution of the tasks.
+      return undefined
     }
 
     const workFunction = async (tn: TaskName) => {
@@ -143,7 +141,6 @@ export class Engine {
       }
 
       try {
-        taskTracker.changeStatus(tn, 'RUNNING')
         const taskExecutor = new TaskExecutor(
           tn,
           model,
