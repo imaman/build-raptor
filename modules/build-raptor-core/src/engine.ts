@@ -112,14 +112,16 @@ export class Engine {
             continue
           }
 
+          const sameKindAsT = (tn: TaskName) => TaskName().undo(tn).taskKind === t.kind
+
           const isShadowing = (tn: TaskName) => {
             const back = plan.taskGraph.backNeighborsOf(tn)
-            const filtered = back.filter(b => TaskName().undo(b).taskKind === t.kind)
+            const filtered = back.filter(b => sameKindAsT(b))
             return filtered.length === 0
           }
           const candidateShadowing = plan.taskGraph
             .traverseFrom(t.name, { direction: 'backwards' })
-            .filter(tn => TaskName().undo(tn).taskKind === t.kind)
+            .filter(tn => sameKindAsT(tn))
             .filter(tn => isShadowing(tn))
 
           const chosen = candidateShadowing.find(Boolean)
