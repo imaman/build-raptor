@@ -90,37 +90,39 @@ export class TaskExecutor {
     throw new BuildFailedError(`Task ${this.taskName} failed to produce the following outputs:\n${formatted}`)
   }
 
-  async executeTask(taskName: TaskName, model: Model, taskTracker: TaskTracker) {
+  async executeTask() {
+    const taskName = this.taskName
+    this.taskTracker.changeStatus(taskName, 'RUNNING')
+
     const t = this.task
 
     const fp = await this.computeFingerprint()
     const unit = this.unit
-    const dir = path.join(model.rootDir, unit.pathInRepo)
+    const dir = path.join(this.model.rootDir, unit.pathInRepo)
 
-    if (taskTracker.isShadowed(t.name)) {
+    if (this.taskTracker.isShadowed(t.name)) {
       await this.validateOutputs()
-      // TODO(imaman): track the shadowing task of the shadowed task and report it in the published event.
+      // TODO(imaman): report the shadowing task it in the event.
       await this.eventPublisher.publish('executionShadowed', taskName)
-      taskTracker.registerShadowedVerdict(taskName, 'OK')
+      this.taskTracker.registerShadowedVerdict(taskName, 'OK')
       await this.taskStore.recordTask(taskName, fp, dir, t.outputLocations, 'OK')
       return
     }
 
-    const shadowedTasks = taskTracker.getTasksShadowedBy(t.name)
-    await this.purgeOutputs([taskName, ...shadowedTasks], model, taskTracker)
+    await this.purgeOutputs()
 
     const earlierVerdict = await this.taskStore.restoreTask(taskName, fp, dir)
 
     if (earlierVerdict === 'OK' || earlierVerdict === 'FLAKY') {
       await this.eventPublisher.publish('executionSkipped', taskName)
-      taskTracker.registerCachedVerdict(taskName, earlierVerdict)
+      this.taskTracker.registerCachedVerdict(taskName, earlierVerdict)
       return
     }
 
     if (earlierVerdict === 'FAIL' || earlierVerdict === 'UNKNOWN') {
       await this.eventPublisher.publish('executionStarted', taskName)
       const outputFile = path.join(this.taskOutputDir, `${t.id}.stdout`)
-      const status = await this.repoProtocol.execute(unit, dir, t.kind, outputFile, model.buildRunId)
+      const status = await this.repoProtocol.execute(unit, dir, t.kind, outputFile, this.model.buildRunId)
       await this.postProcess(status, outputFile)
       if (status === 'CRASH') {
         throw new Error(`Task ${JSON.stringify(taskName)} crashed`)
@@ -128,13 +130,13 @@ export class TaskExecutor {
 
       if (status === 'OK') {
         await this.validateOutputs()
-        taskTracker.registerVerdict(taskName, status, outputFile)
+        this.taskTracker.registerVerdict(taskName, status, outputFile)
         await this.taskStore.recordTask(taskName, fp, dir, t.outputLocations, status)
         return
       }
 
       if (status === 'FAIL') {
-        taskTracker.registerVerdict(taskName, status, outputFile)
+        this.taskTracker.registerVerdict(taskName, status, outputFile)
         // TODO(imaman): should not record outputs if task has failed.
         await this.taskStore.recordTask(taskName, fp, dir, t.outputLocations, status)
         return
@@ -146,10 +148,13 @@ export class TaskExecutor {
     shouldNeverHappen(earlierVerdict)
   }
 
-  private async purgeOutputs(taskNames: TaskName[], model: Model, taskTracker: TaskTracker) {
-    await promises(taskNames).forEach(20, async tn => {
-      const task = taskTracker.getTask(tn)
-      await this.purger.purgeOutputsOfTask(task, model)
+  private async purgeOutputs() {
+    const shadowedTasks = this.taskTracker.getTasksShadowedBy(this.taskName)
+    const taskNames = [this.taskName, ...shadowedTasks]
+    const tasks = taskNames.map(tn => this.taskTracker.getTask(tn))
+
+    await promises(tasks).forEach(20, async task => {
+      await this.purger.purgeOutputsOfTask(task, this.model)
     })
   }
 }

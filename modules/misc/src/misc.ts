@@ -18,6 +18,9 @@ export function computeHash(input: Buffer | string): string {
 export class Timeout {
   constructor(private readonly promise: Promise<void>) {}
 
+  /**
+   * Returns a promise that is resvoled when the timeout expires.
+   */
   hasPassed(): Promise<void> {
     return this.promise
   }

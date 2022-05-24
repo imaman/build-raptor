@@ -20,6 +20,8 @@ describe('yarn-repo-protocol.e2e', () => {
           jest: `echo "testing now" && echo '{}' > jest-output.json`,
         },
       },
+      'modules/a/src/a.ts': 'N/A',
+      'modules/a/tests/a.spec.ts': 'N/A',
     }
 
     const fork = await driver.repo(recipe).fork()
@@ -31,12 +33,12 @@ describe('yarn-repo-protocol.e2e', () => {
 
   const build = [
     'mkdir -p dist/src dist/tests',
-    `cat src/a.ts | tr '[:upper:]' '[:lower:]' > dist/src/a.js`,
-    `cat tests/a.spec.ts | tr '[:upper:]' '[:lower:]' > dist/tests/a.spec.js`,
+    `cat src/*.ts | tr '[:upper:]' '[:lower:]' > dist/src/index.js`,
+    `cat tests/*.spec.ts | tr '[:upper:]' '[:lower:]' > dist/tests/index.spec.js`,
     `echo "build finished"`,
   ].join(' && ')
 
-  const jest = [`cat dist/src/a.js dist/tests/a.spec.js`, `echo '{}' > jest-output.json`].join(' && ')
+  const jest = [`cat dist/src/index.js dist/tests/index.spec.js`, `echo '{}' > jest-output.json`].join(' && ')
 
   test('reruns tests when the source code changes', async () => {
     const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
@@ -51,18 +53,82 @@ describe('yarn-repo-protocol.e2e', () => {
 
     await fork.file('modules/a/src/a.ts').write('SUNDAY')
     const runA = await fork.run('OK', { taskKind: 'test' })
-    expect(await fork.file('modules/a/dist/src/a.js').lines({ trimEach: true })).toEqual(['sunday'])
-    expect(await fork.file('modules/a/dist/tests/a.spec.js').lines({ trimEach: true })).toEqual(['tuesday'])
+    expect(await fork.file('modules/a/dist/src/index.js').lines({ trimEach: true })).toEqual(['sunday'])
+    expect(await fork.file('modules/a/dist/tests/index.spec.js').lines({ trimEach: true })).toEqual(['tuesday'])
     expect(runA.getSummary('a', 'build')).toMatchObject({ execution: 'EXECUTED' })
     expect(runA.getSummary('a', 'test')).toMatchObject({ execution: 'EXECUTED' })
     expect(await runA.outputOf('test', 'a')).toContain('sundaytuesday')
 
     await fork.file('modules/a/src/a.ts').write('MONDAY')
     const runB = await fork.run('OK', { taskKind: 'test' })
-    expect(await fork.file('modules/a/dist/src/a.js').lines({ trimEach: true })).toEqual(['monday'])
-    expect(await fork.file('modules/a/dist/tests/a.spec.js').lines({ trimEach: true })).toEqual(['tuesday'])
+    expect(await fork.file('modules/a/dist/src/index.js').lines({ trimEach: true })).toEqual(['monday'])
+    expect(await fork.file('modules/a/dist/tests/index.spec.js').lines({ trimEach: true })).toEqual(['tuesday'])
     expect(runA.getSummary('a', 'build')).toMatchObject({ execution: 'EXECUTED' })
     expect(runB.getSummary('a', 'test')).toMatchObject({ execution: 'EXECUTED' })
     expect(await runB.outputOf('test', 'a')).toContain('mondaytuesday')
+  })
+  test('if nothing has changed the tasks are cached', async () => {
+    const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
+    const recipe = {
+      'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+      'modules/a/package.json': { name: 'a', version: '1.0.0', scripts: { build, jest }, dependencies: { b: '1.0.0' } },
+      'modules/a/src/a.ts': 'ARGENTINA',
+      'modules/a/tests/a.spec.ts': 'ALGERIA',
+      'modules/b/package.json': { name: 'b', version: '1.0.0', scripts: { build, jest } },
+      'modules/b/src/b.ts': 'BRAZIL',
+      'modules/b/tests/b.spec.ts': 'BELGIUM',
+    }
+
+    const fork = await driver.repo(recipe).fork()
+
+    const run1 = await fork.run('OK', { taskKind: 'build' })
+    expect(await fork.file('modules/a/dist/src/index.js').lines({ trimEach: true })).toEqual(['argentina'])
+    expect(await fork.file('modules/a/dist/tests/index.spec.js').lines({ trimEach: true })).toEqual(['algeria'])
+    expect(run1.executionTypeOf('a', 'build')).toEqual('EXECUTED')
+    expect(run1.executionTypeOf('b', 'build')).toEqual('EXECUTED')
+
+    const run2 = await fork.run('OK', { taskKind: 'build' })
+    expect(run2.executionTypeOf('a', 'build')).toEqual('CACHED')
+    expect(run2.executionTypeOf('b', 'build')).toEqual('CACHED')
+
+    const run3 = await fork.run('OK', { taskKind: 'build' })
+    expect(run3.executionTypeOf('a', 'build')).toEqual('CACHED')
+    expect(run3.executionTypeOf('b', 'build')).toEqual('CACHED')
+
+    const run4 = await fork.run('OK', { taskKind: 'build' })
+    expect(run4.executionTypeOf('a', 'build')).toEqual('CACHED')
+    expect(run4.executionTypeOf('b', 'build')).toEqual('CACHED')
+  })
+  test.skip('the build task uses shadowing', async () => {
+    const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
+    const recipe = {
+      'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+      'modules/a/package.json': { name: 'a', version: '1.0.0', scripts: { build, jest }, dependencies: { b: '1.0.0' } },
+      'modules/a/src/a.ts': 'ARGENTINA',
+      'modules/a/tests/a.spec.ts': 'ALGERIA',
+      'modules/b/package.json': { name: 'b', version: '1.0.0', scripts: { build, jest } },
+      'modules/b/src/b.ts': 'BRAZIL',
+      'modules/b/tests/b.spec.ts': 'BELGIUM',
+    }
+
+    const fork = await driver.repo(recipe).fork()
+
+    const run1 = await fork.run('OK', { taskKind: 'build' })
+    expect(run1.executionTypeOf('a', 'build')).toEqual('EXECUTED')
+    expect(run1.executionTypeOf('b', 'build')).toEqual('SHADOWED')
+
+    await fork.file('modules/a/src/a.ts').write('AUSTRALIA')
+    const run2 = await fork.run('OK', { taskKind: 'build' })
+    expect(run2.executionTypeOf('a', 'build')).toEqual('EXECUTED')
+    expect(run2.executionTypeOf('b', 'build')).toEqual('SHADOWED')
+
+    await fork.file('modules/b/src/b.ts').write('BAHAMAS')
+    const run3 = await fork.run('OK', { taskKind: 'build' })
+    expect(run3.executionTypeOf('a', 'build')).toEqual('EXECUTED')
+    expect(run3.executionTypeOf('b', 'build')).toEqual('SHADOWED')
+
+    const run4 = await fork.run('OK', { taskKind: 'build' })
+    expect(run4.executionTypeOf('a', 'build')).toEqual('CACHED')
+    expect(run4.executionTypeOf('b', 'build')).toEqual('CACHED')
   })
 })
