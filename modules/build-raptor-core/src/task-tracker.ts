@@ -14,6 +14,7 @@ export class TaskTracker {
   private counter: SlotIndex = SlotIndex(0)
   private shadowed = new Set<TaskName>()
   private readonly shadowedBy = new Map<TaskName, TaskName[]>()
+  private readonly shadowingByShadowed = new Map<TaskName, TaskName>()
 
   constructor(private readonly plan: ExecutionPlan) {}
 
@@ -23,11 +24,16 @@ export class TaskTracker {
 
   registerShadowing(shadowed: TaskName, shadowing: TaskName) {
     assigningGet(this.shadowedBy, shadowing, () => []).push(shadowed)
+    this.shadowingByShadowed.set(shadowed, shadowing)
     this.shadowed.add(shadowed)
   }
 
   getTasksShadowedBy(tn: TaskName): TaskName[] {
     return this.shadowedBy.get(tn) || []
+  }
+
+  getShadowingTask(shadowedTask: TaskName): TaskName | undefined {
+    return this.shadowingByShadowed.get(shadowedTask)
   }
 
   isShadowed(tn: TaskName): boolean {
