@@ -99,7 +99,7 @@ export class TaskExecutor {
 
     if (taskTracker.isShadowed(t.name)) {
       await this.validateOutputs()
-      // TODO(imaman): track the shadowing task of the shadowed task and report it in the published event.
+      // TODO(imaman): report the shadowing task it in the event.
       await this.eventPublisher.publish('executionShadowed', taskName)
       taskTracker.registerShadowedVerdict(taskName, 'OK')
       await this.taskStore.recordTask(taskName, fp, dir, t.outputLocations, 'OK')
