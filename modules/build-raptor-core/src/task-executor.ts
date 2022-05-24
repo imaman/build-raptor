@@ -109,8 +109,7 @@ export class TaskExecutor {
       return
     }
 
-    const shadowedTasks = this.taskTracker.getTasksShadowedBy(t.name)
-    await this.purgeOutputs([taskName, ...shadowedTasks], this.model, this.taskTracker)
+    await this.purgeOutputs()
 
     const earlierVerdict = await this.taskStore.restoreTask(taskName, fp, dir)
 
@@ -149,10 +148,13 @@ export class TaskExecutor {
     shouldNeverHappen(earlierVerdict)
   }
 
-  private async purgeOutputs(taskNames: TaskName[], model: Model, taskTracker: TaskTracker) {
-    await promises(taskNames).forEach(20, async tn => {
-      const task = taskTracker.getTask(tn)
-      await this.purger.purgeOutputsOfTask(task, model)
+  private async purgeOutputs() {
+    const shadowedTasks = this.taskTracker.getTasksShadowedBy(this.taskName)
+    const taskNames = [this.taskName, ...shadowedTasks]
+    const tasks = taskNames.map(tn => this.taskTracker.getTask(tn))
+
+    await promises(tasks).forEach(20, async task => {
+      await this.purger.purgeOutputsOfTask(task, this.model)
     })
   }
 }
