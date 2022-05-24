@@ -67,11 +67,11 @@ describe('yarn-repo-protocol.e2e', () => {
     expect(runB.getSummary('a', 'test')).toMatchObject({ execution: 'EXECUTED' })
     expect(await runB.outputOf('test', 'a')).toContain('mondaytuesday')
   })
-  test('capture', async () => {
+  test('if nothing has changed the tasks are cached', async () => {
     const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
-      'modules/a/package.json': { name: 'a', version: '1.0.0', scripts: { build, jest } },
+      'modules/a/package.json': { name: 'a', version: '1.0.0', scripts: { build, jest }, dependencies: { b: '1.0.0' } },
       'modules/a/src/a.ts': 'ARGENTINA',
       'modules/a/tests/a.spec.ts': 'ALGERIA',
       'modules/b/package.json': { name: 'b', version: '1.0.0', scripts: { build, jest } },
@@ -84,19 +84,47 @@ describe('yarn-repo-protocol.e2e', () => {
     const run1 = await fork.run('OK', { taskKind: 'build' })
     expect(await fork.file('modules/a/dist/src/index.js').lines({ trimEach: true })).toEqual(['argentina'])
     expect(await fork.file('modules/a/dist/tests/index.spec.js').lines({ trimEach: true })).toEqual(['algeria'])
-    expect(run1.getSummary('a', 'build')).toMatchObject({ execution: 'EXECUTED' })
-    expect(run1.getSummary('b', 'build')).toMatchObject({ execution: 'EXECUTED' })
+    expect(run1.executionTypeOf('a', 'build')).toEqual('EXECUTED')
+    expect(run1.executionTypeOf('b', 'build')).toEqual('EXECUTED')
 
     const run2 = await fork.run('OK', { taskKind: 'build' })
-    expect(run2.getSummary('a', 'build')).toMatchObject({ execution: 'CACHED' })
-    expect(run2.getSummary('b', 'build')).toMatchObject({ execution: 'CACHED' })
+    expect(run2.executionTypeOf('a', 'build')).toEqual('CACHED')
+    expect(run2.executionTypeOf('b', 'build')).toEqual('CACHED')
 
     const run3 = await fork.run('OK', { taskKind: 'build' })
-    expect(run3.getSummary('a', 'build')).toMatchObject({ execution: 'CACHED' })
-    expect(run3.getSummary('b', 'build')).toMatchObject({ execution: 'CACHED' })
+    expect(run3.executionTypeOf('a', 'build')).toEqual('CACHED')
+    expect(run3.executionTypeOf('b', 'build')).toEqual('CACHED')
 
     const run4 = await fork.run('OK', { taskKind: 'build' })
-    expect(run4.getSummary('a', 'build')).toMatchObject({ execution: 'CACHED' })
-    expect(run4.getSummary('b', 'build')).toMatchObject({ execution: 'CACHED' })
+    expect(run4.executionTypeOf('a', 'build')).toEqual('CACHED')
+    expect(run4.executionTypeOf('b', 'build')).toEqual('CACHED')
+  })
+  test('capture', async () => {
+    const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
+    const recipe = {
+      'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+      'modules/a/package.json': { name: 'a', version: '1.0.0', scripts: { build, jest }, dependencies: { b: '1.0.0' } },
+      'modules/a/src/a.ts': 'ARGENTINA',
+      'modules/a/tests/a.spec.ts': 'ALGERIA',
+      'modules/b/package.json': { name: 'b', version: '1.0.0', scripts: { build, jest } },
+      'modules/b/src/b.ts': 'BRAZIL',
+      'modules/b/tests/b.spec.ts': 'BELGIUM',
+    }
+
+    const fork = await driver.repo(recipe).fork()
+
+    const run1 = await fork.run('OK', { taskKind: 'build' })
+    expect(run1.executionTypeOf('a', 'build')).toEqual('EXECUTED')
+    expect(run1.executionTypeOf('b', 'build')).toEqual('EXECUTED')
+
+    await fork.file('modules/a/src/a.ts').write('AUSTRALIA')
+    const run2 = await fork.run('OK', { taskKind: 'build' })
+    expect(run2.executionTypeOf('a', 'build')).toEqual('EXECUTED')
+    expect(run2.executionTypeOf('b', 'build')).toEqual('CACHED')
+
+    await fork.file('modules/b/src/b.ts').write('BAHAMAS')
+    const run3 = await fork.run('OK', { taskKind: 'build' })
+    expect(run3.executionTypeOf('a', 'build')).toEqual('EXECUTED')
+    expect(run3.executionTypeOf('b', 'build')).toEqual('EXECUTED')
   })
 })
