@@ -79,15 +79,15 @@ describe('yarn-repo-protocol.e2e', () => {
 
     const fork = await driver.repo(recipe).fork()
 
-    const runA = await fork.run('OK', { taskKind: 'build' })
+    const run1 = await fork.run('OK', { taskKind: 'build' })
     expect(await fork.file('modules/a/dist/src/index.js').lines({ trimEach: true })).toEqual(['argentina'])
     expect(await fork.file('modules/a/dist/tests/index.spec.js').lines({ trimEach: true })).toEqual(['algeria'])
-    expect(runA.getSummary('a', 'build')).toMatchObject({ execution: 'EXECUTED' })
-    expect(runA.getSummary('b', 'build')).toMatchObject({ execution: 'EXECUTED' })
+    expect(run1.getSummary('a', 'build')).toMatchObject({ execution: 'EXECUTED' })
+    // expect(runA.getSummary('b', 'build')).toMatchObject({ execution: 'SHADOWED' })
 
-    await fork.file('modules/b/src/b.ts').write('BAHAMAS')
-    const runB = await fork.run('OK', { taskKind: 'build' })
-    expect(runB.getSummary('a', 'build')).toMatchObject({ execution: 'EXECUTED' })
-    expect(runB.getSummary('b', 'build')).toMatchObject({ execution: 'EXECUTED' })
+    // await fork.file('modules/a/src/a.ts').write('AUSTRALIA')
+    const run2 = await fork.run('OK', { taskKind: 'build' })
+    expect(run2.getSummary('a', 'build')).toMatchObject({ execution: 'EXECUTED' })
+    expect(run2.getSummary('b', 'build')).toMatchObject({ execution: 'CACHED' })
   })
 })
