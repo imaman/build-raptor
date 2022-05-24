@@ -153,7 +153,7 @@ export class Engine {
           this.fingerprintLedger,
           this.purger,
         )
-        await taskExecutor.executeTask(tn, model, taskTracker)
+        await taskExecutor.executeTask()
       } catch (e) {
         this.logger.info(`crashed while running ${tn}`)
         throw e

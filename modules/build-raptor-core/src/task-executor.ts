@@ -90,7 +90,7 @@ export class TaskExecutor {
     throw new BuildFailedError(`Task ${this.taskName} failed to produce the following outputs:\n${formatted}`)
   }
 
-  async executeTask(_taskName: TaskName, _model: Model, _taskTracker: TaskTracker) {
+  async executeTask() {
     const { taskTracker, model } = this
     const taskName = this.taskName
     this.taskTracker.changeStatus(taskName, 'RUNNING')
