@@ -99,7 +99,7 @@ describe('yarn-repo-protocol.e2e', () => {
     expect(run4.executionTypeOf('a', 'build')).toEqual('CACHED')
     expect(run4.executionTypeOf('b', 'build')).toEqual('CACHED')
   })
-  test('capture', async () => {
+  test('the build task uses shadowing', async () => {
     const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
@@ -115,16 +115,20 @@ describe('yarn-repo-protocol.e2e', () => {
 
     const run1 = await fork.run('OK', { taskKind: 'build' })
     expect(run1.executionTypeOf('a', 'build')).toEqual('EXECUTED')
-    expect(run1.executionTypeOf('b', 'build')).toEqual('EXECUTED')
+    expect(run1.executionTypeOf('b', 'build')).toEqual('SHADOWED')
 
     await fork.file('modules/a/src/a.ts').write('AUSTRALIA')
     const run2 = await fork.run('OK', { taskKind: 'build' })
     expect(run2.executionTypeOf('a', 'build')).toEqual('EXECUTED')
-    expect(run2.executionTypeOf('b', 'build')).toEqual('CACHED')
+    expect(run2.executionTypeOf('b', 'build')).toEqual('SHADOWED')
 
     await fork.file('modules/b/src/b.ts').write('BAHAMAS')
     const run3 = await fork.run('OK', { taskKind: 'build' })
     expect(run3.executionTypeOf('a', 'build')).toEqual('EXECUTED')
-    expect(run3.executionTypeOf('b', 'build')).toEqual('EXECUTED')
+    expect(run3.executionTypeOf('b', 'build')).toEqual('SHADOWED')
+
+    const run4 = await fork.run('OK', { taskKind: 'build' })
+    expect(run4.executionTypeOf('a', 'build')).toEqual('CACHED')
+    expect(run4.executionTypeOf('b', 'build')).toEqual('CACHED')
   })
 })
