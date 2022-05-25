@@ -93,7 +93,7 @@ export class TaskExecutor {
   async executeTask() {
     const t = this.task
     if (this.tracker.hasVerdict(t.name)) {
-      return undefined
+      return t.name
     }
 
     const shadowing = this.tracker.getShadowingTask(t.name)
@@ -102,7 +102,7 @@ export class TaskExecutor {
     }
 
     await this.executeUnshadowedTask()
-    return undefined
+    return t.name
   }
 
   private async executeUnshadowedTask() {

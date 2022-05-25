@@ -126,10 +126,8 @@ export class Engine {
             .traverseFrom(t.name, { direction: 'backwards' })
             .filter(tn => isShadowing(tn))
 
-          const chosen = shadowingTasks.find(Boolean)
-          if (chosen && chosen !== t.name) {
-            shadowedBy.set(t.name, chosen)
-          }
+          const chosen = shadowingTasks.find(Boolean) ?? t.name
+          shadowedBy.set(t.name, chosen)
         }
       }
 
@@ -147,8 +145,8 @@ export class Engine {
 
     const workFunction = async (tn: TaskName) => {
       try {
-        let current: TaskName | undefined = tn
-        while (current !== undefined) {
+        let current = tn
+        while (true) {
           const taskExecutor: TaskExecutor = new TaskExecutor(
             current,
             model,
@@ -163,7 +161,7 @@ export class Engine {
           )
           const next = await taskExecutor.executeTask()
           if (next === current) {
-            throw new Error(`Task ${current} did not advance to the next task`)
+            break
           }
           current = next
         }
