@@ -123,4 +123,44 @@ describe('typed-publisher', () => {
     expect(bs).toEqual([2, 7])
     expect(cs).toEqual([2, 7])
   })
+  describe('once', () => {
+    test('allows registering a listener that will be invoked just once', async () => {
+      const p = new TypedPublisher<{ a: number }>()
+
+      const as: number[] = []
+      p.once('a', async (e: number) => {
+        as.push(e)
+      })
+
+      const bs: number[] = []
+      p.once('a', async (e: number) => {
+        bs.push(e)
+      })
+
+      await p.publish('a', 900)
+      expect(as).toEqual([900])
+      expect(bs).toEqual([900])
+
+      for (let i = 0; i < 100; ++i) {
+        await p.publish('a', i)
+      }
+      expect(as).toEqual([900])
+      expect(bs).toEqual([900])
+    })
+  })
+  describe('awaitFor', () => {
+    test.skip('foo', async () => {
+      const p = new TypedPublisher<{ a: number }>()
+
+      const captured: number[] = []
+      const promise = p.awaitFor('a', (e: number) => {
+        captured.push(e)
+        return true
+      })
+
+      await p.publish('a', 2)
+      await promise
+      expect(captured).toEqual([2])
+    })
+  })
 })

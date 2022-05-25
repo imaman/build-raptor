@@ -21,6 +21,7 @@ export interface Subscribable<T> {
 export class TypedPublisher<T extends Record<string, any>> implements Subscribable<T> {
   private readonly map: {
     [K in keyof T]: SinglePublisher<T[K]>
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   } = {} as {
     [K in keyof T]: SinglePublisher<T[K]>
   }
@@ -36,5 +37,26 @@ export class TypedPublisher<T extends Record<string, any>> implements Subscribab
       this.map[k] = x
     }
     x.on(subscriber)
+  }
+  once<K extends keyof T>(k: K, subscriber: (e: T[K]) => Promise<void> | void) {
+    let fired = false
+    this.on(k, e => {
+      if (fired) {
+        return
+      }
+
+      fired = true
+      subscriber(e)
+    })
+  }
+
+  awaitFor<K extends keyof T>(k: K, filter: (e: T[K]) => boolean): Promise<void> {
+    return new Promise<T[K]>(res => {
+      this.on(k, e => {
+        if (filter(e)) {
+          res(e)
+        }
+      })
+    })
   }
 }
