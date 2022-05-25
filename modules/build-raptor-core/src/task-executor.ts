@@ -16,6 +16,36 @@ import { TaskTracker } from './task-tracker'
 
 export class TaskExecutor {
   constructor(
+    private readonly model: Model,
+    private readonly tracker: TaskTracker,
+    private readonly logger: Logger,
+    private readonly repoProtocol: RepoProtocol,
+    private readonly taskStore: TaskStore,
+    private readonly taskOutputDir: string,
+    private readonly eventPublisher: TypedPublisher<EngineEventScheme>,
+    private readonly fingerprintLedger: FingerprintLedger,
+    private readonly purger: Purger,
+  ) {}
+
+  async executeTask(taskName: TaskName): Promise<void> {
+    const ste = new SingleTaskExecutor(
+      taskName,
+      this.model,
+      this.tracker,
+      this.logger,
+      this.repoProtocol,
+      this.taskStore,
+      this.taskOutputDir,
+      this.eventPublisher,
+      this.fingerprintLedger,
+      this.purger,
+    )
+    await ste.executeTask()
+  }
+}
+
+class SingleTaskExecutor {
+  constructor(
     private readonly taskName: TaskName,
     private readonly model: Model,
     private readonly tracker: TaskTracker,
