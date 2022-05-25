@@ -156,14 +156,7 @@ export class Engine {
 
     const workFunction = async (tn: TaskName) => {
       try {
-        let current = tn
-        while (true) {
-          const next = await taskExecutor.executeTask(tn)
-          if (next === current) {
-            break
-          }
-          current = next
-        }
+        await taskExecutor.executeTask(tn)
       } catch (e) {
         this.logger.info(`crashed while running ${tn}`)
         throw e

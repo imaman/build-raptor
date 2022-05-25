@@ -31,19 +31,26 @@ export class TaskExecutor {
   ) {}
 
   async executeTask(taskName: TaskName) {
-    const ste = new SingleTaskExecutor(
-      taskName,
-      this.model,
-      this.tracker,
-      this.logger,
-      this.repoProtocol,
-      this.taskStore,
-      this.taskOutputDir,
-      this.eventPublisher,
-      this.fingerprintLedger,
-      this.purger,
-    )
-    return await ste.executeTask()
+    let current = taskName
+    while (true) {
+      const ste = new SingleTaskExecutor(
+        taskName,
+        this.model,
+        this.tracker,
+        this.logger,
+        this.repoProtocol,
+        this.taskStore,
+        this.taskOutputDir,
+        this.eventPublisher,
+        this.fingerprintLedger,
+        this.purger,
+      )
+      const next = await ste.executeTask()
+      if (next === current) {
+        break
+      }
+      current = next
+    }
   }
 }
 
