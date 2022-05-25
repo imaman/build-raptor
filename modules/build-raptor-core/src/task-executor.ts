@@ -14,6 +14,9 @@ import { Purger } from './purger'
 import { TaskStore } from './task-store'
 import { TaskTracker } from './task-tracker'
 
+/**
+ * An object that is reponsible for executing a task.
+ */
 export class TaskExecutor {
   constructor(
     private readonly taskName: TaskName,
@@ -90,7 +93,12 @@ export class TaskExecutor {
     throw new BuildFailedError(`Task ${this.taskName} failed to produce the following outputs:\n${formatted}`)
   }
 
-  async executeTask() {
+  /**
+   * Exectues the task.
+   *
+   * @returns the name of another task to execute. Returning `this.taskName` means "no other task to execute".
+   */
+  async executeTask(): Promise<TaskName> {
     const t = this.task
     if (this.tracker.hasVerdict(t.name)) {
       return t.name
