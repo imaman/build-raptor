@@ -95,6 +95,17 @@ export class Engine {
 
   async execute(plan: ExecutionPlan, model: Model) {
     const taskTracker = new TaskTracker(plan)
+    const taskExecutor = new TaskExecutor(
+      model,
+      taskTracker,
+      this.logger,
+      this.repoProtocol,
+      this.taskStore,
+      this.taskOutputDir,
+      this.eventPublisher,
+      this.fingerprintLedger,
+      this.purger,
+    )
 
     const batchScheduler = (batch: TaskName[]) => {
       const tasks = batch.map(taskName => taskTracker.getTask(taskName))
@@ -145,26 +156,7 @@ export class Engine {
 
     const workFunction = async (tn: TaskName) => {
       try {
-        let current = tn
-        while (true) {
-          const taskExecutor: TaskExecutor = new TaskExecutor(
-            current,
-            model,
-            taskTracker,
-            this.logger,
-            this.repoProtocol,
-            this.taskStore,
-            this.taskOutputDir,
-            this.eventPublisher,
-            this.fingerprintLedger,
-            this.purger,
-          )
-          const next = await taskExecutor.executeTask()
-          if (next === current) {
-            break
-          }
-          current = next
-        }
+        await taskExecutor.executeTask(tn)
       } catch (e) {
         this.logger.info(`crashed while running ${tn}`)
         throw e
