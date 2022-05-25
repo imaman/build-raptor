@@ -16,6 +16,7 @@ import { Fingerprinter } from './fingerprinter'
 import { Model } from './model'
 import { Planner } from './planner'
 import { Purger } from './purger'
+import { Task } from './task'
 import { TaskExecutor } from './task-executor'
 import { TaskStore } from './task-store'
 import { TaskTracker } from './task-tracker'
@@ -112,19 +113,20 @@ export class Engine {
             continue
           }
 
-          const sameKindAsT = (tn: TaskName) => TaskName().undo(tn).taskKind === t.kind
-
+          const isSameKind = (tn: TaskName, task: Task) => TaskName().undo(tn).taskKind === task.kind
           const isShadowing = (tn: TaskName) => {
-            const back = plan.taskGraph.backNeighborsOf(tn)
-            const filtered = back.filter(b => sameKindAsT(b))
-            return filtered.length === 0
+            if (!isSameKind(tn, t)) {
+              return false
+            }
+            const dependents = plan.taskGraph.backNeighborsOf(tn)
+            return dependents.filter(at => isSameKind(at, t)).length === 0
           }
-          const candidateShadowing = plan.taskGraph
-            .traverseFrom(t.name, { direction: 'backwards' })
-            .filter(tn => sameKindAsT(tn))
-            .filter(tn => isShadowing(tn))
 
-          const chosen = candidateShadowing.find(Boolean)
+          const shadowingTasks = plan.taskGraph
+            .traverseFrom(t.name, { direction: 'backwards' })
+            .filter(tn => isSameKind(tn, t) && isShadowing(tn))
+
+          const chosen = shadowingTasks.find(Boolean)
           if (chosen && chosen !== t.name) {
             shadowedBy.set(t.name, chosen)
           }
