@@ -38,6 +38,7 @@ export class TypedPublisher<T extends Record<string, any>> implements Subscribab
     }
     x.on(subscriber)
   }
+
   once<K extends keyof T>(k: K, subscriber: (e: T[K]) => Promise<void> | void) {
     let fired = false
     this.on(k, e => {
@@ -50,12 +51,26 @@ export class TypedPublisher<T extends Record<string, any>> implements Subscribab
     })
   }
 
-  awaitFor<K extends keyof T>(k: K, filter: (e: T[K]) => boolean): Promise<void> {
+  /**
+   * returns a promise that is resolved once an event the satisfies the given predicate has been published
+   * @param k event name
+   * @param predicate a function to test the event.
+   * @returns a Promise that resolves with the value of the first event for which `predicate` returned `true`
+   */
+  awaitFor<K extends keyof T>(k: K, predicate: (e: T[K]) => boolean): Promise<T[K]> {
     return new Promise<T[K]>(res => {
+      let fired = false
       this.on(k, e => {
-        if (filter(e)) {
-          res(e)
+        if (fired) {
+          return
         }
+
+        if (!predicate(e)) {
+          return
+        }
+
+        fired = true
+        res(e)
       })
     })
   }

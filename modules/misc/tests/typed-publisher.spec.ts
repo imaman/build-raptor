@@ -1,3 +1,4 @@
+import { aTimeoutOf } from '../src'
 import { TypedPublisher } from '../src/typed-publisher'
 
 describe('typed-publisher', () => {
@@ -149,18 +150,45 @@ describe('typed-publisher', () => {
     })
   })
   describe('awaitFor', () => {
-    test.skip('foo', async () => {
+    test('returns a promise that is resolved once an event the satisfies the given predicate has been published', async () => {
       const p = new TypedPublisher<{ a: number }>()
 
-      const captured: number[] = []
-      const promise = p.awaitFor('a', (e: number) => {
-        captured.push(e)
-        return true
-      })
+      const promise = p.awaitFor('a', (e: number) => e === 10)
 
-      await p.publish('a', 2)
-      await promise
-      expect(captured).toEqual([2])
+      let n = 5
+      const id = setInterval(async () => await p.publish('a', ++n), 2)
+      try {
+        await promise
+        expect(n).toEqual(10)
+      } finally {
+        clearInterval(id)
+      }
+    })
+    test('the returned promise resolves to the value of the event that satisfied the predicate', async () => {
+      const p = new TypedPublisher<{ x: string }>()
+
+      const promise = p.awaitFor('x', (e: string) => e.toUpperCase() === e)
+
+      const words = ['the', 'quick', 'brown', 'FOX', 'jumps', 'over', 'the', 'lazy', 'dog']
+      for (const w of words) {
+        await p.publish('x', w)
+        await aTimeoutOf(2).hasPassed()
+      }
+
+      expect(await promise).toEqual('FOX')
+    })
+    test('the promise resolves to the value of the first satisfying evnet', async () => {
+      const p = new TypedPublisher<{ x: string }>()
+
+      const promise = p.awaitFor('x', (e: string) => e.toUpperCase() === e)
+
+      const words = ['the', 'QUICK', 'BROWN', 'FOX']
+      for (const w of words) {
+        await p.publish('x', w)
+        await aTimeoutOf(2).hasPassed()
+      }
+
+      expect(await promise).toEqual('QUICK')
     })
   })
 })
