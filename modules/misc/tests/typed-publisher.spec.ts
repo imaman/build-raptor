@@ -1,3 +1,4 @@
+import { aTimeoutOf } from '../src'
 import { TypedPublisher } from '../src/typed-publisher'
 
 describe('typed-publisher', () => {
@@ -122,5 +123,72 @@ describe('typed-publisher', () => {
     expect(as).toEqual([2, 7])
     expect(bs).toEqual([2, 7])
     expect(cs).toEqual([2, 7])
+  })
+  describe('once', () => {
+    test('allows registering a listener that will be invoked just once', async () => {
+      const p = new TypedPublisher<{ a: number }>()
+
+      const as: number[] = []
+      p.once('a', async (e: number) => {
+        as.push(e)
+      })
+
+      const bs: number[] = []
+      p.once('a', async (e: number) => {
+        bs.push(e)
+      })
+
+      await p.publish('a', 900)
+      expect(as).toEqual([900])
+      expect(bs).toEqual([900])
+
+      for (let i = 0; i < 100; ++i) {
+        await p.publish('a', i)
+      }
+      expect(as).toEqual([900])
+      expect(bs).toEqual([900])
+    })
+  })
+  describe('awaitFor', () => {
+    test('returns a promise that is resolved once an event the satisfies the given predicate has been published', async () => {
+      const p = new TypedPublisher<{ a: number }>()
+
+      const promise = p.awaitFor('a', (e: number) => e === 10)
+
+      let n = 5
+      const id = setInterval(async () => await p.publish('a', ++n), 2)
+      try {
+        await promise
+        expect(n).toEqual(10)
+      } finally {
+        clearInterval(id)
+      }
+    })
+    test('the returned promise resolves to the value of the event that satisfied the predicate', async () => {
+      const p = new TypedPublisher<{ x: string }>()
+
+      const promise = p.awaitFor('x', (e: string) => e.toUpperCase() === e)
+
+      const words = ['the', 'quick', 'brown', 'FOX', 'jumps', 'over', 'the', 'lazy', 'dog']
+      for (const w of words) {
+        await p.publish('x', w)
+        await aTimeoutOf(2).hasPassed()
+      }
+
+      expect(await promise).toEqual('FOX')
+    })
+    test('the promise resolves to the value of the first satisfying event', async () => {
+      const p = new TypedPublisher<{ x: string }>()
+
+      const promise = p.awaitFor('x', (e: string) => e.toUpperCase() === e)
+
+      const words = ['the', 'QUICK', 'BROWN', 'FOX']
+      for (const w of words) {
+        await p.publish('x', w)
+        await aTimeoutOf(2).hasPassed()
+      }
+
+      expect(await promise).toEqual('QUICK')
+    })
   })
 })

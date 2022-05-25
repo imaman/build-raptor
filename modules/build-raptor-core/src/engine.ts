@@ -7,7 +7,6 @@ import { DirectoryScanner, groupBy, Int, recordToPairs, TypedPublisher } from 'm
 import * as path from 'path'
 import { RepoProtocol } from 'repo-protocol'
 import { TaskName } from 'task-name'
-import { UnitId } from 'unit-metadata'
 import * as util from 'util'
 
 import { EngineEventScheme } from './engine-event-scheme'
@@ -17,6 +16,7 @@ import { Fingerprinter } from './fingerprinter'
 import { Model } from './model'
 import { Planner } from './planner'
 import { Purger } from './purger'
+import { Task } from './task'
 import { TaskExecutor } from './task-executor'
 import { TaskStore } from './task-store'
 import { TaskTracker } from './task-tracker'
@@ -123,14 +123,22 @@ export class Engine {
           if (shadowedBy.has(t.name)) {
             continue
           }
-          const reachable = new Set<UnitId>(model.graph.traverseFrom(t.unitId))
-          reachable.delete(t.unitId)
 
-          const shadowedTasks = ts.filter(cand => reachable.has(cand.unitId)).map(cand => cand.name)
-
-          for (const at of shadowedTasks) {
-            shadowedBy.set(at, t.name)
+          const isSameKind = (tn: TaskName, task: Task) => TaskName().undo(tn).taskKind === task.kind
+          const isShadowing = (tn: TaskName) => {
+            if (!isSameKind(tn, t)) {
+              return false
+            }
+            const dependents = plan.taskGraph.backNeighborsOf(tn)
+            return dependents.filter(at => isSameKind(at, t)).length === 0
           }
+
+          const shadowingTasks = plan.taskGraph
+            .traverseFrom(t.name, { direction: 'backwards' })
+            .filter(tn => isShadowing(tn))
+
+          const chosen = shadowingTasks.find(Boolean) ?? t.name
+          shadowedBy.set(t.name, chosen)
         }
       }
 
@@ -147,12 +155,15 @@ export class Engine {
     }
 
     const workFunction = async (tn: TaskName) => {
-      if (taskTracker.hasVerdict(tn)) {
-        return
-      }
-
       try {
-        await taskExecutor.executeTask(tn)
+        let current = tn
+        while (true) {
+          const next = await taskExecutor.executeTask(tn)
+          if (next === current) {
+            break
+          }
+          current = next
+        }
       } catch (e) {
         this.logger.info(`crashed while running ${tn}`)
         throw e

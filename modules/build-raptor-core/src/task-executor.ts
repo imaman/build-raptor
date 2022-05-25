@@ -14,6 +14,9 @@ import { Purger } from './purger'
 import { TaskStore } from './task-store'
 import { TaskTracker } from './task-tracker'
 
+/**
+ * An object that is reponsible for executing a task.
+ */
 export class TaskExecutor {
   constructor(
     private readonly model: Model,
@@ -27,7 +30,7 @@ export class TaskExecutor {
     private readonly purger: Purger,
   ) {}
 
-  async executeTask(taskName: TaskName): Promise<void> {
+  async executeTask(taskName: TaskName) {
     const ste = new SingleTaskExecutor(
       taskName,
       this.model,
@@ -40,7 +43,7 @@ export class TaskExecutor {
       this.fingerprintLedger,
       this.purger,
     )
-    await ste.executeTask()
+    return await ste.executeTask()
   }
 }
 
@@ -120,7 +123,27 @@ class SingleTaskExecutor {
     throw new BuildFailedError(`Task ${this.taskName} failed to produce the following outputs:\n${formatted}`)
   }
 
-  async executeTask() {
+  /**
+   * Exectues the task.
+   *
+   * @returns the name of another task to execute. Returning `this.taskName` means "no other task to execute".
+   */
+  async executeTask(): Promise<TaskName> {
+    const t = this.task
+    if (this.tracker.hasVerdict(t.name)) {
+      return t.name
+    }
+
+    const shadowing = this.tracker.getShadowingTask(t.name)
+    if (shadowing) {
+      return shadowing
+    }
+
+    await this.executeUnshadowedTask()
+    return t.name
+  }
+
+  private async executeUnshadowedTask() {
     const t = this.task
     this.tracker.changeStatus(t.name, 'RUNNING')
 
@@ -130,7 +153,7 @@ class SingleTaskExecutor {
 
     if (this.tracker.isShadowed(t.name)) {
       await this.validateOutputs()
-      // TODO(imaman): report the shadowing task it in the event.
+      // TODO(imaman): report the shadowing task in the event.
       await this.eventPublisher.publish('executionShadowed', t.name)
       this.tracker.registerShadowedVerdict(t.name, 'OK')
       await this.taskStore.recordTask(t.name, fp, dir, t.outputLocations, 'OK')
