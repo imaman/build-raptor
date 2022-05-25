@@ -4,6 +4,7 @@ import { TaskName } from 'task-name'
 
 import { Task } from './task'
 
+// TODO(imaman): rethink the name. It is not exactly a "Plan".
 export class ExecutionPlan {
   private readonly taskByName = new Map<TaskName, Task>()
   readonly errorPropagationGraph: Graph<TaskName>

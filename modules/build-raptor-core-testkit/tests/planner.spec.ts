@@ -8,7 +8,7 @@ jest.setTimeout(30000)
 describe('planner', () => {
   const testName = () => expect.getState().currentTestName
 
-  test('when a task definition changes, it will run even if its source code has not changed', async () => {
+  test.skip('when a task definition changes, it will run even if its source code has not changed', async () => {
     const t = {
       taskKind: TaskKind('build'),
       outputs: [],
