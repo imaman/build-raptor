@@ -177,7 +177,7 @@ describe('typed-publisher', () => {
 
       expect(await promise).toEqual('FOX')
     })
-    test('the promise resolves to the value of the first satisfying evnet', async () => {
+    test('the promise resolves to the value of the first satisfying event', async () => {
       const p = new TypedPublisher<{ x: string }>()
 
       const promise = p.awaitFor('x', (e: string) => e.toUpperCase() === e)
