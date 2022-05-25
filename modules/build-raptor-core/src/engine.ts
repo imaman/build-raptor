@@ -124,7 +124,7 @@ export class Engine {
 
           const shadowingTasks = plan.taskGraph
             .traverseFrom(t.name, { direction: 'backwards' })
-            .filter(tn => isSameKind(tn, t) && isShadowing(tn))
+            .filter(tn => isShadowing(tn))
 
           const chosen = shadowingTasks.find(Boolean)
           if (chosen && chosen !== t.name) {
