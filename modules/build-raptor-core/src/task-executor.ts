@@ -159,20 +159,19 @@ class SingleTaskExecutor {
     this.tracker.changeStatus(t.name, 'RUNNING')
 
     const fp = await this.computeFingerprint()
-    const dir = this.dir
 
     if (this.tracker.isShadowed(t.name)) {
       await this.validateOutputs()
       // TODO(imaman): report the shadowing task in the event.
       await this.eventPublisher.publish('executionShadowed', t.name)
       this.tracker.registerShadowedVerdict(t.name, 'OK')
-      await this.taskStore.recordTask(t.name, fp, dir, t.outputLocations, 'OK')
+      await this.taskStore.recordTask(t.name, fp, this.dir, t.outputLocations, 'OK')
       return
     }
 
     await this.purgeOutputs()
 
-    const earlierVerdict = await this.taskStore.restoreTask(t.name, fp, dir)
+    const earlierVerdict = await this.taskStore.restoreTask(t.name, fp, this.dir)
 
     if (earlierVerdict === 'OK' || earlierVerdict === 'FLAKY') {
       await this.eventPublisher.publish('executionSkipped', t.name)
@@ -183,7 +182,7 @@ class SingleTaskExecutor {
     if (earlierVerdict === 'FAIL' || earlierVerdict === 'UNKNOWN') {
       await this.eventPublisher.publish('executionStarted', t.name)
       const outputFile = path.join(this.taskOutputDir, `${t.id}.stdout`)
-      const status = await this.repoProtocol.execute(this.unit, dir, t.kind, outputFile, this.model.buildRunId)
+      const status = await this.repoProtocol.execute(this.unit, this.dir, t.kind, outputFile, this.model.buildRunId)
       await this.postProcess(status, outputFile)
       if (status === 'CRASH') {
         throw new Error(`Task ${JSON.stringify(t.name)} crashed`)
@@ -192,14 +191,14 @@ class SingleTaskExecutor {
       if (status === 'OK') {
         await this.validateOutputs()
         this.tracker.registerVerdict(t.name, status, outputFile)
-        await this.taskStore.recordTask(t.name, fp, dir, t.outputLocations, status)
+        await this.taskStore.recordTask(t.name, fp, this.dir, t.outputLocations, status)
         return
       }
 
       if (status === 'FAIL') {
         this.tracker.registerVerdict(t.name, status, outputFile)
         // TODO(imaman): should not record outputs if task has failed.
-        await this.taskStore.recordTask(t.name, fp, dir, t.outputLocations, status)
+        await this.taskStore.recordTask(t.name, fp, this.dir, t.outputLocations, status)
         return
       }
 
