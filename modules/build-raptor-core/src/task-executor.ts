@@ -172,10 +172,11 @@ class SingleTaskExecutor {
     await this.purgeOutputs()
 
     const skipped = await this.tryToSkip(fp)
-    if (!skipped) {
-      await this.runIt(fp)
+    if (skipped) {
       return
     }
+
+    await this.runIt(fp)
   }
 
   private async tryToSkip(fp: Fingerprint) {
