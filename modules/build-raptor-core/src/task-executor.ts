@@ -171,41 +171,55 @@ class SingleTaskExecutor {
 
     await this.purgeOutputs()
 
-    const earlierVerdict = await this.taskStore.restoreTask(t.name, fp, this.dir)
+    const skipped = await this.tryToSkipIt(fp)
+    if (!skipped) {
+      await this.runIt(fp)
+      return
+    }
+  }
 
+  private async tryToSkipIt(fp: Fingerprint) {
+    const t = this.task
+    const earlierVerdict = await this.taskStore.restoreTask(t.name, fp, this.dir)
     if (earlierVerdict === 'OK' || earlierVerdict === 'FLAKY') {
       await this.eventPublisher.publish('executionSkipped', t.name)
       this.tracker.registerCachedVerdict(t.name, earlierVerdict)
-      return
+      return true
     }
 
     if (earlierVerdict === 'FAIL' || earlierVerdict === 'UNKNOWN') {
-      await this.eventPublisher.publish('executionStarted', t.name)
-      const outputFile = path.join(this.taskOutputDir, `${t.id}.stdout`)
-      const status = await this.repoProtocol.execute(this.unit, this.dir, t.kind, outputFile, this.model.buildRunId)
-      await this.postProcess(status, outputFile)
-      if (status === 'CRASH') {
-        throw new Error(`Task ${JSON.stringify(t.name)} crashed`)
-      }
-
-      if (status === 'OK') {
-        await this.validateOutputs()
-        this.tracker.registerVerdict(t.name, status, outputFile)
-        await this.taskStore.recordTask(t.name, fp, this.dir, t.outputLocations, status)
-        return
-      }
-
-      if (status === 'FAIL') {
-        this.tracker.registerVerdict(t.name, status, outputFile)
-        // TODO(imaman): should not record outputs if task has failed.
-        await this.taskStore.recordTask(t.name, fp, this.dir, t.outputLocations, status)
-        return
-      }
-
-      shouldNeverHappen(status)
+      return false
     }
 
     shouldNeverHappen(earlierVerdict)
+  }
+
+  private async runIt(fp: Fingerprint) {
+    const t = this.task
+
+    await this.eventPublisher.publish('executionStarted', t.name)
+    const outputFile = path.join(this.taskOutputDir, `${t.id}.stdout`)
+    const status = await this.repoProtocol.execute(this.unit, this.dir, t.kind, outputFile, this.model.buildRunId)
+    await this.postProcess(status, outputFile)
+    if (status === 'CRASH') {
+      throw new Error(`Task ${JSON.stringify(t.name)} crashed`)
+    }
+
+    if (status === 'OK') {
+      await this.validateOutputs()
+      this.tracker.registerVerdict(t.name, status, outputFile)
+      await this.taskStore.recordTask(t.name, fp, this.dir, t.outputLocations, status)
+      return
+    }
+
+    if (status === 'FAIL') {
+      this.tracker.registerVerdict(t.name, status, outputFile)
+      // TODO(imaman): should not record outputs if task has failed.
+      await this.taskStore.recordTask(t.name, fp, this.dir, t.outputLocations, status)
+      return
+    }
+
+    shouldNeverHappen(status)
   }
 
   private async purgeOutputs() {
