@@ -171,14 +171,14 @@ class SingleTaskExecutor {
 
     await this.purgeOutputs()
 
-    const skipped = await this.tryToSkipIt(fp)
+    const skipped = await this.tryToSkip(fp)
     if (!skipped) {
       await this.runIt(fp)
       return
     }
   }
 
-  private async tryToSkipIt(fp: Fingerprint) {
+  private async tryToSkip(fp: Fingerprint) {
     const t = this.task
     const earlierVerdict = await this.taskStore.restoreTask(t.name, fp, this.dir)
     if (earlierVerdict === 'OK' || earlierVerdict === 'FLAKY') {
