@@ -154,7 +154,7 @@ class SingleTaskExecutor {
     return path.join(this.model.rootDir, this.unit.pathInRepo)
   }
 
-  private async executeUnshadowedTask() {
+  private async executeUnshadowedTask(_phase?: Phase) {
     const t = this.task
     this.tracker.changeStatus(t.name, 'RUNNING')
 
@@ -233,6 +233,8 @@ class SingleTaskExecutor {
     })
   }
 }
+
+type Phase = 'UNSTARTED' | 'RUNNING ' | 'COMPUTE_FP' | 'SHADOWED' | 'PURGE_OUTPUTS' | 'POSSIBLY_SKIP' | 'RUN_IT'
 
 /*
 
