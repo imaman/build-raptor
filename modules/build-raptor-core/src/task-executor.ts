@@ -233,3 +233,50 @@ class SingleTaskExecutor {
     })
   }
 }
+
+/*
+
+UNSTARTED
+   +
+   +
+RUNNING 
+   +
+   +
+COMPUTE_FP
+   +
+   +
+SHADOWED  -> DONE
+   +
+   +
+PURGE_OUTPUTS
+   +
+   +
+POSSIBLY_SKIP -> DONE
+   +
+   +
+RUN_IT  -> DONE
+   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+*/
