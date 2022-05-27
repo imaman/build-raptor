@@ -181,14 +181,14 @@ class SingleTaskExecutor {
   private async tryToSkip(fp: Fingerprint) {
     const t = this.task
     const earlierVerdict = await this.taskStore.restoreTask(t.name, fp, this.dir)
+    if (earlierVerdict === 'FAIL' || earlierVerdict === 'UNKNOWN') {
+      return false
+    }
+
     if (earlierVerdict === 'OK' || earlierVerdict === 'FLAKY') {
       await this.eventPublisher.publish('executionSkipped', t.name)
       this.tracker.registerCachedVerdict(t.name, earlierVerdict)
       return true
-    }
-
-    if (earlierVerdict === 'FAIL' || earlierVerdict === 'UNKNOWN') {
-      return false
     }
 
     shouldNeverHappen(earlierVerdict)
@@ -208,7 +208,7 @@ class SingleTaskExecutor {
     if (status === 'OK') {
       await this.validateOutputs()
       this.tracker.registerVerdict(t.name, status, outputFile)
-      await this.taskStore.recordTask(t.name, fp, this.dir, t.outputLocations, status)
+      await this.taskStore.recordTask(t.name, fp, this.dir, t.outputLocations, 'OK')
       return
     }
 
