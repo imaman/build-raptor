@@ -150,13 +150,16 @@ class SingleTaskExecutor {
     return t.name
   }
 
+  private get dir() {
+    return path.join(this.model.rootDir, this.unit.pathInRepo)
+  }
+
   private async executeUnshadowedTask() {
     const t = this.task
     this.tracker.changeStatus(t.name, 'RUNNING')
 
     const fp = await this.computeFingerprint()
-    const unit = this.unit
-    const dir = path.join(this.model.rootDir, unit.pathInRepo)
+    const dir = this.dir
 
     if (this.tracker.isShadowed(t.name)) {
       await this.validateOutputs()
@@ -180,7 +183,7 @@ class SingleTaskExecutor {
     if (earlierVerdict === 'FAIL' || earlierVerdict === 'UNKNOWN') {
       await this.eventPublisher.publish('executionStarted', t.name)
       const outputFile = path.join(this.taskOutputDir, `${t.id}.stdout`)
-      const status = await this.repoProtocol.execute(unit, dir, t.kind, outputFile, this.model.buildRunId)
+      const status = await this.repoProtocol.execute(this.unit, dir, t.kind, outputFile, this.model.buildRunId)
       await this.postProcess(status, outputFile)
       if (status === 'CRASH') {
         throw new Error(`Task ${JSON.stringify(t.name)} crashed`)
