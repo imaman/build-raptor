@@ -1,7 +1,7 @@
 import { BuildFailedError } from 'build-failed-error'
 import * as fse from 'fs-extra'
 import { Logger } from 'logger'
-import { promises, shouldNeverHappen, sortBy, TypedPublisher } from 'misc'
+import { failMe, promises, shouldNeverHappen, sortBy, TypedPublisher } from 'misc'
 import * as path from 'path'
 import { ExitStatus, RepoProtocol } from 'repo-protocol'
 import { TaskName } from 'task-name'
@@ -13,6 +13,16 @@ import { Model } from './model'
 import { Purger } from './purger'
 import { TaskStore } from './task-store'
 import { TaskTracker } from './task-tracker'
+
+type Phase =
+  | 'UNSTARTED'
+  | 'RUNNING'
+  | 'COMPUTE_FP'
+  | 'SHADOWED'
+  | 'PURGE_OUTPUTS'
+  | 'POSSIBLY_SKIP'
+  | 'RUN_IT'
+  | 'TERMINAL'
 
 /**
  * An object that is reponsible for executing a task.
@@ -55,6 +65,8 @@ export class TaskExecutor {
 }
 
 class SingleTaskExecutor {
+  private readonly phasePublisher = new TypedPublisher<{ phase: Phase }>()
+
   constructor(
     private readonly taskName: TaskName,
     private readonly model: Model,
@@ -146,7 +158,7 @@ class SingleTaskExecutor {
       return shadowing
     }
 
-    await this.executeUnshadowedTask()
+    await this.runPhases()
     return t.name
   }
 
@@ -154,29 +166,79 @@ class SingleTaskExecutor {
     return path.join(this.model.rootDir, this.unit.pathInRepo)
   }
 
-  private async executeUnshadowedTask(_phase?: Phase) {
+  private fp_?: Fingerprint
+
+  private get fp() {
+    return this.fp_ ?? failMe(`fingerprint was not set on task ${this.taskName}`)
+  }
+
+  private async runPhases() {
+    let phase: Phase = 'RUNNING'
+    this.tracker.changeStatus(this.taskName, 'RUNNING')
+
+    while (true) {
+      // console.log(`phase of ${this.taskName} is ${phase}`)
+      if (phase === 'TERMINAL') {
+        break
+      }
+      phase = await this.executePhase(phase)
+      await this.phasePublisher.publish('phase', phase)
+    }
+  }
+
+  private async executePhase(phase: Phase): Promise<Phase> {
     const t = this.task
-    this.tracker.changeStatus(t.name, 'RUNNING')
 
-    const fp = await this.computeFingerprint()
-
-    if (this.tracker.isShadowed(t.name)) {
-      await this.validateOutputs()
-      // TODO(imaman): report the shadowing task in the event.
-      await this.eventPublisher.publish('executionShadowed', t.name)
-      this.tracker.registerShadowedVerdict(t.name, 'OK')
-      await this.taskStore.recordTask(t.name, fp, this.dir, t.outputLocations, 'OK')
-      return
+    if (phase === 'UNSTARTED') {
+      return 'RUNNING'
     }
 
-    await this.purgeOutputs()
-
-    const skipped = await this.tryToSkip(fp)
-    if (skipped) {
-      return
+    if (phase === 'TERMINAL') {
+      throw new Error(`task ${t.name} is already in state ${phase}`)
     }
 
-    await this.runIt(fp)
+    if (phase === 'RUNNING') {
+      return 'COMPUTE_FP'
+    }
+
+    if (phase === 'COMPUTE_FP') {
+      this.fp_ = await this.computeFingerprint()
+      return 'SHADOWED'
+    }
+
+    if (phase === 'SHADOWED') {
+      if (this.tracker.isShadowed(t.name)) {
+        await this.validateOutputs()
+        // TODO(imaman): report the shadowing task in the event.
+        await this.eventPublisher.publish('executionShadowed', t.name)
+        this.tracker.registerShadowedVerdict(t.name, 'OK')
+        await this.taskStore.recordTask(t.name, this.fp, this.dir, t.outputLocations, 'OK')
+        return 'TERMINAL'
+      }
+
+      return 'PURGE_OUTPUTS'
+    }
+
+    if (phase === 'PURGE_OUTPUTS') {
+      await this.purgeOutputs()
+      return 'POSSIBLY_SKIP'
+    }
+
+    if (phase === 'POSSIBLY_SKIP') {
+      const skipped = await this.tryToSkip(this.fp)
+      if (skipped) {
+        return 'TERMINAL'
+      }
+
+      return 'RUN_IT'
+    }
+
+    if (phase === 'RUN_IT') {
+      await this.runIt(this.fp)
+      return 'TERMINAL'
+    }
+
+    shouldNeverHappen(phase)
   }
 
   private async tryToSkip(fp: Fingerprint) {
@@ -233,8 +295,6 @@ class SingleTaskExecutor {
     })
   }
 }
-
-type Phase = 'UNSTARTED' | 'RUNNING ' | 'COMPUTE_FP' | 'SHADOWED' | 'PURGE_OUTPUTS' | 'POSSIBLY_SKIP' | 'RUN_IT'
 
 /*
 
