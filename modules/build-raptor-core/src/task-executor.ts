@@ -151,9 +151,9 @@ class SingleTaskExecutor {
   }
 
   private async runPhases() {
-    let phase: Phase = 'RUNNING'
     this.tracker.changeStatus(this.taskName, 'RUNNING')
 
+    let phase: Phase = 'UNSTARTED'
     while (true) {
       if (phase === 'TERMINAL') {
         break
