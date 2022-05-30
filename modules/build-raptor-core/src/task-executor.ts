@@ -177,7 +177,6 @@ class SingleTaskExecutor {
     this.tracker.changeStatus(this.taskName, 'RUNNING')
 
     while (true) {
-      // console.log(`phase of ${this.taskName} is ${phase}`)
       if (phase === 'TERMINAL') {
         break
       }
@@ -191,10 +190,6 @@ class SingleTaskExecutor {
 
     if (phase === 'UNSTARTED') {
       return 'RUNNING'
-    }
-
-    if (phase === 'TERMINAL') {
-      throw new Error(`task ${t.name} is already in state ${phase}`)
     }
 
     if (phase === 'RUNNING') {
@@ -236,6 +231,10 @@ class SingleTaskExecutor {
     if (phase === 'RUN_IT') {
       await this.runIt(this.fp)
       return 'TERMINAL'
+    }
+
+    if (phase === 'TERMINAL') {
+      throw new Error(`task ${t.name} is already in state ${phase}`)
     }
 
     shouldNeverHappen(phase)
