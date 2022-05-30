@@ -155,6 +155,7 @@ class SingleTaskExecutor {
 
     let phase: Phase = 'UNSTARTED'
     while (true) {
+      await this.eventPublisher.publish('taskPhaseEnded', { taskName: this.taskName, phase })
       if (phase === 'TERMINAL') {
         break
       }
