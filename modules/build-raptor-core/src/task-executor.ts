@@ -220,7 +220,7 @@ class SingleTaskExecutor {
     }
 
     if (phase === 'POSSIBLY_SKIP') {
-      const skipped = await this.canBeSkipped(this.fp)
+      const skipped = await this.canBeSkipped()
       if (skipped) {
         return 'TERMINAL'
       }
@@ -229,7 +229,7 @@ class SingleTaskExecutor {
     }
 
     if (phase === 'RUN_IT') {
-      await this.runIt(this.fp)
+      await this.runIt()
       return 'TERMINAL'
     }
 
@@ -240,9 +240,9 @@ class SingleTaskExecutor {
     shouldNeverHappen(phase)
   }
 
-  private async canBeSkipped(fp: Fingerprint) {
+  private async canBeSkipped() {
     const t = this.task
-    const earlierVerdict = await this.taskStore.restoreTask(t.name, fp, this.dir)
+    const earlierVerdict = await this.taskStore.restoreTask(t.name, this.fp, this.dir)
     if (earlierVerdict === 'OK' || earlierVerdict === 'FLAKY') {
       await this.eventPublisher.publish('executionSkipped', t.name)
       this.tracker.registerCachedVerdict(t.name, earlierVerdict)
@@ -256,7 +256,7 @@ class SingleTaskExecutor {
     shouldNeverHappen(earlierVerdict)
   }
 
-  private async runIt(fp: Fingerprint) {
+  private async runIt() {
     const t = this.task
 
     await this.eventPublisher.publish('executionStarted', t.name)
@@ -270,14 +270,14 @@ class SingleTaskExecutor {
     if (status === 'OK') {
       await this.validateOutputs()
       this.tracker.registerVerdict(t.name, status, outputFile)
-      await this.taskStore.recordTask(t.name, fp, this.dir, t.outputLocations, 'OK')
+      await this.taskStore.recordTask(t.name, this.fp, this.dir, t.outputLocations, 'OK')
       return
     }
 
     if (status === 'FAIL') {
       this.tracker.registerVerdict(t.name, status, outputFile)
       // TODO(imaman): should not record outputs if task has failed.
-      await this.taskStore.recordTask(t.name, fp, this.dir, t.outputLocations, status)
+      await this.taskStore.recordTask(t.name, this.fp, this.dir, t.outputLocations, status)
       return
     }
 
