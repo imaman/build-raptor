@@ -41,26 +41,19 @@ export class TaskExecutor {
   ) {}
 
   async executeTask(taskName: TaskName) {
-    let current = taskName
-    while (true) {
-      const ste = new SingleTaskExecutor(
-        taskName,
-        this.model,
-        this.tracker,
-        this.logger,
-        this.repoProtocol,
-        this.taskStore,
-        this.taskOutputDir,
-        this.eventPublisher,
-        this.fingerprintLedger,
-        this.purger,
-      )
-      const next = await ste.executeTask()
-      if (next === current) {
-        break
-      }
-      current = next
-    }
+    const ste = new SingleTaskExecutor(
+      taskName,
+      this.model,
+      this.tracker,
+      this.logger,
+      this.repoProtocol,
+      this.taskStore,
+      this.taskOutputDir,
+      this.eventPublisher,
+      this.fingerprintLedger,
+      this.purger,
+    )
+    await ste.executeTask()
   }
 }
 
@@ -147,19 +140,13 @@ class SingleTaskExecutor {
    *
    * @returns the name of another task to execute. Returning `this.taskName` means "no other task to execute".
    */
-  async executeTask(): Promise<TaskName> {
+  async executeTask(): Promise<void> {
     const t = this.task
     if (this.tracker.hasVerdict(t.name)) {
-      return t.name
-    }
-
-    const shadowing = this.tracker.getShadowingTask(t.name)
-    if (shadowing) {
-      return shadowing
+      return
     }
 
     await this.runPhases()
-    return t.name
   }
 
   private get dir() {
