@@ -220,7 +220,7 @@ class SingleTaskExecutor {
     }
 
     if (phase === 'POSSIBLY_SKIP') {
-      const skipped = await this.shouldBeSkipped(this.fp)
+      const skipped = await this.canBeSkipped(this.fp)
       if (skipped) {
         return 'TERMINAL'
       }
@@ -240,7 +240,7 @@ class SingleTaskExecutor {
     shouldNeverHappen(phase)
   }
 
-  private async shouldBeSkipped(fp: Fingerprint) {
+  private async canBeSkipped(fp: Fingerprint) {
     const t = this.task
     const earlierVerdict = await this.taskStore.restoreTask(t.name, fp, this.dir)
     if (earlierVerdict === 'OK' || earlierVerdict === 'FLAKY') {
