@@ -10,19 +10,10 @@ import { EngineEventScheme } from './engine-event-scheme'
 import { Fingerprint } from './fingerprint'
 import { FingerprintLedger } from './fingerprint-ledger'
 import { Model } from './model'
+import { Phase } from './phase'
 import { Purger } from './purger'
 import { TaskStore } from './task-store'
 import { TaskTracker } from './task-tracker'
-
-type Phase =
-  | 'UNSTARTED'
-  | 'RUNNING'
-  | 'COMPUTE_FP'
-  | 'SHADOWED'
-  | 'PURGE_OUTPUTS'
-  | 'POSSIBLY_SKIP'
-  | 'RUN_IT'
-  | 'TERMINAL'
 
 /**
  * An object that is reponsible for executing a task.
