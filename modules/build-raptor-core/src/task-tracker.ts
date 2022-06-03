@@ -32,8 +32,8 @@ export class TaskTracker {
     return this.shadowedBy.get(tn) || []
   }
 
-  getShadowingTask(shadowedTask: TaskName): TaskName | undefined {
-    return this.shadowingByShadowed.get(shadowedTask)
+  getShadowingTask(shadowedTask: TaskName): TaskName {
+    return this.shadowingByShadowed.get(shadowedTask) ?? shadowedTask
   }
 
   isShadowed(tn: TaskName): boolean {

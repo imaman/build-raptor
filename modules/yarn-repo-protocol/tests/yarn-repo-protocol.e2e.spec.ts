@@ -8,7 +8,7 @@ describe('yarn-repo-protocol.e2e', () => {
   const logger = createNopLogger()
   const testName = () => expect.getState().currentTestName
 
-  test('runs tasks and captures their output', async () => {
+  test.only('runs tasks and captures their output', async () => {
     const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },

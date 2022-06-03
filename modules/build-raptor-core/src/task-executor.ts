@@ -1,7 +1,7 @@
 import { BuildFailedError } from 'build-failed-error'
 import * as fse from 'fs-extra'
 import { Logger } from 'logger'
-import { failMe, promises, shouldNeverHappen, sortBy, TypedPublisher } from 'misc'
+import { failMe, promises, shouldNeverHappen, sortBy, threeWaySplit, TypedPublisher } from 'misc'
 import * as path from 'path'
 import { ExitStatus, RepoProtocol } from 'repo-protocol'
 import { TaskName } from 'task-name'
@@ -43,6 +43,7 @@ export class TaskExecutor {
       this.eventPublisher,
       this.fingerprintLedger,
       this.purger,
+      this
     )
     await ste.executeTask()
   }
@@ -62,6 +63,7 @@ class SingleTaskExecutor {
     private readonly eventPublisher: TypedPublisher<EngineEventScheme>,
     private readonly fingerprintLedger: FingerprintLedger,
     private readonly purger: Purger,
+    private readonly executor: TaskExecutor
   ) {}
 
   private get task() {
@@ -123,20 +125,20 @@ class SingleTaskExecutor {
 
     const formatted = missing.map(at => `  - ${at}`).join('\n')
     this.logger.info(`missing outputs for task ${t.name}: ${JSON.stringify(missing)}`)
-    throw new BuildFailedError(`Task ${this.taskName} failed to produce the following outputs:\n${formatted}`)
+      const e = new BuildFailedError(`Task ${this.taskName} failed to produce the following outputs:\n${formatted}`)
+      console.log(`e=${e.stack}`)
+      throw e
   }
 
   /**
    * Exectues the task.
-   *
-   * @returns the name of another task to execute. Returning `this.taskName` means "no other task to execute".
    */
   async executeTask(): Promise<void> {
     const t = this.task
     if (this.tracker.hasVerdict(t.name)) {
       return
     }
-
+    
     await this.runPhases()
   }
 
@@ -150,11 +152,34 @@ class SingleTaskExecutor {
     return this.fp_ ?? failMe(`fingerprint was not set on task ${this.taskName}`)
   }
 
+
+  /**
+   * Determines whether the task should be executed by this executor. 
+   * @returns true if the task should be executed by this executor, false otherwise.
+   */
+  private startExecuting(): boolean {
+    // This method cannot be async, because it should do a compare-and-set on the task's phase in an atomic manner.
+    // This atomicity ensures that a task will only be executed once.
+    if (this.task.hasPhase()) {
+      return false
+    }
+    
+    this.task.setPhase('UNSTARTED')
+    return true
+  }
+
   private async runPhases() {
+    const doExecute = this.startExecuting()
+    if (!doExecute) {
+      await this.eventPublisher.awaitFor('taskPhaseEnded', e => e.taskName === this.taskName && e.phase === 'TERMINAL')
+      return
+    }
+
     this.tracker.changeStatus(this.taskName, 'RUNNING')
 
-    let phase: Phase = 'UNSTARTED'
+    let phase: Phase = 'RUNNING'
     while (true) {
+      this.task.setPhase(phase)
       await this.eventPublisher.publish('taskPhaseEnded', { taskName: this.taskName, phase })
       if (phase === 'TERMINAL') {
         break
@@ -182,6 +207,9 @@ class SingleTaskExecutor {
 
     if (phase === 'SHADOWED') {
       if (this.tracker.isShadowed(t.name)) {
+        await this.executor.executeTask(this.tracker.getShadowingTask(t.name))
+        // TODO(imaman): check verdict of the shadowing task
+
         await this.validateOutputs()
         // TODO(imaman): report the shadowing task in the event.
         await this.eventPublisher.publish('executionShadowed', t.name)
@@ -222,6 +250,7 @@ class SingleTaskExecutor {
   private async canBeSkipped() {
     const t = this.task
     const earlierVerdict = await this.taskStore.restoreTask(t.name, this.fp, this.dir)
+    console.log(`earlierverdict of ${t.name} is ${earlierVerdict}`)
     if (earlierVerdict === 'OK' || earlierVerdict === 'FLAKY') {
       await this.eventPublisher.publish('executionSkipped', t.name)
       this.tracker.registerCachedVerdict(t.name, earlierVerdict)
