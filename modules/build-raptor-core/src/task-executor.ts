@@ -197,28 +197,25 @@ class SingleTaskExecutor {
     }
 
     if (phase === 'RUNNING') {
-      return 'COMPUTE_FP'
-    }
-
-    if (phase === 'COMPUTE_FP') {
-      this.fp_ = await this.computeFingerprint()
       return 'SHADOWED'
     }
 
     if (phase === 'SHADOWED') {
-      if (this.tracker.isShadowed(t.name)) {
-        await this.executor.executeTask(this.tracker.getShadowingTask(t.name))
-        // TODO(imaman): check verdict of the shadowing task
-
-        await this.validateOutputs()
-        // TODO(imaman): report the shadowing task in the event.
-        await this.eventPublisher.publish('executionShadowed', t.name)
-        this.tracker.registerShadowedVerdict(t.name, 'OK')
-        await this.taskStore.recordTask(t.name, this.fp, this.dir, t.outputLocations, 'OK')
-        return 'TERMINAL'
+      if (!this.tracker.isShadowed(t.name)) {
+        this.fp_ = await this.computeFingerprint()
+        return 'PURGE_OUTPUTS'
       }
 
-      return 'PURGE_OUTPUTS'
+      await this.executor.executeTask(this.tracker.getShadowingTask(t.name))
+      // TODO(imaman): check verdict of the shadowing task
+
+      this.fp_ = await this.computeFingerprint()
+      await this.validateOutputs()
+      // TODO(imaman): report the shadowing task in the event.
+      await this.eventPublisher.publish('executionShadowed', t.name)
+      this.tracker.registerShadowedVerdict(t.name, 'OK')
+      await this.taskStore.recordTask(t.name, this.fp, this.dir, t.outputLocations, 'OK')
+      return 'TERMINAL'
     }
 
     if (phase === 'PURGE_OUTPUTS') {
@@ -302,27 +299,3 @@ class SingleTaskExecutor {
     })
   }
 }
-
-/*
-
-UNSTARTED
-   +
-   +
-RUNNING 
-   +
-   +
-COMPUTE_FP
-   +
-   +
-SHADOWED  -> DONE
-   +
-   +
-PURGE_OUTPUTS
-   +
-   +
-POSSIBLY_SKIP -> DONE
-   +
-   +
-RUN_IT  -> DONE
-  
-*/
