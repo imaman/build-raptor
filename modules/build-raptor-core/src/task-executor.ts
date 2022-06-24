@@ -1,7 +1,7 @@
 import { BuildFailedError } from 'build-failed-error'
 import * as fse from 'fs-extra'
 import { Logger } from 'logger'
-import { failMe, promises, shouldNeverHappen, sortBy, threeWaySplit, TypedPublisher } from 'misc'
+import { failMe, promises, shouldNeverHappen, sortBy, TypedPublisher } from 'misc'
 import * as path from 'path'
 import { ExitStatus, RepoProtocol } from 'repo-protocol'
 import { TaskName } from 'task-name'
@@ -43,7 +43,7 @@ export class TaskExecutor {
       this.eventPublisher,
       this.fingerprintLedger,
       this.purger,
-      this
+      this,
     )
     await ste.executeTask()
   }
@@ -63,7 +63,7 @@ class SingleTaskExecutor {
     private readonly eventPublisher: TypedPublisher<EngineEventScheme>,
     private readonly fingerprintLedger: FingerprintLedger,
     private readonly purger: Purger,
-    private readonly executor: TaskExecutor
+    private readonly executor: TaskExecutor,
   ) {}
 
   private get task() {
@@ -125,9 +125,7 @@ class SingleTaskExecutor {
 
     const formatted = missing.map(at => `  - ${at}`).join('\n')
     this.logger.info(`missing outputs for task ${t.name}: ${JSON.stringify(missing)}`)
-      const e = new BuildFailedError(`Task ${this.taskName} failed to produce the following outputs:\n${formatted}`)
-      console.log(`e=${e.stack}`)
-      throw e
+    throw new BuildFailedError(`Task ${this.taskName} failed to produce the following outputs:\n${formatted}`)
   }
 
   /**
@@ -138,7 +136,7 @@ class SingleTaskExecutor {
     if (this.tracker.hasVerdict(t.name)) {
       return
     }
-    
+
     await this.runPhases()
   }
 
@@ -152,9 +150,8 @@ class SingleTaskExecutor {
     return this.fp_ ?? failMe(`fingerprint was not set on task ${this.taskName}`)
   }
 
-
   /**
-   * Determines whether the task should be executed by this executor. 
+   * Determines whether the task should be executed by this executor.
    * @returns true if the task should be executed by this executor, false otherwise.
    */
   private startExecuting(): boolean {
@@ -163,7 +160,7 @@ class SingleTaskExecutor {
     if (this.task.hasPhase()) {
       return false
     }
-    
+
     this.task.setPhase('UNSTARTED')
     return true
   }
@@ -190,6 +187,7 @@ class SingleTaskExecutor {
   }
 
   private async executePhase(phase: Phase): Promise<Phase> {
+    this.logger.info(`Running ${phase} of ${this.taskName}`)
     const t = this.task
 
     if (phase === 'UNSTARTED') {
@@ -201,15 +199,24 @@ class SingleTaskExecutor {
     }
 
     if (phase === 'SHADOWED') {
-      if (!this.tracker.isShadowed(t.name)) {
+      const sh = this.tracker.isShadowed(t.name)
+      this.logger.info(`sh of ${t.name} is ${sh}`)
+      if (!sh) {
         this.fp_ = await this.computeFingerprint()
         return 'PURGE_OUTPUTS'
       }
 
-      await this.executor.executeTask(this.tracker.getShadowingTask(t.name))
+      const st = this.tracker.getShadowingTask(t.name)
+      this.logger.info(`shadowing task of ${t.name} is ${st}`)
+      await this.executor.executeTask(st)
       // TODO(imaman): check verdict of the shadowing task
 
       this.fp_ = await this.computeFingerprint()
+
+      const skipped = await this.canBeSkipped()
+      if (skipped) {
+        return 'TERMINAL'
+      }
       await this.validateOutputs()
       // TODO(imaman): report the shadowing task in the event.
       await this.eventPublisher.publish('executionShadowed', t.name)
@@ -247,7 +254,6 @@ class SingleTaskExecutor {
   private async canBeSkipped() {
     const t = this.task
     const earlierVerdict = await this.taskStore.restoreTask(t.name, this.fp, this.dir)
-    console.log(`earlierverdict of ${t.name} is ${earlierVerdict}`)
     if (earlierVerdict === 'OK' || earlierVerdict === 'FLAKY') {
       await this.eventPublisher.publish('executionSkipped', t.name)
       this.tracker.registerCachedVerdict(t.name, earlierVerdict)
