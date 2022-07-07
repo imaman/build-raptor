@@ -156,10 +156,11 @@ class SingleTaskExecutor {
   }
 
   /**
-   * Determines whether the task should be executed by this executor.
+   * Determines whether this executor can execute its task. It is possible that several executors will try to run the
+   * same task. This method ensures that exactly one such executor will actually execute it.
    * @returns true if the task should be executed by this executor, false otherwise.
    */
-  private startExecuting(): boolean {
+  private grabExecutionRights(): boolean {
     // This method cannot be async, because it should do a compare-and-set on the task's phase in an atomic manner.
     // This atomicity ensures that a task will only be executed once.
     if (this.task.hasPhase()) {
@@ -171,8 +172,8 @@ class SingleTaskExecutor {
   }
 
   private async runPhases() {
-    const doExecute = this.startExecuting()
-    if (!doExecute) {
+    const rightsGrabbed = this.grabExecutionRights()
+    if (!rightsGrabbed) {
       await this.eventPublisher.awaitFor('taskPhaseEnded', e => e.taskName === this.taskName && e.phase === 'TERMINAL')
       return
     }
