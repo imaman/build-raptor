@@ -195,10 +195,10 @@ class SingleTaskExecutor {
     }
 
     if (phase === 'RUNNING') {
-      return 'SHADOWED'
+      return 'CHECK_SHADOWING'
     }
 
-    if (phase === 'SHADOWED') {
+    if (phase === 'CHECK_SHADOWING') {
       const sh = this.tracker.isShadowed(t.name)
       this.logger.info(`sh of ${t.name} is ${sh}`)
       if (!sh) {
