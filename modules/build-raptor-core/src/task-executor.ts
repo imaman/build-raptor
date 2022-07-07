@@ -1,7 +1,7 @@
 import { BuildFailedError } from 'build-failed-error'
 import * as fse from 'fs-extra'
 import { Logger } from 'logger'
-import { promises, shouldNeverHappen, sortBy, TypedPublisher } from 'misc'
+import { failMe, promises, shouldNeverHappen, sortBy, TypedPublisher } from 'misc'
 import * as path from 'path'
 import { ExitStatus, RepoProtocol } from 'repo-protocol'
 import { TaskName } from 'task-name'
@@ -10,6 +10,7 @@ import { EngineEventScheme } from './engine-event-scheme'
 import { Fingerprint } from './fingerprint'
 import { FingerprintLedger } from './fingerprint-ledger'
 import { Model } from './model'
+import { Phase } from './phase'
 import { Purger } from './purger'
 import { TaskStore } from './task-store'
 import { TaskTracker } from './task-tracker'
@@ -31,30 +32,26 @@ export class TaskExecutor {
   ) {}
 
   async executeTask(taskName: TaskName) {
-    let current = taskName
-    while (true) {
-      const ste = new SingleTaskExecutor(
-        taskName,
-        this.model,
-        this.tracker,
-        this.logger,
-        this.repoProtocol,
-        this.taskStore,
-        this.taskOutputDir,
-        this.eventPublisher,
-        this.fingerprintLedger,
-        this.purger,
-      )
-      const next = await ste.executeTask()
-      if (next === current) {
-        break
-      }
-      current = next
-    }
+    const ste = new SingleTaskExecutor(
+      taskName,
+      this.model,
+      this.tracker,
+      this.logger,
+      this.repoProtocol,
+      this.taskStore,
+      this.taskOutputDir,
+      this.eventPublisher,
+      this.fingerprintLedger,
+      this.purger,
+      this,
+    )
+    await ste.executeTask()
   }
 }
 
 class SingleTaskExecutor {
+  private readonly phasePublisher = new TypedPublisher<{ phase: Phase }>()
+
   constructor(
     private readonly taskName: TaskName,
     private readonly model: Model,
@@ -66,6 +63,7 @@ class SingleTaskExecutor {
     private readonly eventPublisher: TypedPublisher<EngineEventScheme>,
     private readonly fingerprintLedger: FingerprintLedger,
     private readonly purger: Purger,
+    private readonly executor: TaskExecutor,
   ) {}
 
   private get task() {
@@ -132,78 +130,177 @@ class SingleTaskExecutor {
 
   /**
    * Exectues the task.
-   *
-   * @returns the name of another task to execute. Returning `this.taskName` means "no other task to execute".
    */
-  async executeTask(): Promise<TaskName> {
-    const t = this.task
-    if (this.tracker.hasVerdict(t.name)) {
-      return t.name
-    }
+  async executeTask(): Promise<void> {
+    try {
+      const t = this.task
+      if (this.tracker.hasVerdict(t.name)) {
+        return
+      }
 
-    const shadowing = this.tracker.getShadowingTask(t.name)
-    if (shadowing) {
-      return shadowing
+      await this.runPhases()
+    } catch (e) {
+      this.logger.error(`Task ${this.taskName} is exiting with an error`, e)
+      throw e
     }
-
-    await this.executeUnshadowedTask()
-    return t.name
   }
 
-  private async executeUnshadowedTask() {
+  private get dir() {
+    return path.join(this.model.rootDir, this.unit.pathInRepo)
+  }
+
+  private fp_?: Fingerprint
+
+  private get fp() {
+    return this.fp_ ?? failMe(`fingerprint was not set on task ${this.taskName}`)
+  }
+
+  /**
+   * Determines whether this executor can execute its task. It is possible that several executors will try to run the
+   * same task. This method ensures that exactly one such executor will actually execute it.
+   * @returns true if the task should be executed by this executor, false otherwise.
+   */
+  private grabExecutionRights(): boolean {
+    // This method cannot be async, because it should do a compare-and-set on the task's phase in an atomic manner.
+    // This atomicity ensures that a task will only be executed once.
+    if (this.task.hasPhase()) {
+      return false
+    }
+
+    this.task.setPhase('UNSTARTED')
+    return true
+  }
+
+  private async runPhases() {
+    const rightsGrabbed = this.grabExecutionRights()
+    if (!rightsGrabbed) {
+      await this.eventPublisher.awaitFor('taskPhaseEnded', e => e.taskName === this.taskName && e.phase === 'TERMINAL')
+      return
+    }
+
+    this.tracker.changeStatus(this.taskName, 'RUNNING')
+
+    let phase: Phase = 'RUNNING'
+    while (true) {
+      this.task.setPhase(phase)
+      await this.eventPublisher.publish('taskPhaseEnded', { taskName: this.taskName, phase })
+      if (phase === 'TERMINAL') {
+        break
+      }
+      phase = await this.executePhase(phase)
+      await this.phasePublisher.publish('phase', phase)
+    }
+  }
+
+  private async executePhase(phase: Phase): Promise<Phase> {
+    this.logger.info(`Running ${phase} of ${this.taskName}`)
     const t = this.task
-    this.tracker.changeStatus(t.name, 'RUNNING')
 
-    const fp = await this.computeFingerprint()
-    const unit = this.unit
-    const dir = path.join(this.model.rootDir, unit.pathInRepo)
+    // TODO(imaman): some of the phases are essentially a no-op and can be eliminated.
+    if (phase === 'UNSTARTED') {
+      return 'RUNNING'
+    }
 
-    if (this.tracker.isShadowed(t.name)) {
+    if (phase === 'RUNNING') {
+      return 'CHECK_SHADOWING'
+    }
+
+    if (phase === 'CHECK_SHADOWING') {
+      // TODO(imaman): simplify the entire method, and this branch in particular.
+      const isShadowed = this.tracker.isShadowed(t.name)
+      this.logger.info(`is task ${t.name} shadowed? ${isShadowed}`)
+      if (!isShadowed) {
+        this.fp_ = await this.computeFingerprint()
+        return 'PURGE_OUTPUTS'
+      }
+
+      const st = this.tracker.getShadowingTask(t.name)
+      this.logger.info(`shadowing task of ${t.name} is ${st}`)
+      await this.executor.executeTask(st)
+      // TODO(imaman): check verdict of the shadowing task
+
+      this.fp_ = await this.computeFingerprint()
+
+      const skipped = await this.canBeSkipped()
+      if (skipped) {
+        return 'TERMINAL'
+      }
       await this.validateOutputs()
       // TODO(imaman): report the shadowing task in the event.
       await this.eventPublisher.publish('executionShadowed', t.name)
       this.tracker.registerShadowedVerdict(t.name, 'OK')
-      await this.taskStore.recordTask(t.name, fp, dir, t.outputLocations, 'OK')
-      return
+      await this.taskStore.recordTask(t.name, this.fp, this.dir, t.outputLocations, 'OK')
+      return 'TERMINAL'
     }
 
-    await this.purgeOutputs()
+    if (phase === 'PURGE_OUTPUTS') {
+      await this.purgeOutputs()
+      return 'POSSIBLY_SKIP'
+    }
 
-    const earlierVerdict = await this.taskStore.restoreTask(t.name, fp, dir)
+    if (phase === 'POSSIBLY_SKIP') {
+      const skipped = await this.canBeSkipped()
+      if (skipped) {
+        return 'TERMINAL'
+      }
 
+      return 'RUN_IT'
+    }
+
+    if (phase === 'RUN_IT') {
+      await this.runIt()
+      return 'TERMINAL'
+    }
+
+    if (phase === 'TERMINAL') {
+      throw new Error(`task ${t.name} is already in state ${phase}`)
+    }
+
+    shouldNeverHappen(phase)
+  }
+
+  private async canBeSkipped() {
+    const t = this.task
+    const earlierVerdict = await this.taskStore.restoreTask(t.name, this.fp, this.dir)
     if (earlierVerdict === 'OK' || earlierVerdict === 'FLAKY') {
       await this.eventPublisher.publish('executionSkipped', t.name)
       this.tracker.registerCachedVerdict(t.name, earlierVerdict)
-      return
+      return true
     }
 
     if (earlierVerdict === 'FAIL' || earlierVerdict === 'UNKNOWN') {
-      await this.eventPublisher.publish('executionStarted', t.name)
-      const outputFile = path.join(this.taskOutputDir, `${t.id}.stdout`)
-      const status = await this.repoProtocol.execute(unit, dir, t.kind, outputFile, this.model.buildRunId)
-      await this.postProcess(status, outputFile)
-      if (status === 'CRASH') {
-        throw new Error(`Task ${JSON.stringify(t.name)} crashed`)
-      }
-
-      if (status === 'OK') {
-        await this.validateOutputs()
-        this.tracker.registerVerdict(t.name, status, outputFile)
-        await this.taskStore.recordTask(t.name, fp, dir, t.outputLocations, status)
-        return
-      }
-
-      if (status === 'FAIL') {
-        this.tracker.registerVerdict(t.name, status, outputFile)
-        // TODO(imaman): should not record outputs if task has failed.
-        await this.taskStore.recordTask(t.name, fp, dir, t.outputLocations, status)
-        return
-      }
-
-      shouldNeverHappen(status)
+      return false
     }
 
     shouldNeverHappen(earlierVerdict)
+  }
+
+  private async runIt() {
+    const t = this.task
+
+    await this.eventPublisher.publish('executionStarted', t.name)
+    const outputFile = path.join(this.taskOutputDir, `${t.id}.stdout`)
+    const status = await this.repoProtocol.execute(this.unit, this.dir, t.kind, outputFile, this.model.buildRunId)
+    await this.postProcess(status, outputFile)
+    if (status === 'CRASH') {
+      throw new Error(`Task ${JSON.stringify(t.name)} crashed`)
+    }
+
+    if (status === 'OK') {
+      await this.validateOutputs()
+      this.tracker.registerVerdict(t.name, status, outputFile)
+      await this.taskStore.recordTask(t.name, this.fp, this.dir, t.outputLocations, 'OK')
+      return
+    }
+
+    if (status === 'FAIL') {
+      this.tracker.registerVerdict(t.name, status, outputFile)
+      // TODO(imaman): should not record outputs if task has failed.
+      await this.taskStore.recordTask(t.name, this.fp, this.dir, t.outputLocations, status)
+      return
+    }
+
+    shouldNeverHappen(status)
   }
 
   private async purgeOutputs() {

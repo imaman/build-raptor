@@ -5,6 +5,7 @@ import { UnitId } from 'unit-metadata'
 
 import { ExecutionRecord } from './execution-record'
 import { Fingerprint } from './fingerprint'
+import { Phase } from './phase'
 import { SlotIndex } from './slot-index'
 import { TaskInfo } from './task-info'
 
@@ -30,6 +31,7 @@ export class Task {
       executionType: 'UNKNOWN',
       startedAt: SlotIndex(-1),
       endedAt: SlotIndex(-1),
+      phases: []
     }
   }
 
@@ -58,6 +60,20 @@ export class Task {
     })
     this.fingerprint = Fingerprint(fp)
   }
+
+  setPhase(phase: Phase) {
+    this.executionRecord.phases.push(phase)
+  }
+
+  getPhase(): Phase {
+    const pos = this.executionRecord.phases.length - 1
+    return pos >= 0 ? this.executionRecord.phases[pos] : 'UNSTARTED'
+  }
+
+  hasPhase(): boolean {
+    return this.executionRecord.phases.length > 0
+  }
+
 
   get record(): ExecutionRecord {
     return this.executionRecord

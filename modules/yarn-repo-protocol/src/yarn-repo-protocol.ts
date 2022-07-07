@@ -36,7 +36,7 @@ interface State {
 }
 
 export class YarnRepoProtocol implements RepoProtocol {
-  constructor(private readonly logger: Logger) {}
+  constructor(private readonly logger: Logger, private readonly shadowing: boolean = true) {}
 
   private readonly tsconfigBasePathInRepo: string = 'tsconfig-base.json'
   private state_: State | undefined
@@ -325,7 +325,7 @@ export class YarnRepoProtocol implements RepoProtocol {
         {
           taskKind: build,
           outputs: ['dist'],
-          shadowing: false,
+          shadowing: this.shadowing,
           inputsInDeps: ['dist/src'],
           inputsInUnit: ['src', 'tests'],
         },
