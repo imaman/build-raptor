@@ -208,7 +208,12 @@ class SingleTaskExecutor {
 
       const st = this.tracker.getShadowingTask(t.name)
       this.logger.info(`shadowing task of ${t.name} is ${st}`)
-      await this.executor.executeTask(st)
+      try {
+        await this.executor.executeTask(st)
+      } catch (e) {
+        this.logger.error(`Task ${this.taskName} is exiting with an error`, e)
+        throw e
+      }
       // TODO(imaman): check verdict of the shadowing task
 
       this.fp_ = await this.computeFingerprint()

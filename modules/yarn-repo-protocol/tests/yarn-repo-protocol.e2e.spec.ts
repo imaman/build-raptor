@@ -3,12 +3,12 @@ import { createNopLogger } from 'logger'
 
 import { YarnRepoProtocol } from '../src/yarn-repo-protocol'
 
-jest.setTimeout(30000)
+jest.setTimeout(10000)
 describe('yarn-repo-protocol.e2e', () => {
   const logger = createNopLogger()
   const testName = () => expect.getState().currentTestName
 
-  test.only('runs tasks and captures their output', async () => {
+  test('runs tasks and captures their output', async () => {
     const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
@@ -68,7 +68,7 @@ describe('yarn-repo-protocol.e2e', () => {
     expect(await runB.outputOf('test', 'a')).toContain('mondaytuesday')
   })
   test('if nothing has changed the tasks are cached', async () => {
-    const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
+    const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger, false) })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
       'modules/a/package.json': { name: 'a', version: '1.0.0', scripts: { build, jest }, dependencies: { b: '1.0.0' } },
