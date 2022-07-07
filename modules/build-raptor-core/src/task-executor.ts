@@ -210,6 +210,9 @@ class SingleTaskExecutor {
       const isShadowed = this.tracker.isShadowed(t.name)
       this.logger.info(`is task ${t.name} shadowed? ${isShadowed}`)
       if (!isShadowed) {
+        // TODO(imaman): there is a possiblity for a nasty bug with the current implementation. When the current task
+        // is a shadowing task, the outputs of dependencies do not (yet) exist, because those dependencies forwent the
+        // execution (due to shadowing), so the FP computed at the shadowing task is incorrect.
         this.fp_ = await this.computeFingerprint()
         return 'PURGE_OUTPUTS'
       }
