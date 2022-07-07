@@ -206,6 +206,7 @@ class SingleTaskExecutor {
     }
 
     if (phase === 'CHECK_SHADOWING') {
+      // TODO(imaman): simplify the entire method, and this branch in particular.
       const isShadowed = this.tracker.isShadowed(t.name)
       this.logger.info(`is task ${t.name} shadowed? ${isShadowed}`)
       if (!isShadowed) {
