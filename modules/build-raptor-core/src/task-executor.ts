@@ -196,6 +196,7 @@ class SingleTaskExecutor {
     this.logger.info(`Running ${phase} of ${this.taskName}`)
     const t = this.task
 
+    // TODO(imaman): some of the phases are essentially a no-op and can be eliminated.
     if (phase === 'UNSTARTED') {
       return 'RUNNING'
     }
