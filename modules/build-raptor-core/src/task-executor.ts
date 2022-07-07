@@ -132,12 +132,17 @@ class SingleTaskExecutor {
    * Exectues the task.
    */
   async executeTask(): Promise<void> {
-    const t = this.task
-    if (this.tracker.hasVerdict(t.name)) {
-      return
-    }
+    try {
+      const t = this.task
+      if (this.tracker.hasVerdict(t.name)) {
+        return
+      }
 
-    await this.runPhases()
+      await this.runPhases()
+    } catch (e) {
+      this.logger.error(`Task ${this.taskName} is exiting with an error`, e)
+      throw e
+    }
   }
 
   private get dir() {
@@ -199,21 +204,16 @@ class SingleTaskExecutor {
     }
 
     if (phase === 'CHECK_SHADOWING') {
-      const sh = this.tracker.isShadowed(t.name)
-      this.logger.info(`sh of ${t.name} is ${sh}`)
-      if (!sh) {
+      const isShadowed = this.tracker.isShadowed(t.name)
+      this.logger.info(`is task ${t.name} shadowed? ${isShadowed}`)
+      if (!isShadowed) {
         this.fp_ = await this.computeFingerprint()
         return 'PURGE_OUTPUTS'
       }
 
       const st = this.tracker.getShadowingTask(t.name)
       this.logger.info(`shadowing task of ${t.name} is ${st}`)
-      try {
-        await this.executor.executeTask(st)
-      } catch (e) {
-        this.logger.error(`Task ${this.taskName} is exiting with an error`, e)
-        throw e
-      }
+      await this.executor.executeTask(st)
       // TODO(imaman): check verdict of the shadowing task
 
       this.fp_ = await this.computeFingerprint()
