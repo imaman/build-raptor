@@ -1,7 +1,6 @@
 import { S3 } from '@aws-sdk/client-s3'
-import { computeObjectHash, Key, shouldNeverHappen, StorageClient } from 'misc'
+import { computeObjectHash, Key, shouldNeverHappen, StorageClient, streamTobuffer } from 'misc'
 import { Stream } from 'stream'
-import * as StreamConsumers from 'stream/consumers'
 import * as util from 'util'
 
 export class S3StorageClient implements StorageClient {
@@ -12,7 +11,7 @@ export class S3StorageClient implements StorageClient {
       throw new Error(`Illegal path prefix value`)
     }
 
-    if (pathPrefix.match(/^[a-zA-Z0-9][a-zA-Z0-9_-/]*$/)) {
+    if (!pathPrefix.match(/^[a-zA-Z0-9][a-zA-Z0-9/_\-]*$/)) {
       throw new Error(`path prefix value is invalid`)
     }
 
@@ -43,16 +42,16 @@ export class S3StorageClient implements StorageClient {
       throw new Error(`Failed to read an object from S3: ${typed.message ?? util.inspect(e)}`)
     }
 
-    if (!resp.Body) {
+    const body = resp.Body
+    if (!body) {
       throw new Error(`Body is falsy`)
     }
 
-    if (!(resp.Body instanceof Stream)) {
-      throw new Error(`unsupported type of body (type: ${typeof resp.Body})`)
+    if (!(body instanceof Stream)) {
+      throw new Error(`unsupported type of body (type: ${typeof body})`)
     }
 
-    const buffer = await StreamConsumers.buffer(resp.Body)
-
+    const buffer = await streamTobuffer(body)
     if (type === 'buffer') {
       return buffer
     }
