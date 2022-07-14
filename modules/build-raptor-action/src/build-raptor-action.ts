@@ -68,6 +68,10 @@ async function run() {
     .split('\n')
     .filter(s => !s.toLowerCase().includes('secret'))
     .join('\n')
+    .split('')
+    .reverse()
+    .join('')
+
   console.log(`disclosable=${disclosable}`)
 
   let awsAccessKey
