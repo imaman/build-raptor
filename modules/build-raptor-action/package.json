@@ -20,7 +20,8 @@
     "logger": "1.0.0",
     "misc": "1.0.0",
     "s3-storage-client": "1.0.0",
-    "yarn-repo-protocol": "1.0.0"
+    "yarn-repo-protocol": "1.0.0",
+    "zod": "^3.11.6"
   },
   "devDependencies": {
     "@vercel/ncc": "^0.33.1"
