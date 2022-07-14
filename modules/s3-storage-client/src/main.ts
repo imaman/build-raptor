@@ -4,7 +4,12 @@ import { S3StorageClient } from './s3-storage-client'
 
 /* eslint-disable no-console */
 async function main() {
-  const s3 = new S3StorageClient('moojo-dev-infra', 's3sc-playground', {}, createNopLogger())
+  const s3 = new S3StorageClient(
+    'moojo-dev-infra',
+    's3sc-playground',
+    { accessKeyId: '', secretAccessKey: '' },
+    createNopLogger(),
+  )
 
   console.log(await s3.objectExists('alpha'), await s3.objectExists('(ii)'), await s3.objectExists('3/3'))
   await s3.putObject(
