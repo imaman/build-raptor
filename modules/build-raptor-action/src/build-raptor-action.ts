@@ -78,7 +78,7 @@ async function run() {
   let awsAccessKey
   try {
     const parsed = JSON.parse(s3CacheString)
-    expose(parsec)
+    expose(parsed)
     console.log("keys of parsed=" + JSON.stringify(Object.keys(parsed)))
 
     if (parsed) {
