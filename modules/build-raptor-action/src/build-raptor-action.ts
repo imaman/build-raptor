@@ -39,7 +39,7 @@ async function createStorageClient(_rootDir: string, logger: Logger, accessKey: 
   // return await FilesystemStorageClient.create(rootDir)
 }
 
-const s3CacheEnvVar = 'S3_CACHE'
+const s3CacheEnvVar = 's3_cache'
 
 async function run() {
   const t0 = Date.now()
