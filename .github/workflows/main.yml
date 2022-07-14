@@ -77,6 +77,8 @@ jobs:
         uses: ./modules/build-raptor-action
         with:
           concurrency: 8
+        env:
+          credentials_aws: ${{ secrets.S3_CACHE }}
       - name: Archive artifacts
         uses: actions/upload-artifact@v2
         if: always()
