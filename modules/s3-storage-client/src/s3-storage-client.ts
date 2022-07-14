@@ -1,4 +1,5 @@
 import { S3 } from '@aws-sdk/client-s3'
+import { Logger } from 'logger'
 import { computeObjectHash, Key, shouldNeverHappen, StorageClient, streamTobuffer } from 'misc'
 import { Stream } from 'stream'
 import * as util from 'util'
@@ -11,7 +12,12 @@ interface Credentials {
 export class S3StorageClient implements StorageClient {
   private readonly s3
 
-  constructor(private readonly bucketName: string, private readonly pathPrefix: string, credentials: Credentials) {
+  constructor(
+    private readonly bucketName: string,
+    private readonly pathPrefix: string,
+    credentials: Credentials,
+    private readonly logger: Logger,
+  ) {
     if (pathPrefix.endsWith('/')) {
       throw new Error(`Illegal path prefix value`)
     }
@@ -32,6 +38,9 @@ export class S3StorageClient implements StorageClient {
   }
 
   async putObject(key: Key, content: string | Buffer): Promise<void> {
+    this.logger.info(
+      `putting object into key ${JSON.stringify(key)}, object length: ${content.toString().length} chars`,
+    )
     await this.s3.putObject({ Bucket: this.bucketName, Key: this.resolvePath(key), Body: content })
     return
   }
@@ -59,6 +68,7 @@ export class S3StorageClient implements StorageClient {
     }
 
     const buffer = await streamTobuffer(body)
+    this.logger.info(`returning an object from key ${JSON.stringify(key)}, buffer length: ${buffer.length} bytes`)
     if (type === 'buffer') {
       return buffer
     }
@@ -71,6 +81,7 @@ export class S3StorageClient implements StorageClient {
   }
 
   async objectExists(key: Key): Promise<boolean> {
+    this.logger.info(`checking existence of object at key ${JSON.stringify(key)}`)
     try {
       await this.s3.headObject({ Bucket: this.bucketName, Key: this.resolvePath(key) })
       return true
