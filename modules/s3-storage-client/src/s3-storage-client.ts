@@ -41,8 +41,14 @@ export class S3StorageClient implements StorageClient {
     this.logger.info(
       `putting object into key ${JSON.stringify(key)}, object length: ${content.toString().length} chars`,
     )
-    await this.s3.putObject({ Bucket: this.bucketName, Key: this.resolvePath(key), Body: content })
-    return
+
+    const resolved = this.resolvePath(key)
+    try {
+      await this.s3.putObject({ Bucket: this.bucketName, Key: resolved, Body: content })
+    } catch (e) {
+      this.logger.error(`putObject error with key=${JSON.stringify(key)}, resolved=${resolved}`, e)
+      throw new Error(`Failed to put an object into the persistent storage`)
+    }
   }
 
   getObject(key: Key): Promise<string>
