@@ -31,7 +31,7 @@ type AwsAccessKey = z.infer<typeof AwsAccessKey>
 
 async function createStorageClient(_rootDir: string, logger: Logger, accessKey: AwsAccessKey) {
   const creds = { accessKeyId: accessKey.AccessKey.AccessKeyId, secretAccessKey: accessKey.AccessKey.SecretAccessKey }
-  const ret = new S3StorageClient('moojo-dev-infra', 'build-raptor/cache-v1', creds)
+  const ret = new S3StorageClient('moojo-dev-infra', 'build-raptor/cache-v1', creds, logger)
   logger.info(`S3StorageClient created successfully`)
   return ret
   // return await ActionsCacheStorageClient.create(rootDir, logger)
