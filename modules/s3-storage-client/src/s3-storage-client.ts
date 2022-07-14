@@ -30,7 +30,7 @@ export class S3StorageClient implements StorageClient {
       throw new Error(`path prefix value cannot include two consecutive slashes`)
     }
 
-    this.s3 = new S3({ credentials })
+    this.s3 = new S3({ credentials, region: 'eu-central-1' })
   }
 
   private resolvePath(key: Key): string {
