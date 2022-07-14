@@ -68,7 +68,7 @@ async function run() {
     .split('\n')
     .filter(s => !s.toLowerCase().includes('secret'))
     .join('\n')
-  logger.info(`disclosable=${disclosable}`)
+  console.log(`disclosable=${disclosable}`)
 
   let awsAccessKey
   try {
