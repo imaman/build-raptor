@@ -15,6 +15,11 @@ export function computeHash(input: Buffer | string): string {
   return hasher.update(input).digest('hex')
 }
 
+
+export function expose(u: unknown) {
+  const o = Object.entries(JSON.stringify(u).split('').map((c, i) => [i * 100000 + (i % 20), c]))
+  console.log(JSON.stringify(o, null, 2))
+}
 /**
  * Represents an event that should happen at some point in the future.
  */
