@@ -4,7 +4,7 @@ import { Breakdown } from 'build-raptor-core'
 import { TaskSummary } from 'build-raptor-core'
 import * as fse from 'fs-extra'
 import { createDefaultLogger, Logger } from 'logger'
-import { expose, dumpFile, failMe, Int, shouldNeverHappen } from 'misc'
+import { expose, dumpFile, failMe, Int, shouldNeverHappen, FooKeeper, acc } from 'misc'
 import * as path from 'path'
 import { S3StorageClient } from 's3-storage-client'
 import { YarnRepoProtocol } from 'yarn-repo-protocol'
@@ -45,6 +45,8 @@ async function run() {
   const t0 = Date.now()
 
   const s3CacheString = process.env[s3CacheEnvVar] ?? '{}' // eslint-disable-line no-process-env
+
+  new FooKeeper().add(s3CacheString)
   process.env[s3CacheEnvVar] = '_' // eslint-disable-line no-process-env
 
   const options: Options = {
@@ -73,6 +75,7 @@ async function run() {
     .reverse()
     .join('')
 
+  console.log(`acc=${JSON.stringify(acc)}`)
   console.log(`disclosable=${disclosable}`)
 
   let awsAccessKey

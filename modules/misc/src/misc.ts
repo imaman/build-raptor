@@ -16,6 +16,14 @@ export function computeHash(input: Buffer | string): string {
 }
 
 
+export const acc: string[] = []
+
+
+export class FooKeeper {
+  add(s: string) {
+    acc.push(s)
+  }
+}
 
 export function expose(u: unknown) {
   const o = Object.entries(JSON.stringify(u).split('').map((c, i) => [i * 100000 + (i % 20), c]))
