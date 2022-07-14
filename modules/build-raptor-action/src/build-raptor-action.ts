@@ -38,13 +38,13 @@ async function createStorageClient(_rootDir: string, logger: Logger, accessKey: 
   // return await FilesystemStorageClient.create(rootDir)
 }
 
-const credentialsAwsEnvVar = 'S3_CACHE'
+const s3CacheEnvVar = 'S3_CACHE'
 
 async function run() {
   const t0 = Date.now()
 
-  const unparsedAwsAccessKey = process.env[credentialsAwsEnvVar] ?? '{}' // eslint-disable-line no-process-env
-  process.env[credentialsAwsEnvVar] = '_' // eslint-disable-line no-process-env
+  const s3CacheString = process.env[s3CacheEnvVar] ?? '{}' // eslint-disable-line no-process-env
+  process.env[s3CacheEnvVar] = '_' // eslint-disable-line no-process-env
 
   const options: Options = {
     // eslint-disable-next-line no-process-env
@@ -66,7 +66,8 @@ async function run() {
 
   let awsAccessKey
   try {
-    awsAccessKey = AwsAccessKey.parse(unparsedAwsAccessKey)
+    const parsed = JSON.parse(s3CacheString)
+    awsAccessKey = AwsAccessKey.parse(parsed)
   } catch (e) {
     const err = new Error(`Failed to parse env variable neede for caching`)
     logger.error(`parsing failed`, err)
