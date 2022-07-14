@@ -4,9 +4,11 @@ import { Breakdown } from 'build-raptor-core'
 import { TaskSummary } from 'build-raptor-core'
 import * as fse from 'fs-extra'
 import { createDefaultLogger, Logger } from 'logger'
-import { dumpFile, failMe, FilesystemStorageClient, Int, shouldNeverHappen } from 'misc'
+import { dumpFile, failMe, Int, shouldNeverHappen } from 'misc'
 import * as path from 'path'
+import { S3StorageClient } from 's3-storage-client'
 import { YarnRepoProtocol } from 'yarn-repo-protocol'
+import { z } from 'zod'
 
 interface Options {
   command: 'build' | 'test'
@@ -16,13 +18,34 @@ interface Options {
   printPassing: boolean
 }
 
-async function createStorageClient(rootDir: string, _logger: Logger) {
+const AwsAccessKey = z.object({
+  AccessKey: z.object({
+    UserName: z.string(),
+    Status: z.string(),
+    CreateDate: z.string(),
+    SecretAccessKey: z.string(),
+    AccessKeyId: z.string(),
+  }),
+})
+type AwsAccessKey = z.infer<typeof AwsAccessKey>
+
+async function createStorageClient(_rootDir: string, logger: Logger, accessKey: AwsAccessKey) {
+  const creds = { accessKeyId: accessKey.AccessKey.AccessKeyId, secretAccessKey: accessKey.AccessKey.SecretAccessKey }
+  const ret = new S3StorageClient('moojo-dev-infra', 'build-raptor/cache-v1', creds, logger)
+  logger.info(`S3StorageClient created successfully`)
+  return ret
   // return await ActionsCacheStorageClient.create(rootDir, logger)
-  return await FilesystemStorageClient.create(rootDir)
+  // return await FilesystemStorageClient.create(rootDir)
 }
+
+const s3CacheEnvVar = 's3_cache'
 
 async function run() {
   const t0 = Date.now()
+
+  const s3CacheString = process.env[s3CacheEnvVar] ?? '{}' // eslint-disable-line no-process-env
+  process.env[s3CacheEnvVar] = '_' // eslint-disable-line no-process-env
+
   const options: Options = {
     // eslint-disable-next-line no-process-env
     dir: process.env['GITHUB_WORKSPACE'] || failMe(),
@@ -41,7 +64,17 @@ async function run() {
   logger.info(`Logger initialized`)
   logger.print(`logging to ${logFile}`)
 
-  const storageClient = await createStorageClient(rootDir, logger)
+  let awsAccessKey
+  try {
+    const parsed = JSON.parse(s3CacheString)
+    awsAccessKey = AwsAccessKey.parse(parsed)
+  } catch (e) {
+    const err = new Error(`Failed to parse env variable neede for caching`)
+    logger.error(`parsing of s3CacheString failed`, err)
+    throw e
+  }
+
+  const storageClient = await createStorageClient(rootDir, logger, awsAccessKey)
   const repoProtocol = new YarnRepoProtocol(logger)
   const bootstrapper = await EngineBootstrapper.create(rootDir, storageClient, repoProtocol, t0, '', logger)
 

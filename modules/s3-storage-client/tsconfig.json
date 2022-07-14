@@ -6,22 +6,10 @@
   },
   "references": [
     {
-      "path": "../actions-cache-storage-client"
-    },
-    {
-      "path": "../build-raptor-core"
-    },
-    {
       "path": "../logger"
     },
     {
       "path": "../misc"
-    },
-    {
-      "path": "../s3-storage-client"
-    },
-    {
-      "path": "../yarn-repo-protocol"
     }
   ],
   "include": ["src/**/*", "tests/**/*"]

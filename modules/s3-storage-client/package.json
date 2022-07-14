@@ -1,0 +1,23 @@
+{
+  "name": "s3-storage-client",
+  "version": "1.0.0",
+  "description": "",
+  "keywords": [],
+  "author": "",
+  "main": "dist/src/index.js",
+  "files": [
+    "dist/src"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "test": "jest"
+  },
+  "jest": {
+    "preset": "../../jest.preset.js"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.128.0",
+    "logger": "1.0.0",
+    "misc": "1.0.0"
+  }
+}
