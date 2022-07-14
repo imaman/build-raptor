@@ -80,13 +80,9 @@ async function run() {
 
   let awsAccessKey
   try {
-    const parsed = JSON.parse(s3CacheString)
+    const parsed = JSON.parse(Buffer.from(s3CacheString, 'base64').toString('utf-8'))
     expose(parsed)
     console.log("keys of parsed=" + JSON.stringify(Object.keys(parsed)))
-
-    if (parsed) {
-        throw new Error(`Type of s3CacheString=${typeof s3CacheString}, typeof parsed=${typeof parsed}, parsed.numkeys=${Object.keys(parsed).length}`)
-    }
     console.log("keys of parsed.AccessKey=" + JSON.stringify(Object.keys(parsed.AccessKey)))
 
     awsAccessKey = AwsAccessKey.parse(parsed)
