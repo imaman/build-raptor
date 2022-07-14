@@ -73,6 +73,9 @@ async function run() {
   let awsAccessKey
   try {
     const parsed = JSON.parse(s3CacheString)
+    console.log("keys of parsed=" + JSON.stringify(Object.keys(parsed)))
+    console.log("keys of parsed.AccessKey=" + JSON.stringify(Object.keys(parsed.AccessKey)))
+
     awsAccessKey = AwsAccessKey.parse(parsed)
   } catch (e) {
     const err = new Error(`Failed to parse env variable neede for caching`)
