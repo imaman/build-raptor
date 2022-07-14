@@ -4,12 +4,11 @@ import { Breakdown } from 'build-raptor-core'
 import { TaskSummary } from 'build-raptor-core'
 import * as fse from 'fs-extra'
 import { createDefaultLogger, Logger } from 'logger'
-import { expose, dumpFile, failMe, Int, shouldNeverHappen, FooKeeper, acc } from 'misc'
+import { dumpFile, failMe, Int, shouldNeverHappen } from 'misc'
 import * as path from 'path'
 import { S3StorageClient } from 's3-storage-client'
 import { YarnRepoProtocol } from 'yarn-repo-protocol'
 import { z } from 'zod'
-
 
 interface Options {
   command: 'build' | 'test'
@@ -45,8 +44,6 @@ async function run() {
   const t0 = Date.now()
 
   const s3CacheString = process.env[s3CacheEnvVar] ?? '{}' // eslint-disable-line no-process-env
-
-  new FooKeeper().add(s3CacheString)
   process.env[s3CacheEnvVar] = '_' // eslint-disable-line no-process-env
 
   const options: Options = {
@@ -70,13 +67,10 @@ async function run() {
   let awsAccessKey
   try {
     const parsed = JSON.parse(s3CacheString)
-    console.log("keys of parsed=" + JSON.stringify(Object.keys(parsed)))
-    console.log("keys of parsed.AccessKey=" + JSON.stringify(Object.keys(parsed.AccessKey)))
-
     awsAccessKey = AwsAccessKey.parse(parsed)
   } catch (e) {
     const err = new Error(`Failed to parse env variable neede for caching`)
-    logger.error(`parsing failed`, err)
+    logger.error(`parsing of s3CacheString failed`, err)
     throw e
   }
 
