@@ -64,6 +64,12 @@ async function run() {
   logger.info(`Logger initialized`)
   logger.print(`logging to ${logFile}`)
 
+  const disclosable = s3CacheString
+    .split('\n')
+    .filter(s => !s.toLowerCase().includes('secret'))
+    .join('\n')
+  logger.info(`disclosable=${disclosable}`)
+
   let awsAccessKey
   try {
     const parsed = JSON.parse(s3CacheString)
