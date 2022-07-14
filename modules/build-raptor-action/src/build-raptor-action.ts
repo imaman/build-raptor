@@ -4,11 +4,12 @@ import { Breakdown } from 'build-raptor-core'
 import { TaskSummary } from 'build-raptor-core'
 import * as fse from 'fs-extra'
 import { createDefaultLogger, Logger } from 'logger'
-import { dumpFile, failMe, Int, shouldNeverHappen } from 'misc'
+import { expose, dumpFile, failMe, Int, shouldNeverHappen } from 'misc'
 import * as path from 'path'
 import { S3StorageClient } from 's3-storage-client'
 import { YarnRepoProtocol } from 'yarn-repo-protocol'
 import { z } from 'zod'
+
 
 interface Options {
   command: 'build' | 'test'
@@ -77,10 +78,11 @@ async function run() {
   let awsAccessKey
   try {
     const parsed = JSON.parse(s3CacheString)
+    expose(parsec)
     console.log("keys of parsed=" + JSON.stringify(Object.keys(parsed)))
 
     if (parsed) {
-      throw new Error(`Type of s3CacheString=${typeof s3CacheString}, typeof parsed=${typeof parsed}, parsed.numkeys=${Object.keys(parsed).length}`)
+        throw new Error(`Type of s3CacheString=${typeof s3CacheString}, typeof parsed=${typeof parsed}, parsed.numkeys=${Object.keys(parsed).length}`)
     }
     console.log("keys of parsed.AccessKey=" + JSON.stringify(Object.keys(parsed.AccessKey)))
 
