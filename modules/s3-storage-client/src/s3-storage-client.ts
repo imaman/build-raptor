@@ -3,10 +3,15 @@ import { computeObjectHash, Key, shouldNeverHappen, StorageClient, streamTobuffe
 import { Stream } from 'stream'
 import * as util from 'util'
 
-export class S3StorageClient implements StorageClient {
-  private readonly s3 = new S3({})
+interface Credentials {
+  accessKeyId: string
+  secretAccessKey: string
+}
 
-  constructor(private readonly bucketName: string, private readonly pathPrefix: string) {
+export class S3StorageClient implements StorageClient {
+  private readonly s3
+
+  constructor(private readonly bucketName: string, private readonly pathPrefix: string, credentials: Credentials) {
     if (pathPrefix.endsWith('/')) {
       throw new Error(`Illegal path prefix value`)
     }
@@ -18,6 +23,8 @@ export class S3StorageClient implements StorageClient {
     if (pathPrefix.includes('//')) {
       throw new Error(`path prefix value cannot include two consecutive slashes`)
     }
+
+    this.s3 = new S3({ credentials })
   }
 
   private resolvePath(key: Key): string {
