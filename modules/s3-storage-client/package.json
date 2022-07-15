@@ -18,6 +18,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.128.0",
     "logger": "1.0.0",
-    "misc": "1.0.0"
+    "misc": "1.0.0",
+    "zod": "^3.11.6"
   }
 }

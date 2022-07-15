@@ -3,12 +3,11 @@ import { EngineBootstrapper } from 'build-raptor-core'
 import { Breakdown } from 'build-raptor-core'
 import { TaskSummary } from 'build-raptor-core'
 import * as fse from 'fs-extra'
-import { createDefaultLogger, Logger } from 'logger'
+import { createDefaultLogger } from 'logger'
 import { dumpFile, failMe, Int, shouldNeverHappen } from 'misc'
 import * as path from 'path'
-import { S3StorageClient } from 's3-storage-client'
+import { getS3StorageClientFactory } from 's3-storage-client'
 import { YarnRepoProtocol } from 'yarn-repo-protocol'
-import { z } from 'zod'
 
 interface Options {
   command: 'build' | 'test'
@@ -16,46 +15,6 @@ interface Options {
   units: string[]
   concurrency: Int
   printPassing: boolean
-}
-
-const AwsAccessKey = z.object({
-  AccessKey: z.object({
-    UserName: z.string(),
-    Status: z.string(),
-    CreateDate: z.string(),
-    SecretAccessKey: z.string(),
-    AccessKeyId: z.string(),
-  }),
-})
-type AwsAccessKey = z.infer<typeof AwsAccessKey>
-
-function getS3StorageClientFactory() {
-  const s3CacheEnvVar = 's3_cache'
-  const s3CacheString = process.env[s3CacheEnvVar] ?? '{}' // eslint-disable-line no-process-env
-  process.env[s3CacheEnvVar] = '_' // eslint-disable-line no-process-env
-
-  return async (logger: Logger) => {
-    let awsAccessKey: AwsAccessKey
-    try {
-      const parsed = JSON.parse(s3CacheString)
-      awsAccessKey = AwsAccessKey.parse(parsed)
-    } catch (e) {
-      const err = new Error(`Failed to parse env variable neede for caching`)
-      logger.error(`parsing of s3CacheString failed`, err)
-      throw e
-    }
-
-    return new Promise<S3StorageClient>(res => {
-      const creds = {
-        accessKeyId: awsAccessKey.AccessKey.AccessKeyId,
-        secretAccessKey: awsAccessKey.AccessKey.SecretAccessKey,
-      }
-      const ret = new S3StorageClient('moojo-dev-infra', 'build-raptor/cache-v1', creds, logger)
-      logger.info(`S3StorageClient created successfully`)
-
-      setTimeout(() => res(ret), 1)
-    })
-  }
 }
 
 async function run() {
