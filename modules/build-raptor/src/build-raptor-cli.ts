@@ -4,6 +4,7 @@ import { createDefaultLogger } from 'logger'
 import { dumpFile, FilesystemStorageClient, Int, switchOn, toReasonableFileName } from 'misc'
 import * as os from 'os'
 import * as path from 'path'
+import { getS3StorageClientFactory } from 's3-storage-client'
 import { TaskName } from 'task-name'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
@@ -24,6 +25,8 @@ async function createStorageClient() {
 }
 
 async function run(options: Options) {
+  const storageClientFactory = getS3StorageClientFactory() ?? createStorageClient
+
   const t0 = Date.now()
   const rootDir = options.dir ?? process.cwd()
   const buildRaptorDir = path.join(rootDir, '.build-raptor')
@@ -36,7 +39,7 @@ async function run(options: Options) {
   const buildRaptorDirTasks = path.join(buildRaptorDir, 'tasks')
   await fse.rm(buildRaptorDirTasks, { recursive: true, force: true })
 
-  const storageClient = await createStorageClient()
+  const storageClient = await storageClientFactory(logger)
   const repoProtocol = new YarnRepoProtocol(logger)
   const bootstrapper = await EngineBootstrapper.create(
     rootDir,
