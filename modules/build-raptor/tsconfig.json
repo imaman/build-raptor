@@ -15,6 +15,9 @@
       "path": "../misc"
     },
     {
+      "path": "../s3-storage-client"
+    },
+    {
       "path": "../yarn-repo-protocol"
     }
   ],
