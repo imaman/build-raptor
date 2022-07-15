@@ -29,22 +29,40 @@ const AwsAccessKey = z.object({
 })
 type AwsAccessKey = z.infer<typeof AwsAccessKey>
 
-async function createStorageClient(_rootDir: string, logger: Logger, accessKey: AwsAccessKey) {
-  const creds = { accessKeyId: accessKey.AccessKey.AccessKeyId, secretAccessKey: accessKey.AccessKey.SecretAccessKey }
-  const ret = new S3StorageClient('moojo-dev-infra', 'build-raptor/cache-v1', creds, logger)
-  logger.info(`S3StorageClient created successfully`)
-  return ret
-  // return await ActionsCacheStorageClient.create(rootDir, logger)
-  // return await FilesystemStorageClient.create(rootDir)
-}
+function getS3StorageClientFactory() {
+  const s3CacheEnvVar = 's3_cache'
+  const s3CacheString = process.env[s3CacheEnvVar] ?? '{}' // eslint-disable-line no-process-env
+  process.env[s3CacheEnvVar] = '_' // eslint-disable-line no-process-env
 
-const s3CacheEnvVar = 's3_cache'
+  return async (logger: Logger) => {
+    let awsAccessKey: AwsAccessKey
+    try {
+      const parsed = JSON.parse(s3CacheString)
+      awsAccessKey = AwsAccessKey.parse(parsed)
+    } catch (e) {
+      const err = new Error(`Failed to parse env variable neede for caching`)
+      logger.error(`parsing of s3CacheString failed`, err)
+      throw e
+    }
+
+    return new Promise<S3StorageClient>(res => {
+      const creds = {
+        accessKeyId: awsAccessKey.AccessKey.AccessKeyId,
+        secretAccessKey: awsAccessKey.AccessKey.SecretAccessKey,
+      }
+      const ret = new S3StorageClient('moojo-dev-infra', 'build-raptor/cache-v1', creds, logger)
+      logger.info(`S3StorageClient created successfully`)
+
+      setTimeout(() => res(ret), 1)
+    })
+  }
+}
 
 async function run() {
   const t0 = Date.now()
 
-  const s3CacheString = process.env[s3CacheEnvVar] ?? '{}' // eslint-disable-line no-process-env
-  process.env[s3CacheEnvVar] = '_' // eslint-disable-line no-process-env
+  // Should be called as early as possible to secure the secret.
+  const storageClientFactory = getS3StorageClientFactory()
 
   const options: Options = {
     // eslint-disable-next-line no-process-env
@@ -64,18 +82,8 @@ async function run() {
   logger.info(`Logger initialized`)
   logger.print(`logging to ${logFile}`)
 
-  let awsAccessKey
-  try {
-    const parsed = JSON.parse(s3CacheString)
-    awsAccessKey = AwsAccessKey.parse(parsed)
-  } catch (e) {
-    const err = new Error(`Failed to parse env variable neede for caching`)
-    logger.error(`parsing of s3CacheString failed`, err)
-    throw e
-  }
-
-  const storageClient = await createStorageClient(rootDir, logger, awsAccessKey)
   const repoProtocol = new YarnRepoProtocol(logger)
+  const storageClient = await storageClientFactory(logger)
   const bootstrapper = await EngineBootstrapper.create(rootDir, storageClient, repoProtocol, t0, '', logger)
 
   bootstrapper.subscribable.on('executionEnded', async arg => {
