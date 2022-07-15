@@ -17,7 +17,7 @@ type AwsAccessKey = z.infer<typeof AwsAccessKey>
 // TODO(imaman): cover
 export function getS3StorageClientFactory() {
   const s3CacheEnvVar = 's3_cache'
-  const s3CacheString = process.env[s3CacheEnvVar] ?? '{}' // eslint-disable-line no-process-env
+  const s3CacheString = process.env[s3CacheEnvVar] // eslint-disable-line no-process-env
   process.env[s3CacheEnvVar] = '_' // eslint-disable-line no-process-env
 
   if (!s3CacheString) {
