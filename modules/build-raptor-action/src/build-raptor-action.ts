@@ -21,7 +21,7 @@ async function run() {
   const t0 = Date.now()
 
   // Should be called as early as possible to secure the secret.
-  const storageClientFactory = getS3StorageClientFactory()
+  const storageClientFactory = getS3StorageClientFactory() ?? failMe('Could not create a storage client')
 
   const options: Options = {
     // eslint-disable-next-line no-process-env

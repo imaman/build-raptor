@@ -20,6 +20,10 @@ export function getS3StorageClientFactory() {
   const s3CacheString = process.env[s3CacheEnvVar] ?? '{}' // eslint-disable-line no-process-env
   process.env[s3CacheEnvVar] = '_' // eslint-disable-line no-process-env
 
+  if (!s3CacheString) {
+    return undefined
+  }
+
   return async (logger: Logger) => {
     let awsAccessKey: AwsAccessKey
     try {
