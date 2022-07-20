@@ -37,7 +37,7 @@ export class S3StorageClient implements StorageClient {
     return `${this.pathPrefix}/${computeObjectHash({ key })}`
   }
 
-  async putObject(key: Key, content: string | Buffer): Promise<void> {
+  async putObject(key: Key, content: string | Buffer): Promise<string> {
     this.logger.info(
       `putting object into key ${JSON.stringify(key)}, object length: ${content.toString().length} chars`,
     )
@@ -49,6 +49,7 @@ export class S3StorageClient implements StorageClient {
       this.logger.error(`putObject error with key=${JSON.stringify(key)}, resolved=${resolved}`, e)
       throw new Error(`Failed to put an object into the persistent storage`)
     }
+    return resolved
   }
 
   getObject(key: Key): Promise<string>
