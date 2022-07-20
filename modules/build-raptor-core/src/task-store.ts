@@ -37,7 +37,7 @@ export class TaskStore {
     this.logger.info(`TaskStore created`)
   }
 
-  private async putBlob(content: Buffer): Promise<BlobId> {
+  private async putBlob(content: Buffer, hint: string): Promise<BlobId> {
     const ret = blobIdOf(content)
     if (content.length === 0) {
       return ret
@@ -47,7 +47,8 @@ export class TaskStore {
       return ret
     }
 
-    await this.client.putObject(key, content)
+    const putResult = await this.client.putObject(key, content)
+    this.logger.info(`>>> uploaded ${hint} to ${putResult}`)
     return ret
   }
 
@@ -191,7 +192,7 @@ export class TaskStore {
     verdict: 'OK' | 'FAIL',
   ): Promise<void> {
     const buf = await this.bundle(dir, outputs)
-    const blobId = await this.putBlob(buf)
+    const blobId = await this.putBlob(buf, taskName)
     this.putVerdict(taskName, fingerprint, verdict, blobId)
   }
 
