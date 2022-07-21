@@ -1,4 +1,4 @@
-import { EngineBootstrapper } from 'build-raptor-core'
+import { DefaultAssetPublisher, EngineBootstrapper } from 'build-raptor-core'
 import * as fse from 'fs-extra'
 import { createDefaultLogger } from 'logger'
 import { dumpFile, FilesystemStorageClient, Int, switchOn, toReasonableFileName } from 'misc'
@@ -40,7 +40,8 @@ async function run(options: Options) {
   await fse.rm(buildRaptorDirTasks, { recursive: true, force: true })
 
   const storageClient = await storageClientFactory(logger)
-  const repoProtocol = new YarnRepoProtocol(logger)
+  const assetPublisher = new DefaultAssetPublisher(storageClient)
+  const repoProtocol = new YarnRepoProtocol(logger, undefined, assetPublisher)
   const bootstrapper = await EngineBootstrapper.create(
     rootDir,
     storageClient,
