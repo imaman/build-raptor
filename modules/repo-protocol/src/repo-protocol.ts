@@ -15,3 +15,5 @@ export interface RepoProtocol {
   getTasks(): Promise<CatalogOfTasks>
   close(): Promise<void>
 }
+
+export interface Publisher {}

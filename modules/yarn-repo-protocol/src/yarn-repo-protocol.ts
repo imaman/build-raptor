@@ -5,7 +5,7 @@ import * as fse from 'fs-extra'
 import { Logger } from 'logger'
 import { failMe, Graph, hardGet, pairsToRecord, promises, uniqueBy } from 'misc'
 import * as path from 'path'
-import { ExitStatus, RepoProtocol } from 'repo-protocol'
+import { ExitStatus, Publisher, RepoProtocol } from 'repo-protocol'
 import { CatalogOfTasks } from 'repo-protocol'
 import { TaskKind } from 'task-name'
 import { PackageJson, TsConfigJson } from 'type-fest'
@@ -36,7 +36,11 @@ interface State {
 }
 
 export class YarnRepoProtocol implements RepoProtocol {
-  constructor(private readonly logger: Logger, private readonly shadowing: boolean = false) {}
+  constructor(
+    private readonly logger: Logger,
+    private readonly shadowing: boolean = false,
+    private readonly publisher?: Publisher,
+  ) {}
 
   private readonly tsconfigBasePathInRepo: string = 'tsconfig-base.json'
   private state_: State | undefined
@@ -162,7 +166,7 @@ export class YarnRepoProtocol implements RepoProtocol {
       } else {
         await fse.writeFile(outputFile, '')
       }
-      return stat?.hasErrors ? 'FAIL' : 'OK'
+      return stat?.hasErrors() ? 'FAIL' : 'OK'
     }
 
     throw new Error(`Unknown task ${task} (at ${dir})`)
@@ -314,6 +318,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     const build = TaskKind('build')
     const pack = TaskKind('pack')
     const test = TaskKind('test')
+    const publish = TaskKind('publish')
 
     return {
       inUnit: {
@@ -340,6 +345,11 @@ export class YarnRepoProtocol implements RepoProtocol {
           outputs: [PACK_DIR],
           inputsInUnit: ['dist/src'],
           inputsInDeps: ['dist/src'],
+        },
+        {
+          taskKind: publish,
+          outputs: ['publish-output.json'],
+          inputsInUnit: ['dist/src'],
         },
       ],
     }
