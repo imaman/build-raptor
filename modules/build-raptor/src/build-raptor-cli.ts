@@ -100,19 +100,9 @@ async function run(options: Options) {
     concurrency: Int(options.concurrency),
     buildRaptorDir,
   })
-  const breakdown = await runner()
-  if (breakdown.exitCode) {
-    logger.print('non-zero exit code for breakdown: ' + JSON.stringify(breakdown))
-    logger.print(
-      `not OK summaries: ${JSON.stringify(
-        breakdown.getSummaries().filter(s => s.verdict !== 'OK'),
-        null,
-        2,
-      )}`,
-    )
-  }
+  const { exitCode } = await runner()
   // eslint-disable-next-line require-atomic-updates
-  process.exitCode = breakdown.exitCode
+  process.exitCode = exitCode
 }
 
 function withBuildOptions<T>(y: yargs.Argv<T>) {
