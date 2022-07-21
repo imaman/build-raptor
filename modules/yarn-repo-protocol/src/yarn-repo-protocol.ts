@@ -148,6 +148,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
   }
 
+  // TODO(imaman): cover
   private async runCaptureStdout(cmd: string, args: string[], dir: string): Promise<string> {
     const summary = `<${dir}$ ${cmd} ${args.join(' ')}>`
     this.logger.info(`Dispatching ${summary}`)
@@ -176,9 +177,13 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
 
     if (task === 'test') {
-      const jestOutputFile = 'jest-output.json'
-      const testsToRun = await this.computeTestsToRun(path.join(dir, jestOutputFile))
-      return await this.run('yarn', ['jest', ...testsToRun, '--json', '--outputFile', jestOutputFile], dir, outputFile)
+      const testsToRun = await this.computeTestsToRun(path.join(dir, JEST_OUTPUT_FILE))
+      return await this.run(
+        'yarn',
+        ['jest', ...testsToRun, '--json', '--outputFile', JEST_OUTPUT_FILE],
+        dir,
+        outputFile,
+      )
     }
 
     if (task === 'pack') {
@@ -192,16 +197,32 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
 
     if (task === 'publish') {
-      return await this.run('npm', ['run', 'prepare-asset'], dir, outputFile)
+      const scriptName = 'prepare-asset'
+      const fullPath = path.join(dir, PREPARED_ASSET_FILE)
+      if (!this.hasRunScript(dir, scriptName)) {
+        await Promise.all([fse.writeFile(outputFile, ''), fse.writeFile(fullPath, '')])
+        return 'OK'
+      }
+
+      const ret = await this.run('npm', ['run', scriptName], dir, outputFile)
+      const exists = await fse.pathExists(fullPath)
+      if (!exists) {
+        throw new BuildFailedError(
+          `Output file ${path.basename(fullPath)} was not created by the ${scriptName} run script in ${dir}`,
+        )
+      }
+
+      return ret
     }
 
     throw new Error(`Unknown task ${task} (at ${dir})`)
   }
 
-  private async getRunScripts(u: UnitMetadata, dir: string) {
+  // TODO(imaman): cover
+  private async hasRunScript(dir: string, runScript: string) {
     const s = await this.runCaptureStdout('npm', ['--json', 'run'], dir)
     const parsed = JSON.parse(s)
-    return new Set<string>(Object.keys(parsed))
+    return Object.keys(parsed).includes(runScript)
   }
 
   private getPackageJson(uid: UnitId) {
@@ -368,7 +389,7 @@ export class YarnRepoProtocol implements RepoProtocol {
         },
         {
           taskKind: test,
-          outputs: ['jest-output.json'],
+          outputs: [JEST_OUTPUT_FILE],
           inputsInUnit: ['dist/src', 'dist/tests'],
           inputsInDeps: ['dist/src'],
         },
@@ -380,7 +401,7 @@ export class YarnRepoProtocol implements RepoProtocol {
         },
         {
           taskKind: publish,
-          outputs: ['publish-output.json'],
+          outputs: [PREPARED_ASSET_FILE],
           inputsInUnit: ['dist/src'],
         },
       ],
@@ -472,3 +493,6 @@ function computeVersions(packages: PackageJson[]) {
 
   return ret
 }
+
+const JEST_OUTPUT_FILE = 'jest-output.json'
+const PREPARED_ASSET_FILE = 'prepared-asset.json'
