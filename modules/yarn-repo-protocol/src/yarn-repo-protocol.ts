@@ -10,6 +10,7 @@ import { CatalogOfTasks } from 'repo-protocol'
 import { TaskKind } from 'task-name'
 import { PackageJson, TsConfigJson } from 'type-fest'
 import { UnitId, UnitMetadata } from 'unit-metadata'
+import * as util from 'util'
 import webpack, { Stats, WebpackPluginInstance } from 'webpack'
 import ShebangPlugin from 'webpack-shebang-plugin'
 import { z } from 'zod'
@@ -166,7 +167,11 @@ export class YarnRepoProtocol implements RepoProtocol {
       } else {
         await fse.writeFile(outputFile, '')
       }
-      return stat?.hasErrors ? 'FAIL' : 'OK'
+      const exitStatus = stat?.hasErrors ? 'FAIL' : 'OK'
+      if (exitStatus !== 'OK') {
+        const x = stat?.toString()
+        this.logger.print(`exitStatus ${exitStatus} for ${u.id}:${task}, stat=${x}`)
+      }
     }
 
     throw new Error(`Unknown task ${task} (at ${dir})`)
@@ -268,6 +273,7 @@ export class YarnRepoProtocol implements RepoProtocol {
           ],
         },
         async (err, stats) => {
+          this.logger.print(`paking of ${u.id} finished. err=${util.inspect(err)}`)
           if (err) {
             this.logger.error(`packing of ${dir} failed`, err)
             throw new Error(`packing ${u.id} failed`)
