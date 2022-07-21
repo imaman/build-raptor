@@ -167,11 +167,7 @@ export class YarnRepoProtocol implements RepoProtocol {
       } else {
         await fse.writeFile(outputFile, '')
       }
-      const exitStatus = stat?.hasErrors ? 'FAIL' : 'OK'
-      if (exitStatus !== 'OK') {
-        const x = stat?.toString()
-        this.logger.print(`exitStatus ${exitStatus} for ${u.id}:${task}, stat=${x}`)
-      }
+      return stat?.hasErrors() ? 'FAIL' : 'OK'
     }
 
     throw new Error(`Unknown task ${task} (at ${dir})`)
