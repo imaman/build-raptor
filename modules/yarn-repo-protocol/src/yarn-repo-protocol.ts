@@ -148,6 +148,28 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
   }
 
+  private async runCaptureStdout(cmd: string, args: string[], dir: string): Promise<string> {
+    const summary = `<${dir}$ ${cmd} ${args.join(' ')}>`
+    this.logger.info(`Dispatching ${summary}`)
+
+    let p
+    try {
+      p = await execa(cmd, args, { cwd: dir, reject: false })
+    } catch (e) {
+      this.logger.error(`execution of ${summary} failed`, e)
+      return 'CRASH'
+    }
+
+    this.logger.info(`exitCode of ${cmd} ${args.join(' ')} is ${p.exitCode}`)
+    if (p.exitCode !== 0) {
+      const e = new Error(`execution of ${summary} crashed with exit code ${p.exitCode}`)
+      this.logger.error(`Could not get stdout of a command`, e)
+      throw e
+    }
+
+    return p.stdout
+  }
+
   async execute(u: UnitMetadata, dir: string, task: TaskKind, outputFile: string): Promise<ExitStatus> {
     if (task === 'build') {
       return await this.run('npm', ['run', 'build'], dir, outputFile)
@@ -169,7 +191,17 @@ export class YarnRepoProtocol implements RepoProtocol {
       return stat?.hasErrors() ? 'FAIL' : 'OK'
     }
 
+    if (task === 'publish') {
+      return await this.run('npm', ['run', 'prepare-asset'], dir, outputFile)
+    }
+
     throw new Error(`Unknown task ${task} (at ${dir})`)
+  }
+
+  private async getRunScripts(u: UnitMetadata, dir: string) {
+    const s = await this.runCaptureStdout('npm', ['--json', 'run'], dir)
+    const parsed = JSON.parse(s)
+    return new Set<string>(Object.keys(parsed))
   }
 
   private getPackageJson(uid: UnitId) {
