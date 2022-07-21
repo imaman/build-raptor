@@ -16,4 +16,6 @@ export interface RepoProtocol {
   close(): Promise<void>
 }
 
-export interface Publisher {}
+export interface Publisher {
+  publishAsset(u: UnitMetadata, content: Buffer, name: string): Promise<void>
+}

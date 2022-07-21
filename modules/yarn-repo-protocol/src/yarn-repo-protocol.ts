@@ -148,15 +148,42 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
   }
 
+  // TODO(imaman): cover
+  private async runCaptureStdout(cmd: string, args: string[], dir: string): Promise<string> {
+    const summary = `<${dir}$ ${cmd} ${args.join(' ')}>`
+    this.logger.info(`Dispatching ${summary}`)
+
+    let p
+    try {
+      p = await execa(cmd, args, { cwd: dir, reject: false })
+    } catch (e) {
+      this.logger.error(`execution of ${summary} failed`, e)
+      return 'CRASH'
+    }
+
+    this.logger.info(`exitCode of ${cmd} ${args.join(' ')} is ${p.exitCode}`)
+    if (p.exitCode !== 0) {
+      const e = new Error(`execution of ${summary} crashed with exit code ${p.exitCode}`)
+      this.logger.error(`Could not get stdout of a command`, e)
+      throw e
+    }
+
+    return p.stdout
+  }
+
   async execute(u: UnitMetadata, dir: string, task: TaskKind, outputFile: string): Promise<ExitStatus> {
     if (task === 'build') {
       return await this.run('npm', ['run', 'build'], dir, outputFile)
     }
 
     if (task === 'test') {
-      const jestOutputFile = 'jest-output.json'
-      const testsToRun = await this.computeTestsToRun(path.join(dir, jestOutputFile))
-      return await this.run('yarn', ['jest', ...testsToRun, '--json', '--outputFile', jestOutputFile], dir, outputFile)
+      const testsToRun = await this.computeTestsToRun(path.join(dir, JEST_OUTPUT_FILE))
+      return await this.run(
+        'yarn',
+        ['jest', ...testsToRun, '--json', '--outputFile', JEST_OUTPUT_FILE],
+        dir,
+        outputFile,
+      )
     }
 
     if (task === 'pack') {
@@ -169,7 +196,39 @@ export class YarnRepoProtocol implements RepoProtocol {
       return stat?.hasErrors() ? 'FAIL' : 'OK'
     }
 
+    if (task === 'publish-assets') {
+      if (!this.publisher) {
+        throw new Error(`cannot run ${task} when no publisher is available`)
+      }
+      const scriptName = 'prepare-asset'
+      const fullPath = path.join(dir, PREPARED_ASSET_FILE)
+      const runScriptExists = await this.hasRunScript(dir, scriptName)
+      if (!runScriptExists) {
+        await Promise.all([fse.writeFile(outputFile, ''), fse.writeFile(fullPath, '')])
+        return 'OK'
+      }
+
+      const ret = await this.run('npm', ['run', scriptName], dir, outputFile)
+      const exists = await fse.pathExists(fullPath)
+      if (!exists) {
+        throw new BuildFailedError(
+          `Output file ${path.basename(fullPath)} was not created by the ${scriptName} run script in ${dir}`,
+        )
+      }
+
+      const contentToPublish = await fse.readFile(fullPath)
+      await this.publisher?.publishAsset(u, contentToPublish, 'default-assert')
+      return ret
+    }
+
     throw new Error(`Unknown task ${task} (at ${dir})`)
+  }
+
+  // TODO(imaman): cover
+  private async hasRunScript(dir: string, runScript: string) {
+    const s = await this.runCaptureStdout('npm', ['--json', 'run'], dir)
+    const parsed = JSON.parse(s)
+    return Object.keys(parsed).includes(runScript)
   }
 
   private getPackageJson(uid: UnitId) {
@@ -318,7 +377,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     const build = TaskKind('build')
     const pack = TaskKind('pack')
     const test = TaskKind('test')
-    const publish = TaskKind('publish')
+    const publish = TaskKind('publish-assets')
 
     return {
       inUnit: {
@@ -336,7 +395,7 @@ export class YarnRepoProtocol implements RepoProtocol {
         },
         {
           taskKind: test,
-          outputs: ['jest-output.json'],
+          outputs: [JEST_OUTPUT_FILE],
           inputsInUnit: ['dist/src', 'dist/tests'],
           inputsInDeps: ['dist/src'],
         },
@@ -348,7 +407,7 @@ export class YarnRepoProtocol implements RepoProtocol {
         },
         {
           taskKind: publish,
-          outputs: ['publish-output.json'],
+          outputs: [PREPARED_ASSET_FILE],
           inputsInUnit: ['dist/src'],
         },
       ],
@@ -440,3 +499,6 @@ function computeVersions(packages: PackageJson[]) {
 
   return ret
 }
+
+const JEST_OUTPUT_FILE = 'jest-output.json'
+const PREPARED_ASSET_FILE = 'prepared-asset'
