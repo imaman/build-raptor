@@ -496,4 +496,4 @@ function computeVersions(packages: PackageJson[]) {
 }
 
 const JEST_OUTPUT_FILE = 'jest-output.json'
-const PREPARED_ASSET_FILE = 'prepared-asset.json'
+const PREPARED_ASSET_FILE = 'prepared-asset'
