@@ -12,6 +12,7 @@
   ],
   "scripts": {
     "build": "tsc -b",
+    "prepare-assets": "echo 'abc' > prepared-assets/aa && echo 'def' > prepared-assets/dd",
     "test": "jest"
   },
   "dependencies": {
