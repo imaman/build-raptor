@@ -197,6 +197,9 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
 
     if (task === 'publish-assets') {
+      if (!this.publisher) {
+        throw new Error(`cannot run ${task} when no publisher is available`)
+      }
       const scriptName = 'prepare-asset'
       const fullPath = path.join(dir, PREPARED_ASSET_FILE)
       const runScriptExists = await this.hasRunScript(dir, scriptName)
@@ -213,6 +216,8 @@ export class YarnRepoProtocol implements RepoProtocol {
         )
       }
 
+      const contentToPublish = await fse.readFile(fullPath)
+      await this.publisher?.publishAsset(u, contentToPublish, 'default-assert')
       return ret
     }
 
