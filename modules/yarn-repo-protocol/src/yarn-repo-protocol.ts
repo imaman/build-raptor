@@ -10,7 +10,6 @@ import { CatalogOfTasks } from 'repo-protocol'
 import { TaskKind } from 'task-name'
 import { PackageJson, TsConfigJson } from 'type-fest'
 import { UnitId, UnitMetadata } from 'unit-metadata'
-import * as util from 'util'
 import webpack, { Stats, WebpackPluginInstance } from 'webpack'
 import ShebangPlugin from 'webpack-shebang-plugin'
 import { z } from 'zod'
@@ -269,7 +268,6 @@ export class YarnRepoProtocol implements RepoProtocol {
           ],
         },
         async (err, stats) => {
-          this.logger.print(`paking of ${u.id} finished. err=${util.inspect(err)}`)
           if (err) {
             this.logger.error(`packing of ${dir} failed`, err)
             throw new Error(`packing ${u.id} failed`)
