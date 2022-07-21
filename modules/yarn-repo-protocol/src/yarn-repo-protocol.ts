@@ -196,10 +196,11 @@ export class YarnRepoProtocol implements RepoProtocol {
       return stat?.hasErrors() ? 'FAIL' : 'OK'
     }
 
-    if (task === 'publish') {
+    if (task === 'publish-assets') {
       const scriptName = 'prepare-asset'
       const fullPath = path.join(dir, PREPARED_ASSET_FILE)
-      if (!this.hasRunScript(dir, scriptName)) {
+      const runScriptExists = await this.hasRunScript(dir, scriptName)
+      if (!runScriptExists) {
         await Promise.all([fse.writeFile(outputFile, ''), fse.writeFile(fullPath, '')])
         return 'OK'
       }
@@ -371,7 +372,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     const build = TaskKind('build')
     const pack = TaskKind('pack')
     const test = TaskKind('test')
-    const publish = TaskKind('publish')
+    const publish = TaskKind('publish-assets')
 
     return {
       inUnit: {

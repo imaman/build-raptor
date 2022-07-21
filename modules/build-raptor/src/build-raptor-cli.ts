@@ -10,7 +10,7 @@ import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import { YarnRepoProtocol } from 'yarn-repo-protocol'
 interface Options {
-  command: 'build' | 'test' | 'pack'
+  command: 'build' | 'test' | 'pack' | 'publish-assets'
   dir: string | undefined
   units: string[]
   githubActions: boolean
@@ -193,6 +193,24 @@ yargs(hideBin(process.argv))
       await run({
         dir: argv.dir,
         command: 'pack',
+        units: argv.units,
+        githubActions: argv['github-actions'],
+        printPassing: argv['print-passing'],
+        buildOutputLocation: argv['build-output-locations'],
+        concurrency: argv['concurrency'],
+        compact: argv.compact,
+      })
+    },
+  )
+  // TODO(imaman): 'pack', 'publish', etc. should not be an array option (and not separate commands)
+  .command(
+    'publish-assets',
+    'publish assets',
+    yargs => withBuildOptions(yargs),
+    async argv => {
+      await run({
+        dir: argv.dir,
+        command: 'publish-assets',
         units: argv.units,
         githubActions: argv['github-actions'],
         printPassing: argv['print-passing'],
