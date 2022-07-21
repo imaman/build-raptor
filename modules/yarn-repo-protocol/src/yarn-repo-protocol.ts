@@ -198,13 +198,14 @@ export class YarnRepoProtocol implements RepoProtocol {
 
     if (task === 'publish-assets') {
       if (!this.publisher) {
-        throw new Error(`cannot run ${task} when no publisher is available`)
+        // throw new Error(`cannot run ${task} when no publisher is available`)
       }
       const scriptName = 'prepare-asset'
-      const fullPath = path.join(dir, PREPARED_ASSET_FILE)
       const runScriptExists = await this.hasRunScript(dir, scriptName)
+      const fullPath = path.join(dir, PREPARED_ASSETS_DIR)
+      await fse.mkdirp(fullPath)
       if (!runScriptExists) {
-        await Promise.all([fse.writeFile(outputFile, ''), fse.writeFile(fullPath, '')])
+        await Promise.all([await fse.writeFile(outputFile, ''), await fse.emptyDir(fullPath)])
         return 'OK'
       }
 
@@ -216,8 +217,15 @@ export class YarnRepoProtocol implements RepoProtocol {
         )
       }
 
-      const contentToPublish = await fse.readFile(fullPath)
-      await this.publisher?.publishAsset(u, contentToPublish, 'default-assert')
+      const files = await fse.readdir(fullPath)
+      await Promise.all(
+        files.map(async f => {
+          const contentToPublish = await fse.readFile(path.join(fullPath, f))
+          this.logger.info(`unit ${u.id}: publishing asset ${f}`)
+          await this.publisher?.publishAsset(u, contentToPublish, f)
+        }),
+      )
+
       return ret
     }
 
@@ -407,7 +415,7 @@ export class YarnRepoProtocol implements RepoProtocol {
         },
         {
           taskKind: publish,
-          outputs: [PREPARED_ASSET_FILE],
+          outputs: [PREPARED_ASSETS_DIR],
           inputsInUnit: ['dist/src'],
         },
       ],
@@ -501,4 +509,4 @@ function computeVersions(packages: PackageJson[]) {
 }
 
 const JEST_OUTPUT_FILE = 'jest-output.json'
-const PREPARED_ASSET_FILE = 'prepared-asset'
+const PREPARED_ASSETS_DIR = 'prepared-assets'
