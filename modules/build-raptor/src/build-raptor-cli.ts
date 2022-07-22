@@ -40,7 +40,7 @@ async function run(options: Options) {
   await fse.rm(buildRaptorDirTasks, { recursive: true, force: true })
 
   const storageClient = await storageClientFactory(logger)
-  const assetPublisher = new DefaultAssetPublisher(storageClient)
+  const assetPublisher = new DefaultAssetPublisher(storageClient, logger)
   const repoProtocol = new YarnRepoProtocol(logger, undefined, assetPublisher)
   const bootstrapper = await EngineBootstrapper.create(
     rootDir,
