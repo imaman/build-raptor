@@ -2,7 +2,7 @@ import * as fse from 'fs-extra'
 import * as path from 'path'
 
 import { shouldNeverHappen } from '.'
-import { computeObjectHash } from './misc'
+import { computeHash, computeObjectHash } from './misc'
 import { Key, StorageClient } from './storage-client'
 
 export class FilesystemStorageClient implements StorageClient {
@@ -13,19 +13,29 @@ export class FilesystemStorageClient implements StorageClient {
     return new FilesystemStorageClient(dir)
   }
 
-  private resolvePath(key: Key): string {
-    return path.join(this.dir, computeObjectHash({ key }))
+  private keyToPath(key: Key): string {
+    return this.hashToPath('', computeObjectHash({ key }))
+  }
+
+  private hashToPath(middle: string, s: string) {
+    return path.join(this.dir, middle, s)
   }
 
   async putObject(key: Key, content: string): Promise<void> {
-    await fse.writeFile(this.resolvePath(key), content)
+    await fse.writeFile(this.keyToPath(key), content)
+  }
+
+  async putContentAddressable(content: string | Buffer): Promise<string> {
+    const ret = this.hashToPath('cas', computeHash(content))
+    await fse.writeFile(ret, content)
+    return ret
   }
 
   getObject(key: Key): Promise<string>
   getObject(key: Key, type: 'string'): Promise<string>
   getObject(key: Key, type: 'buffer'): Promise<Buffer>
   async getObject(key: Key, type: 'string' | 'buffer' = 'string'): Promise<string | Buffer> {
-    const p = this.resolvePath(key)
+    const p = this.keyToPath(key)
     try {
       if (type === 'string') {
         return await fse.readFile(p, 'utf-8')
@@ -40,6 +50,6 @@ export class FilesystemStorageClient implements StorageClient {
   }
 
   async objectExists(key: Key): Promise<boolean> {
-    return await fse.pathExists(this.resolvePath(key))
+    return await fse.pathExists(this.keyToPath(key))
   }
 }
