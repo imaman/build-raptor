@@ -6,9 +6,6 @@
   },
   "references": [
     {
-      "path": "../actions-cache-storage-client"
-    },
-    {
       "path": "../build-raptor-core"
     },
     {
