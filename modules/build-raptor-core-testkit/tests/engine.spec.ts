@@ -8,6 +8,9 @@ import { RepoProtocolTestkit } from '../src/repo-protocol-testkit'
 import { SimpleNodeRepoProtocol } from '../src/simple-node-repo-protocol'
 
 class FailingStorageClient implements StorageClient {
+  putContentAddressable(_content: string | Buffer): Promise<string> {
+    throw new Error('putContentAddressable() is intentionally failing')
+  }
   putObject(_key: Key, _content: string): Promise<void> {
     throw new Error('putObject() is intentionally failing')
   }
