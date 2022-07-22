@@ -14,14 +14,14 @@ export class FilesystemStorageClient implements StorageClient {
   }
 
   private keyToPath(key: Key): string {
-    return this.hashToPath('', computeObjectHash({ key }))
+    return this.hashToPath('std', computeObjectHash({ key }))
   }
 
   private hashToPath(middle: string, s: string) {
-    return path.join(this.dir, middle, s)
+    return path.join(this.dir, `${middle}-${s}`)
   }
 
-  async putObject(key: Key, content: string): Promise<void> {
+  async putObject(key: Key, content: string | Buffer): Promise<void> {
     await fse.writeFile(this.keyToPath(key), content)
   }
 
