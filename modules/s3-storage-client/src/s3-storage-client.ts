@@ -1,6 +1,6 @@
 import { S3 } from '@aws-sdk/client-s3'
 import { Logger } from 'logger'
-import { computeObjectHash, Key, shouldNeverHappen, StorageClient, streamTobuffer } from 'misc'
+import { computeHash, computeObjectHash, Key, shouldNeverHappen, StorageClient, streamTobuffer } from 'misc'
 import { Stream } from 'stream'
 import * as util from 'util'
 
@@ -33,20 +33,31 @@ export class S3StorageClient implements StorageClient {
     this.s3 = new S3({ credentials, region: 'eu-central-1' })
   }
 
-  private resolvePath(key: Key): string {
-    return `${this.pathPrefix}/${computeObjectHash({ key })}`
+  private keyToPath(key: Key): string {
+    return this.hashToPath('std', computeObjectHash({ key }))
   }
 
-  async putObject(key: Key, content: string | Buffer): Promise<string> {
-    this.logger.info(
-      `putting object into key ${JSON.stringify(key)}, object length: ${content.toString().length} chars`,
-    )
+  private hashToPath(middle: string, hash: string): string {
+    return `${this.pathPrefix}/${middle}/${hash}`
+  }
 
-    const resolved = this.resolvePath(key)
+  async putContentAddressable(content: string | Buffer): Promise<string> {
+    const hash = computeHash(content)
+    await this.putObjectImpl(this.hashToPath('cas', hash), hash, content)
+    return hash
+  }
+
+  async putObject(key: Key, content: string | Buffer): Promise<void> {
+    await this.putObjectImpl(this.keyToPath(key), key, content)
+  }
+
+  private async putObjectImpl(resolved: string, hint: unknown, content: string | Buffer): Promise<string> {
+    this.logger.info(`putting object (key hint=${hint}), object length: ${content.toString().length} chars`)
+
     try {
       await this.s3.putObject({ Bucket: this.bucketName, Key: resolved, Body: content })
     } catch (e) {
-      this.logger.error(`putObject error with key=${JSON.stringify(key)}, resolved=${resolved}`, e)
+      this.logger.error(`putObject error at ${resolved} (key hint=${hint}), `, e)
       throw new Error(`Failed to put an object into the persistent storage`)
     }
     return resolved
@@ -58,7 +69,7 @@ export class S3StorageClient implements StorageClient {
   async getObject(key: Key, type?: 'string' | 'buffer'): Promise<string | Buffer> {
     let resp
     try {
-      resp = await this.s3.getObject({ Bucket: this.bucketName, Key: this.resolvePath(key) })
+      resp = await this.s3.getObject({ Bucket: this.bucketName, Key: this.keyToPath(key) })
     } catch (e) {
       // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       const typed = e as { message?: string }
@@ -90,7 +101,7 @@ export class S3StorageClient implements StorageClient {
   async objectExists(key: Key): Promise<boolean> {
     this.logger.info(`checking existence of object at key ${JSON.stringify(key)}`)
     try {
-      await this.s3.headObject({ Bucket: this.bucketName, Key: this.resolvePath(key) })
+      await this.s3.headObject({ Bucket: this.bucketName, Key: this.keyToPath(key) })
       return true
     } catch (e) {
       return false
