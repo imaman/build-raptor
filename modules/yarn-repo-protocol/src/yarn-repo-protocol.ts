@@ -201,7 +201,7 @@ export class YarnRepoProtocol implements RepoProtocol {
         // throw new Error(`cannot run task "${task}" when no publisher is available`)
       }
       const scriptName = 'prepare-assets'
-      const runScriptExists = await this.hasRunScript(u, dir, scriptName)
+      const runScriptExists = await this.hasRunScript(u, dir, scriptName, task)
 
       const fullPath = path.join(dir, PREPARED_ASSETS_DIR)
       await fse.mkdirp(fullPath)
@@ -234,10 +234,15 @@ export class YarnRepoProtocol implements RepoProtocol {
   }
 
   // TODO(imaman): cover
-  private async hasRunScript(u: UnitMetadata, dir: string, runScript: string) {
+  private async hasRunScript(u: UnitMetadata, dir: string, runScript: string, kind: TaskKind) {
     const output = await this.runCaptureStdout('npm', ['--json', 'run'], dir)
     const parsed = JSON.parse(output)
-    const entry = parsed[u.id] ?? failMe(`missing entry ("${u.id}") in the output of run scripts`)
+    const entry = parsed[u.id]
+
+    if (!entry) {
+      this.logger.info(`Bad output of npm run:\n==========================\n${output}\n==========================\n`)
+      throw new Error(`missing entry ("${u.id}") in the output of run scripts (task ${kind} of ${u.id})`)
+    }
     return Object.keys(entry).includes(runScript)
   }
 
