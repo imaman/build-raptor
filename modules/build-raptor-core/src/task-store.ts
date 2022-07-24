@@ -184,7 +184,7 @@ export class TaskStore {
     try {
       await pipeline(source, gunzip, extract)
     } catch (e) {
-      throw new Error(`unbundling info ${dir} (buffer length: ${buf.length}) has failed: ${e}`)
+      throw new Error(`unbundling a buffer (${buf.length} bytes) into ${dir} has failed: ${e}`)
     }
   }
 
