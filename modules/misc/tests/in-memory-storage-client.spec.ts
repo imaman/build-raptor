@@ -1,3 +1,6 @@
+import * as util from 'util'
+import * as zlib from 'zlib'
+
 import { InMemoryStorageClient, Int } from '../src'
 
 describe('in-memory-storage-client', () => {
@@ -39,5 +42,16 @@ describe('in-memory-storage-client', () => {
     await sc.putObject('b', 'q')
     await sc.putObject('c', 'r')
     await expect(sc.putObject('d', 'stuvwxyz')).rejects.toThrowError('size limit (10 bytes) will be exceeded')
+  })
+  test('can properly store gzipped content', async () => {
+    const gzip = util.promisify(zlib.gzip)
+    const gunzip = util.promisify(zlib.gunzip)
+
+    const sc = new InMemoryStorageClient(Int(10))
+    await sc.putObject('z', await gzip(Buffer.from('Zebra')))
+
+    const buf = await sc.getObject('z')
+    const unzipped = await gunzip(buf)
+    expect(unzipped.toString('utf-8')).toEqual('Zebra')
   })
 })
