@@ -239,11 +239,12 @@ export class YarnRepoProtocol implements RepoProtocol {
     const parsed = JSON.parse(output)
     const entry = parsed[u.id]
 
+    const keys = entry ? Object.keys(entry) : Object.keys(parsed)
     if (!entry) {
       this.logger.info(`Bad output of npm run:\n==========================\n${output}\n==========================\n`)
       throw new Error(`missing entry ("${u.id}") in the output of run scripts (task ${kind} of ${u.id})`)
     }
-    return Object.keys(entry).includes(runScript)
+    return keys.includes(runScript)
   }
 
   private getPackageJson(uid: UnitId) {
