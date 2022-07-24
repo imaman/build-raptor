@@ -10,6 +10,11 @@ export function computeObjectHash(input: Record<string, Jsonable>): string {
   return computeHash(jsonStringify(input))
 }
 
+/**
+ *
+ * @param input buffer or string to hash
+ * @returns a 224 bit hash, in "hex" encoding.
+ */
 export function computeHash(input: Buffer | string): string {
   const hasher = crypto.createHash('sha224')
   return hasher.update(input).digest('hex')
