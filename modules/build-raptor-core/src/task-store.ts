@@ -181,7 +181,11 @@ export class TaskStore {
     const source = stream.Readable.from(buf.slice(LEN_BUF_SIZE + metadataLen))
     const gunzip = zlib.createGunzip()
     const extract = tarfs.extract(dir, { strict: true })
-    await pipeline(source, gunzip, extract)
+    try {
+      await pipeline(source, gunzip, extract)
+    } catch (e) {
+      throw new Error(`unbundling info ${dir} (buffer length: ${buf.length}) has failed: ${e}`)
+    }
   }
 
   async recordTask(

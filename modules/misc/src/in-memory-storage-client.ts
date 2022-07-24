@@ -14,13 +14,16 @@ export class InMemoryStorageClient implements StorageClient {
   }
 
   private putObjectImpl(s: string, content: string | Buffer) {
-    const existing = this.store.get(s) ?? ''
-    const newCount = this.byteCount_ + Buffer.from(content).length - Buffer.from(existing).length
+    const existing = Buffer.from(this.store.get(s) ?? '', 'base64')
+
+    const bufferToStore = Buffer.from(content).toString('base64')
+
+    const newCount = this.byteCount_ + bufferToStore.length - existing.length
     if (this.sizeLimitInBytes >= 0 && newCount > this.sizeLimitInBytes) {
       throw new Error(`size limit (${this.sizeLimitInBytes} bytes) will be exceeded.`)
     }
 
-    this.store.set(s, typeof content === 'string' ? content : content.toString('utf-8'))
+    this.store.set(s, bufferToStore)
     this.byteCount_ = Int(newCount)
   }
 
@@ -38,12 +41,13 @@ export class InMemoryStorageClient implements StorageClient {
   getObject(key: Key, type: 'string'): Promise<string>
   getObject(key: Key, type: 'buffer'): Promise<Buffer>
   async getObject(key: Key, type: 'string' | 'buffer' = 'string'): Promise<string | Buffer> {
-    const ret = this.store.get(this.keyToString(key))
-    if (ret === undefined) {
+    const encoded = this.store.get(this.keyToString(key))
+    if (encoded === undefined) {
       throw new Error(`No object with key ${JSON.stringify(key)}`)
     }
 
-    return type === 'string' ? ret : type === 'buffer' ? Buffer.from(ret) : shouldNeverHappen(type)
+    const buf = Buffer.from(encoded, 'base64')
+    return type === 'string' ? buf.toString('utf-8') : type === 'buffer' ? buf : shouldNeverHappen(type)
   }
 
   async objectExists(key: Key): Promise<boolean> {
