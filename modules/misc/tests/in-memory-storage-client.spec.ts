@@ -65,10 +65,10 @@ describe('in-memory-storage-client', () => {
     const gzip = util.promisify(zlib.gzip)
     const gunzip = util.promisify(zlib.gunzip)
 
-    const sc = new InMemoryStorageClient(Int(10))
+    const sc = new InMemoryStorageClient()
     await sc.putObject('z', await gzip(Buffer.from('Zebra')))
 
-    const buf = await sc.getObject('z')
+    const buf = await sc.getObject('z', 'buffer')
     const unzipped = await gunzip(buf)
     expect(unzipped.toString('utf-8')).toEqual('Zebra')
   })
