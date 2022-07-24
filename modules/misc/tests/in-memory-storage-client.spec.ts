@@ -1,5 +1,5 @@
 import { InMemoryStorageClient, Int } from '../src'
-import { storageClientContract } from './storage-client-contract-test'
+import { storageClientContract } from './storage-client-contract'
 
 describe('in-memory-storage-client', () => {
   storageClientContract(async () => new InMemoryStorageClient())
