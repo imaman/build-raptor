@@ -85,7 +85,7 @@ describe('yarn-repo-protocol.e2e', () => {
     expect(await fork.file('modules/a/dist/src/index.js').lines({ trimEach: true })).toEqual(['argentina'])
     expect(await fork.file('modules/a/dist/tests/index.spec.js').lines({ trimEach: true })).toEqual(['algeria'])
     expect(run1.executionTypeOf('a', 'build')).toEqual('EXECUTED')
-    expect(run1.executionTypeOf('b', 'build')).toEqual('EXECUTED')
+    expect(run1.executionTypeOf('b', 'build')).toEqual('EXECUTED_')
 
     const run2 = await fork.run('OK', { taskKind: 'build' })
     expect(run2.executionTypeOf('a', 'build')).toEqual('CACHED')
