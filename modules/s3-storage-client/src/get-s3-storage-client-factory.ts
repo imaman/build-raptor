@@ -1,6 +1,7 @@
 import { Logger } from 'logger'
 import { z } from 'zod'
 
+import { Creds } from './creds'
 import { LambdaClient } from './lambda-client'
 import { S3StorageClient } from './s3-storage-client'
 
@@ -39,7 +40,7 @@ export function getS3StorageClientFactory() {
     }
 
     return new Promise<Result>(res => {
-      const creds = {
+      const creds: Creds = {
         accessKeyId: awsAccessKey.AccessKey.AccessKeyId,
         secretAccessKey: awsAccessKey.AccessKey.SecretAccessKey,
       }
