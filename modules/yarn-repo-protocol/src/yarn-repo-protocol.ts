@@ -237,8 +237,28 @@ export class YarnRepoProtocol implements RepoProtocol {
   private async hasRunScript(u: UnitMetadata, dir: string, runScript: string) {
     const output = await this.runCaptureStdout('npm', ['--json', 'run'], dir)
     const parsed = JSON.parse(output)
-    const entry = parsed[u.id] ?? failMe(`missing entry ("${u.id}") in the output of run scripts. output=<${output}>`)
-    return Object.keys(entry).includes(runScript)
+    // Two possible formats:
+    //   {
+    //      "build-tracker-service": {
+    //        "build": "tsc -b",
+    //        "prepare-assets": "blah blash",
+    //        "test": "jest"
+    //   }
+    // -or-
+    //   ***
+    //     "build": "tsc -b",
+    //     "prepare-assets": "blah blash",
+    //     "test": "jest"
+    //   ***
+
+    const entry = parsed[u.id]
+
+    if (entry) {
+      return Object.keys(entry).includes(runScript)
+    }
+
+    this.logger.info(`hasRunScript(${u.id}, ${runScript}) - output of npm command is:${JSON.stringify(output)}`)
+    return output.split('\n').find(line => line.startsWith(`  "${runScript}": "`))
   }
 
   private getPackageJson(uid: UnitId) {
