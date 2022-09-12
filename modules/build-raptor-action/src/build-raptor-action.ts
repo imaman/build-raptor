@@ -42,7 +42,7 @@ async function run() {
   logger.print(`logging to ${logFile}`)
 
   const repoProtocol = new YarnRepoProtocol(logger)
-  const storageClient = await storageClientFactory(logger)
+  const { storageClient } = await storageClientFactory(logger)
   const bootstrapper = await EngineBootstrapper.create(rootDir, storageClient, repoProtocol, t0, '', logger)
 
   bootstrapper.subscribable.on('executionEnded', async arg => {
