@@ -1,12 +1,18 @@
-import { Config, Lambda } from 'aws-sdk'
+import { Config, Lambda, SharedIniFileCredentials } from 'aws-sdk'
 
 import { Creds } from './creds'
 
 export class LambdaClient {
   private readonly lambda
 
-  constructor(creds: Creds) {
-    const conf = new Config({ credentials: { accessKeyId: creds.accessKeyId, secretAccessKey: creds.secretAccessKey } })
+  constructor(creds: Creds | 'INI_FILE') {
+    const conf = new Config({
+      region: 'eu-central-1',
+      credentials:
+        creds === 'INI_FILE'
+          ? new SharedIniFileCredentials()
+          : { accessKeyId: creds.accessKeyId, secretAccessKey: creds.secretAccessKey },
+    })
     this.lambda = new Lambda(conf)
   }
 
