@@ -49,7 +49,7 @@ export function getS3StorageClientFactory(logger: Logger) {
       }
       const ret: Result = {
         storageClient: new S3StorageClient('moojo-dev-infra', 'build-raptor/cache-v1', creds, logger),
-        lambdaClient: new LambdaClient(creds),
+        lambdaClient: new LambdaClient(creds, 'eu-central-1'),
       }
       logger.info(`S3StorageClient created successfully`)
 

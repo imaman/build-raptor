@@ -5,8 +5,11 @@ import { Creds } from './creds'
 export class LambdaClient {
   private readonly lambda
 
-  constructor(creds: Creds) {
-    const conf = new Config({ credentials: { accessKeyId: creds.accessKeyId, secretAccessKey: creds.secretAccessKey } })
+  constructor(creds: Creds, region: string) {
+    const conf = new Config({
+      region,
+      credentials: { accessKeyId: creds.accessKeyId, secretAccessKey: creds.secretAccessKey },
+    })
     this.lambda = new Lambda(conf)
   }
 
