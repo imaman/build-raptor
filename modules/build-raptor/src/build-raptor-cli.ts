@@ -6,6 +6,7 @@ import * as os from 'os'
 import * as path from 'path'
 import { getS3StorageClientFactory } from 's3-storage-client'
 import { TaskName } from 'task-name'
+import { UnitMetadata } from 'unit-metadata'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import { YarnRepoProtocol } from 'yarn-repo-protocol'
@@ -21,7 +22,10 @@ interface Options {
 }
 
 async function createStorageClient() {
-  return await FilesystemStorageClient.create(path.join(os.homedir(), '.build-raptor/storage'))
+  return {
+    storageClient: await FilesystemStorageClient.create(path.join(os.homedir(), '.build-raptor/storage')),
+    lambdaClient: undefined,
+  }
 }
 
 async function run(options: Options) {
@@ -39,8 +43,18 @@ async function run(options: Options) {
   const buildRaptorDirTasks = path.join(buildRaptorDir, 'tasks')
   await fse.rm(buildRaptorDirTasks, { recursive: true, force: true })
 
-  const storageClient = await storageClientFactory(logger)
-  const assetPublisher = new DefaultAssetPublisher(storageClient, logger)
+  const { storageClient, lambdaClient } = await storageClientFactory(logger)
+  logger.info(`(typeof lambdaClient)=${typeof lambdaClient}`)
+  const assetPublisher = new DefaultAssetPublisher(storageClient, logger, async (u: UnitMetadata, resolved: string) => {
+    if (!lambdaClient) {
+      return
+    }
+
+    await lambdaClient.invoke('d-prod-buildTrackerService', {
+      endpointName: 'registerAssetRequest',
+      endpointRequest: { packageName: u.id, commitHash: 'N/A', casReference: resolved },
+    })
+  })
   const repoProtocol = new YarnRepoProtocol(logger, undefined, assetPublisher)
   const bootstrapper = await EngineBootstrapper.create(
     rootDir,
