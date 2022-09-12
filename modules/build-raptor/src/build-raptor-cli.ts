@@ -21,7 +21,10 @@ interface Options {
 }
 
 async function createStorageClient() {
-  return await FilesystemStorageClient.create(path.join(os.homedir(), '.build-raptor/storage'))
+  return {
+    storageClient: await FilesystemStorageClient.create(path.join(os.homedir(), '.build-raptor/storage')),
+    lambdaClient: undefined,
+  }
 }
 
 async function run(options: Options) {
@@ -39,7 +42,8 @@ async function run(options: Options) {
   const buildRaptorDirTasks = path.join(buildRaptorDir, 'tasks')
   await fse.rm(buildRaptorDirTasks, { recursive: true, force: true })
 
-  const storageClient = await storageClientFactory(logger)
+  const { storageClient, lambdaClient } = await storageClientFactory(logger)
+  logger.info(`(typeof lambdaClient)=${typeof lambdaClient}`)
   const assetPublisher = new DefaultAssetPublisher(storageClient, logger)
   const repoProtocol = new YarnRepoProtocol(logger, undefined, assetPublisher)
   const bootstrapper = await EngineBootstrapper.create(

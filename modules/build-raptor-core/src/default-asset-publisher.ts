@@ -8,6 +8,6 @@ export class DefaultAssetPublisher implements Publisher {
 
   async publishAsset(u: UnitMetadata, content: Buffer, name: string): Promise<void> {
     const resolved = await this.storageClient.putContentAddressable(content)
-    this.logger.info(`Asset ${u.id}/${name} uploaded to ${resolved}`)
+    this.logger.info(`Asset ${u.id}/${name} uploaded to CAS ${resolved}`)
   }
 }

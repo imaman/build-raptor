@@ -1,3 +1,4 @@
+import { Config, Lambda } from 'aws-sdk'
 import { Logger } from 'logger'
 import { z } from 'zod'
 
@@ -14,6 +15,37 @@ const AwsAccessKey = z.object({
 })
 type AwsAccessKey = z.infer<typeof AwsAccessKey>
 
+export type Result = { storageClient: S3StorageClient; lambdaClient?: LambdaClient }
+
+interface Creds {
+  accessKeyId: string
+  secretAccessKey: string
+}
+
+class LambdaClient {
+  private readonly lambda
+  constructor(creds: Creds) {
+    const conf = new Config({ credentials: { accessKeyId: creds.accessKeyId, secretAccessKey: creds.secretAccessKey } })
+    this.lambda = new Lambda(conf)
+  }
+
+  async invoke(functionName: string, request: unknown) {
+    const invokeResult = await this.lambda
+      .invoke({ FunctionName: functionName, InvocationType: 'RequestResponse', Payload: JSON.stringify(request) })
+      .promise()
+    if (invokeResult.StatusCode !== 200) {
+      throw new Error(
+        `Invocation of ${functionName} failed with status code ${invokeResult.StatusCode} <${invokeResult.FunctionError}>`,
+      )
+    }
+    if (invokeResult.FunctionError) {
+      throw new Error(`Invocation of ${functionName} failed: <${invokeResult.FunctionError}>`)
+    }
+
+    const s = invokeResult.Payload?.toString('utf-8')
+    return s === undefined ? undefined : JSON.parse(s)
+  }
+}
 // TODO(imaman): cover
 export function getS3StorageClientFactory() {
   const s3CacheEnvVar = 's3_cache'
@@ -35,12 +67,15 @@ export function getS3StorageClientFactory() {
       throw e
     }
 
-    return new Promise<S3StorageClient>(res => {
+    return new Promise<Result>(res => {
       const creds = {
         accessKeyId: awsAccessKey.AccessKey.AccessKeyId,
         secretAccessKey: awsAccessKey.AccessKey.SecretAccessKey,
       }
-      const ret = new S3StorageClient('moojo-dev-infra', 'build-raptor/cache-v1', creds, logger)
+      const ret = {
+        storageClient: new S3StorageClient('moojo-dev-infra', 'build-raptor/cache-v1', creds, logger),
+        buildTrackerClient: new LambdaClient(creds),
+      }
       logger.info(`S3StorageClient created successfully`)
 
       setTimeout(() => res(ret), 1)
