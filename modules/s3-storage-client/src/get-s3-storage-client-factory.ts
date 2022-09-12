@@ -47,9 +47,9 @@ export function getS3StorageClientFactory(logger: Logger) {
         accessKeyId: awsAccessKey.AccessKey.AccessKeyId,
         secretAccessKey: awsAccessKey.AccessKey.SecretAccessKey,
       }
-      const ret = {
+      const ret: Result = {
         storageClient: new S3StorageClient('moojo-dev-infra', 'build-raptor/cache-v1', creds, logger),
-        buildTrackerClient: new LambdaClient(creds),
+        lambdaClient: new LambdaClient(creds),
       }
       logger.info(`S3StorageClient created successfully`)
 
