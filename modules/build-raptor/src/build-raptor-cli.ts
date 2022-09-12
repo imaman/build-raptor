@@ -6,6 +6,7 @@ import * as os from 'os'
 import * as path from 'path'
 import { getS3StorageClientFactory } from 's3-storage-client'
 import { TaskName } from 'task-name'
+import { UnitMetadata } from 'unit-metadata'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import { YarnRepoProtocol } from 'yarn-repo-protocol'
@@ -44,7 +45,16 @@ async function run(options: Options) {
 
   const { storageClient, lambdaClient } = await storageClientFactory(logger)
   logger.info(`(typeof lambdaClient)=${typeof lambdaClient}`)
-  const assetPublisher = new DefaultAssetPublisher(storageClient, logger)
+  const assetPublisher = new DefaultAssetPublisher(storageClient, logger, async (u: UnitMetadata, resolved: string) => {
+    if (!lambdaClient) {
+      return
+    }
+
+    await lambdaClient.invoke('d-prod-buildTrackerService', {
+      endpointName: 'registerAssetRequest',
+      endpointRequest: { packageName: u.id, commitHash: 'N/A', casReference: resolved },
+    })
+  })
   const repoProtocol = new YarnRepoProtocol(logger, undefined, assetPublisher)
   const bootstrapper = await EngineBootstrapper.create(
     rootDir,
