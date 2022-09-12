@@ -29,8 +29,6 @@ async function createStorageClient() {
 }
 
 async function run(options: Options) {
-  const storageClientFactory = getS3StorageClientFactory() ?? createStorageClient
-
   const t0 = Date.now()
   const rootDir = options.dir ?? process.cwd()
   const buildRaptorDir = path.join(rootDir, '.build-raptor')
@@ -39,6 +37,7 @@ async function run(options: Options) {
   const logger = createDefaultLogger(logFile)
   logger.info(`Logger initialized`)
   logger.print(`logging to ${logFile}`)
+  const storageClientFactory = getS3StorageClientFactory(logger) ?? createStorageClient
 
   const buildRaptorDirTasks = path.join(buildRaptorDir, 'tasks')
   await fse.rm(buildRaptorDirTasks, { recursive: true, force: true })
