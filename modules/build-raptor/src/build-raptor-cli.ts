@@ -30,7 +30,10 @@ async function createStorageClient() {
 
 async function run(options: Options) {
   const t0 = Date.now()
+
+  // Should be called as early as possible to secure the secret.
   const storageClientFactory = getS3StorageClientFactory() ?? createStorageClient
+
   const rootDir = options.dir ?? process.cwd()
   const buildRaptorDir = path.join(rootDir, '.build-raptor')
   await fse.ensureDir(buildRaptorDir)
