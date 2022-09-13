@@ -21,6 +21,7 @@ export type Result = { storageClient: S3StorageClient; lambdaClient?: LambdaClie
 // TODO(imaman): cover
 export function getS3StorageClientFactory() {
   const s3CacheEnvVar = 's3_cache'
+
   const s3CacheString = process.env[s3CacheEnvVar] // eslint-disable-line no-process-env
   process.env[s3CacheEnvVar] = '_' // eslint-disable-line no-process-env
 
@@ -44,9 +45,9 @@ export function getS3StorageClientFactory() {
         accessKeyId: awsAccessKey.AccessKey.AccessKeyId,
         secretAccessKey: awsAccessKey.AccessKey.SecretAccessKey,
       }
-      const ret = {
+      const ret: Result = {
         storageClient: new S3StorageClient('moojo-dev-infra', 'build-raptor/cache-v1', creds, logger),
-        buildTrackerClient: new LambdaClient(creds),
+        lambdaClient: new LambdaClient(creds, 'eu-central-1'),
       }
       logger.info(`S3StorageClient created successfully`)
 
