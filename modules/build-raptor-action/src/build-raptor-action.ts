@@ -20,6 +20,9 @@ interface Options {
 async function run() {
   const t0 = Date.now()
 
+  // Should be called as early as possible to secure the secret.
+  const storageClientFactory = getS3StorageClientFactory() ?? failMe('Could not create a storage client')
+
   const options: Options = {
     // eslint-disable-next-line no-process-env
     dir: process.env['GITHUB_WORKSPACE'] || failMe(),
@@ -37,9 +40,6 @@ async function run() {
 
   logger.info(`Logger initialized`)
   logger.print(`logging to ${logFile}`)
-
-  // Should be called as early as possible to secure the secret.
-  const storageClientFactory = getS3StorageClientFactory(logger) ?? failMe('Could not create a storage client')
 
   const repoProtocol = new YarnRepoProtocol(logger)
   const { storageClient } = await storageClientFactory(logger)

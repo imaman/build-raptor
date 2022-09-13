@@ -19,15 +19,13 @@ type AwsAccessKey = z.infer<typeof AwsAccessKey>
 export type Result = { storageClient: S3StorageClient; lambdaClient?: LambdaClient }
 
 // TODO(imaman): cover
-export function getS3StorageClientFactory(logger: Logger) {
+export function getS3StorageClientFactory() {
   const s3CacheEnvVar = 's3_cache'
 
-  logger.info(`keys of process.env are: ${Object.keys(process.env)}`) // eslint-disable-line no-process-env
   const s3CacheString = process.env[s3CacheEnvVar] // eslint-disable-line no-process-env
   process.env[s3CacheEnvVar] = '_' // eslint-disable-line no-process-env
 
   if (!s3CacheString) {
-    logger.info(`getS3StorageClientFactory() - cache string is fasly`)
     return undefined
   }
 
