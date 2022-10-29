@@ -379,7 +379,7 @@ describe('task-store', () => {
     test('uses content hashing', async () => {
       // it is hard to prove that we content hash is definitely used, but we can at least show that the amount of
       // additional storage that is needed when the same content is recorded twice is negligible.
-      const sc = new InMemoryStorageClient(Int(40000))
+      const sc = new InMemoryStorageClient(Int(20000))
       const trace: string[] =[]
 
       try {
