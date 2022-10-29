@@ -1,4 +1,7 @@
 import { Brand } from 'brand'
+import * as child_process from 'child_process'
+import * as fs from 'fs'
+import { createWriteStream } from 'fs'
 import * as fse from 'fs-extra'
 import { Logger } from 'logger'
 import { computeHash, DirectoryScanner, Key, promises, StorageClient } from 'misc'
@@ -11,6 +14,9 @@ import * as zlib from 'zlib'
 import { z } from 'zod'
 
 import { Fingerprint } from './fingerprint'
+
+const pipeline = util.promisify(stream.pipeline)
+const unzip = util.promisify(zlib.unzip)
 
 const metadataSchema = z.object({ outputs: z.string().array() })
 type Metadata = z.infer<typeof metadataSchema>
@@ -148,12 +154,18 @@ export class TaskStore {
           throw new Error(`Cannot handle non-files in output: ${p} (under ${dir})`)
         }
 
-        pack.entry({ name: p, size: stat.size, mode: stat.mode, mtime: stat.mtime, type: 'file' }, content)
+        const resolved = path.join(dir, p)
+        const { atimeNs, ctimeNs, mtimeNs } = fs.statSync(resolved, { bigint: true })
+        pack.entry({ path: p, mode: stat.mode, mtime: mtimeNs, ctime: ctimeNs, atime: atimeNs }, content)
       })
     }
     pack.finalize()
 
-    await pack.writeTo(tempFile.path)
+    const b = await pack.toBuffer()
+    const source = stream.Readable.from(b)
+    const gzip = zlib.createGzip()
+    const destination = createWriteStream(tempFile.path)
+    await pipeline(source, gzip, destination)
 
     const gzipped = await fse.readFile(tempFile.path)
 
@@ -175,8 +187,9 @@ export class TaskStore {
       .reify(20)
 
     const source = buf.slice(LEN_BUF_SIZE + metadataLen)
+    const unzipped = await unzip(source)
     try {
-      await TarStream.extract(source, dir)
+      await TarStream.extract(unzipped, dir)
     } catch (e) {
       throw new Error(`unbundling a buffer (${buf.length} bytes) into ${dir} has failed: ${e}`)
     }
@@ -216,19 +229,114 @@ function blobIdOf(buf: Buffer) {
 
 const LEN_BUF_SIZE = 8
 
+const Info = z.object({
+  path: z.string(),
+  mode: z.number(),
+  mtime: z.string(),
+  atime: z.string(),
+  ctime: z.string(),
+  contentLen: z.number(),
+})
+type Info = z.infer<typeof Info>
 
+interface Entry {
+  content: Buffer
+  info: Info
+}
+
+// TOOD(imaman): move to its own file + rename
 class TarStream {
+  private readonly entires: Entry[] = []
   static pack() {
     return new TarStream()
-  } 
+  }
 
-  entry(u: unknown, content: Buffer) {}
+  entry(inf: { path: string; mode: number; mtime: bigint; atime: bigint; ctime: bigint }, content: Buffer) {
+    const info: Info = {
+      path: inf.path,
+      contentLen: content.length,
+      atime: String(inf.atime),
+      ctime: String(inf.ctime),
+      mtime: String(inf.mtime),
+      mode: inf.mode,
+    }
+    this.entires.push({ content, info })
+  }
+
   finalize() {}
 
-  async writeTo(pathToFile: string) {
+  async writeTo(outputFile: string) {
+    await fse.writeFile(outputFile, await this.toBuffer())
+  }
+
+  async toBuffer() {
+    let sum = 0
+    for (const entry of this.entires) {
+      const b = Buffer.from(JSON.stringify(Info.parse(entry.info)))
+      sum += 4 + b.length + entry.content.length
+    }
+
+    const ret = Buffer.alloc(sum)
+    let offset = 0
+
+    const track: string[] = []
+    for (const entry of this.entires) {
+      track.push(`offset=${offset}. entry.info=${JSON.stringify(entry.info)}`)
+      const b = Buffer.from(JSON.stringify(Info.parse(entry.info)))
+      offset = ret.writeInt32BE(b.length, offset)
+      offset += b.copy(ret, offset)
+      offset += entry.content.copy(ret, offset)
+    }
+
+    if (sum !== offset) {
+      throw new Error(`Mismatch: sum=${sum}, offset=${offset}. track=\n${track.join('\n')}`)
+    }
+
+    return ret
   }
 
   static async extract(source: Buffer, dir: string) {
+    const resolve = (p: string) => path.join(dir, p)
+    let offset = 0
 
+    while (offset < source.length) {
+      const atStart = offset
+
+      const infoLen = source.readInt32BE(offset)
+      offset += 4
+
+      const infoBuf = Buffer.alloc(infoLen)
+      const endOffset = offset + infoLen
+      source.copy(infoBuf, 0, offset, endOffset)
+      offset = endOffset
+
+      const untyped = JSON.parse(infoBuf.toString('utf-8'))
+      const parsedInfo = Info.parse(untyped)
+
+      const { contentLen } = parsedInfo
+
+      const contentBuf = Buffer.alloc(contentLen)
+
+      const contentEndOffset = offset + contentLen
+      source.copy(contentBuf, 0, offset, contentEndOffset)
+      offset = contentEndOffset
+
+      const resolved = resolve(parsedInfo.path)
+      await fse.mkdirp(path.dirname(resolved))
+      await fse.writeFile(resolved, contentBuf)
+      await fse.chmod(resolved, parsedInfo.mode)
+
+      const ns = BigInt(parsedInfo.mtime)
+
+      const RATIO = 1000000n
+      const ts = new Date(Number(ns / RATIO)).toISOString().slice(0, -1)
+      const decimal = String(ns % RATIO).padStart(6, '0')
+      const command = `touch -d "${ts}${decimal}Z" "${resolved}"`
+      child_process.execSync(command, { stdio: 'inherit' })
+
+      if (offset === atStart) {
+        throw new Error(`Buffer seems to be corrupted: no offset change at ${offset}`)
+      }
+    }
   }
 }
