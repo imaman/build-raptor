@@ -243,8 +243,6 @@ const Info = z.object({
   path: z.string(),
   mode: z.number(),
   mtime: z.string(),
-  atime: z.string(),
-  ctime: z.string(),
   contentLen: z.number(),
 })
 type Info = z.infer<typeof Info>
@@ -265,8 +263,6 @@ class TarStream {
     const info: Info = {
       path: inf.path,
       contentLen: content.length,
-      atime: String(inf.atime),
-      ctime: String(inf.ctime),
       mtime: String(inf.mtime),
       mode: inf.mode,
     }
