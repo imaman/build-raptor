@@ -4,8 +4,6 @@ import { Logger } from 'logger'
 import { computeHash, DirectoryScanner, Key, promises, StorageClient } from 'misc'
 import * as path from 'path'
 import * as stream from 'stream'
-import * as tarfs from 'tar-fs'
-import * as TarStream from 'tar-stream'
 import { TaskName } from 'task-name'
 import * as Tmp from 'tmp-promise'
 import * as util from 'util'
@@ -13,8 +11,6 @@ import * as zlib from 'zlib'
 import { z } from 'zod'
 
 import { Fingerprint } from './fingerprint'
-
-const pipeline = util.promisify(stream.pipeline)
 
 const metadataSchema = z.object({ outputs: z.string().array() })
 type Metadata = z.infer<typeof metadataSchema>
@@ -129,8 +125,7 @@ export class TaskStore {
     lenBuf.writeInt32BE(metadataBuf.length)
 
     const tempFile = await Tmp.file()
-    const destination = fse.createWriteStream(tempFile.path)
-    const gzip = zlib.createGzip()
+    // const destination = fse.createWriteStream(tempFile.path)
 
     const pack = TarStream.pack()
     const scanner = new DirectoryScanner(dir)
@@ -158,7 +153,8 @@ export class TaskStore {
     }
     pack.finalize()
 
-    await pipeline(pack, gzip, destination)
+    await pack.writeTo(tempFile.path)
+
     const gzipped = await fse.readFile(tempFile.path)
 
     return Buffer.concat([lenBuf, metadataBuf, gzipped])
@@ -178,11 +174,9 @@ export class TaskStore {
       .map(async o => await removeOutputDir(o))
       .reify(20)
 
-    const source = stream.Readable.from(buf.slice(LEN_BUF_SIZE + metadataLen))
-    const gunzip = zlib.createGunzip()
-    const extract = tarfs.extract(dir, { strict: true })
+    const source = buf.slice(LEN_BUF_SIZE + metadataLen)
     try {
-      await pipeline(source, gunzip, extract)
+      await TarStream.extract(source, dir)
     } catch (e) {
       throw new Error(`unbundling a buffer (${buf.length} bytes) into ${dir} has failed: ${e}`)
     }
@@ -221,3 +215,20 @@ function blobIdOf(buf: Buffer) {
 }
 
 const LEN_BUF_SIZE = 8
+
+
+class TarStream {
+  static pack() {
+    return new TarStream()
+  } 
+
+  entry(u: unknown, content: Buffer) {}
+  finalize() {}
+
+  async writeTo(pathToFile: string) {
+  }
+
+  static async extract(source: Buffer, dir: string) {
+
+  }
+}
