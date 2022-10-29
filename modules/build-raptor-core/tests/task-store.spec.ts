@@ -426,10 +426,10 @@ describe('task-store', () => {
         'a/b/x2.txt': 'this is x2',
       })
 
-      async function takeSanpshot(dir: string) {
-        const x1 = await fse.stat(path.join(dir, 'a/b/x1.txt'))
-        const x2 = await fse.stat(path.join(dir, 'a/b/x2.txt'))
-        return { x1: { mtime: x1.mtimeMs, ctime: x1.ctimeMs }, x2: { mtime: x2.mtimeMs, ctime: x2.ctimeMs } }
+      async function takeSanpshot(d: string) {
+        const x1 = await fse.stat(path.join(d, 'a/b/x1.txt'))
+        const x2 = await fse.stat(path.join(d, 'a/b/x2.txt'))
+        return { x1: { mtime: x1.mtimeMs }, x2: { mtime: x2.mtimeMs } }
       }
 
       const before = await takeSanpshot(dir)
