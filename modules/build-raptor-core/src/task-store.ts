@@ -15,13 +15,11 @@ import { z } from 'zod'
 
 import { Fingerprint } from './fingerprint'
 
-
 const pipeline = util.promisify(stream.pipeline)
 const unzip = util.promisify(zlib.unzip)
 
 const metadataSchema = z.object({ outputs: z.string().array() })
 type Metadata = z.infer<typeof metadataSchema>
-
 
 type BlobId = Brand<string, 'BlobId'>
 
@@ -51,7 +49,7 @@ export class TaskStore {
       return ret
     }
 
-    console.log(`putting object: ${ret} => ${content.length}`)
+    this.logger.info(`putting object: ${ret} => ${content.length}`)
     const putResult = await this.client.putObject(key, content)
     this.logger.info(`>>> uploaded ${hint} to ${putResult}`)
     return ret
@@ -333,6 +331,5 @@ class TarStream {
     }
   }
 }
-
 
 // 1
