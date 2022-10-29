@@ -4,7 +4,7 @@ import * as fs from 'fs'
 import { createWriteStream } from 'fs'
 import * as fse from 'fs-extra'
 import { Logger } from 'logger'
-import { computeHash, DirectoryScanner, Key, promises, StorageClient } from 'misc'
+import { computeHash, computeObjectHash, DirectoryScanner, Key, promises, StorageClient } from 'misc'
 import * as path from 'path'
 import * as stream from 'stream'
 import { TaskName } from 'task-name'
@@ -35,7 +35,11 @@ const BlobId: (s: string) => BlobId = (s: string) => {
 }
 
 export class TaskStore {
-  constructor(private readonly client: StorageClient, private readonly logger: Logger, private readonly trace?: string[]) {
+  constructor(
+    private readonly client: StorageClient,
+    private readonly logger: Logger,
+    private readonly trace?: string[],
+  ) {
     this.logger.info(`TaskStore created`)
   }
 
@@ -158,12 +162,13 @@ export class TaskStore {
 
         const resolved = path.join(dir, p)
         const { atimeNs, ctimeNs, mtimeNs } = fs.statSync(resolved, { bigint: true })
-        this.trace?.push(`adding an entry: ${stat.mode.toString(8)} ${p} ${mtimeNs}`)        
+        this.trace?.push(`adding an entry: ${stat.mode.toString(8)} ${p} ${mtimeNs}`)
         pack.entry({ path: p, mode: stat.mode, mtime: mtimeNs, ctime: ctimeNs, atime: atimeNs }, content)
       })
     }
 
     const b = pack.toBuffer()
+    this.trace?.push(`bundling of ${dir} -- digest of b is ${computeObjectHash({ data: b.toString('hex') })}`)
     const source = stream.Readable.from(b)
     const gzip = zlib.createGzip()
     const destination = createWriteStream(tempFile.path)
@@ -172,7 +177,9 @@ export class TaskStore {
     const gzipped = await fse.readFile(tempFile.path)
     this.trace?.push(`gzipped of ${dir} is ${gzipped.length} long`)
 
-    return Buffer.concat([lenBuf, metadataBuf, gzipped])
+    const ret = Buffer.concat([lenBuf, metadataBuf, gzipped])
+    this.trace?.push(`bundling of ${dir} -- digest of ret is ${computeObjectHash({ data: ret.toString('hex') })}`)
+    return ret
   }
 
   private async unbundle(buf: Buffer, dir: string) {
