@@ -22,8 +22,6 @@
     "logger": "1.0.0",
     "misc": "1.0.0",
     "repo-protocol": "1.0.0",
-    "tar-fs": "^2.1.1",
-    "tar-stream": "^2.2.0",
     "task-name": "1.0.0",
     "tmp-promise": "^3.0.3",
     "type-fest": "^2.12.2",
@@ -32,8 +30,6 @@
   },
   "devDependencies": {
     "@types/fs-extra": "^9.0.0",
-    "@types/tar-fs": "^2.0.1",
-    "@types/tar-stream": "^2.2.2",
     "@types/tmp": "^0.2.2",
     "@types/uuid": "^8.0.0"
   }
