@@ -15,11 +15,13 @@ import { z } from 'zod'
 
 import { Fingerprint } from './fingerprint'
 
+
 const pipeline = util.promisify(stream.pipeline)
 const unzip = util.promisify(zlib.unzip)
 
 const metadataSchema = z.object({ outputs: z.string().array() })
 type Metadata = z.infer<typeof metadataSchema>
+
 
 type BlobId = Brand<string, 'BlobId'>
 
@@ -49,6 +51,7 @@ export class TaskStore {
       return ret
     }
 
+    console.log(`putting object: ${ret} => ${content.length}`)
     const putResult = await this.client.putObject(key, content)
     this.logger.info(`>>> uploaded ${hint} to ${putResult}`)
     return ret
@@ -131,7 +134,6 @@ export class TaskStore {
     lenBuf.writeInt32BE(metadataBuf.length)
 
     const tempFile = await Tmp.file()
-    // const destination = fse.createWriteStream(tempFile.path)
 
     const pack = TarStream.pack()
     const scanner = new DirectoryScanner(dir)
@@ -159,9 +161,8 @@ export class TaskStore {
         pack.entry({ path: p, mode: stat.mode, mtime: mtimeNs, ctime: ctimeNs, atime: atimeNs }, content)
       })
     }
-    pack.finalize()
 
-    const b = await pack.toBuffer()
+    const b = pack.toBuffer()
     const source = stream.Readable.from(b)
     const gzip = zlib.createGzip()
     const destination = createWriteStream(tempFile.path)
@@ -263,13 +264,7 @@ class TarStream {
     this.entires.push({ content, info })
   }
 
-  finalize() {}
-
-  async writeTo(outputFile: string) {
-    await fse.writeFile(outputFile, await this.toBuffer())
-  }
-
-  async toBuffer() {
+  toBuffer() {
     let sum = 0
     for (const entry of this.entires) {
       const b = Buffer.from(JSON.stringify(Info.parse(entry.info)))
@@ -279,9 +274,7 @@ class TarStream {
     const ret = Buffer.alloc(sum)
     let offset = 0
 
-    const track: string[] = []
     for (const entry of this.entires) {
-      track.push(`offset=${offset}. entry.info=${JSON.stringify(entry.info)}`)
       const b = Buffer.from(JSON.stringify(Info.parse(entry.info)))
       offset = ret.writeInt32BE(b.length, offset)
       offset += b.copy(ret, offset)
@@ -289,7 +282,7 @@ class TarStream {
     }
 
     if (sum !== offset) {
-      throw new Error(`Mismatch: sum=${sum}, offset=${offset}. track=\n${track.join('\n')}`)
+      throw new Error(`Mismatch: sum=${sum}, offset=${offset}`)
     }
 
     return ret
@@ -335,8 +328,11 @@ class TarStream {
       child_process.execSync(command, { stdio: 'inherit' })
 
       if (offset === atStart) {
-        throw new Error(`Buffer seems to be corrupted: no offset change at ${offset}`)
+        throw new Error(`Buffer seems to be corrupted: no offset change at the last pass ${offset}`)
       }
     }
   }
 }
+
+
+// 1
