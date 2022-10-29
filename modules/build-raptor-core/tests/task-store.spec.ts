@@ -380,19 +380,26 @@ describe('task-store', () => {
       // it is hard to prove that we content hash is definitely used, but we can at least show that the amount of
       // additional storage that is needed when the same content is recorded twice is negligible.
       const sc = new InMemoryStorageClient(Int(40000))
-      const store = new TaskStore(sc, logger)
+      const trace: string[] =[]
 
-      const dir1 = await folderify({
-        x: chaoticDeterministicString(20000, 'a'),
-      })
+      try {
+        const store = new TaskStore(sc, logger, trace)
 
-      expect(sc.byteCount).toEqual(0)
-      await store.recordTask('my-task' as TaskName, Fingerprint('fp-1'), dir1, ['x'], 'OK')
-      const c0 = sc.byteCount
-      expect(c0).toBeGreaterThanOrEqual(10000)
-      await store.recordTask('my-task' as TaskName, Fingerprint('fp-2'), dir1, ['x'], 'OK')
-      const c1 = sc.byteCount
-      expect(c1 - c0).toBeLessThan(500)
+        const dir1 = await folderify({
+          x: chaoticDeterministicString(20000, 'a'),
+        })
+  
+        expect(sc.byteCount).toEqual(0)
+        await store.recordTask('my-task' as TaskName, Fingerprint('fp-1'), dir1, ['x'], 'OK')
+        const c0 = sc.byteCount
+        expect(c0).toBeGreaterThanOrEqual(10000)
+        await store.recordTask('my-task' as TaskName, Fingerprint('fp-2'), dir1, ['x'], 'OK')
+        const c1 = sc.byteCount
+        expect(c1 - c0).toBeLessThan(500)  
+      } catch (e) {
+        console.log(`trace=\n${trace.join('\n')}`)
+        throw e
+      }
     })
     test('uses compression', async () => {
       // it is hard to prove that compression is definitely used, but we can at least show that the total storage space

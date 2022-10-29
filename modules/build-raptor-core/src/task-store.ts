@@ -35,7 +35,7 @@ const BlobId: (s: string) => BlobId = (s: string) => {
 }
 
 export class TaskStore {
-  constructor(private readonly client: StorageClient, private readonly logger: Logger) {
+  constructor(private readonly client: StorageClient, private readonly logger: Logger, private readonly trace?: string[]) {
     this.logger.info(`TaskStore created`)
   }
 
@@ -49,9 +49,9 @@ export class TaskStore {
       return ret
     }
 
-    this.logger.info(`putting object: ${ret} => ${content.length}`)
-    const putResult = await this.client.putObject(key, content)
-    this.logger.info(`>>> uploaded ${hint} to ${putResult}`)
+    this.trace?.push(`putting object: ${JSON.stringify(ret)} (hint: ${hint})=> ${content.length}`)
+    await this.client.putObject(key, content)
+    this.logger.info(`>>> uploaded ${hint}`)
     return ret
   }
 
@@ -121,6 +121,8 @@ export class TaskStore {
       return emptyBuffer()
     }
 
+    this.trace?.push(`bundling ${dir}, outputs=${JSON.stringify(outputs)}`)
+
     const metadata = JSON.stringify(metadataSchema.parse({ outputs }))
 
     const metadataBuf = Buffer.from(metadata, 'utf-8')
@@ -156,6 +158,7 @@ export class TaskStore {
 
         const resolved = path.join(dir, p)
         const { atimeNs, ctimeNs, mtimeNs } = fs.statSync(resolved, { bigint: true })
+        this.trace?.push(`adding an entry: ${stat.mode.toString(8)} ${p} ${mtimeNs}`)        
         pack.entry({ path: p, mode: stat.mode, mtime: mtimeNs, ctime: ctimeNs, atime: atimeNs }, content)
       })
     }
@@ -167,6 +170,7 @@ export class TaskStore {
     await pipeline(source, gzip, destination)
 
     const gzipped = await fse.readFile(tempFile.path)
+    this.trace?.push(`gzipped of ${dir} is ${gzipped.length} long`)
 
     return Buffer.concat([lenBuf, metadataBuf, gzipped])
   }
