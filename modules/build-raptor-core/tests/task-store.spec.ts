@@ -379,20 +379,27 @@ describe('task-store', () => {
     test('uses content hashing', async () => {
       // it is hard to prove that we content hash is definitely used, but we can at least show that the amount of
       // additional storage that is needed when the same content is recorded twice is negligible.
-      const sc = new InMemoryStorageClient(Int(21000))
-      const store = new TaskStore(sc, logger)
+      const sc = new InMemoryStorageClient(Int(20000))
+      const trace: string[] =[]
 
-      const dir1 = await folderify({
-        x: chaoticDeterministicString(20000, 'a'),
-      })
+      try {
+        const store = new TaskStore(sc, logger, trace)
 
-      expect(sc.byteCount).toEqual(0)
-      await store.recordTask('my-task' as TaskName, Fingerprint('fp-1'), dir1, ['x'], 'OK')
-      const c0 = sc.byteCount
-      expect(c0).toBeGreaterThanOrEqual(10000)
-      await store.recordTask('my-task' as TaskName, Fingerprint('fp-2'), dir1, ['x'], 'OK')
-      const c1 = sc.byteCount
-      expect(c1 - c0).toBeLessThan(500)
+        const dir1 = await folderify({
+          x: chaoticDeterministicString(20000, 'a'),
+        })
+  
+        expect(sc.byteCount).toEqual(0)
+        await store.recordTask('my-task' as TaskName, Fingerprint('fp-1'), dir1, ['x'], 'OK')
+        const c0 = sc.byteCount
+        expect(c0).toBeGreaterThanOrEqual(10000)
+        await store.recordTask('my-task' as TaskName, Fingerprint('fp-2'), dir1, ['x'], 'OK')
+        const c1 = sc.byteCount
+        expect(c1 - c0).toBeLessThan(500)  
+      } catch (e) {
+        console.log(`trace=\n${trace.join('\n')}`)
+        throw e
+      }
     })
     test('uses compression', async () => {
       // it is hard to prove that compression is definitely used, but we can at least show that the total storage space
@@ -416,6 +423,31 @@ describe('task-store', () => {
       await expect(store.recordTask('my-task' as TaskName, Fingerprint('fp'), dir, ['a/b'], 'OK')).rejects.toThrow(
         'Output location <a/b> does not exist',
       )
+    })
+    test('preserves modification time', async () => {
+      const sc = new InMemoryStorageClient()
+      const store = new TaskStore(sc, logger)
+
+      const dir = await folderify({
+        'a/b/x1.txt': 'this is x1',
+        'a/b/x2.txt': 'this is x2',
+      })
+
+      async function takeSanpshot(d: string) {
+        const x1 = await fse.stat(path.join(d, 'a/b/x1.txt'))
+        const x2 = await fse.stat(path.join(d, 'a/b/x2.txt'))
+        return { x1: { mtime: x1.mtimeMs }, x2: { mtime: x2.mtimeMs } }
+      }
+
+      const before = await takeSanpshot(dir)
+      await store.recordTask('my-task' as TaskName, Fingerprint('fp'), dir, ['a'], 'OK')
+
+      const dest = await folderify({})
+      await store.restoreTask('my-task' as TaskName, Fingerprint('fp'), dest)
+      const after = await takeSanpshot(dest)
+
+      expect(after.x1).toEqual(before.x1)
+      expect(after.x2).toEqual(before.x2)
     })
   })
 })

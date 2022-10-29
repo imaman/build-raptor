@@ -1,11 +1,12 @@
 import { Brand } from 'brand'
+import * as child_process from 'child_process'
+import * as fs from 'fs'
+import { createWriteStream } from 'fs'
 import * as fse from 'fs-extra'
 import { Logger } from 'logger'
-import { computeHash, DirectoryScanner, Key, promises, StorageClient } from 'misc'
+import { computeHash, computeObjectHash, DirectoryScanner, Key, promises, StorageClient } from 'misc'
 import * as path from 'path'
 import * as stream from 'stream'
-import * as tarfs from 'tar-fs'
-import * as TarStream from 'tar-stream'
 import { TaskName } from 'task-name'
 import * as Tmp from 'tmp-promise'
 import * as util from 'util'
@@ -15,6 +16,7 @@ import { z } from 'zod'
 import { Fingerprint } from './fingerprint'
 
 const pipeline = util.promisify(stream.pipeline)
+const unzip = util.promisify(zlib.unzip)
 
 const metadataSchema = z.object({ outputs: z.string().array() })
 type Metadata = z.infer<typeof metadataSchema>
@@ -33,7 +35,11 @@ const BlobId: (s: string) => BlobId = (s: string) => {
 }
 
 export class TaskStore {
-  constructor(private readonly client: StorageClient, private readonly logger: Logger) {
+  constructor(
+    private readonly client: StorageClient,
+    private readonly logger: Logger,
+    private readonly trace?: string[],
+  ) {
     this.logger.info(`TaskStore created`)
   }
 
@@ -47,8 +53,9 @@ export class TaskStore {
       return ret
     }
 
-    const putResult = await this.client.putObject(key, content)
-    this.logger.info(`>>> uploaded ${hint} to ${putResult}`)
+    this.trace?.push(`putting object: ${JSON.stringify(ret)} (hint: ${hint})=> ${content.length}`)
+    await this.client.putObject(key, content)
+    this.logger.info(`>>> uploaded ${hint}`)
     return ret
   }
 
@@ -118,6 +125,8 @@ export class TaskStore {
       return emptyBuffer()
     }
 
+    this.trace?.push(`bundling ${dir}, outputs=${JSON.stringify(outputs)}`)
+
     const metadata = JSON.stringify(metadataSchema.parse({ outputs }))
 
     const metadataBuf = Buffer.from(metadata, 'utf-8')
@@ -129,8 +138,6 @@ export class TaskStore {
     lenBuf.writeInt32BE(metadataBuf.length)
 
     const tempFile = await Tmp.file()
-    const destination = fse.createWriteStream(tempFile.path)
-    const gzip = zlib.createGzip()
 
     const pack = TarStream.pack()
     const scanner = new DirectoryScanner(dir)
@@ -153,15 +160,26 @@ export class TaskStore {
           throw new Error(`Cannot handle non-files in output: ${p} (under ${dir})`)
         }
 
-        pack.entry({ name: p, size: stat.size, mode: stat.mode, mtime: stat.mtime, type: 'file' }, content)
+        const resolved = path.join(dir, p)
+        const { atimeNs, ctimeNs, mtimeNs } = fs.statSync(resolved, { bigint: true })
+        this.trace?.push(`adding an entry: ${stat.mode.toString(8)} ${p} ${mtimeNs}`)
+        pack.entry({ path: p, mode: stat.mode, mtime: mtimeNs, ctime: ctimeNs, atime: atimeNs }, content)
       })
     }
-    pack.finalize()
 
-    await pipeline(pack, gzip, destination)
+    const b = pack.toBuffer()
+    this.trace?.push(`bundling of ${dir} -- digest of b is ${computeObjectHash({ data: b.toString('hex') })}`)
+    const source = stream.Readable.from(b)
+    const gzip = zlib.createGzip()
+    const destination = createWriteStream(tempFile.path)
+    await pipeline(source, gzip, destination)
+
     const gzipped = await fse.readFile(tempFile.path)
+    this.trace?.push(`gzipped of ${dir} is ${gzipped.length} long`)
 
-    return Buffer.concat([lenBuf, metadataBuf, gzipped])
+    const ret = Buffer.concat([lenBuf, metadataBuf, gzipped])
+    this.trace?.push(`bundling of ${dir} -- digest of ret is ${computeObjectHash({ data: ret.toString('hex') })}`)
+    return ret
   }
 
   private async unbundle(buf: Buffer, dir: string) {
@@ -178,11 +196,10 @@ export class TaskStore {
       .map(async o => await removeOutputDir(o))
       .reify(20)
 
-    const source = stream.Readable.from(buf.slice(LEN_BUF_SIZE + metadataLen))
-    const gunzip = zlib.createGunzip()
-    const extract = tarfs.extract(dir, { strict: true })
+    const source = buf.slice(LEN_BUF_SIZE + metadataLen)
+    const unzipped = await unzip(source)
     try {
-      await pipeline(source, gunzip, extract)
+      await TarStream.extract(unzipped, dir)
     } catch (e) {
       throw new Error(`unbundling a buffer (${buf.length} bytes) into ${dir} has failed: ${e}`)
     }
@@ -221,3 +238,105 @@ function blobIdOf(buf: Buffer) {
 }
 
 const LEN_BUF_SIZE = 8
+
+const Info = z.object({
+  path: z.string(),
+  mode: z.number(),
+  mtime: z.string(),
+  contentLen: z.number(),
+})
+type Info = z.infer<typeof Info>
+
+interface Entry {
+  content: Buffer
+  info: Info
+}
+
+// TOOD(imaman): move to its own file + rename
+class TarStream {
+  private readonly entires: Entry[] = []
+  static pack() {
+    return new TarStream()
+  }
+
+  entry(inf: { path: string; mode: number; mtime: bigint; atime: bigint; ctime: bigint }, content: Buffer) {
+    const info: Info = {
+      path: inf.path,
+      contentLen: content.length,
+      mtime: String(inf.mtime),
+      mode: inf.mode,
+    }
+    this.entires.push({ content, info })
+  }
+
+  toBuffer() {
+    let sum = 0
+    for (const entry of this.entires) {
+      const b = Buffer.from(JSON.stringify(Info.parse(entry.info)))
+      sum += 4 + b.length + entry.content.length
+    }
+
+    const ret = Buffer.alloc(sum)
+    let offset = 0
+
+    for (const entry of this.entires) {
+      const b = Buffer.from(JSON.stringify(Info.parse(entry.info)))
+      offset = ret.writeInt32BE(b.length, offset)
+      offset += b.copy(ret, offset)
+      offset += entry.content.copy(ret, offset)
+    }
+
+    if (sum !== offset) {
+      throw new Error(`Mismatch: sum=${sum}, offset=${offset}`)
+    }
+
+    return ret
+  }
+
+  static async extract(source: Buffer, dir: string) {
+    const resolve = (p: string) => path.join(dir, p)
+    let offset = 0
+
+    while (offset < source.length) {
+      const atStart = offset
+
+      const infoLen = source.readInt32BE(offset)
+      offset += 4
+
+      const infoBuf = Buffer.alloc(infoLen)
+      const endOffset = offset + infoLen
+      source.copy(infoBuf, 0, offset, endOffset)
+      offset = endOffset
+
+      const untyped = JSON.parse(infoBuf.toString('utf-8'))
+      const parsedInfo = Info.parse(untyped)
+
+      const { contentLen } = parsedInfo
+
+      const contentBuf = Buffer.alloc(contentLen)
+
+      const contentEndOffset = offset + contentLen
+      source.copy(contentBuf, 0, offset, contentEndOffset)
+      offset = contentEndOffset
+
+      const resolved = resolve(parsedInfo.path)
+      await fse.mkdirp(path.dirname(resolved))
+      await fse.writeFile(resolved, contentBuf)
+      await fse.chmod(resolved, parsedInfo.mode)
+
+      const ns = BigInt(parsedInfo.mtime)
+
+      const RATIO = 1000000n
+      const ts = new Date(Number(ns / RATIO)).toISOString().slice(0, -1)
+      const decimal = String(ns % RATIO).padStart(6, '0')
+      const command = `touch -d "${ts}${decimal}Z" "${resolved}"`
+      child_process.execSync(command, { stdio: 'inherit' })
+
+      if (offset === atStart) {
+        throw new Error(`Buffer seems to be corrupted: no offset change at the last pass ${offset}`)
+      }
+    }
+  }
+}
+
+// 1
