@@ -12,7 +12,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "@actions/core": "^1.6.0",
+    "@actions/core": "^1.9.1",
     "@actions/github": "^5.0.0",
     "build-raptor-core": "1.0.0",
     "fs-extra": "^9.0.0",
