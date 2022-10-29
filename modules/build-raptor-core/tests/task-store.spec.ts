@@ -417,5 +417,30 @@ describe('task-store', () => {
         'Output location <a/b> does not exist',
       )
     })
+    test('preserves modification time', async () => {
+      const sc = new InMemoryStorageClient()
+      const store = new TaskStore(sc, logger)
+
+      const dir = await folderify({
+        'a/b/x1.txt': 'this is x1',
+        'a/b/x2.txt': 'this is x2',
+      })
+
+      async function takeSanpshot(dir: string) {
+        const x1 = await fse.stat(path.join(dir, 'a/b/x1.txt'))
+        const x2 = await fse.stat(path.join(dir, 'a/b/x2.txt'))
+        return { x1: { mtime: x1.mtimeMs, ctime: x1.ctimeMs }, x2: { mtime: x2.mtimeMs, ctime: x2.ctimeMs } }
+      }
+
+      const before = await takeSanpshot(dir)
+      await store.recordTask('my-task' as TaskName, Fingerprint('fp'), dir, ['a'], 'OK')
+
+      const dest = await folderify({})
+      await store.restoreTask('my-task' as TaskName, Fingerprint('fp'), dest)
+      const after = await takeSanpshot(dest)
+
+      expect(after.x1).toEqual(before.x1)
+      expect(after.x2).toEqual(before.x2)
+    })
   })
 })
