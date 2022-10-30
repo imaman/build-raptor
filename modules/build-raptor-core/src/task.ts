@@ -8,7 +8,6 @@ import { Fingerprint } from './fingerprint'
 import { Phase } from './phase'
 import { SlotIndex } from './slot-index'
 import { TaskInfo } from './task-info'
-
 type PathInRepo = string
 
 export class Task {
@@ -31,7 +30,7 @@ export class Task {
       executionType: 'UNKNOWN',
       startedAt: SlotIndex(-1),
       endedAt: SlotIndex(-1),
-      phases: []
+      phases: [],
     }
   }
 
@@ -62,18 +61,17 @@ export class Task {
   }
 
   setPhase(phase: Phase) {
-    this.executionRecord.phases.push(phase)
+    this.executionRecord.phases.push({ phase, timestampMillis: Date.now() })
   }
 
   getPhase(): Phase {
     const pos = this.executionRecord.phases.length - 1
-    return pos >= 0 ? this.executionRecord.phases[pos] : 'UNSTARTED'
+    return pos >= 0 ? this.executionRecord.phases[pos].phase : 'UNSTARTED'
   }
 
   hasPhase(): boolean {
     return this.executionRecord.phases.length > 0
   }
-
 
   get record(): ExecutionRecord {
     return this.executionRecord

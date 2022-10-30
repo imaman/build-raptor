@@ -1,8 +1,8 @@
 export type Phase =
   | 'UNSTARTED'
   | 'RUNNING'
-  | 'CHECK_SHADOWING'
-  | 'PURGE_OUTPUTS'
-  | 'POSSIBLY_SKIP'
+  | 'COMPUTE_FINGERPRINT'
+  | 'POSSIBLY_RESTORE_OUTPUTS'
+  | 'SKIP'
   | 'RUN_IT'
   | 'TERMINAL'
