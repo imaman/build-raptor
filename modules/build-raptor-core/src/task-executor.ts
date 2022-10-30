@@ -202,6 +202,7 @@ class SingleTaskExecutor {
 
   private async executePhase(phase: Phase): Promise<Phase> {
     this.logger.info(`Running ${phase} of ${this.taskName}`)
+    this.disagnose(`Running phase ${phase}`)
     const t = this.task
 
     // TODO(imaman): some of the phases are essentially a no-op and can be eliminated.
@@ -210,55 +211,44 @@ class SingleTaskExecutor {
     }
 
     if (phase === 'RUNNING') {
-      return 'CHECK_SHADOWING'
+      return 'COMPUTE_FINGERPRINT'
     }
 
-    if (phase === 'CHECK_SHADOWING') {
-      // TODO(imaman): simplify the entire method, and this branch in particular.
-      const isShadowed = this.tracker.isShadowed(t.name)
-      this.logger.info(`is task ${t.name} shadowed? ${isShadowed}`)
-      if (!isShadowed) {
-        // TODO(imaman): there is a possiblity for a nasty bug with the current implementation. When the current task
-        // is a shadowing task, the outputs of dependencies do not (yet) exist, because those dependencies forwent the
-        // execution (due to shadowing), so the FP computed at the shadowing task is incorrect.
-        this.fp_ = await this.computeFingerprint()
-        return 'POSSIBLY_RESTORE_OUTPUTS'
-      }
-
-      const st = this.tracker.getShadowingTask(t.name)
-      this.logger.info(`shadowing task of ${t.name} is ${st}`)
-      await this.executor.executeTask(st)
-      // TODO(imaman): check verdict of the shadowing task
-
+    if (phase === 'COMPUTE_FINGERPRINT') {
       this.fp_ = await this.computeFingerprint()
-
-      const skipped = await this.restoreOutputs()
-      if (skipped) {
-        return 'TERMINAL'
-      }
-      await this.validateOutputs()
-      // TODO(imaman): report the shadowing task in the event.
-      await this.eventPublisher.publish('executionShadowed', t.name)
-      this.tracker.registerShadowedVerdict(t.name, 'OK')
-      await this.taskStore.recordTask(t.name, this.fp, this.dir, t.outputLocations, 'OK')
-      return 'TERMINAL'
+      return 'POSSIBLY_RESTORE_OUTPUTS'
     }
 
     if (phase === 'POSSIBLY_RESTORE_OUTPUTS') {
-      const isKnown = await this.isVerdictKnown()
-      this.disagnose(`isknown=${isKnown}`)
+      const earlierVerdict = await this.getVerdict()
+      const isKnown = switchOn(earlierVerdict, {
+        FAIL: () => true,
+        OK: () => true,
+        FLAKY: () => true,
+        UNKNOWN: () => false,
+      })
+      this.disagnose(`earlierVerdict=${earlierVerdict}, isKnown=${isKnown}`)
       if (!isKnown) {
         return 'RUN_IT'
       }
-      this.disagnose(`purging outputs`)
       await this.purgeOutputs()
-      this.disagnose(`restoring outputs`)
-      const skipIt = await this.restoreOutputs()
-      this.disagnose(`skipIt=${skipIt}`)
-      if (skipIt) {
-        return 'TERMINAL'
+      await this.restoreOutputs()
+
+      if (earlierVerdict === 'FAIL' || earlierVerdict === 'UNKNOWN') {
+        return 'RUN_IT'
       }
-      return 'RUN_IT'
+
+      if (earlierVerdict === 'OK' || earlierVerdict === 'FLAKY') {
+        this.tracker.registerCachedVerdict(t.name, earlierVerdict)
+        return 'SKIP'
+      }
+
+      shouldNeverHappen(earlierVerdict)
+    }
+
+    if (phase === 'SKIP') {
+      await this.eventPublisher.publish('executionSkipped', t.name)
+      return 'TERMINAL'
     }
 
     if (phase === 'RUN_IT') {
@@ -275,30 +265,15 @@ class SingleTaskExecutor {
   }
 
   private async restoreOutputs() {
+    this.disagnose(`restoring outputs`)
     const t = this.task
-    const earlierVerdict = await this.taskStore.restoreTask(t.name, this.fp, this.dir)
-    this.disagnose(`task restored, earlierVerdict=${earlierVerdict}`)
-    if (earlierVerdict === 'OK' || earlierVerdict === 'FLAKY') {
-      await this.eventPublisher.publish('executionSkipped', t.name)
-      this.tracker.registerCachedVerdict(t.name, earlierVerdict)
-      return true
-    }
-
-    if (earlierVerdict === 'FAIL' || earlierVerdict === 'UNKNOWN') {
-      return false
-    }
-
-    shouldNeverHappen(earlierVerdict)
+    await this.taskStore.restoreTask(t.name, this.fp, this.dir)
+    this.disagnose(`task restored`)
   }
 
-  private async isVerdictKnown() {
+  private async getVerdict() {
     const earlierVerdict = await this.taskStore.checkVerdict(this.task.name, this.fp)
-    return switchOn(earlierVerdict, {
-      FAIL: () => true,
-      FLAKY: () => true,
-      OK: () => true,
-      UNKNOWN: () => false,
-    })
+    return earlierVerdict
   }
 
   private async runIt() {
@@ -330,6 +305,7 @@ class SingleTaskExecutor {
   }
 
   private async purgeOutputs() {
+    this.disagnose(`purging outputs`)
     const shadowedTasks = this.tracker.getTasksShadowedBy(this.taskName)
     const taskNames = [this.taskName, ...shadowedTasks]
     const tasks = taskNames.map(tn => this.tracker.getTask(tn))
