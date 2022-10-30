@@ -1,7 +1,7 @@
 import { BuildFailedError } from 'build-failed-error'
 import * as fse from 'fs-extra'
 import { Logger } from 'logger'
-import { failMe, promises, shouldNeverHappen, sortBy, switchOn, TypedPublisher } from 'misc'
+import { failMe, promises, shouldNeverHappen, sortBy, TypedPublisher } from 'misc'
 import * as path from 'path'
 import { ExitStatus, RepoProtocol } from 'repo-protocol'
 import { TaskName } from 'task-name'
@@ -221,20 +221,14 @@ class SingleTaskExecutor {
 
     if (phase === 'POSSIBLY_RESTORE_OUTPUTS') {
       const earlierVerdict = await this.getVerdict()
-      const isKnown = switchOn(earlierVerdict, {
-        FAIL: () => true,
-        OK: () => true,
-        FLAKY: () => true,
-        UNKNOWN: () => false,
-      })
-      this.disagnose(`earlierVerdict=${earlierVerdict}, isKnown=${isKnown}`)
-      if (!isKnown) {
+      this.disagnose(`earlierVerdict=${earlierVerdict}`)
+      if (earlierVerdict === 'UNKNOWN') {
         return 'RUN_IT'
       }
       await this.purgeOutputs()
       await this.restoreOutputs()
 
-      if (earlierVerdict === 'FAIL' || earlierVerdict === 'UNKNOWN') {
+      if (earlierVerdict === 'FAIL') {
         return 'RUN_IT'
       }
 

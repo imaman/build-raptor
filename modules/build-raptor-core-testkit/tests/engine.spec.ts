@@ -306,7 +306,7 @@ describe('engine', () => {
     const r3 = await fork.run('OK', { concurrencyLevel: 3 })
     expect(r3.performanceReport?.maxUsedConcurrency).toEqual(3)
   })
-  test('purges the output location before running a task', async () => {
+  test('keeps output location before running a task (so that incremental compilation can work)', async () => {
     const driver = new Driver(testName(), {
       repoProtocol: new SimpleNodeRepoProtocol('modules', ['build-out', 'bin']),
     })
@@ -328,7 +328,7 @@ describe('engine', () => {
     const copyOfBin = fork.file('modules/a/build-out/copy-of-bin')
     expect(await copyOfBin.lines()).toEqual(['the return of the jedi'])
     await fork.run('OK')
-    expect(await copyOfBin.lines()).toEqual([''])
+    expect(await copyOfBin.lines()).toEqual(['the force awakens'])
   })
   test('the build fails if the graph is cyclic', async () => {
     const protocol = new RepoProtocolTestkit({
@@ -357,26 +357,6 @@ describe('engine', () => {
     expect(r1.message).toMatch(/^the .build-raptor directory should be .gitignore-d/)
 
     await fork.run('OK', { checkGitIgnore: false })
-  })
-  test('yells if a task fails to generate one of its declared outputs', async () => {
-    const protocol = new RepoProtocolTestkit(
-      { a: [] },
-      {
-        tasks: [
-          { taskKind: TaskKind('T_1'), outputs: ['foo'] },
-          { taskKind: TaskKind('T_2'), outputs: ['bar'] },
-        ],
-      },
-    )
-
-    const driver = new Driver(testName(), { repoProtocol: protocol.create() })
-    const recipe = { 'a/foo': '', 'a/bar': '' }
-
-    const fork = await driver.repo(recipe).fork()
-
-    protocol.setTaskOutputs('a:T_1', { foo: 'f.o.o' })
-    const r1 = await fork.run('FAIL')
-    expect(r1.message).toEqual('Task a:T_2 failed to produce the following outputs:\n  - bar')
   })
   describe.skip('shadowing (transitivity)', () => {
     test('a shadowing task is invoked once at least-dependent unit', async () => {
