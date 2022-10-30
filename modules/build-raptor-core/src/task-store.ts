@@ -227,6 +227,11 @@ export class TaskStore {
     await this.unbundle(buf, dir)
     return verdict
   }
+
+  async checkVerdict(taskName: TaskName, fingerprint: Fingerprint): Promise<'FAIL' | 'OK' | 'FLAKY' | 'UNKNOWN'> {
+    const [verdict] = await this.getVerdict(taskName, fingerprint)
+    return verdict
+  }
 }
 
 function emptyBuffer() {
