@@ -66,6 +66,14 @@ class SingleTaskExecutor {
     private readonly executor: TaskExecutor,
   ) {}
 
+  private disagnose(...args: unknown[]) {
+    if (this.taskName !== 'online-shopping-endpoints:build') {
+      return
+    }
+
+    console.log(...args)
+  }
+
   private get task() {
     return this.tracker.getTask(this.taskName)
   }
@@ -243,6 +251,7 @@ class SingleTaskExecutor {
 
     if (phase === 'POSSIBLY_SKIP') {
       const skipped = await this.canBeSkipped()
+      this.disagnose(`canBeSkipped=${skipped}`)
       if (skipped) {
         return 'TERMINAL'
       }
@@ -251,6 +260,7 @@ class SingleTaskExecutor {
     }
 
     if (phase === 'RUN_IT') {
+      this.disagnose('running it')
       await this.runIt()
       return 'TERMINAL'
     }
