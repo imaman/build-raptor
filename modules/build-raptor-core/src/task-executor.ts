@@ -232,7 +232,7 @@ class SingleTaskExecutor {
 
       this.fp_ = await this.computeFingerprint()
 
-      const skipped = await this.canBeSkipped()
+      const skipped = await this.restoreOutputs()
       if (skipped) {
         return 'TERMINAL'
       }
@@ -253,7 +253,7 @@ class SingleTaskExecutor {
       this.disagnose(`purging outputs`)
       await this.purgeOutputs()
       this.disagnose(`restoring outputs`)
-      const skipIt = await this.canBeSkipped()
+      const skipIt = await this.restoreOutputs()
       this.disagnose(`skipIt=${skipIt}`)
       if (skipIt) {
         return 'TERMINAL'
@@ -274,7 +274,7 @@ class SingleTaskExecutor {
     shouldNeverHappen(phase)
   }
 
-  private async canBeSkipped() {
+  private async restoreOutputs() {
     const t = this.task
     const earlierVerdict = await this.taskStore.restoreTask(t.name, this.fp, this.dir)
     this.disagnose(`task restored, earlierVerdict=${earlierVerdict}`)
