@@ -3,6 +3,5 @@ export type Phase =
   | 'RUNNING'
   | 'CHECK_SHADOWING'
   | 'PURGE_OUTPUTS'
-  | 'POSSIBLY_SKIP'
   | 'RUN_IT'
   | 'TERMINAL'

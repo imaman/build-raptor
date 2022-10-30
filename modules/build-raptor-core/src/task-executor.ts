@@ -1,7 +1,8 @@
+import * as child_process from 'child_process'
 import { BuildFailedError } from 'build-failed-error'
 import * as fse from 'fs-extra'
 import { Logger } from 'logger'
-import { failMe, promises, shouldNeverHappen, sortBy, TypedPublisher } from 'misc'
+import { failMe, promises, shouldNeverHappen, sortBy, switchOn, TypedPublisher } from 'misc'
 import * as path from 'path'
 import { ExitStatus, RepoProtocol } from 'repo-protocol'
 import { TaskName } from 'task-name'
@@ -245,17 +246,18 @@ class SingleTaskExecutor {
     }
 
     if (phase === 'PURGE_OUTPUTS') {
+      const isKnown = await this.isKnown()
+      this.disagnose(`isknown=${isKnown}`)
+      if (!isKnown) {
+        return 'RUN_IT'
+      } 
+      this.disagnose(`purging outputs`)
       await this.purgeOutputs()
-      return 'POSSIBLY_SKIP'
-    }
-
-    if (phase === 'POSSIBLY_SKIP') {
-      const skipped = await this.canBeSkipped()
-      this.disagnose(`canBeSkipped=${skipped}`)
-      if (skipped) {
+      const skipIt = await this.canBeSkipped()
+      this.disagnose(`skipIt=${skipIt}`)
+      if (skipIt) {
         return 'TERMINAL'
       }
-
       return 'RUN_IT'
     }
 
@@ -275,6 +277,7 @@ class SingleTaskExecutor {
   private async canBeSkipped() {
     const t = this.task
     const earlierVerdict = await this.taskStore.restoreTask(t.name, this.fp, this.dir)
+    this.disagnose(`task restored, earlierVerdict=${earlierVerdict}`)
     if (earlierVerdict === 'OK' || earlierVerdict === 'FLAKY') {
       await this.eventPublisher.publish('executionSkipped', t.name)
       this.tracker.registerCachedVerdict(t.name, earlierVerdict)
@@ -286,6 +289,16 @@ class SingleTaskExecutor {
     }
 
     shouldNeverHappen(earlierVerdict)
+  }
+
+  private async isKnown() {
+    const earlierVerdict = await this.taskStore.checkVerdict(this.task.name, this.fp)
+    return switchOn(earlierVerdict, {
+      'FAIL': () => true,
+      'FLAKY': () => true,
+      'OK': () => true,
+      'UNKNOWN': () => false,
+    })
   }
 
   private async runIt() {
