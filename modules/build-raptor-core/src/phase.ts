@@ -1,7 +1,1 @@
-export type Phase =
-  | 'UNSTARTED'
-  | 'RUNNING'
-  | 'CHECK_SHADOWING'
-  | 'PURGE_OUTPUTS'
-  | 'RUN_IT'
-  | 'TERMINAL'
+export type Phase = 'UNSTARTED' | 'RUNNING' | 'CHECK_SHADOWING' | 'POSSIBLY_RESTORE_OUTPUTS' | 'RUN_IT' | 'TERMINAL'

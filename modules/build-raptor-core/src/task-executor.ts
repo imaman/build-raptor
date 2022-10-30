@@ -222,7 +222,7 @@ class SingleTaskExecutor {
         // is a shadowing task, the outputs of dependencies do not (yet) exist, because those dependencies forwent the
         // execution (due to shadowing), so the FP computed at the shadowing task is incorrect.
         this.fp_ = await this.computeFingerprint()
-        return 'PURGE_OUTPUTS'
+        return 'POSSIBLY_RESTORE_OUTPUTS'
       }
 
       const st = this.tracker.getShadowingTask(t.name)
@@ -244,7 +244,7 @@ class SingleTaskExecutor {
       return 'TERMINAL'
     }
 
-    if (phase === 'PURGE_OUTPUTS') {
+    if (phase === 'POSSIBLY_RESTORE_OUTPUTS') {
       const isKnown = await this.isKnown()
       this.disagnose(`isknown=${isKnown}`)
       if (!isKnown) {
@@ -252,6 +252,7 @@ class SingleTaskExecutor {
       }
       this.disagnose(`purging outputs`)
       await this.purgeOutputs()
+      this.disagnose(`restoring outputs`)
       const skipIt = await this.canBeSkipped()
       this.disagnose(`skipIt=${skipIt}`)
       if (skipIt) {
