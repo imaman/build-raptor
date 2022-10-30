@@ -1,4 +1,3 @@
-import * as child_process from 'child_process'
 import { BuildFailedError } from 'build-failed-error'
 import * as fse from 'fs-extra'
 import { Logger } from 'logger'
@@ -67,12 +66,12 @@ class SingleTaskExecutor {
     private readonly executor: TaskExecutor,
   ) {}
 
-  private disagnose(...args: unknown[]) {
+  private disagnose(message: string) {
     if (this.taskName !== 'online-shopping-endpoints:build') {
       return
     }
 
-    console.log(...args)
+    this.logger.print(message)
   }
 
   private get task() {
@@ -250,7 +249,7 @@ class SingleTaskExecutor {
       this.disagnose(`isknown=${isKnown}`)
       if (!isKnown) {
         return 'RUN_IT'
-      } 
+      }
       this.disagnose(`purging outputs`)
       await this.purgeOutputs()
       const skipIt = await this.canBeSkipped()
@@ -294,10 +293,10 @@ class SingleTaskExecutor {
   private async isKnown() {
     const earlierVerdict = await this.taskStore.checkVerdict(this.task.name, this.fp)
     return switchOn(earlierVerdict, {
-      'FAIL': () => true,
-      'FLAKY': () => true,
-      'OK': () => true,
-      'UNKNOWN': () => false,
+      FAIL: () => true,
+      FLAKY: () => true,
+      OK: () => true,
+      UNKNOWN: () => false,
     })
   }
 
