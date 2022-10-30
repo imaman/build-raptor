@@ -64,10 +64,11 @@ class SingleTaskExecutor {
     private readonly fingerprintLedger: FingerprintLedger,
     private readonly purger: Purger,
     private readonly executor: TaskExecutor,
+    private readonly taskToDiagnose?: string,
   ) {}
 
-  private disagnose(message: string) {
-    if (this.taskName !== 'online-shopping-endpoints:build') {
+  private diagnose(message: string) {
+    if (this.taskName !== this.taskToDiagnose) {
       return
     }
 
@@ -202,7 +203,7 @@ class SingleTaskExecutor {
 
   private async executePhase(phase: Phase): Promise<Phase> {
     this.logger.info(`Running ${phase} of ${this.taskName}`)
-    this.disagnose(`Running phase ${phase}`)
+    this.diagnose(`Running phase ${phase}`)
     const t = this.task
 
     // TODO(imaman): some of the phases are essentially a no-op and can be eliminated.
@@ -221,7 +222,7 @@ class SingleTaskExecutor {
 
     if (phase === 'POSSIBLY_RESTORE_OUTPUTS') {
       const earlierVerdict = await this.getVerdict()
-      this.disagnose(`earlierVerdict=${earlierVerdict}`)
+      this.diagnose(`earlierVerdict=${earlierVerdict}`)
       if (earlierVerdict === 'UNKNOWN') {
         return 'RUN_IT'
       }
@@ -246,7 +247,7 @@ class SingleTaskExecutor {
     }
 
     if (phase === 'RUN_IT') {
-      this.disagnose('running it')
+      this.diagnose('running it')
       await this.runIt()
       return 'TERMINAL'
     }
@@ -259,10 +260,10 @@ class SingleTaskExecutor {
   }
 
   private async restoreOutputs() {
-    this.disagnose(`restoring outputs`)
+    this.diagnose(`restoring outputs`)
     const t = this.task
     await this.taskStore.restoreTask(t.name, this.fp, this.dir)
-    this.disagnose(`task restored`)
+    this.diagnose(`task restored`)
   }
 
   private async getVerdict() {
@@ -299,7 +300,7 @@ class SingleTaskExecutor {
   }
 
   private async purgeOutputs() {
-    this.disagnose(`purging outputs`)
+    this.diagnose(`purging outputs`)
     const shadowedTasks = this.tracker.getTasksShadowedBy(this.taskName)
     const taskNames = [this.taskName, ...shadowedTasks]
     const tasks = taskNames.map(tn => this.tracker.getTask(tn))
