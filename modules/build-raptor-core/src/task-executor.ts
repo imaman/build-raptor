@@ -245,7 +245,7 @@ class SingleTaskExecutor {
     }
 
     if (phase === 'POSSIBLY_RESTORE_OUTPUTS') {
-      const isKnown = await this.isKnown()
+      const isKnown = await this.isVerdictKnown()
       this.disagnose(`isknown=${isKnown}`)
       if (!isKnown) {
         return 'RUN_IT'
@@ -291,7 +291,7 @@ class SingleTaskExecutor {
     shouldNeverHappen(earlierVerdict)
   }
 
-  private async isKnown() {
+  private async isVerdictKnown() {
     const earlierVerdict = await this.taskStore.checkVerdict(this.task.name, this.fp)
     return switchOn(earlierVerdict, {
       FAIL: () => true,
