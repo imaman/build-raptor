@@ -20,5 +20,6 @@ export class Purger {
     const dir = path.join(model.rootDir, unit.pathInRepo)
     await this.removeLocations(dir, task.outputLocations)
     this.logger.info(`purged output locations of task ${task.name}: ${task.outputLocations}`)
+    return task.outputLocations
   }
 }
