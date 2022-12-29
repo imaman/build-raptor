@@ -225,3 +225,16 @@ expect(5).toEqual(5);
 - fingerprinter.spec.ts - untodo
 - modules/build-raptor-core/tests/minimal-testing.spec.ts - unskip
 - planner.spec - test('when a task definition changes, the task will run', untodo
+
+---
+
+- build when dep of dep changes
+- --run-always
+- custom jest output
+- jestoutput to be part of the inputs
+- delete output files if source file is deleted
+- distinguish between fingerprint of inputs and of output
+- reports outputs for all tasks (even those that did not run)
+- tasks that always run
+- purge the local cache when it grows too large
+- output should indicate concurrency
