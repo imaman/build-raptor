@@ -177,13 +177,21 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
 
     if (task === 'test') {
-      const testsToRun = await this.computeTestsToRun(path.join(dir, JEST_OUTPUT_FILE))
-      return await this.run(
+      const jof = path.join(dir, JEST_OUTPUT_FILE)
+      const testsToRun = await this.computeTestsToRun(jof)
+      const ret = await this.run(
         'yarn',
         ['jest', ...testsToRun, '--json', '--outputFile', JEST_OUTPUT_FILE],
         dir,
         outputFile,
       )
+      const written = fse.readFileSync(jof, 'utf-8')
+      try {
+        JSON.parse(written)
+      } catch (e) {
+        throw new Error(`failed to parse ${jof} <${e}>`)
+      }
+      return ret
     }
 
     if (task === 'pack') {
@@ -451,7 +459,15 @@ export class YarnRepoProtocol implements RepoProtocol {
       return ['tests']
     }
 
-    const parsed = await fse.readJSON(resolved)
+    const content = await fse.readFile(resolved, 'utf-8')
+    let parsed
+    try {
+      parsed = JSON.parse(content)
+    } catch (e) {
+      this.logger.print(`failed to parse ${resolved} <${e}> - overwriting with fallback content`)
+      const fallback: JestJson = { testResults: [] }
+      parsed = fallback
+    }
     const jestJson: JestJson = JestJson.parse(parsed)
 
     const failedTests = jestJson.testResults.filter(x => x.status !== 'passed')
