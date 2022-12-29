@@ -339,8 +339,8 @@ describe('directory-scanner', () => {
       expect(acc2).toEqual(['ax', 'ay', 'bx', 'by'])
     })
   })
-  describe('scanPaths', () => {
-    test('invokes the given callback with the path of each of the files', async () => {
+  describe('listPaths', () => {
+    test('returns a list of paths to all files', async () => {
       const d = await folderify({
         'd1/q.txt': 'lorem',
         'd1/r.txt': 'ipsum',
@@ -353,8 +353,7 @@ describe('directory-scanner', () => {
       })
 
       const ds = new DirectoryScanner(d)
-      const acc: string[] = []
-      await ds.scanPaths('', p => acc.push(p))
+      const acc = await ds.listPaths('')
       expect(acc).toEqual([
         'd1/c/d/e/f/r.txt',
         'd1/c/d/e/f/t.txt',
@@ -365,6 +364,40 @@ describe('directory-scanner', () => {
         'd1/r.txt',
         'd2/u.txt',
       ])
+    })
+    test('returns only paths that are under the give startpoit', async () => {
+      const d = await folderify({
+        'd1/q.txt': 'lorem',
+        'd1/r.txt': 'ipsum',
+        'd1/c/d/e/f/r.txt': 'dolor',
+        'd2/u.txt': 'elit',
+        'd1/c/g/h/r.txt': 'sit',
+        'd1/c/g/h/s.txt': 'amet',
+        'd1/c/d/e/t.txt': 'consectetur',
+        'd1/c/d/e/f/t.txt': 'adipiscing',
+      })
+
+      const ds = new DirectoryScanner(d)
+      expect(await ds.listPaths('d1/c/d')).toEqual(['d1/c/d/e/f/r.txt', 'd1/c/d/e/f/t.txt', 'd1/c/d/e/t.txt'])
+      expect(await ds.listPaths('d1/c/g')).toEqual(['d1/c/g/h/r.txt', 'd1/c/g/h/s.txt'])
+      expect(await ds.listPaths('d2')).toEqual(['d2/u.txt'])
+    })
+    test('the returned paths are relative to the root path passed to the construcotr', async () => {
+      const d = await folderify({
+        'd1/q.txt': 'lorem',
+        'd1/r.txt': 'ipsum',
+        'd1/c/d/e/f/r.txt': 'dolor',
+        'd2/u.txt': 'elit',
+        'd1/c/g/h/r.txt': 'sit',
+        'd1/c/g/h/s.txt': 'amet',
+        'd1/c/d/e/t.txt': 'consectetur',
+        'd1/c/d/e/f/t.txt': 'adipiscing',
+      })
+
+      const a = new DirectoryScanner(path.join(d, 'd1/c'))
+      expect(await a.listPaths('')).toEqual(['d/e/f/r.txt', 'd/e/f/t.txt', 'd/e/t.txt', 'g/h/r.txt', 'g/h/s.txt'])
+      const b = new DirectoryScanner(path.join(d, 'd1/c/d'))
+      expect(await b.listPaths('')).toEqual(['e/f/r.txt', 'e/f/t.txt', 'e/t.txt'])
     })
   })
 })

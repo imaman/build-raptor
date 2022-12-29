@@ -62,8 +62,20 @@ export class DirectoryScanner {
     await this.scanTreeImpl(startingPoint, options, undefined, cb)
   }
 
-  async scanPaths(startingPoint: RelativePath, cb: ScanPathCallback): Promise<void> {
-    await this.scanTreeImpl(startingPoint, DEFAULT_OPTIONS, cb)
+  /**
+   * Iterates over all the files located under `startingPoint` and returns relative path (relative from the `root` path
+   * passed to the constructor)
+   * @param startingPoint a relative path to start scanning files at. It is resolved to an absolute path by joining it
+   * to the root-dir value passed to the constructor. Trailing path separators are omitted (i.e. `'a/b///'` is
+   * equivalent to `'a/b'`).
+   * @returns a list of relative paths
+   */
+  async listPaths(startingPoint: RelativePath): Promise<string[]> {
+    const ret: string[] = []
+    await this.scanTreeImpl(startingPoint, DEFAULT_OPTIONS, p => {
+      ret.push(p)
+    })
+    return ret
   }
 
   private async scanTreeImpl(
