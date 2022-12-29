@@ -17,7 +17,7 @@ describe('yarn-repo-protocol.e2e', () => {
         version: '1.0.0',
         scripts: {
           build: 'mkdir -p dist/src dist/tests && echo "building now" && touch dist/src/a.js dist/tests/a.spec.js',
-          jest: `echo "testing now" && echo '{}' > jest-output.json`,
+          jest: `echo "testing now" && echo '{}' > jest-output.json && echo 'x' > /dev/null`,
         },
       },
       'modules/a/src/a.ts': 'N/A',
