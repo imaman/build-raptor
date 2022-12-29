@@ -3,7 +3,7 @@ import escapeStringRegexp from 'escape-string-regexp'
 import execa from 'execa'
 import * as fse from 'fs-extra'
 import { Logger } from 'logger'
-import { failMe, Graph, hardGet, pairsToRecord, promises, uniqueBy } from 'misc'
+import { failMe, Graph, hardGet, pairsToRecord, promises, switchOn, uniqueBy } from 'misc'
 import * as path from 'path'
 import { ExitStatus, Publisher, RepoProtocol } from 'repo-protocol'
 import { CatalogOfTasks } from 'repo-protocol'
@@ -171,9 +171,18 @@ export class YarnRepoProtocol implements RepoProtocol {
     return p.stdout
   }
 
+  private async checkBuiltFiles(_dir: string): Promise<ExitStatus> {
+    return 'OK'
+  }
+
   async execute(u: UnitMetadata, dir: string, task: TaskKind, outputFile: string): Promise<ExitStatus> {
     if (task === 'build') {
-      return await this.run('npm', ['run', 'build'], dir, outputFile)
+      const ret = await this.run('npm', ['run', 'build'], dir, outputFile)
+      return await switchOn(ret, {
+        CRASH: () => Promise.resolve(ret),
+        FAIL: () => Promise.resolve(ret),
+        OK: async () => await this.checkBuiltFiles(dir),
+      })
     }
 
     if (task === 'test') {
