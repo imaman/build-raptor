@@ -23,7 +23,7 @@ interface ConstructorOptions {
 const DEFAULT_OPTIONS: Required<Options> = { predicate: () => true, startingPointMustExist: true }
 
 type ScanTreeCallback = (relativePath: string, content: Buffer, stat: fs.Stats) => void
-type ScanPathCallback = (relativePath: string, stat: fs.Stats) => void
+type ScanPathCallback = (relativePath: string) => void
 
 type RelativePath = string
 
@@ -110,7 +110,7 @@ export class DirectoryScanner {
       }
 
       if (pathCallback) {
-        pathCallback(relativePath, stat)
+        pathCallback(relativePath)
       }
       return
     }

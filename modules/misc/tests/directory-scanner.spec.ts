@@ -339,4 +339,32 @@ describe('directory-scanner', () => {
       expect(acc2).toEqual(['ax', 'ay', 'bx', 'by'])
     })
   })
+  describe('scanPaths', () => {
+    test('invokes the given callback with the path of each of the files', async () => {
+      const d = await folderify({
+        'd1/q.txt': 'lorem',
+        'd1/r.txt': 'ipsum',
+        'd1/c/d/e/f/r.txt': 'dolor',
+        'd2/u.txt': 'elit',
+        'd1/c/r.txt': 'sit',
+        'd1/c/s.txt': 'amet',
+        'd1/c/d/e/t.txt': 'consectetur',
+        'd1/c/d/e/f/t.txt': 'adipiscing',
+      })
+
+      const ds = new DirectoryScanner(d)
+      const acc: string[] = []
+      await ds.scanPaths('', p => acc.push(p))
+      expect(acc).toEqual([
+        'd1/c/d/e/f/r.txt',
+        'd1/c/d/e/f/t.txt',
+        'd1/c/d/e/t.txt',
+        'd1/c/r.txt',
+        'd1/c/s.txt',
+        'd1/q.txt',
+        'd1/r.txt',
+        'd2/u.txt',
+      ])
+    })
+  })
 })
