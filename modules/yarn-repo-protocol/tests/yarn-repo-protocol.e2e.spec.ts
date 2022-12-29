@@ -41,7 +41,7 @@ describe('yarn-repo-protocol.e2e', () => {
   const jest = [
     `cat dist/src/index.js dist/tests/index.spec.js`,
     `echo '{"testResults": []}' > jest-output.json`,
-    `echo 'x' > /dev/null`,
+    `echo 'x' > /dev/null`, // prevents the `yarn jest` command line options from being echoed into jest-output.json
   ].join(' && ')
 
   test('reruns tests when the source code changes', async () => {
