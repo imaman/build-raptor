@@ -31,9 +31,10 @@ export class TaskExecutor {
     private readonly purger: Purger,
   ) {}
 
-  async executeTask(taskName: TaskName) {
+  async executeTask(taskName: TaskName, deps: TaskName[]) {
     const ste = new SingleTaskExecutor(
       taskName,
+      deps,
       this.model,
       this.tracker,
       this.logger,
@@ -53,6 +54,7 @@ class SingleTaskExecutor {
 
   constructor(
     private readonly taskName: TaskName,
+    private readonly deps: TaskName[],
     private readonly model: Model,
     private readonly tracker: TaskTracker,
     private readonly logger: Logger,
@@ -99,6 +101,10 @@ class SingleTaskExecutor {
     // TODO(imaman): test coverage for the sort-by
     // TODO(imaman): concurrent loop
 
+    for (const d of this.deps) {
+      const dep = this.tracker.getTask(d)
+      fps.push(dep.getFingerprint())
+    }
     const parts: Record<string, Fingerprint> = {}
 
     const sortedInputs = sortBy(t.inputs, t => t)
