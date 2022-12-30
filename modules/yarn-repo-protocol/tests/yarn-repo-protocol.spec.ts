@@ -1,7 +1,8 @@
 import * as fse from 'fs-extra'
 import { createDefaultLogger } from 'logger'
-import { folderify, slurpDir } from 'misc'
+import { DirectoryScanner, folderify, slurpDir } from 'misc'
 import * as path from 'path'
+import { TaskKind } from 'task-name'
 import { UnitId } from 'unit-metadata'
 
 import { YarnRepoProtocol } from '../src/yarn-repo-protocol'
@@ -310,6 +311,34 @@ describe('yarn-repo-protocol', () => {
         const statB = await fse.stat(p)
         expect(statB.mtimeMs).toEqual(statA.mtimeMs)
       })
+    })
+  })
+  describe('building', () => {
+    test('deletes output files which do not have a matching source file', async () => {
+      const d = await folderify({
+        'package.json': { workspaces: ['modules/*'], private: true },
+        'modules/a/package.json': {
+          name: 'a',
+          version: '1',
+          scripts: { build: `touch dist/src/a.d.ts dist/src/a.js` },
+        },
+        'modules/a/src/a.ts': '',
+        'modules/a/dist/src/b.js': '',
+        'modules/a/dist/src/b.d.ts': '',
+      })
+
+      const yrp = new YarnRepoProtocol(logger)
+      await yrp.initialize(d)
+      const buildResult = await yrp.execute(
+        { id: UnitId('a'), pathInRepo: 'modules/a' },
+        path.join(d, 'modules/a'),
+        TaskKind('build'),
+        '/dev/null',
+      )
+      expect(buildResult).toEqual('OK')
+      const actual = await DirectoryScanner.listPaths(path.join(d, 'modules/a/dist'))
+      expect(actual).not.toContain('src/b.d.ts')
+      expect(actual).not.toContain('src/b.js')
     })
   })
 })
