@@ -1,9 +1,10 @@
 import { BuildFailedError } from 'build-failed-error'
 import escapeStringRegexp from 'escape-string-regexp'
 import execa from 'execa'
+import * as fs from 'fs'
 import * as fse from 'fs-extra'
 import { Logger } from 'logger'
-import { failMe, Graph, hardGet, pairsToRecord, promises, switchOn, uniqueBy } from 'misc'
+import { DirectoryScanner, failMe, Graph, hardGet, pairsToRecord, promises, switchOn, uniqueBy } from 'misc'
 import * as path from 'path'
 import { ExitStatus, Publisher, RepoProtocol } from 'repo-protocol'
 import { CatalogOfTasks } from 'repo-protocol'
@@ -40,6 +41,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     private readonly logger: Logger,
     private readonly shadowing: boolean = false,
     private readonly publisher?: Publisher,
+    private readonly deleteUnmatchedOutputFiles = false,
   ) {}
 
   private readonly tsconfigBasePathInRepo: string = 'tsconfig-base.json'
@@ -171,8 +173,21 @@ export class YarnRepoProtocol implements RepoProtocol {
     return p.stdout
   }
 
-  private async checkBuiltFiles(_dir: string): Promise<ExitStatus> {
-    return 'OK'
+  private async checkBuiltFiles(dir: string) {
+    if (!this.deleteUnmatchedOutputFiles) {
+      return
+    }
+
+    const srcFiles = new Set<string>(await DirectoryScanner.listPaths(path.join(dir, 'src')))
+
+    const d = path.join(dir, 'dist/src')
+    const distSrcFiles = await DirectoryScanner.listPaths(d)
+
+    const toDelete = distSrcFiles.filter(f => !srcFiles.has(f.replace(/\.js$/, '.ts').replace(/\.d\.ts$/, '.ts')))
+
+    for (const f of toDelete) {
+      fs.rmSync(path.join(d, f))
+    }
   }
 
   async execute(u: UnitMetadata, dir: string, task: TaskKind, outputFile: string): Promise<ExitStatus> {
@@ -181,7 +196,7 @@ export class YarnRepoProtocol implements RepoProtocol {
       return await switchOn(ret, {
         CRASH: () => Promise.resolve(ret),
         FAIL: () => Promise.resolve(ret),
-        OK: async () => await this.checkBuiltFiles(dir),
+        OK: () => this.checkBuiltFiles(dir).then(() => 'OK'),
       })
     }
 

@@ -327,7 +327,7 @@ describe('yarn-repo-protocol', () => {
         'modules/a/dist/src/b.d.ts': '',
       })
 
-      const yrp = new YarnRepoProtocol(logger)
+      const yrp = new YarnRepoProtocol(logger, undefined, undefined, true)
       await yrp.initialize(d)
       const buildResult = await yrp.execute(
         { id: UnitId('a'), pathInRepo: 'modules/a' },
