@@ -63,12 +63,11 @@ export class DirectoryScanner {
   }
 
   /**
-   * Iterates over all the files located under `startingPoint` and returns relative path (relative from the `root` path
-   * passed to the constructor)
+   * Recursively scans a file tree, returning relative paths to all files.
    * @param startingPoint a relative path to start scanning files at. It is resolved to an absolute path by joining it
    * to the root-dir value passed to the constructor. Trailing path separators are omitted (i.e. `'a/b///'` is
    * equivalent to `'a/b'`).
-   * @returns a list of relative paths
+   * @returns an array of relative paths (relative from the `root` path  passed to the constructor)
    */
   async listPaths(startingPoint: RelativePath): Promise<string[]> {
     const ret: string[] = []
@@ -76,6 +75,15 @@ export class DirectoryScanner {
       ret.push(p)
     })
     return ret
+  }
+
+  /**
+   * Returns relative paths to all files at the file tree rooted at the given directory.
+   * @param dir directory to scan files under
+   * @returns an array of relative paths (relative to `dir`)
+   */
+  static async listPaths(dir: string) {
+    return await new DirectoryScanner(dir).listPaths('')
   }
 
   private async scanTreeImpl(

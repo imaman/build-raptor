@@ -400,4 +400,30 @@ describe('directory-scanner', () => {
       expect(await b.listPaths('')).toEqual(['e/f/r.txt', 'e/f/t.txt', 'e/t.txt'])
     })
   })
+  describe('listPaths() static method', () => {
+    test('returns a list of paths to all files', async () => {
+      const d = await folderify({
+        'd1/q.txt': 'lorem',
+        'd1/r.txt': 'ipsum',
+        'd1/c/d/e/f/r.txt': 'dolor',
+        'd2/u.txt': 'elit',
+        'd1/c/r.txt': 'sit',
+        'd1/c/s.txt': 'amet',
+        'd1/c/d/e/t.txt': 'consectetur',
+        'd1/c/d/e/f/t.txt': 'adipiscing',
+      })
+
+      const files = await DirectoryScanner.listPaths(d)
+      expect(files).toEqual([
+        'd1/c/d/e/f/r.txt',
+        'd1/c/d/e/f/t.txt',
+        'd1/c/d/e/t.txt',
+        'd1/c/r.txt',
+        'd1/c/s.txt',
+        'd1/q.txt',
+        'd1/r.txt',
+        'd2/u.txt',
+      ])
+    })
+  })
 })
