@@ -45,7 +45,7 @@ describe('yarn-repo-protocol.e2e', () => {
   ].join(' && ')
 
   test('reruns tests when the source code changes', async () => {
-    const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
+    const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger, undefined, undefined, false) })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
       'modules/a/package.json': { name: 'a', version: '1.0.0', scripts: { build, jest } },
@@ -72,7 +72,7 @@ describe('yarn-repo-protocol.e2e', () => {
     expect(await runB.outputOf('test', 'a')).toContain('mondaytuesday')
   })
   test('if nothing has changed the tasks are cached', async () => {
-    const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger, false) })
+    const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger, false, undefined, false) })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
       'modules/a/package.json': { name: 'a', version: '1.0.0', scripts: { build, jest }, dependencies: { b: '1.0.0' } },

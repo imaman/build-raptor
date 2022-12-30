@@ -41,7 +41,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     private readonly logger: Logger,
     private readonly shadowing: boolean = false,
     private readonly publisher?: Publisher,
-    private readonly deleteUnmatchedOutputFiles = false,
+    private readonly deleteUnmatchedOutputFiles = true,
   ) {}
 
   private readonly tsconfigBasePathInRepo: string = 'tsconfig-base.json'
