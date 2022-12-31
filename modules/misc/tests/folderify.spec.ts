@@ -76,6 +76,25 @@ describe('folderify', () => {
       ],
     ])
   })
+  test('when a "prefix" value is passed, it is appended to all created files', async () => {
+    const dir = await folderify('p/q', {
+      'a/b/c': 'foo',
+      'a/b/d': 'bar',
+      'a/e/f/g': { x: 1, y: 2 },
+    })
+
+    const d = new DirectoryScanner(dir)
+
+    const acc: [string, string][] = []
+    await d.scanTree('.', (relativePath, buf) => {
+      acc.push([relativePath, buf.toString().trim()])
+    })
+    expect(acc).toEqual([
+      ['p/q/a/b/c', 'foo'],
+      ['p/q/a/b/d', 'bar'],
+      ['p/q/a/e/f/g', '{"x":1,"y":2}'],
+    ])
+  })
   test('yells if the input contains a file nested under another file', async () => {
     await expect(folderify({ a: '', 'a/b': '' })).rejects.toThrow(
       'bad input - a file (a/b) is nested under another file (a)',
