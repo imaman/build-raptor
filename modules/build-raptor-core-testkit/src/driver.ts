@@ -108,7 +108,7 @@ class File {
     await fse.remove(this.resolve())
   }
 
-  async linkItTo(linkTarget: string) {
+  async symlinkTo(linkTarget: string) {
     await fse.symlink(linkTarget, this.resolve())
   }
 
