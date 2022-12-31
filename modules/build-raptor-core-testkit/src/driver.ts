@@ -108,6 +108,10 @@ class File {
     await fse.remove(this.resolve())
   }
 
+  async linkItTo(linkTarget: string) {
+    await fse.symlink(linkTarget, this.resolve())
+  }
+
   async lastChanged() {
     const st = await fse.stat(this.resolve())
     return st.mtime.getTime()

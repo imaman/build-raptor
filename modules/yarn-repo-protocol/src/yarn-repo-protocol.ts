@@ -91,12 +91,29 @@ export class YarnRepoProtocol implements RepoProtocol {
   }
 
   private async generateTsConfigFiles(rootDir: string, units: UnitMetadata[], graph: Graph<UnitId>) {
+    const baseExists = await fse.pathExists(path.join(rootDir, this.tsconfigBasePathInRepo))
+
+    const defaultOptions: TsConfigJson.CompilerOptions = {
+      module: 'CommonJS',
+      inlineSourceMap: true,
+      newLine: 'LF',
+      declaration: true,
+      target: 'ES2021',
+      lib: ['ES2021', 'DOM'],
+      strict: true,
+      noImplicitAny: true,
+      moduleResolution: 'node',
+      allowSyntheticDefaultImports: true,
+      esModuleInterop: true,
+    }
+
     for (const u of units) {
       const deps = graph.neighborsOf(u.id)
 
       const tsconf: TsConfigJson = {
-        extends: path.relative(u.pathInRepo, this.tsconfigBasePathInRepo),
+        ...(baseExists ? { extends: path.relative(u.pathInRepo, this.tsconfigBasePathInRepo) } : {}),
         compilerOptions: {
+          ...(baseExists ? {} : defaultOptions),
           composite: true,
           outDir: 'dist',
         },

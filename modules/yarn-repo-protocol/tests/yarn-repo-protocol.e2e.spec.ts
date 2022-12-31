@@ -1,12 +1,49 @@
 import { Driver } from 'build-raptor-core-testkit'
 import { createNopLogger } from 'logger'
+import * as path from 'path'
 
 import { YarnRepoProtocol } from '../src/yarn-repo-protocol'
 
-jest.setTimeout(10000)
+jest.setTimeout(30000)
 describe('yarn-repo-protocol.e2e', () => {
   const logger = createNopLogger()
   const testName = () => expect.getState().currentTestName
+
+  test('tsc', async () => {
+    const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
+    const recipe = {
+      'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+      'modules/a/package.json': {
+        name: 'a',
+        license: 'UNLICENSED',
+        version: '1.0.0',
+        scripts: {
+          build: 'tsc -b',
+          test: 'jest',
+        },
+        jest: {
+          roots: ['<rootDir>/dist'],
+        },
+      },
+      'modules/a/src/a.ts': 'export function f(n: number) { return n * 2 }',
+      'modules/a/tests/a.spec.ts': `
+        import {f} from '../src/a'
+        describe('a', () => {
+          test('f', () => {
+            expect(6).toEqual(f(3))
+          })
+        })
+      `,
+    }
+
+    const fork = await driver.repo(recipe).fork()
+
+    fork.file('node_modules').linkItTo(path.resolve(__dirname, '../../../../node_modules'))
+
+    const run = await fork.run('OK', { taskKind: 'test' })
+    expect(await run.outputOf('build', 'a')).toEqual(['> a@1.0.0 build', '> tsc -b'])
+    expect(await run.outputOf('test', 'a')).toContain('PASS dist/tests/a.spec.js')
+  })
 
   test('runs tasks and captures their output', async () => {
     const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })

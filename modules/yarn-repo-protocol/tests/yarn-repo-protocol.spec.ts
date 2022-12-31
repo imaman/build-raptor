@@ -147,6 +147,7 @@ describe('yarn-repo-protocol', () => {
     test(`basics`, async () => {
       const d = await folderify({
         'package.json': { workspaces: ['modules/*'], private: true },
+        'tsconfig-base.json': {},
         'modules/a/package.json': { name: 'a', version: '1.0.0' },
       })
 
@@ -163,6 +164,7 @@ describe('yarn-repo-protocol', () => {
     test(`the .extends field specifies the relative path to the base tsconfig`, async () => {
       const d = await folderify({
         'package.json': { workspaces: ['libs/*', 'apps/mobile/*', 'apps/web/**'], private: true },
+        'tsconfig-base.json': {},
         'libs/a/package.json': { name: 'a', version: '1.0.0' },
         'apps/mobile/b/package.json': { name: 'b', version: '1.0.0' },
         'apps/web/static/c/package.json': { name: 'c', version: '1.0.0' },
@@ -182,6 +184,7 @@ describe('yarn-repo-protocol', () => {
       test(`reflect the package's dependencies`, async () => {
         const d = await folderify({
           'package.json': { workspaces: ['modules/*'], private: true },
+          'tsconfig-base.json': {},
           'modules/a/package.json': { name: 'a', version: '1.0.0', dependencies: { b: '1.0.0', c: '1.0.0' } },
           'modules/b/package.json': { name: 'b', version: '1.0.0', dependencies: { c: '1.0.0' } },
           'modules/c/package.json': { name: 'c', version: '1.0.0' },
@@ -207,6 +210,7 @@ describe('yarn-repo-protocol', () => {
       test(`correctly computes the relative path to the dependecy`, async () => {
         const d = await folderify({
           'package.json': { workspaces: ['modules/**'], private: true },
+          'tsconfig-base.json': {},
           'modules/web/fullstack/a/package.json': { name: 'a', version: '1.0.0', dependencies: { d: '1.0.0' } },
           'modules/web/static/b/package.json': { name: 'b', version: '1.0.0', dependencies: { d: '1.0.0' } },
           'modules/web/utils/c/package.json': { name: 'c', version: '1.0.0', dependencies: {} },
@@ -228,6 +232,7 @@ describe('yarn-repo-protocol', () => {
       test(`reflect also the package's dev-dependencies`, async () => {
         const d = await folderify({
           'package.json': { workspaces: ['modules/*'], private: true },
+          'tsconfig-base.json': {},
           'modules/a/package.json': { name: 'a', version: '1.0.0', devDependencies: { b: '1.0.0' } },
           'modules/b/package.json': { name: 'b', version: '1.0.0' },
         })
@@ -274,6 +279,7 @@ describe('yarn-repo-protocol', () => {
       test(`overwrites a pre-existing tsconfig.json if its content is stale`, async () => {
         const d = await folderify({
           'package.json': { workspaces: ['modules/*'], private: true },
+          'tsconfig-base.json': {},
           'modules/a/package.json': { name: 'a', version: '1.0.0' },
           'modules/a/tsconfig.json': {
             compilerOptions: {
