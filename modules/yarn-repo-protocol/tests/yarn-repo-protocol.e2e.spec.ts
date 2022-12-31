@@ -42,7 +42,9 @@ describe('yarn-repo-protocol.e2e', () => {
 
     const run = await fork.run('FAIL', { taskKind: 'test' })
     expect(await run.outputOf('build', 'a')).toEqual(['> a@1.0.0 build', '> tsc -b'])
-    expect(await run.outputOf('test', 'a')).toEqual(expect.arrayContaining(['    Expected: 12', '    Received: -12']))
+    expect(await run.outputOf('test', 'a')).toEqual(
+      expect.arrayContaining(['    Expected: 12', '    Received: -12', 'Tests:       1 failed, 1 total']),
+    )
   })
 
   test('runs tasks and captures their output', async () => {
