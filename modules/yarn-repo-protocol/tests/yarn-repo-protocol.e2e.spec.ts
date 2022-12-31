@@ -30,7 +30,7 @@ describe('yarn-repo-protocol.e2e', () => {
         import {f} from '../src/a'
         describe('a', () => {
           test('f', () => {
-            expect(6).toEqual(f(3))
+            expect(-12).toEqual(f(6))
           })
         })
       `,
@@ -40,9 +40,9 @@ describe('yarn-repo-protocol.e2e', () => {
 
     fork.file('node_modules').symlinkTo(path.resolve(__dirname, '../../../../node_modules'))
 
-    const run = await fork.run('OK', { taskKind: 'test' })
+    const run = await fork.run('FAIL', { taskKind: 'test' })
     expect(await run.outputOf('build', 'a')).toEqual(['> a@1.0.0 build', '> tsc -b'])
-    expect(await run.outputOf('test', 'a')).toContain('PASS dist/tests/a.spec.js')
+    expect(await run.outputOf('test', 'a')).toEqual(expect.arrayContaining(['    Expected: 12', '    Received: -12']))
   })
 
   test('runs tasks and captures their output', async () => {
