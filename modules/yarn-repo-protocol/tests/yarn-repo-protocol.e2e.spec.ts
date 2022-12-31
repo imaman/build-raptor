@@ -96,31 +96,29 @@ describe('yarn-repo-protocol.e2e', () => {
   ].join(' && ')
 
   test('reruns tests when the source code changes', async () => {
-    const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger, undefined, undefined, false) })
+    const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
-      'modules/a/package.json': { name: 'a', version: '1.0.0', scripts: { build, jest } },
-      'modules/a/src/a.ts': 'N/A',
-      'modules/a/tests/a.spec.ts': 'TUESDAY',
+      'modules/a/package.json': driver.packageJson('a'),
+      'modules/a/src/times-two.ts': 'export function timesTwo(n: number) { return n * 3 }',
+      'modules/a/tests/times-two.spec.ts': `
+        import {timesTwo} from '../src/times-two'
+        test('timesTwo', () => { expect(timesTwo(216)).toEqual(432) })
+      `,
     }
 
     const fork = await driver.repo(recipe).fork()
 
-    await fork.file('modules/a/src/a.ts').write('SUNDAY')
-    const runA = await fork.run('OK', { taskKind: 'test' })
-    expect(await fork.file('modules/a/dist/src/index.js').lines({ trimEach: true })).toEqual(['sunday'])
-    expect(await fork.file('modules/a/dist/tests/index.spec.js').lines({ trimEach: true })).toEqual(['tuesday'])
+    const runA = await fork.run('FAIL', { taskKind: 'test' })
     expect(runA.getSummary('a', 'build')).toMatchObject({ execution: 'EXECUTED' })
     expect(runA.getSummary('a', 'test')).toMatchObject({ execution: 'EXECUTED' })
-    expect(await runA.outputOf('test', 'a')).toContain('sundaytuesday')
+    expect(await runA.outputOf('test', 'a')).toContain('    Received: 648')
 
-    await fork.file('modules/a/src/a.ts').write('MONDAY')
+    await fork.file('modules/a/src/times-two.ts').write('export function timesTwo(n: number) { return n * 2 }')
     const runB = await fork.run('OK', { taskKind: 'test' })
-    expect(await fork.file('modules/a/dist/src/index.js').lines({ trimEach: true })).toEqual(['monday'])
-    expect(await fork.file('modules/a/dist/tests/index.spec.js').lines({ trimEach: true })).toEqual(['tuesday'])
     expect(runA.getSummary('a', 'build')).toMatchObject({ execution: 'EXECUTED' })
     expect(runB.getSummary('a', 'test')).toMatchObject({ execution: 'EXECUTED' })
-    expect(await runB.outputOf('test', 'a')).toContain('mondaytuesday')
+    expect(await runB.outputOf('test', 'a')).toContain('PASS dist/tests/times-two.spec.js')
   })
   test('if nothing has changed the tasks are cached', async () => {
     const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger, false, undefined, false) })
