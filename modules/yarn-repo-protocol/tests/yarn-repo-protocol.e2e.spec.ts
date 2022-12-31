@@ -1,6 +1,5 @@
 import { Driver } from 'build-raptor-core-testkit'
 import { createNopLogger } from 'logger'
-import * as path from 'path'
 
 import { YarnRepoProtocol } from '../src/yarn-repo-protocol'
 
@@ -33,8 +32,6 @@ describe('yarn-repo-protocol.e2e', () => {
     }
 
     const fork = await driver.repo(recipe).fork()
-
-    fork.file('node_modules').symlinkTo(path.resolve(__dirname, '../../../../node_modules'))
 
     const run = await fork.run('FAIL', { taskKind: 'test' })
     expect(await run.outputOf('build', 'a')).toEqual(['> a@1.0.0 build', '> tsc -b'])

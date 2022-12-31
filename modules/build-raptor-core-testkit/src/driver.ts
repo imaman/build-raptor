@@ -169,7 +169,9 @@ class Repo {
 
   async fork() {
     const dir = await folderify(this.recipe)
-    return new Fork(dir, this.driver.storageClient, this.driver.repoProtocol, this.driver.testName)
+    const ret = new Fork(dir, this.driver.storageClient, this.driver.repoProtocol, this.driver.testName)
+    ret.file('node_modules').symlinkTo(path.resolve(__dirname, '../../../../node_modules'))
+    return ret
   }
 }
 
