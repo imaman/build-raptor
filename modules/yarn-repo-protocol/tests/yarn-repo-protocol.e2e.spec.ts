@@ -28,11 +28,7 @@ describe('yarn-repo-protocol.e2e', () => {
       'modules/a/src/a.ts': 'export function f(n: number) { return n * 2 }',
       'modules/a/tests/a.spec.ts': `
         import {f} from '../src/a'
-        describe('a', () => {
-          test('f', () => {
-            expect(-12).toEqual(f(6))
-          })
-        })
+        test('f', () => { expect(-12).toEqual(f(6)) })
       `,
     }
 
