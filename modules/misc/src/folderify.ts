@@ -2,8 +2,7 @@ import * as fse from 'fs-extra'
 import * as path from 'path'
 import * as Tmp from 'tmp-promise'
 
-import { pair, shouldNeverHappen } from './constructs'
-import { pairsToRecord, recordToPairs } from './records'
+import { shouldNeverHappen } from './constructs'
 
 type Jsonable = { [x: string]: string | number | boolean | string[] | number[] | boolean | Jsonable | Jsonable[] }
 
@@ -14,9 +13,8 @@ export async function folderify(...args: [string, FolderifyRecipe] | [FolderifyR
   const recipe = args.length === 2 ? args[1] : args.length === 1 ? args[0] : shouldNeverHappen(args)
   const prefix = args.length === 2 ? args[0] : args.length === 1 ? '' : shouldNeverHappen(args)
 
-  const adjustedRecipe = pairsToRecord(recordToPairs(recipe).map(([k, v]) => pair(path.join(prefix, k), v)))
   const ret = (await Tmp.dir()).path
-  await writeRecipe(ret, adjustedRecipe)
+  await writeRecipe(path.join(ret, prefix), recipe)
   return ret
 }
 
