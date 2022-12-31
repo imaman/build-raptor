@@ -191,7 +191,7 @@ describe('yarn-repo-protocol', () => {
       await yrp.initialize(d)
 
       const actual = await slurpDir(d)
-      expect(JSON.parse(actual['libs/a/tsconfig.json'])).toEqual({
+      const expectedTsConfigJson = {
         compilerOptions: {
           allowSyntheticDefaultImports: true,
           composite: true,
@@ -208,25 +208,9 @@ describe('yarn-repo-protocol', () => {
           target: 'ES2021',
         },
         include: ['src/**/*', 'tests/**/*'],
-      })
-      expect(JSON.parse(actual['libs/b/tsconfig.json'])).toEqual({
-        compilerOptions: {
-          allowSyntheticDefaultImports: true,
-          composite: true,
-          declaration: true,
-          esModuleInterop: true,
-          inlineSourceMap: true,
-          lib: ['ES2021', 'DOM'],
-          module: 'CommonJS',
-          moduleResolution: 'node',
-          newLine: 'LF',
-          noImplicitAny: true,
-          outDir: 'dist',
-          strict: true,
-          target: 'ES2021',
-        },
-        include: ['src/**/*', 'tests/**/*'],
-      })
+      }
+      expect(JSON.parse(actual['libs/a/tsconfig.json'])).toEqual(expectedTsConfigJson)
+      expect(JSON.parse(actual['libs/b/tsconfig.json'])).toEqual(expectedTsConfigJson)
     })
     describe('references', () => {
       test(`reflect the package's dependencies`, async () => {
