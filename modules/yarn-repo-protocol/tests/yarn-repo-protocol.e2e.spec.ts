@@ -25,10 +25,10 @@ describe('yarn-repo-protocol.e2e', () => {
           roots: ['<rootDir>/dist'],
         },
       },
-      'modules/a/src/a.ts': 'export function f(n: number) { return n * 2 }',
-      'modules/a/tests/a.spec.ts': `
-        import {f} from '../src/a'
-        test('f', () => { expect(-12).toEqual(f(6)) })
+      'modules/a/src/times-two.ts': 'export function timesTwo(n: number) { return n * 2 }',
+      'modules/a/tests/times-two.spec.ts': `
+        import {timesTwo} from '../src/times-two'
+        test('timesTwo', () => { expect(timesTwo(6)).toEqual(-12) })
       `,
     }
 
@@ -39,7 +39,12 @@ describe('yarn-repo-protocol.e2e', () => {
     const run = await fork.run('FAIL', { taskKind: 'test' })
     expect(await run.outputOf('build', 'a')).toEqual(['> a@1.0.0 build', '> tsc -b'])
     expect(await run.outputOf('test', 'a')).toEqual(
-      expect.arrayContaining(['    Expected: 12', '    Received: -12', 'Tests:       1 failed, 1 total']),
+      expect.arrayContaining([
+        'FAIL dist/tests/times-two.spec.js',
+        '    Expected: -12',
+        '    Received: 12',
+        'Tests:       1 failed, 1 total',
+      ]),
     )
   })
 
