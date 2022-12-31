@@ -16,6 +16,31 @@ describe('yarn-repo-protocol.e2e', () => {
       'modules/a/src/times-two.ts': 'export function timesTwo(n: number) { return n * 2 }',
       'modules/a/tests/times-two.spec.ts': `
         import {timesTwo} from '../src/times-two'
+        test('timesTwo', () => { expect(timesTwo(6)).toEqual(12) })
+      `,
+    }
+
+    const fork = await driver.repo(recipe).fork()
+
+    const run = await fork.run('OK', { taskKind: 'test' })
+    expect(await run.outputOf('build', 'a')).toEqual(['> a@1.0.0 build', '> tsc -b'])
+    expect(await run.outputOf('test', 'a')).toEqual(
+      expect.arrayContaining([
+        'PASS dist/tests/times-two.spec.js',
+        'Test Suites: 1 passed, 1 total',
+        'Tests:       1 passed, 1 total',
+        'Test results written to: jest-output.json',
+      ]),
+    )
+  })
+  test('when the test fails, the task output includes the failure message prodcued by jest', async () => {
+    const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
+    const recipe = {
+      'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+      'modules/a/package.json': driver.packageJson('a'),
+      'modules/a/src/times-two.ts': 'export function timesTwo(n: number) { return n * 2 }',
+      'modules/a/tests/times-two.spec.ts': `
+        import {timesTwo} from '../src/times-two'
         test('timesTwo', () => { expect(timesTwo(6)).toEqual(-12) })
       `,
     }
