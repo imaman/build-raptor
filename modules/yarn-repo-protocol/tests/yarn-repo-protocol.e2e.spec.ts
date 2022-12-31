@@ -8,22 +8,11 @@ describe('yarn-repo-protocol.e2e', () => {
   const logger = createNopLogger()
   const testName = () => expect.getState().currentTestName
 
-  test('tsc', async () => {
+  test('runs tsc and jest when building and testing (respectively)', async () => {
     const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
-      'modules/a/package.json': {
-        name: 'a',
-        license: 'UNLICENSED',
-        version: '1.0.0',
-        scripts: {
-          build: 'tsc -b',
-          test: 'jest',
-        },
-        jest: {
-          roots: ['<rootDir>/dist'],
-        },
-      },
+      'modules/a/package.json': driver.packageJson('a'),
       'modules/a/src/times-two.ts': 'export function timesTwo(n: number) { return n * 2 }',
       'modules/a/tests/times-two.spec.ts': `
         import {timesTwo} from '../src/times-two'

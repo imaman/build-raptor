@@ -192,4 +192,19 @@ export class Driver {
   repo(recipe: FolderifyRecipe) {
     return new Repo(recipe, this)
   }
+
+  packageJson(packageName: string) {
+    return {
+      name: packageName,
+      license: 'UNLICENSED',
+      version: '1.0.0',
+      scripts: {
+        build: 'tsc -b',
+        test: 'jest',
+      },
+      jest: {
+        roots: ['<rootDir>/dist'],
+      },
+    }
+  }
 }
