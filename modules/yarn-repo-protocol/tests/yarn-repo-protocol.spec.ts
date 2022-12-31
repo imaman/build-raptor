@@ -180,6 +180,54 @@ describe('yarn-repo-protocol', () => {
       expect(JSON.parse(actual['apps/web/static/c/tsconfig.json']).extends).toEqual('../../../../tsconfig-base.json')
       expect(JSON.parse(actual['apps/web/fullstack/d/tsconfig.json']).extends).toEqual('../../../../tsconfig-base.json')
     })
+    test(`if tsconfig-base.json file is not present at the root directory, a default compilerOptions object is generated`, async () => {
+      const d = await folderify({
+        'package.json': { workspaces: ['libs/*'], private: true },
+        'libs/a/package.json': { name: 'a', version: '1.0.0' },
+        'libs/b/package.json': { name: 'b', version: '1.0.0' },
+      })
+
+      const yrp = new YarnRepoProtocol(logger)
+      await yrp.initialize(d)
+
+      const actual = await slurpDir(d)
+      expect(JSON.parse(actual['libs/a/tsconfig.json'])).toEqual({
+        compilerOptions: {
+          allowSyntheticDefaultImports: true,
+          composite: true,
+          declaration: true,
+          esModuleInterop: true,
+          inlineSourceMap: true,
+          lib: ['ES2021', 'DOM'],
+          module: 'CommonJS',
+          moduleResolution: 'node',
+          newLine: 'LF',
+          noImplicitAny: true,
+          outDir: 'dist',
+          strict: true,
+          target: 'ES2021',
+        },
+        include: ['src/**/*', 'tests/**/*'],
+      })
+      expect(JSON.parse(actual['libs/b/tsconfig.json'])).toEqual({
+        compilerOptions: {
+          allowSyntheticDefaultImports: true,
+          composite: true,
+          declaration: true,
+          esModuleInterop: true,
+          inlineSourceMap: true,
+          lib: ['ES2021', 'DOM'],
+          module: 'CommonJS',
+          moduleResolution: 'node',
+          newLine: 'LF',
+          noImplicitAny: true,
+          outDir: 'dist',
+          strict: true,
+          target: 'ES2021',
+        },
+        include: ['src/**/*', 'tests/**/*'],
+      })
+    })
     describe('references', () => {
       test(`reflect the package's dependencies`, async () => {
         const d = await folderify({
