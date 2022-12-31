@@ -124,27 +124,19 @@ describe('yarn-repo-protocol.e2e', () => {
     const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger, false, undefined, false) })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
-      'modules/a/package.json': driver.packageJson('a'),
-      'modules/a/src/times-two.ts': 'export function timesTwo(n: number) { return n * 3 }',
-      'modules/a/tests/times-two.spec.ts': `
-        import {timesTwo} from '../src/times-two'
-        test('timesTwo', () => { expect(timesTwo(216)).toEqual(432) })
-      `,
+      'modules/a/package.json': { name: 'a', version: '1.0.0', scripts: { build, jest }, dependencies: { b: '1.0.0' } },
+      'modules/a/src/a.ts': 'ARGENTINA',
+      'modules/a/tests/a.spec.ts': 'ALGERIA',
+      'modules/b/package.json': { name: 'b', version: '1.0.0', scripts: { build, jest } },
+      'modules/b/src/b.ts': 'BRAZIL',
+      'modules/b/tests/b.spec.ts': 'BELGIUM',
     }
-
-    // const recipe = {
-    //   'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
-    //   'modules/a/package.json': { name: 'a', version: '1.0.0', scripts: { build, jest }, dependencies: { b: '1.0.0' } },
-    //   'modules/a/src/a.ts': 'ARGENTINA',
-    //   'modules/a/tests/a.spec.ts': 'ALGERIA',
-    //   'modules/b/package.json': { name: 'b', version: '1.0.0', scripts: { build, jest } },
-    //   'modules/b/src/b.ts': 'BRAZIL',
-    //   'modules/b/tests/b.spec.ts': 'BELGIUM',
-    // }
 
     const fork = await driver.repo(recipe).fork()
 
     const run1 = await fork.run('OK', { taskKind: 'build' })
+    expect(await fork.file('modules/a/dist/src/index.js').lines({ trimEach: true })).toEqual(['argentina'])
+    expect(await fork.file('modules/a/dist/tests/index.spec.js').lines({ trimEach: true })).toEqual(['algeria'])
     expect(run1.executionTypeOf('a', 'build')).toEqual('EXECUTED')
     expect(run1.executionTypeOf('b', 'build')).toEqual('EXECUTED')
 
