@@ -63,23 +63,16 @@ describe('yarn-repo-protocol.e2e', () => {
     const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
-      'modules/a/package.json': {
-        name: 'a',
-        version: '1.0.0',
-        scripts: {
-          build: 'mkdir -p dist/src dist/tests && echo "building now" && touch dist/src/a.js dist/tests/a.spec.js',
-          jest: `echo "testing now" && echo '{}' > jest-output.json && echo 'x' > /dev/null`,
-        },
-      },
-      'modules/a/src/a.ts': 'N/A',
-      'modules/a/tests/a.spec.ts': 'N/A',
+      'modules/a/package.json': driver.packageJson('a'),
+      'modules/a/src/a.ts': '// something',
+      'modules/a/tests/a.spec.ts': `test('a', () => {expect(1).toEqual(1)}); console.log('the quick BROWN fox'); `,
     }
 
     const fork = await driver.repo(recipe).fork()
 
     const run = await fork.run('OK', { taskKind: 'test' })
-    expect(await run.outputOf('build', 'a')).toContain('building now')
-    expect(await run.outputOf('test', 'a')).toContain('testing now')
+    expect(await run.outputOf('build', 'a')).toEqual(['> a@1.0.0 build', '> tsc -b'])
+    expect(await run.outputOf('test', 'a')).toContain('    the quick BROWN fox')
   })
 
   const build = [

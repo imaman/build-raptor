@@ -221,7 +221,7 @@ export class YarnRepoProtocol implements RepoProtocol {
       const jof = path.join(dir, JEST_OUTPUT_FILE)
       const testsToRun = await this.computeTestsToRun(jof)
       const ret = await this.run(
-        'yarn',
+        'npx',
         ['jest', ...testsToRun, '--json', '--outputFile', JEST_OUTPUT_FILE],
         dir,
         outputFile,

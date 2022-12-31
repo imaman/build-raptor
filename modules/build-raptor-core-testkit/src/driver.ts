@@ -108,10 +108,6 @@ class File {
     await fse.remove(this.resolve())
   }
 
-  async symlinkTo(linkTarget: string) {
-    await fse.symlink(linkTarget, this.resolve())
-  }
-
   async lastChanged() {
     const st = await fse.stat(this.resolve())
     return st.mtime.getTime()
@@ -168,9 +164,11 @@ class Repo {
   constructor(private readonly recipe: FolderifyRecipe, private readonly driver: Driver) {}
 
   async fork() {
-    const dir = await folderify(this.recipe)
+    const repoRoot = 'repo-root'
+    const upperDir = await folderify(repoRoot, this.recipe)
+    const dir = path.join(upperDir, repoRoot)
     const ret = new Fork(dir, this.driver.storageClient, this.driver.repoProtocol, this.driver.testName)
-    ret.file('node_modules').symlinkTo(path.resolve(__dirname, '../../../../node_modules'))
+    fse.symlink(path.resolve(__dirname, '../../../../node_modules'), path.join(upperDir, 'node_modules'))
     return ret
   }
 }
