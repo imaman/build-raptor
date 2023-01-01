@@ -14,6 +14,11 @@ interface Options {
   startingPointMustExist?: boolean
 }
 
+interface ListPathsOptions {
+  // Whether to fail if the starting point path does not exist under `rootDir`. Defaults to `true`.
+  startingPointMustExist?: boolean
+}
+
 interface ConstructorOptions {
   // A callback to determine whether a file should be included in the output. Defaults to `() => true`. Will be used in
   // conjunction with the predicate passed to `scanTree`.
@@ -69,9 +74,9 @@ export class DirectoryScanner {
    * equivalent to `'a/b'`).
    * @returns an array of relative paths (relative from the `root` path  passed to the constructor)
    */
-  async listPaths(startingPoint: RelativePath): Promise<string[]> {
+  async listPaths(startingPoint: RelativePath, options?: ListPathsOptions): Promise<string[]> {
     const ret: string[] = []
-    await this.scanTreeImpl(startingPoint, DEFAULT_OPTIONS, p => {
+    await this.scanTreeImpl(startingPoint, { ...DEFAULT_OPTIONS, ...options }, p => {
       ret.push(p)
     })
     return ret
@@ -82,8 +87,8 @@ export class DirectoryScanner {
    * @param dir directory to scan files under
    * @returns an array of relative paths (relative to `dir`)
    */
-  static async listPaths(dir: string) {
-    return await new DirectoryScanner(dir).listPaths('')
+  static async listPaths(dir: string, options?: ListPathsOptions) {
+    return await new DirectoryScanner(dir).listPaths('', options)
   }
 
   private async scanTreeImpl(

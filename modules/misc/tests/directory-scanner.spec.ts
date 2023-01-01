@@ -425,5 +425,21 @@ describe('directory-scanner', () => {
         'd2/u.txt',
       ])
     })
+    test('returns an empty list if the starting directory does not exist (option-controlled)', async () => {
+      const d = await folderify({ 'd1/q.txt': 'lorem', 'd1/r.txt': 'ipsum' })
+
+      const here = path.join(d, 'here')
+      expect(await DirectoryScanner.listPaths(here, { startingPointMustExist: false })).toEqual([])
+    })
+    test('by default throws if the starting directory does not exist', async () => {
+      const d = await folderify({ 'd1/q.txt': 'lorem', 'd1/r.txt': 'ipsum' })
+
+      const here = path.join(d, 'here')
+      await expect(DirectoryScanner.listPaths(here, { startingPointMustExist: true })).rejects.toThrowError(
+        /Starting point does not exist.*\/here/,
+      )
+      await expect(DirectoryScanner.listPaths(here, {})).rejects.toThrowError(/Starting point does not exist.*\/here/)
+      await expect(DirectoryScanner.listPaths(here)).rejects.toThrowError(/Starting point does not exist.*\/here/)
+    })
   })
 })
