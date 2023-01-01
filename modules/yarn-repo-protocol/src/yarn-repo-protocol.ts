@@ -88,7 +88,24 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
 
     await this.generateTsConfigFiles(rootDir, units, graph)
+
+    await this.generateSymlinksToPackages(rootDir, units)
     this.state_ = { yarnInfo, graph, rootDir, units, packageByUnitId, versionByPackageId }
+  }
+
+  private async generateSymlinksToPackages(rootDir: string, units: UnitMetadata[]) {
+    const nodeModules = path.join(rootDir, 'node_modules')
+    await fse.mkdirp(nodeModules)
+    for (const u of units) {
+      const link = path.join(nodeModules, u.id)
+      const exists = await fse.pathExists(link)
+      if (exists) {
+        continue
+      }
+      const packagePath = path.join(rootDir, u.pathInRepo)
+      const packagePathRelative = path.relative(nodeModules, packagePath)
+      await fse.symlink(packagePathRelative, link)
+    }
   }
 
   private async generateTsConfigFiles(rootDir: string, units: UnitMetadata[], graph: Graph<UnitId>) {

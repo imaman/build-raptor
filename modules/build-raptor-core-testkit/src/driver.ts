@@ -168,7 +168,7 @@ class Repo {
     const upperDir = await folderify(repoRoot, this.recipe)
     const dir = path.join(upperDir, repoRoot)
     const ret = new Fork(dir, this.driver.storageClient, this.driver.repoProtocol, this.driver.testName)
-    fse.symlink(path.resolve(__dirname, '../../../../node_modules'), path.join(upperDir, 'node_modules'))
+    await fse.symlink(path.resolve(__dirname, '../../../../node_modules'), path.join(upperDir, 'node_modules'))
     return ret
   }
 }
@@ -191,7 +191,7 @@ export class Driver {
     return new Repo(recipe, this)
   }
 
-  packageJson(packageName: string) {
+  packageJson(packageName: string, dependencies: string[] = []) {
     return {
       name: packageName,
       license: 'UNLICENSED',
@@ -200,9 +200,12 @@ export class Driver {
         build: 'tsc -b',
         test: 'jest',
       },
+      files: ['dist/src'],
+      main: 'dist/src/index.js',
       jest: {
         roots: ['<rootDir>/dist'],
       },
+      dependencies: Object.fromEntries(dependencies.map(d => [d, '1.0.0'])),
     }
   }
 }

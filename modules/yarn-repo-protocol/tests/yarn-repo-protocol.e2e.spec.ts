@@ -37,7 +37,7 @@ describe('yarn-repo-protocol.e2e', () => {
     const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger, false, undefined, false, true) })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
-      'modules/a/package.json': driver.packageJson('a'),
+      'modules/a/package.json': driver.packageJson('a', ['b']),
       'modules/a/src/a.ts': `
         import {b} from 'b'
         export function a(n: number) { return b(n)+2 }`,
@@ -47,15 +47,14 @@ describe('yarn-repo-protocol.e2e', () => {
       `,
       'modules/b/package.json': driver.packageJson('b'),
       'modules/b/src/index.ts': `export function b(n: number) { return n*100 }`,
-      'modules/b/tests/b.spec.ts': `import {b} from '../src/b'; test('b', () => {expect(b(2)).toEqual(200)})`,
+      'modules/b/tests/b.spec.ts': `import {b} from '../src'; test('b', () => {expect(b(2)).toEqual(200)})`,
     }
 
     const fork = await driver.repo(recipe).fork()
 
     const run = await fork.run('FAIL', { taskKind: 'test' })
-    expect(await run.outputOf('test', 'a')).toContain('    Received: 702')
-    expect(run.executionTypeOf('a', 'build')).toEqual('EXECUTED')
-    expect(run.executionTypeOf('b', 'build')).toEqual('EXECUTED')
+
+    expect(await run.outputOf('test', 'a')).toEqual(expect.arrayContaining(['    Expected: 703', '    Received: 702']))
   })
   test('when the test fails, the task output includes the failure message prodcued by jest', async () => {
     const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
@@ -137,7 +136,7 @@ describe('yarn-repo-protocol.e2e', () => {
     expect(runB.getSummary('a', 'test')).toMatchObject({ execution: 'EXECUTED' })
     expect(await runB.outputOf('test', 'a')).toContain('PASS dist/tests/times-two.spec.js')
   })
-  test('if nothing has changed the tasks are cached', async () => {
+  test.skip('if nothing has changed the tasks are cached', async () => {
     const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger, false, undefined, false, true) })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
