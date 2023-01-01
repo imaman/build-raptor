@@ -1,7 +1,6 @@
 import { BuildFailedError } from 'build-failed-error'
 import escapeStringRegexp from 'escape-string-regexp'
 import execa from 'execa'
-import * as fs from 'fs'
 import * as fse from 'fs-extra'
 import { Logger } from 'logger'
 import { DirectoryScanner, failMe, Graph, hardGet, pairsToRecord, promises, switchOn, uniqueBy } from 'misc'
@@ -212,15 +211,17 @@ export class YarnRepoProtocol implements RepoProtocol {
       return
     }
 
-    const srcFiles = new Set<string>(await DirectoryScanner.listPaths(path.join(dir, 'src')))
+    for (const codeDir of ['src', 'tests']) {
+      const srcFiles = new Set<string>(await DirectoryScanner.listPaths(path.join(dir, codeDir)))
 
-    const d = path.join(dir, 'dist/src')
-    const distSrcFiles = await DirectoryScanner.listPaths(d)
+      const d = path.join(dir, `dist/${codeDir}`)
+      const distSrcFiles = await DirectoryScanner.listPaths(d)
 
-    const toDelete = distSrcFiles.filter(f => !srcFiles.has(f.replace(/\.js$/, '.ts').replace(/\.d\.ts$/, '.ts')))
+      const toDelete = distSrcFiles.filter(f => !srcFiles.has(f.replace(/\.js$/, '.ts').replace(/\.d\.ts$/, '.ts')))
 
-    for (const f of toDelete) {
-      fs.rmSync(path.join(d, f))
+      for (const f of toDelete) {
+        await fse.rm(path.join(d, f))
+      }
     }
   }
 
