@@ -106,6 +106,10 @@ class File {
     await fse.writeFile(resolved, content)
   }
 
+  async exists() {
+    return await fse.pathExists(this.resolve())
+  }
+
   async rm() {
     await fse.remove(this.resolve())
   }

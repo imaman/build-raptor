@@ -48,14 +48,14 @@ describe('yarn-repo-protocol.e2e', () => {
     const xdts = fork.file('modules/a/dist/src/x.d.ts')
 
     await Promise.all([xjs.write('//'), xdts.write('//')])
+    expect(await Promise.all([xjs.exists(), xdts.exists()])).toEqual([true, true])
     await fork.run('OK', { taskKind: 'build' })
-    expect(await xjs.lines()).toBe(undefined)
-    expect(await xdts.lines()).toBe(undefined)
+    expect(await Promise.all([xjs.exists(), xdts.exists()])).toEqual([false, false])
 
     await Promise.all([xjs.write('//'), xdts.write('//')])
+    expect(await Promise.all([xjs.exists(), xdts.exists()])).toEqual([true, true])
     await fork.run('OK', { taskKind: 'build' })
-    expect(await xjs.lines()).toBe(undefined)
-    expect(await xdts.lines()).toBe(undefined)
+    expect(await Promise.all([xjs.exists(), xdts.exists()])).toEqual([false, false])
   })
   test('can run code that imports code from another package', async () => {
     const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger, false, undefined, false, true) })
