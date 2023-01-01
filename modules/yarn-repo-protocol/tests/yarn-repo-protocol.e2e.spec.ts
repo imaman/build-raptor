@@ -33,6 +33,30 @@ describe('yarn-repo-protocol.e2e', () => {
       ]),
     )
   })
+  test('can run code that imports code from another package', async () => {
+    const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger, false, undefined, false, true) })
+    const recipe = {
+      'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+      'modules/a/package.json': driver.packageJson('a'),
+      'modules/a/src/a.ts': `
+        import {b} from 'b'
+        export function a(n: number) { return b(n)+2 }`,
+      'modules/a/tests/a.spec.ts': `
+        import {a} from '../src/a'
+        test('a', () => { expect(a(7)).toEqual(703) })
+      `,
+      'modules/b/package.json': driver.packageJson('b'),
+      'modules/b/src/index.ts': `export function b(n: number) { return n*100 }`,
+      'modules/b/tests/b.spec.ts': `import {b} from '../src/b'; test('b', () => {expect(b(2)).toEqual(200)})`,
+    }
+
+    const fork = await driver.repo(recipe).fork()
+
+    const run = await fork.run('FAIL', { taskKind: 'test' })
+    expect(await run.outputOf('test', 'a')).toContain('    Received: 702')
+    expect(run.executionTypeOf('a', 'build')).toEqual('EXECUTED')
+    expect(run.executionTypeOf('b', 'build')).toEqual('EXECUTED')
+  })
   test('when the test fails, the task output includes the failure message prodcued by jest', async () => {
     const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
     const recipe = {
@@ -114,22 +138,24 @@ describe('yarn-repo-protocol.e2e', () => {
     expect(await runB.outputOf('test', 'a')).toContain('PASS dist/tests/times-two.spec.js')
   })
   test('if nothing has changed the tasks are cached', async () => {
-    const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger, false, undefined, false) })
+    const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger, false, undefined, false, true) })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
-      'modules/a/package.json': { name: 'a', version: '1.0.0', scripts: { build, jest }, dependencies: { b: '1.0.0' } },
-      'modules/a/src/a.ts': 'ARGENTINA',
-      'modules/a/tests/a.spec.ts': 'ALGERIA',
-      'modules/b/package.json': { name: 'b', version: '1.0.0', scripts: { build, jest } },
-      'modules/b/src/b.ts': 'BRAZIL',
-      'modules/b/tests/b.spec.ts': 'BELGIUM',
+      'modules/a/package.json': driver.packageJson('a'),
+      'modules/a/src/a.ts': 'export function a(n: number) { return 702 }',
+      'modules/a/tests/a.spec.ts': `
+        import {a} from '../src/a'
+        test('a', () => { expect(a(7)).toEqual(703) })
+      `,
+      'modules/b/package.json': driver.packageJson('b'),
+      'modules/b/src/index.ts': `export function b(n: number) { return n*100 }`,
+      'modules/b/tests/b.spec.ts': `import {b} from '../src/b'; test('b', () => {expect(b(2)).toEqual(200)})`,
     }
 
     const fork = await driver.repo(recipe).fork()
 
-    const run1 = await fork.run('OK', { taskKind: 'build' })
-    expect(await fork.file('modules/a/dist/src/index.js').lines({ trimEach: true })).toEqual(['argentina'])
-    expect(await fork.file('modules/a/dist/tests/index.spec.js').lines({ trimEach: true })).toEqual(['algeria'])
+    const run1 = await fork.run('FAIL', { taskKind: 'test' })
+    expect(await run1.outputOf('test', 'a')).toContain('    Received: 702')
     expect(run1.executionTypeOf('a', 'build')).toEqual('EXECUTED')
     expect(run1.executionTypeOf('b', 'build')).toEqual('EXECUTED')
 
