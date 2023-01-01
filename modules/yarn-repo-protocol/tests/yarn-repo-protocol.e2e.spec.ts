@@ -33,6 +33,30 @@ describe('yarn-repo-protocol.e2e', () => {
       ]),
     )
   })
+  test('deletes dist/src/*.{js,d.ts} files that do not have a matching source file under src/', async () => {
+    const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
+    const recipe = {
+      'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+      'modules/a/package.json': driver.packageJson('a'),
+      'modules/a/src/a.ts': 'export function a() {}',
+      'modules/a/tests/a.spec.ts': '//',
+    }
+
+    const fork = await driver.repo(recipe).fork()
+
+    const xjs = fork.file('modules/a/dist/src/x.js')
+    const xdts = fork.file('modules/a/dist/src/x.d.ts')
+
+    await Promise.all([xjs.write('//'), xdts.write('//')])
+    await fork.run('OK', { taskKind: 'build' })
+    expect(await xjs.lines()).toBe(undefined)
+    expect(await xdts.lines()).toBe(undefined)
+
+    await Promise.all([xjs.write('//'), xdts.write('//')])
+    await fork.run('OK', { taskKind: 'build' })
+    expect(await xjs.lines()).toBe(undefined)
+    expect(await xdts.lines()).toBe(undefined)
+  })
   test('can run code that imports code from another package', async () => {
     const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger, false, undefined, false, true) })
     const recipe = {

@@ -101,7 +101,9 @@ class File {
   }
 
   async write(content: string) {
-    await fse.writeFile(this.resolve(), content)
+    const resolved = this.resolve()
+    await fse.mkdirp(path.dirname(resolved))
+    await fse.writeFile(resolved, content)
   }
 
   async rm() {
