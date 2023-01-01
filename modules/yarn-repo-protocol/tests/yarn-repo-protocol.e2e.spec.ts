@@ -136,39 +136,44 @@ describe('yarn-repo-protocol.e2e', () => {
     expect(runB.getSummary('a', 'test')).toMatchObject({ execution: 'EXECUTED' })
     expect(await runB.outputOf('test', 'a')).toContain('PASS dist/tests/times-two.spec.js')
   })
-  test.skip('if nothing has changed the tasks are cached', async () => {
+  test('if nothing has changed the tasks are cached', async () => {
     const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger, false, undefined, false, true) })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
-      'modules/a/package.json': driver.packageJson('a'),
-      'modules/a/src/a.ts': 'export function a(n: number) { return 702 }',
+      'modules/a/package.json': driver.packageJson('a', ['b']),
+      'modules/a/src/a.ts': `
+        import {b} from 'b'
+        export function a(n: number) { return b(n)+2 }`,
       'modules/a/tests/a.spec.ts': `
         import {a} from '../src/a'
-        test('a', () => { expect(a(7)).toEqual(703) })
+        test('a', () => { expect(a(7)).toEqual(702) })
       `,
       'modules/b/package.json': driver.packageJson('b'),
       'modules/b/src/index.ts': `export function b(n: number) { return n*100 }`,
-      'modules/b/tests/b.spec.ts': `import {b} from '../src/b'; test('b', () => {expect(b(2)).toEqual(200)})`,
+      'modules/b/tests/b.spec.ts': `import {b} from '../src'; test('b', () => {expect(b(2)).toEqual(200)})`,
     }
 
     const fork = await driver.repo(recipe).fork()
 
-    const run1 = await fork.run('FAIL', { taskKind: 'test' })
-    expect(await run1.outputOf('test', 'a')).toContain('    Received: 702')
-    expect(run1.executionTypeOf('a', 'build')).toEqual('EXECUTED')
-    expect(run1.executionTypeOf('b', 'build')).toEqual('EXECUTED')
+    const run1 = await fork.run('OK', { taskKind: 'test' })
+    expect(await run1.outputOf('test', 'a')).toContain('PASS dist/tests/a.spec.js')
+    expect(run1.executionTypeOf('a', 'test')).toEqual('EXECUTED')
+    expect(run1.executionTypeOf('b', 'test')).toEqual('EXECUTED')
 
-    const run2 = await fork.run('OK', { taskKind: 'build' })
-    expect(run2.executionTypeOf('a', 'build')).toEqual('CACHED')
-    expect(run2.executionTypeOf('b', 'build')).toEqual('CACHED')
+    const run2 = await fork.run('OK', { taskKind: 'test' })
+    expect(await run2.outputOf('test', 'a')).toEqual([])
+    expect(run2.executionTypeOf('a', 'test')).toEqual('CACHED')
+    expect(run2.executionTypeOf('b', 'test')).toEqual('CACHED')
 
-    const run3 = await fork.run('OK', { taskKind: 'build' })
-    expect(run3.executionTypeOf('a', 'build')).toEqual('CACHED')
-    expect(run3.executionTypeOf('b', 'build')).toEqual('CACHED')
+    const run3 = await fork.run('OK', { taskKind: 'test' })
+    expect(await run3.outputOf('test', 'a')).toEqual([])
+    expect(run3.executionTypeOf('a', 'test')).toEqual('CACHED')
+    expect(run3.executionTypeOf('b', 'test')).toEqual('CACHED')
 
-    const run4 = await fork.run('OK', { taskKind: 'build' })
-    expect(run4.executionTypeOf('a', 'build')).toEqual('CACHED')
-    expect(run4.executionTypeOf('b', 'build')).toEqual('CACHED')
+    const run4 = await fork.run('OK', { taskKind: 'test' })
+    expect(await run4.outputOf('test', 'a')).toEqual([])
+    expect(run4.executionTypeOf('a', 'test')).toEqual('CACHED')
+    expect(run4.executionTypeOf('b', 'test')).toEqual('CACHED')
   })
   test.skip('the build task uses shadowing', async () => {
     const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
