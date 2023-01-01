@@ -58,7 +58,7 @@ describe('yarn-repo-protocol.e2e', () => {
     expect(await Promise.all([xjs.exists(), xdts.exists()])).toEqual([false, false])
   })
   test('can run code that imports code from another package', async () => {
-    const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger, false, undefined, false, true) })
+    const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger, false, undefined, false) })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
       'modules/a/package.json': driver.packageJson('a', ['b']),
@@ -161,7 +161,7 @@ describe('yarn-repo-protocol.e2e', () => {
     expect(await runB.outputOf('test', 'a')).toContain('PASS dist/tests/times-two.spec.js')
   })
   test('if nothing has changed the tasks are cached', async () => {
-    const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger, false, undefined, false, true) })
+    const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger, false, undefined, false) })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
       'modules/a/package.json': driver.packageJson('a', ['b']),
