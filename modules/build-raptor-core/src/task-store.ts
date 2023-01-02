@@ -212,8 +212,12 @@ export class TaskStore {
     outputs: readonly string[],
     verdict: 'OK' | 'FAIL',
   ): Promise<void> {
+    const { taskKind } = TaskName().undo(taskName)
     const buf = await this.bundle(dir, outputs)
     const blobId = await this.putBlob(buf, taskName)
+    if (taskKind === 'publish-assets') {
+      this.logger.print(`RECORDING assests of ${taskName}: blobId=${blobId} (${buf.length} bytes)`)
+    }
     this.putVerdict(taskName, fingerprint, verdict, blobId)
   }
 
@@ -223,7 +227,12 @@ export class TaskStore {
     dir: string,
   ): Promise<'FAIL' | 'OK' | 'FLAKY' | 'UNKNOWN'> {
     const [verdict, blobId] = await this.getVerdict(taskName, fingerprint)
+    const { taskKind } = TaskName().undo(taskName)
     const buf = await this.getBlob(blobId)
+    if (taskKind === 'publish-assets') {
+      this.logger.print(`RESTORING assests of ${taskName}: blobId=${blobId} (${buf.length} bytes)`)
+    }
+
     await this.unbundle(buf, dir)
     return verdict
   }
