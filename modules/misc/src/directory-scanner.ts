@@ -28,7 +28,7 @@ interface ConstructorOptions {
 const DEFAULT_OPTIONS: Required<Options> = { predicate: () => true, startingPointMustExist: true }
 
 type ScanTreeCallback = (relativePath: string, content: Buffer, stat: fs.Stats) => void
-type ScanPathCallback = (relativePath: string) => void
+type ListPathsCallback = (relativePath: string) => void
 
 type RelativePath = string
 
@@ -93,7 +93,7 @@ export class DirectoryScanner {
   private async scanTreeImpl(
     startingPoint: RelativePath,
     options: Options,
-    pathCallback?: ScanPathCallback,
+    pathCallback?: ListPathsCallback,
     cb?: ScanTreeCallback,
   ) {
     const startingPointMustExist = options.startingPointMustExist ?? true
@@ -119,7 +119,7 @@ export class DirectoryScanner {
   private async scanFileTree(
     resolvedPath: string,
     predicate: Predicate,
-    pathCallback?: ScanPathCallback,
+    pathCallback?: ListPathsCallback,
     cb?: ScanTreeCallback,
   ) {
     const relativePath = path.normalize(path.relative(this.rootDir, resolvedPath))
