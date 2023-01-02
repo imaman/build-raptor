@@ -170,14 +170,26 @@ class Repo {
   constructor(private readonly recipe: FolderifyRecipe, private readonly driver: Driver) {}
 
   async fork() {
-    const repoRoot = 'repo-root'
-    const upperDir = await folderify(repoRoot, this.recipe)
-    const dir = path.join(upperDir, repoRoot)
-    const ret = new Fork(dir, this.driver.storageClient, this.driver.repoProtocol, this.driver.testName)
-    await fse.symlink(path.resolve(__dirname, '../../../../node_modules'), path.join(upperDir, 'node_modules'))
+    // Creates this strcutrue:
+    //
+    // [outerDir]
+    //   node_modules
+    //   [ROOT_NAME]
+    //     <content of the repo goes here>
+    //     node_modules
+    //
+    // The upper node_modules is symlinked to the node_modules dir of the build-raptor repo. This allows us to run
+    // tests which use "tsc", "jest" and other tools without having to run "yarn install". The inner node_modules
+    // directory is used mostly for storing symlinks to the repo packages to allow inter-repo dependencies.
+    const outerDir = await folderify(ROOT_NAME, this.recipe)
+    const rootDir = path.join(outerDir, ROOT_NAME)
+    const ret = new Fork(rootDir, this.driver.storageClient, this.driver.repoProtocol, this.driver.testName)
+    await fse.symlink(path.resolve(__dirname, '../../../../node_modules'), path.join(outerDir, 'node_modules'))
     return ret
   }
 }
+
+const ROOT_NAME = 'repo-root'
 
 interface DriverOptions {
   storageClient?: StorageClient
