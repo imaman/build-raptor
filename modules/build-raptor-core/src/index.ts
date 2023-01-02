@@ -1,4 +1,5 @@
 export * from './breakdown'
 export * from './default-asset-publisher'
 export * from './engine-bootstrapper'
+export * from './step-by-step'
 export * from './task-summary'

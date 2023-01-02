@@ -217,7 +217,7 @@ export class TaskStore {
     const buf = await this.bundle(dir, outputs)
     const blobId = await this.putBlob(buf, taskName)
     this.putVerdict(taskName, fingerprint, verdict, blobId)
-    this.publisher?.publish('taskRecorded', { taskName, blobId })
+    this.publisher?.publish('taskStore', { opcode: 'RECORDED', taskName, blobId })
   }
 
   async restoreTask(
@@ -228,7 +228,7 @@ export class TaskStore {
     const [verdict, blobId] = await this.getVerdict(taskName, fingerprint)
     const buf = await this.getBlob(blobId)
     await this.unbundle(buf, dir)
-    this.publisher?.publish('taskRestored', { taskName, blobId })
+    this.publisher?.publish('taskStore', { opcode: 'RESTORED', taskName, blobId })
     return verdict
   }
 
