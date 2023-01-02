@@ -59,7 +59,6 @@ export class DirectoryScanner {
    */
   async scanTree(startingPoint: RelativePath, cb: ScanTreeCallback): Promise<void>
   async scanTree(startingPoint: RelativePath, options: Options, cb: ScanTreeCallback): Promise<void>
-  // async scanTree(startingPoint: RelativePath, options: Options & NoContent, cb: ScanPathCallback): Promise<void>
   async scanTree(...a: [p: RelativePath, c: ScanTreeCallback] | [s: RelativePath, o: Options, c: ScanTreeCallback]) {
     const cb: ScanTreeCallback = a.length === 2 ? a[1] : a.length === 3 ? a[2] : shouldNeverHappen(a)
     const options: Options = a.length === 2 ? DEFAULT_OPTIONS : a.length === 3 ? a[1] : shouldNeverHappen(a)

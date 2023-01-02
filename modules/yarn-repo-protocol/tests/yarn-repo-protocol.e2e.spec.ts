@@ -146,19 +146,6 @@ describe('yarn-repo-protocol.e2e', () => {
     expect(await run.outputOf('test', 'a')).toContain('    the quick BROWN fox')
   })
 
-  const build = [
-    'mkdir -p dist/src dist/tests',
-    `cat src/*.ts | tr '[:upper:]' '[:lower:]' > dist/src/index.js`,
-    `cat tests/*.spec.ts | tr '[:upper:]' '[:lower:]' > dist/tests/index.spec.js`,
-    `echo "build finished"`,
-  ].join(' && ')
-
-  const jest = [
-    `cat dist/src/index.js dist/tests/index.spec.js`,
-    `echo '{"testResults": []}' > jest-output.json`,
-    `echo 'x' > /dev/null`, // prevents the `yarn jest` command line options from being echoed into jest-output.json
-  ].join(' && ')
-
   test('reruns tests when the source code changes', async () => {
     const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
     const recipe = {
@@ -222,37 +209,5 @@ describe('yarn-repo-protocol.e2e', () => {
     expect(await run4.outputOf('test', 'a')).toEqual([])
     expect(run4.executionTypeOf('a', 'test')).toEqual('CACHED')
     expect(run4.executionTypeOf('b', 'test')).toEqual('CACHED')
-  })
-  test.skip('the build task uses shadowing', async () => {
-    const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
-    const recipe = {
-      'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
-      'modules/a/package.json': { name: 'a', version: '1.0.0', scripts: { build, jest }, dependencies: { b: '1.0.0' } },
-      'modules/a/src/a.ts': 'ARGENTINA',
-      'modules/a/tests/a.spec.ts': 'ALGERIA',
-      'modules/b/package.json': { name: 'b', version: '1.0.0', scripts: { build, jest } },
-      'modules/b/src/b.ts': 'BRAZIL',
-      'modules/b/tests/b.spec.ts': 'BELGIUM',
-    }
-
-    const fork = await driver.repo(recipe).fork()
-
-    const run1 = await fork.run('OK', { taskKind: 'build' })
-    expect(run1.executionTypeOf('a', 'build')).toEqual('EXECUTED')
-    expect(run1.executionTypeOf('b', 'build')).toEqual('SHADOWED')
-
-    await fork.file('modules/a/src/a.ts').write('AUSTRALIA')
-    const run2 = await fork.run('OK', { taskKind: 'build' })
-    expect(run2.executionTypeOf('a', 'build')).toEqual('EXECUTED')
-    expect(run2.executionTypeOf('b', 'build')).toEqual('SHADOWED')
-
-    await fork.file('modules/b/src/b.ts').write('BAHAMAS')
-    const run3 = await fork.run('OK', { taskKind: 'build' })
-    expect(run3.executionTypeOf('a', 'build')).toEqual('EXECUTED')
-    expect(run3.executionTypeOf('b', 'build')).toEqual('SHADOWED')
-
-    const run4 = await fork.run('OK', { taskKind: 'build' })
-    expect(run4.executionTypeOf('a', 'build')).toEqual('CACHED')
-    expect(run4.executionTypeOf('b', 'build')).toEqual('CACHED')
   })
 })

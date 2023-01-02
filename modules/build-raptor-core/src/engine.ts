@@ -94,7 +94,7 @@ export class Engine {
   }
 
   async execute(plan: ExecutionPlan, model: Model) {
-    this.logger.info(plan.taskGraph.toString())
+    this.logger.info(`plan.taskGraph=${plan.taskGraph}`)
     const taskTracker = new TaskTracker(plan)
     const taskExecutor = new TaskExecutor(
       model,
