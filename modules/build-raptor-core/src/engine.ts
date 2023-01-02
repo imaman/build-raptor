@@ -95,8 +95,7 @@ export class Engine {
       }
 
       const tracker = await this.execute(plan, model)
-      await this.fingerprintLedger.close()
-      await fse.writeJSON(this.stepByStepFile, this.steps)
+      await Promise.all([this.fingerprintLedger.close(), fse.writeJSON(this.stepByStepFile, this.steps)])
       return tracker
     } finally {
       await this.repoProtocol.close()
