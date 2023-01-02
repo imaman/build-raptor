@@ -1,7 +1,8 @@
 import * as fse from 'fs-extra'
 import { createDefaultLogger } from 'logger'
-import { folderify, slurpDir } from 'misc'
+import { DirectoryScanner, folderify, slurpDir } from 'misc'
 import * as path from 'path'
+import { TaskKind } from 'task-name'
 import { UnitId } from 'unit-metadata'
 
 import { YarnRepoProtocol } from '../src/yarn-repo-protocol'
@@ -146,6 +147,7 @@ describe('yarn-repo-protocol', () => {
     test(`basics`, async () => {
       const d = await folderify({
         'package.json': { workspaces: ['modules/*'], private: true },
+        'tsconfig-base.json': {},
         'modules/a/package.json': { name: 'a', version: '1.0.0' },
       })
 
@@ -162,6 +164,7 @@ describe('yarn-repo-protocol', () => {
     test(`the .extends field specifies the relative path to the base tsconfig`, async () => {
       const d = await folderify({
         'package.json': { workspaces: ['libs/*', 'apps/mobile/*', 'apps/web/**'], private: true },
+        'tsconfig-base.json': {},
         'libs/a/package.json': { name: 'a', version: '1.0.0' },
         'apps/mobile/b/package.json': { name: 'b', version: '1.0.0' },
         'apps/web/static/c/package.json': { name: 'c', version: '1.0.0' },
@@ -177,10 +180,43 @@ describe('yarn-repo-protocol', () => {
       expect(JSON.parse(actual['apps/web/static/c/tsconfig.json']).extends).toEqual('../../../../tsconfig-base.json')
       expect(JSON.parse(actual['apps/web/fullstack/d/tsconfig.json']).extends).toEqual('../../../../tsconfig-base.json')
     })
+    test(`if tsconfig-base.json file is not present at the root directory, a default compilerOptions object is generated`, async () => {
+      const d = await folderify({
+        'package.json': { workspaces: ['libs/*'], private: true },
+        'libs/a/package.json': { name: 'a', version: '1.0.0' },
+        'libs/b/package.json': { name: 'b', version: '1.0.0' },
+      })
+
+      const yrp = new YarnRepoProtocol(logger)
+      await yrp.initialize(d)
+
+      const actual = await slurpDir(d)
+      const expectedTsConfigJson = {
+        compilerOptions: {
+          allowSyntheticDefaultImports: true,
+          composite: true,
+          declaration: true,
+          esModuleInterop: true,
+          inlineSourceMap: true,
+          lib: ['ES2021', 'DOM'],
+          module: 'CommonJS',
+          moduleResolution: 'node',
+          newLine: 'LF',
+          noImplicitAny: true,
+          outDir: 'dist',
+          strict: true,
+          target: 'ES2021',
+        },
+        include: ['src/**/*', 'tests/**/*'],
+      }
+      expect(JSON.parse(actual['libs/a/tsconfig.json'])).toEqual(expectedTsConfigJson)
+      expect(JSON.parse(actual['libs/b/tsconfig.json'])).toEqual(expectedTsConfigJson)
+    })
     describe('references', () => {
       test(`reflect the package's dependencies`, async () => {
         const d = await folderify({
           'package.json': { workspaces: ['modules/*'], private: true },
+          'tsconfig-base.json': {},
           'modules/a/package.json': { name: 'a', version: '1.0.0', dependencies: { b: '1.0.0', c: '1.0.0' } },
           'modules/b/package.json': { name: 'b', version: '1.0.0', dependencies: { c: '1.0.0' } },
           'modules/c/package.json': { name: 'c', version: '1.0.0' },
@@ -206,6 +242,7 @@ describe('yarn-repo-protocol', () => {
       test(`correctly computes the relative path to the dependecy`, async () => {
         const d = await folderify({
           'package.json': { workspaces: ['modules/**'], private: true },
+          'tsconfig-base.json': {},
           'modules/web/fullstack/a/package.json': { name: 'a', version: '1.0.0', dependencies: { d: '1.0.0' } },
           'modules/web/static/b/package.json': { name: 'b', version: '1.0.0', dependencies: { d: '1.0.0' } },
           'modules/web/utils/c/package.json': { name: 'c', version: '1.0.0', dependencies: {} },
@@ -227,6 +264,7 @@ describe('yarn-repo-protocol', () => {
       test(`reflect also the package's dev-dependencies`, async () => {
         const d = await folderify({
           'package.json': { workspaces: ['modules/*'], private: true },
+          'tsconfig-base.json': {},
           'modules/a/package.json': { name: 'a', version: '1.0.0', devDependencies: { b: '1.0.0' } },
           'modules/b/package.json': { name: 'b', version: '1.0.0' },
         })
@@ -273,6 +311,7 @@ describe('yarn-repo-protocol', () => {
       test(`overwrites a pre-existing tsconfig.json if its content is stale`, async () => {
         const d = await folderify({
           'package.json': { workspaces: ['modules/*'], private: true },
+          'tsconfig-base.json': {},
           'modules/a/package.json': { name: 'a', version: '1.0.0' },
           'modules/a/tsconfig.json': {
             compilerOptions: {
@@ -310,6 +349,34 @@ describe('yarn-repo-protocol', () => {
         const statB = await fse.stat(p)
         expect(statB.mtimeMs).toEqual(statA.mtimeMs)
       })
+    })
+  })
+  describe('building', () => {
+    test('deletes output files which do not have a matching source file', async () => {
+      const d = await folderify({
+        'package.json': { workspaces: ['modules/*'], private: true },
+        'modules/a/package.json': {
+          name: 'a',
+          version: '1',
+          scripts: { build: `touch dist/src/a.d.ts dist/src/a.js` },
+        },
+        'modules/a/src/a.ts': '',
+        'modules/a/dist/src/b.js': '',
+        'modules/a/dist/src/b.d.ts': '',
+      })
+
+      const yrp = new YarnRepoProtocol(logger)
+      await yrp.initialize(d)
+      const buildResult = await yrp.execute(
+        { id: UnitId('a'), pathInRepo: 'modules/a' },
+        path.join(d, 'modules/a'),
+        TaskKind('build'),
+        '/dev/null',
+      )
+      expect(buildResult).toEqual('OK')
+      const actual = await DirectoryScanner.listPaths(path.join(d, 'modules/a/dist'))
+      expect(actual).not.toContain('src/b.d.ts')
+      expect(actual).not.toContain('src/b.js')
     })
   })
 })

@@ -117,6 +117,8 @@
 - [x] get rid of the hasher-closed messages in the log.
 - [ ] allow options to be read from a file.
 - [ ] consider reintroducing caching of fingerprints (to avoid fingerprinting a directory that was fingerprinted earlier in the build run). Usually it is quite fast as is. Also, caching is tricky because output location need not be cached (a subsequently running task may change their content).
+- [x] build when dep of dep changes
+- [x] delete output files if source file is deleted
 
 ## Maybe TODO
 
@@ -225,3 +227,14 @@ expect(5).toEqual(5);
 - fingerprinter.spec.ts - untodo
 - modules/build-raptor-core/tests/minimal-testing.spec.ts - unskip
 - planner.spec - test('when a task definition changes, the task will run', untodo
+
+---
+
+- --run-always
+- custom jest output
+- jestoutput to be part of the inputs
+- distinguish between fingerprint of inputs and of output
+- reports outputs for all tasks (even those that did not run)
+- tasks that always run
+- purge the local cache when it grows too large
+- output should indicate concurrency

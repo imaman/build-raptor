@@ -2,12 +2,19 @@ import * as fse from 'fs-extra'
 import * as path from 'path'
 import * as Tmp from 'tmp-promise'
 
+import { shouldNeverHappen } from './constructs'
+
 type Jsonable = { [x: string]: string | number | boolean | string[] | number[] | boolean | Jsonable | Jsonable[] }
 
 export type FolderifyRecipe = Record<string, string | Jsonable>
-export async function folderify(recipe: FolderifyRecipe): Promise<string> {
+export async function folderify(prefix: string, recipe: FolderifyRecipe): Promise<string>
+export async function folderify(recipe: FolderifyRecipe): Promise<string>
+export async function folderify(...args: [string, FolderifyRecipe] | [FolderifyRecipe]): Promise<string> {
+  const recipe = args.length === 2 ? args[1] : args.length === 1 ? args[0] : shouldNeverHappen(args)
+  const prefix = args.length === 2 ? args[0] : args.length === 1 ? '' : shouldNeverHappen(args)
+
   const ret = (await Tmp.dir()).path
-  await writeRecipe(ret, recipe)
+  await writeRecipe(path.join(ret, prefix), recipe)
   return ret
 }
 

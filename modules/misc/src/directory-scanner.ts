@@ -14,6 +14,11 @@ interface Options {
   startingPointMustExist?: boolean
 }
 
+interface ListPathsOptions {
+  // Whether to fail if the starting point path does not exist under `rootDir`. Defaults to `true`.
+  startingPointMustExist?: boolean
+}
+
 interface ConstructorOptions {
   // A callback to determine whether a file should be included in the output. Defaults to `() => true`. Will be used in
   // conjunction with the predicate passed to `scanTree`.
@@ -23,8 +28,10 @@ interface ConstructorOptions {
 const DEFAULT_OPTIONS: Required<Options> = { predicate: () => true, startingPointMustExist: true }
 
 type ScanTreeCallback = (relativePath: string, content: Buffer, stat: fs.Stats) => void
+type ListPathsCallback = (relativePath: string) => void
 
 type RelativePath = string
+
 export class DirectoryScanner {
   private readonly options: Options
   constructor(readonly rootDir: string, options?: ConstructorOptions) {
@@ -56,7 +63,39 @@ export class DirectoryScanner {
     const cb: ScanTreeCallback = a.length === 2 ? a[1] : a.length === 3 ? a[2] : shouldNeverHappen(a)
     const options: Options = a.length === 2 ? DEFAULT_OPTIONS : a.length === 3 ? a[1] : shouldNeverHappen(a)
     const startingPoint = a.length === 2 ? a[0] : a.length === 3 ? a[0] : shouldNeverHappen(a)
+    await this.scanTreeImpl(startingPoint, options, undefined, cb)
+  }
 
+  /**
+   * Recursively scans a file tree, returning relative paths to all files.
+   * @param startingPoint a relative path to start scanning files at. It is resolved to an absolute path by joining it
+   * to the root-dir value passed to the constructor. Trailing path separators are omitted (i.e. `'a/b///'` is
+   * equivalent to `'a/b'`).
+   * @returns an array of relative paths (relative from the `root` path  passed to the constructor)
+   */
+  async listPaths(startingPoint: RelativePath, options?: ListPathsOptions): Promise<string[]> {
+    const ret: string[] = []
+    await this.scanTreeImpl(startingPoint, { ...DEFAULT_OPTIONS, ...options }, p => {
+      ret.push(p)
+    })
+    return ret
+  }
+
+  /**
+   * Returns relative paths to all files at the file tree rooted at the given directory.
+   * @param dir directory to scan files under
+   * @returns an array of relative paths (relative to `dir`)
+   */
+  static async listPaths(dir: string, options?: ListPathsOptions) {
+    return await new DirectoryScanner(dir).listPaths('', options)
+  }
+
+  private async scanTreeImpl(
+    startingPoint: RelativePath,
+    options: Options,
+    pathCallback?: ListPathsCallback,
+    cb?: ScanTreeCallback,
+  ) {
     const startingPointMustExist = options.startingPointMustExist ?? true
     if (path.isAbsolute(startingPoint)) {
       throw new Error(`relativePath must be relative`)
@@ -74,24 +113,36 @@ export class DirectoryScanner {
     }
     const predicate = (relativePath: string, stats: fs.Stats) =>
       runPred(relativePath, stats, this.options.predicate) && runPred(relativePath, stats, options.predicate)
-    await this.scanFileTree(resolvedPath, predicate, cb)
+    await this.scanFileTree(resolvedPath, predicate, pathCallback, cb)
   }
-  private async scanFileTree(resolvedPath: string, predicate: Predicate, cb: ScanTreeCallback) {
+
+  private async scanFileTree(
+    resolvedPath: string,
+    predicate: Predicate,
+    pathCallback?: ListPathsCallback,
+    cb?: ScanTreeCallback,
+  ) {
     const relativePath = path.normalize(path.relative(this.rootDir, resolvedPath))
     const stat: fs.Stats = await this.getStat(resolvedPath)
     if (relativePath !== '.' && !predicate(relativePath, stat)) {
       return
     }
     if (!stat.isDirectory()) {
-      const content = await fse.readFile(resolvedPath)
-      cb(relativePath, content, stat)
+      if (cb) {
+        const content = await fse.readFile(resolvedPath)
+        cb(relativePath, content, stat)
+      }
+
+      if (pathCallback) {
+        pathCallback(relativePath)
+      }
       return
     }
 
     const files = await this.readDirSorted(resolvedPath)
     // TODO(imaman): make this loop concurrent. we need to use p-qeueu to avoid too much concurrency.
     for (const file of files) {
-      await this.scanFileTree(path.join(resolvedPath, file), predicate, cb)
+      await this.scanFileTree(path.join(resolvedPath, file), predicate, pathCallback, cb)
     }
   }
 

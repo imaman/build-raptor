@@ -3,7 +3,7 @@ import escapeStringRegexp from 'escape-string-regexp'
 import execa from 'execa'
 import * as fse from 'fs-extra'
 import { Logger } from 'logger'
-import { failMe, Graph, hardGet, pairsToRecord, promises, uniqueBy } from 'misc'
+import { DirectoryScanner, failMe, Graph, hardGet, pairsToRecord, promises, switchOn, uniqueBy } from 'misc'
 import * as path from 'path'
 import { ExitStatus, Publisher, RepoProtocol } from 'repo-protocol'
 import { CatalogOfTasks } from 'repo-protocol'
@@ -85,16 +85,50 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
 
     await this.generateTsConfigFiles(rootDir, units, graph)
+
+    await this.generateSymlinksToPackages(rootDir, units)
     this.state_ = { yarnInfo, graph, rootDir, units, packageByUnitId, versionByPackageId }
   }
 
+  private async generateSymlinksToPackages(rootDir: string, units: UnitMetadata[]) {
+    const nodeModules = path.join(rootDir, 'node_modules')
+    await fse.mkdirp(nodeModules)
+    for (const u of units) {
+      const link = path.join(nodeModules, u.id)
+      const exists = await fse.pathExists(link)
+      if (exists) {
+        continue
+      }
+      const packagePath = path.join(rootDir, u.pathInRepo)
+      const packagePathRelative = path.relative(nodeModules, packagePath)
+      await fse.symlink(packagePathRelative, link)
+    }
+  }
+
   private async generateTsConfigFiles(rootDir: string, units: UnitMetadata[], graph: Graph<UnitId>) {
+    const baseExists = await fse.pathExists(path.join(rootDir, this.tsconfigBasePathInRepo))
+
+    const defaultOptions: TsConfigJson.CompilerOptions = {
+      module: 'CommonJS',
+      inlineSourceMap: true,
+      newLine: 'LF',
+      declaration: true,
+      target: 'ES2021',
+      lib: ['ES2021', 'DOM'],
+      strict: true,
+      noImplicitAny: true,
+      moduleResolution: 'node',
+      allowSyntheticDefaultImports: true,
+      esModuleInterop: true,
+    }
+
     for (const u of units) {
       const deps = graph.neighborsOf(u.id)
 
       const tsconf: TsConfigJson = {
-        extends: path.relative(u.pathInRepo, this.tsconfigBasePathInRepo),
+        ...(baseExists ? { extends: path.relative(u.pathInRepo, this.tsconfigBasePathInRepo) } : {}),
         compilerOptions: {
+          ...(baseExists ? {} : defaultOptions),
           composite: true,
           outDir: 'dist',
         },
@@ -171,19 +205,49 @@ export class YarnRepoProtocol implements RepoProtocol {
     return p.stdout
   }
 
+  private async checkBuiltFiles(dir: string) {
+    for (const codeDir of ['src', 'tests']) {
+      const srcFiles = new Set<string>(
+        await DirectoryScanner.listPaths(path.join(dir, codeDir), { startingPointMustExist: false }),
+      )
+
+      const d = path.join(dir, `dist/${codeDir}`)
+      const distSrcFiles = await DirectoryScanner.listPaths(d, { startingPointMustExist: false })
+
+      const toDelete = distSrcFiles.filter(f => !srcFiles.has(f.replace(/\.js$/, '.ts').replace(/\.d\.ts$/, '.ts')))
+
+      for (const f of toDelete) {
+        await fse.rm(path.join(d, f))
+      }
+    }
+  }
+
   async execute(u: UnitMetadata, dir: string, task: TaskKind, outputFile: string): Promise<ExitStatus> {
     if (task === 'build') {
-      return await this.run('npm', ['run', 'build'], dir, outputFile)
+      const ret = await this.run('npm', ['run', 'build'], dir, outputFile)
+      return await switchOn(ret, {
+        CRASH: () => Promise.resolve(ret),
+        FAIL: () => Promise.resolve(ret),
+        OK: () => this.checkBuiltFiles(dir).then(() => 'OK'),
+      })
     }
 
     if (task === 'test') {
-      const testsToRun = await this.computeTestsToRun(path.join(dir, JEST_OUTPUT_FILE))
-      return await this.run(
-        'yarn',
+      const jof = path.join(dir, JEST_OUTPUT_FILE)
+      const testsToRun = await this.computeTestsToRun(jof)
+      const ret = await this.run(
+        'npx',
         ['jest', ...testsToRun, '--json', '--outputFile', JEST_OUTPUT_FILE],
         dir,
         outputFile,
       )
+      const written = fse.readFileSync(jof, 'utf-8')
+      try {
+        JSON.parse(written)
+      } catch (e) {
+        throw new Error(`failed to parse ${jof} <${e}>`)
+      }
+      return ret
     }
 
     if (task === 'pack') {
@@ -451,7 +515,15 @@ export class YarnRepoProtocol implements RepoProtocol {
       return ['tests']
     }
 
-    const parsed = await fse.readJSON(resolved)
+    const content = await fse.readFile(resolved, 'utf-8')
+    let parsed
+    try {
+      parsed = JSON.parse(content)
+    } catch (e) {
+      this.logger.print(`failed to parse ${resolved} <${e}> - overwriting with fallback content`)
+      const fallback: JestJson = { testResults: [] }
+      parsed = fallback
+    }
     const jestJson: JestJson = JestJson.parse(parsed)
 
     const failedTests = jestJson.testResults.filter(x => x.status !== 'passed')

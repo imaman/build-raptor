@@ -101,7 +101,13 @@ class File {
   }
 
   async write(content: string) {
-    await fse.writeFile(this.resolve(), content)
+    const resolved = this.resolve()
+    await fse.mkdirp(path.dirname(resolved))
+    await fse.writeFile(resolved, content)
+  }
+
+  async exists() {
+    return await fse.pathExists(this.resolve())
   }
 
   async rm() {
@@ -164,10 +170,26 @@ class Repo {
   constructor(private readonly recipe: FolderifyRecipe, private readonly driver: Driver) {}
 
   async fork() {
-    const dir = await folderify(this.recipe)
-    return new Fork(dir, this.driver.storageClient, this.driver.repoProtocol, this.driver.testName)
+    // Creates this strcutrue:
+    //
+    // [outerDir]
+    //   node_modules
+    //   [ROOT_NAME]
+    //     <content of the repo goes here>
+    //     node_modules
+    //
+    // The upper node_modules is symlinked to the node_modules dir of the build-raptor repo. This allows us to run
+    // tests which use "tsc", "jest" and other tools without having to run "yarn install". The inner node_modules
+    // directory is used mostly for storing symlinks to the repo packages to allow inter-repo dependencies.
+    const outerDir = await folderify(ROOT_NAME, this.recipe)
+    const rootDir = path.join(outerDir, ROOT_NAME)
+    const ret = new Fork(rootDir, this.driver.storageClient, this.driver.repoProtocol, this.driver.testName)
+    await fse.symlink(path.resolve(__dirname, '../../../../node_modules'), path.join(outerDir, 'node_modules'))
+    return ret
   }
 }
+
+const ROOT_NAME = 'repo-root'
 
 interface DriverOptions {
   storageClient?: StorageClient
@@ -185,5 +207,23 @@ export class Driver {
 
   repo(recipe: FolderifyRecipe) {
     return new Repo(recipe, this)
+  }
+
+  packageJson(packageName: string, dependencies: string[] = []) {
+    return {
+      name: packageName,
+      license: 'UNLICENSED',
+      version: '1.0.0',
+      scripts: {
+        build: 'tsc -b',
+        test: 'jest',
+      },
+      files: ['dist/src'],
+      main: 'dist/src/index.js',
+      jest: {
+        roots: ['<rootDir>/dist'],
+      },
+      dependencies: Object.fromEntries(dependencies.map(d => [d, '1.0.0'])),
+    }
   }
 }
