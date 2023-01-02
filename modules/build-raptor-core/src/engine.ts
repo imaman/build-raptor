@@ -65,10 +65,7 @@ export class Engine {
     }
     const ledgerFile = path.join(this.options.buildRaptorDir, 'fingerprint-ledger.json')
     this.stepByStepFile = path.join(this.options.buildRaptorDir, 'step-by-step.json')
-    this.eventPublisher.on('taskRecorded', e => {
-      this.steps.push(e)
-    })
-    this.eventPublisher.on('taskRestored', e => {
+    this.eventPublisher.on('taskStore', e => {
       this.steps.push(e)
     })
     this.fingerprintLedger = this.options.fingerprintLedger
