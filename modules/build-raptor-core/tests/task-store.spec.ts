@@ -9,8 +9,6 @@ import { UnitId } from 'unit-metadata'
 import { Fingerprint } from '../src/fingerprint'
 import { TaskStore } from '../src/task-store'
 
-/* eslint-disable @typescript-eslint/consistent-type-assertions */
-// TODO(imaman): introduce a helper function to avoid all those 'as' expressions.
 describe('task-store', () => {
   const logger = createNopLogger()
   async function recordVerdict(
