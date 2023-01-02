@@ -238,3 +238,4 @@ expect(5).toEqual(5);
 - tasks that always run
 - purge the local cache when it grows too large
 - output should indicate concurrency
+- stop calling lambda. dump a detailed JSON file so that user-code can then do whatever it wants with it.
