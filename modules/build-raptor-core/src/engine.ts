@@ -32,6 +32,8 @@ export class Engine {
   private readonly options: Required<EngineOptions>
   private readonly fingerprintLedger
   private readonly purger
+  private readonly steps: unknown[] = []
+  private readonly stepByStepFile: string
 
   /**
    *
@@ -62,6 +64,13 @@ export class Engine {
       fingerprintLedger: options.fingerprintLedger ?? false,
     }
     const ledgerFile = path.join(this.options.buildRaptorDir, 'fingerprint-ledger.json')
+    this.stepByStepFile = path.join(this.options.buildRaptorDir, 'step-by-step.json')
+    this.eventPublisher.on('taskRecorded', e => {
+      this.steps.push(e)
+    })
+    this.eventPublisher.on('taskRestored', e => {
+      this.steps.push(e)
+    })
     this.fingerprintLedger = this.options.fingerprintLedger
       ? new PersistedFingerprintLedger(logger, ledgerFile)
       : new NopFingerprintLedger()
@@ -87,6 +96,7 @@ export class Engine {
 
       const tracker = await this.execute(plan, model)
       await this.fingerprintLedger.close()
+      await fse.writeJSON(this.stepByStepFile, this.steps)
       return tracker
     } finally {
       await this.repoProtocol.close()
