@@ -180,6 +180,27 @@ describe('engine', () => {
     expect(r1.happened('b', 'build', 'a', 'test')).toEqual('BEFORE')
     expect(r1.happened('a', 'test', 'b', 'build')).toEqual('AFTER')
   })
+  test('generates a step-by-step file', async () => {
+    const driver = new Driver(testName())
+    const recipe = {
+      'package.json': { private: true, workspaces: ['modules/*'] },
+      'modules/a/package.json': {
+        name: 'a',
+        version: '1.0.0',
+        scripts: { build: 'exit 0', test: 'echo "A" > o' },
+      },
+      'modules/b/package.json': {
+        name: 'b',
+        version: '1.0.0',
+        scripts: { build: 'exit 0', test: 'echo "B" > o' },
+      },
+    }
+
+    const fork = await driver.repo(recipe).fork()
+
+    await fork.run('OK', { taskKind: 'build' })
+    expect(1).toEqual(3)
+  })
   test('builds only the units that were specified', async () => {
     const driver = new Driver(testName())
     const recipe = {

@@ -99,12 +99,17 @@ export class Engine {
       }
 
       const tracker = await this.execute(plan, model)
-      const parsed = StepByStep.parse(this.steps)
-      await Promise.all([this.fingerprintLedger.close(), fse.writeJSON(this.stepByStepFile, parsed)])
+      await Promise.all([this.fingerprintLedger.close(), this.writeStepByStep()])
       return tracker
     } finally {
       await this.repoProtocol.close()
     }
+  }
+
+  private async writeStepByStep() {
+    const parsed = StepByStep.parse(this.steps)
+    await fse.writeJSON(this.stepByStepFile, parsed)
+    this.logger.info(`step by step written to ${this.stepByStepFile}`)
   }
 
   async execute(plan: ExecutionPlan, model: Model) {
