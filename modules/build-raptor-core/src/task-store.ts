@@ -4,7 +4,7 @@ import * as fs from 'fs'
 import { createWriteStream } from 'fs'
 import * as fse from 'fs-extra'
 import { Logger } from 'logger'
-import { computeHash, computeObjectHash, DirectoryScanner, Key, promises, StorageClient } from 'misc'
+import { computeHash, computeObjectHash, DirectoryScanner, Key, promises, StorageClient, TypedPublisher } from 'misc'
 import * as path from 'path'
 import * as stream from 'stream'
 import { TaskName } from 'task-name'
@@ -14,6 +14,7 @@ import * as zlib from 'zlib'
 import { z } from 'zod'
 
 import { Fingerprint } from './fingerprint'
+import { TaskStoreEvent } from './task-store-event'
 
 const pipeline = util.promisify(stream.pipeline)
 const unzip = util.promisify(zlib.unzip)
@@ -38,6 +39,7 @@ export class TaskStore {
   constructor(
     private readonly client: StorageClient,
     private readonly logger: Logger,
+    private readonly publisher?: TypedPublisher<TaskStoreEvent>,
     private readonly trace?: string[],
   ) {
     this.logger.info(`TaskStore created`)
@@ -215,6 +217,7 @@ export class TaskStore {
     const buf = await this.bundle(dir, outputs)
     const blobId = await this.putBlob(buf, taskName)
     this.putVerdict(taskName, fingerprint, verdict, blobId)
+    this.publisher?.publish('taskStore', { opcode: 'RECORDED', taskName, blobId })
   }
 
   async restoreTask(
@@ -225,6 +228,7 @@ export class TaskStore {
     const [verdict, blobId] = await this.getVerdict(taskName, fingerprint)
     const buf = await this.getBlob(blobId)
     await this.unbundle(buf, dir)
+    this.publisher?.publish('taskStore', { opcode: 'RESTORED', taskName, blobId })
     return verdict
   }
 

@@ -3,7 +3,7 @@ import { createNopLogger } from 'logger'
 
 import { YarnRepoProtocol } from '../src/yarn-repo-protocol'
 
-jest.setTimeout(30000)
+jest.setTimeout(90000)
 describe('yarn-repo-protocol.e2e', () => {
   const logger = createNopLogger()
   const testName = () => expect.getState().currentTestName

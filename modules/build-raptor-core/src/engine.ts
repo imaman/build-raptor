@@ -3,7 +3,7 @@ import { BuildRunId } from 'build-run-id'
 import * as fse from 'fs-extra'
 import ignore from 'ignore'
 import { Logger } from 'logger'
-import { DirectoryScanner, groupBy, Int, recordToPairs, TypedPublisher } from 'misc'
+import { DirectoryScanner, groupBy, Int, recordToPairs, shouldNeverHappen, TypedPublisher } from 'misc'
 import * as path from 'path'
 import { RepoProtocol } from 'repo-protocol'
 import { TaskName } from 'task-name'
@@ -16,6 +16,7 @@ import { Fingerprinter } from './fingerprinter'
 import { Model } from './model'
 import { Planner } from './planner'
 import { Purger } from './purger'
+import { StepByStep } from './step-by-step'
 import { Task } from './task'
 import { TaskExecutor } from './task-executor'
 import { TaskStore } from './task-store'
@@ -32,6 +33,8 @@ export class Engine {
   private readonly options: Required<EngineOptions>
   private readonly fingerprintLedger
   private readonly purger
+  private readonly steps: StepByStep = []
+  private readonly stepByStepFile: string
 
   /**
    *
@@ -62,6 +65,16 @@ export class Engine {
       fingerprintLedger: options.fingerprintLedger ?? false,
     }
     const ledgerFile = path.join(this.options.buildRaptorDir, 'fingerprint-ledger.json')
+    this.stepByStepFile = path.join(this.options.buildRaptorDir, 'step-by-step.json')
+    this.eventPublisher.on('taskStore', e => {
+      const step =
+        e.opcode === 'RECORDED'
+          ? 'TASK_STORE_PUT'
+          : e.opcode === 'RESTORED'
+          ? 'TASK_STORE_GET'
+          : shouldNeverHappen(e.opcode)
+      this.steps.push({ blobId: e.blobId, taskName: e.taskName, step })
+    })
     this.fingerprintLedger = this.options.fingerprintLedger
       ? new PersistedFingerprintLedger(logger, ledgerFile)
       : new NopFingerprintLedger()
@@ -86,11 +99,17 @@ export class Engine {
       }
 
       const tracker = await this.execute(plan, model)
-      await this.fingerprintLedger.close()
+      await Promise.all([this.fingerprintLedger.close(), this.writeStepByStep()])
       return tracker
     } finally {
       await this.repoProtocol.close()
     }
+  }
+
+  private async writeStepByStep() {
+    const parsed = StepByStep.parse(this.steps)
+    await fse.writeJSON(this.stepByStepFile, parsed)
+    this.logger.info(`step by step written to ${this.stepByStepFile}`)
   }
 
   async execute(plan: ExecutionPlan, model: Model) {

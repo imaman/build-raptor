@@ -84,6 +84,13 @@ class File {
     return path.join(this.rootDir, this.pathInRepo)
   }
 
+  to(relativePath: string) {
+    if (path.isAbsolute(relativePath)) {
+      throw new Error(`Absolute path not allowed`)
+    }
+    return new File(this.rootDir, path.join(this.pathInRepo, relativePath))
+  }
+
   /**
    * @returns the content of the file as an array of lines or undefined if the file does not exist.
    */
@@ -98,6 +105,15 @@ class File {
       .trim()
       .split('\n')
       .map(at => (trimEach ? at.trim() : at))
+  }
+
+  async readJson() {
+    const resolved = this.resolve()
+    if (!(await fse.pathExists(resolved))) {
+      return undefined
+    }
+
+    return await fse.readJSON(resolved)
   }
 
   async write(content: string) {
@@ -126,13 +142,19 @@ interface RunOptions {
   concurrencyLevel?: number
   checkGitIgnore?: boolean
 }
+
+const BUILD_RAPTOR_DIR_NAME = '.build-raptor'
 class Fork {
+  private readonly buildRaptorDir: string
+
   constructor(
     private readonly dir: string,
     private readonly storageClient: StorageClient,
     private readonly repoProtocol: RepoProtocol,
     private readonly testName?: string,
-  ) {}
+  ) {
+    this.buildRaptorDir = path.join(this.dir, BUILD_RAPTOR_DIR_NAME)
+  }
 
   async run(expectedStatus: 'OK' | 'FAIL' | 'CRASH', options: RunOptions = {}): Promise<Run> {
     const command = options.taskKind ?? ''
@@ -140,10 +162,12 @@ class Fork {
     const concurrencyLevel = Int(options.concurrencyLevel ?? 10)
     const rp = this.repoProtocol
     const bootstrapper = await EngineBootstrapper.create(this.dir, this.storageClient, rp, Date.now(), this.testName)
+
+    await fse.mkdirp(this.buildRaptorDir)
     const runner = await bootstrapper.makeRunner(command, units, {
       checkGitIgnore: options.checkGitIgnore ?? false,
       concurrency: concurrencyLevel,
-      buildRaptorDir: await folderify({}),
+      buildRaptorDir: this.buildRaptorDir,
     })
     const output = await runner()
     if (expectedStatus === output.overallVerdict) {
@@ -163,6 +187,10 @@ class Fork {
 
   file(pathInRepo: string) {
     return new File(this.dir, pathInRepo)
+  }
+
+  getBuildRaptorDir() {
+    return this.file(BUILD_RAPTOR_DIR_NAME)
   }
 }
 
