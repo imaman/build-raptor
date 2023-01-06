@@ -188,6 +188,7 @@ describe('engine', () => {
         name: 'a',
         version: '1.0.0',
         scripts: { build: 'exit 0', test: 'echo "A" > o' },
+        dependencies: { b: '1.0.0' },
       },
       'modules/b/package.json': {
         name: 'b',
@@ -199,7 +200,10 @@ describe('engine', () => {
     const fork = await driver.repo(recipe).fork()
 
     await fork.run('OK', { taskKind: 'build' })
-    expect(1).toEqual(3)
+    const stepByStep = await fork.getBuildRaptorDir().to('step-by-step.json').readJson()
+    expect(stepByStep[0]).toMatchObject({ step: 'TASK_STORE_PUT', taskName: 'b:build' })
+    expect(stepByStep[1]).toMatchObject({ step: 'TASK_STORE_PUT', taskName: 'a:build' })
+    expect(stepByStep).toHaveLength(2)
   })
   test('builds only the units that were specified', async () => {
     const driver = new Driver(testName())
