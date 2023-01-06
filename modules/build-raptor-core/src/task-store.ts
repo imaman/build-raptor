@@ -186,7 +186,7 @@ export class TaskStore {
 
   private async unbundle(buf: Buffer, dir: string) {
     if (buf.length === 0) {
-      return
+      return []
     }
     const metadataLen = buf.slice(0, LEN_BUF_SIZE).readInt32BE()
 
@@ -205,6 +205,7 @@ export class TaskStore {
     } catch (e) {
       throw new Error(`unbundling a buffer (${buf.length} bytes) into ${dir} has failed: ${e}`)
     }
+    return metadata.outputs
   }
 
   async recordTask(
@@ -217,7 +218,7 @@ export class TaskStore {
     const buf = await this.bundle(dir, outputs)
     const blobId = await this.putBlob(buf, taskName)
     this.putVerdict(taskName, fingerprint, verdict, blobId)
-    this.publisher?.publish('taskStore', { opcode: 'RECORDED', taskName, blobId })
+    this.publisher?.publish('taskStore', { opcode: 'RECORDED', taskName, blobId, bytes: buf.length, files: outputs })
   }
 
   async restoreTask(
@@ -227,8 +228,8 @@ export class TaskStore {
   ): Promise<'FAIL' | 'OK' | 'FLAKY' | 'UNKNOWN'> {
     const [verdict, blobId] = await this.getVerdict(taskName, fingerprint)
     const buf = await this.getBlob(blobId)
-    await this.unbundle(buf, dir)
-    this.publisher?.publish('taskStore', { opcode: 'RESTORED', taskName, blobId })
+    const files = await this.unbundle(buf, dir)
+    this.publisher?.publish('taskStore', { opcode: 'RESTORED', taskName, blobId, bytes: buf.length, files })
     return verdict
   }
 

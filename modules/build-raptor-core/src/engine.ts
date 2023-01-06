@@ -73,7 +73,7 @@ export class Engine {
           : e.opcode === 'RESTORED'
           ? 'TASK_STORE_GET'
           : shouldNeverHappen(e.opcode)
-      this.steps.push({ blobId: e.blobId, taskName: e.taskName, step })
+      this.steps.push({ blobId: e.blobId, taskName: e.taskName, step, bytes: e.bytes, files: [...e.files] })
     })
     this.fingerprintLedger = this.options.fingerprintLedger
       ? new PersistedFingerprintLedger(logger, ledgerFile)
