@@ -105,7 +105,7 @@ describe('yarn-repo-protocol.e2e', () => {
     expect(await run.outputOf('test', 'a')).toEqual(expect.arrayContaining(['    Expected: 703', '    Received: 702']))
   })
   test('publish-assets runs prepare-assets', async () => {
-    const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger).track() })
+    const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
       'modules/a/package.json': driver.packageJson('a', [], { 'prepare-assets': 'touch prepared-assets/x' }),
@@ -120,7 +120,7 @@ describe('yarn-repo-protocol.e2e', () => {
     expect(await run.outputOf('publish-assets', 'a')).toEqual(['> a@1.0.0 prepare-assets', '> touch prepared-assets/x'])
   })
   test('publish-assets runs only in packages which define a prepare-assets run script', async () => {
-    const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger).track() })
+    const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
       'modules/a/package.json': driver.packageJson('a', [], { 'prepare-assets': 'touch prepared-assets/x' }),
