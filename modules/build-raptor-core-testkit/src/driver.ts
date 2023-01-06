@@ -140,10 +140,13 @@ class Fork {
     const concurrencyLevel = Int(options.concurrencyLevel ?? 10)
     const rp = this.repoProtocol
     const bootstrapper = await EngineBootstrapper.create(this.dir, this.storageClient, rp, Date.now(), this.testName)
+
+    const buildRaptorDir = path.join(this.dir, '.build-raptor')
+    await fse.mkdirp(buildRaptorDir)
     const runner = await bootstrapper.makeRunner(command, units, {
       checkGitIgnore: options.checkGitIgnore ?? false,
       concurrency: concurrencyLevel,
-      buildRaptorDir: await folderify({}),
+      buildRaptorDir,
     })
     const output = await runner()
     if (expectedStatus === output.overallVerdict) {
