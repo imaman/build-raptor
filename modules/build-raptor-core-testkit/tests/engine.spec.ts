@@ -181,19 +181,19 @@ describe('engine', () => {
     expect(r1.happened('a', 'test', 'b', 'build')).toEqual('AFTER')
   })
   test('generates a step-by-step file', async () => {
-    const driver = new Driver(testName())
+    const driver = new Driver(testName(), { repoProtocol: new SimpleNodeRepoProtocol('modules', ['dist']) })
     const recipe = {
       'package.json': { private: true, workspaces: ['modules/*'] },
       'modules/a/package.json': {
         name: 'a',
         version: '1.0.0',
-        scripts: { build: 'exit 0', test: 'echo "A" > o' },
+        scripts: { build: 'mkdir -p dist/src && echo "A" > dist/src/a.o' },
         dependencies: { b: '1.0.0' },
       },
       'modules/b/package.json': {
         name: 'b',
         version: '1.0.0',
-        scripts: { build: 'exit 0', test: 'echo "B" > o' },
+        scripts: { build: 'mkdir -p dist/src && echo "B" > dist/src/b.o' },
       },
     }
 
@@ -201,8 +201,8 @@ describe('engine', () => {
 
     await fork.run('OK', { taskKind: 'build' })
     const stepByStep = await fork.getBuildRaptorDir().to('step-by-step.json').readJson()
-    expect(stepByStep[0]).toMatchObject({ step: 'TASK_STORE_PUT', taskName: 'b:build' })
-    expect(stepByStep[1]).toMatchObject({ step: 'TASK_STORE_PUT', taskName: 'a:build' })
+    expect(stepByStep[0]).toMatchObject({ step: 'TASK_STORE_PUT', taskName: 'b:build', files: ['dist'] })
+    expect(stepByStep[1]).toMatchObject({ step: 'TASK_STORE_PUT', taskName: 'a:build', files: ['dist'] })
     expect(stepByStep).toHaveLength(2)
   })
   test('the step-by-step is overwritten at the next build run', async () => {
