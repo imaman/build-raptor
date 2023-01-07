@@ -1,6 +1,6 @@
 import { Breakdown, EngineBootstrapper } from 'build-raptor-core'
 import * as fse from 'fs-extra'
-import { folderify, FolderifyRecipe, InMemoryStorageClient, Int, StorageClient } from 'misc'
+import { folderify, FolderifyRecipe, InMemoryStorageClient, Int, sortBy, StorageClient } from 'misc'
 import * as path from 'path'
 import { RepoProtocol } from 'repo-protocol'
 import { TaskKind, TaskName } from 'task-name'
@@ -25,6 +25,13 @@ export class Run {
       throw new Error(`Task ${unitId}/${taskKind} not found`)
     }
     return ret
+  }
+
+  taskNames() {
+    return sortBy(
+      this.breakdown.getSummaries().map(s => s.taskName),
+      x => x,
+    )
   }
 
   // TODO(imaman): use timing information gathered by the protocol testkit (instead of relying on summaries which are
@@ -237,7 +244,7 @@ export class Driver {
     return new Repo(recipe, this)
   }
 
-  packageJson(packageName: string, dependencies: string[] = []) {
+  packageJson(packageName: string, dependencies: string[] = [], scripts = {}) {
     return {
       name: packageName,
       license: 'UNLICENSED',
@@ -245,6 +252,7 @@ export class Driver {
       scripts: {
         build: 'tsc -b',
         test: 'jest',
+        ...scripts,
       },
       files: ['dist/src'],
       main: 'dist/src/index.js',

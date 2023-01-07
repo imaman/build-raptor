@@ -115,11 +115,11 @@ export class Planner {
         return false
       }
 
-      const ids = at.unitIds ?? []
-      if (!ids.length) {
+      if (at.unitIds === undefined) {
         return true
       }
-      return ids.includes(unitId)
+
+      return at.unitIds.includes(unitId)
     })
     if (filtered.length === 0) {
       return 'NONE'

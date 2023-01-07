@@ -36,6 +36,11 @@ interface State {
 }
 
 export class YarnRepoProtocol implements RepoProtocol {
+  private readonly scriptNames = {
+    build: 'build',
+    prepareAssets: 'prepare-assets',
+  }
+
   constructor(
     private readonly logger: Logger,
     private readonly shadowing: boolean = false,
@@ -47,6 +52,12 @@ export class YarnRepoProtocol implements RepoProtocol {
 
   private get state() {
     return this.state_ ?? failMe('state was not set')
+  }
+
+  private hasRunScript(unitId: UnitId, runScript: string) {
+    const pj = this.getPackageJson(unitId)
+    const runScripts = Object.keys(pj.scripts ?? {})
+    return runScripts.includes(runScript)
   }
 
   async initialize(rootDir: string): Promise<void> {
@@ -224,7 +235,7 @@ export class YarnRepoProtocol implements RepoProtocol {
 
   async execute(u: UnitMetadata, dir: string, task: TaskKind, outputFile: string): Promise<ExitStatus> {
     if (task === 'build') {
-      const ret = await this.run('npm', ['run', 'build'], dir, outputFile)
+      const ret = await this.run('npm', ['run', this.scriptNames.build], dir, outputFile)
       return await switchOn(ret, {
         CRASH: () => Promise.resolve(ret),
         FAIL: () => Promise.resolve(ret),
@@ -264,15 +275,10 @@ export class YarnRepoProtocol implements RepoProtocol {
       if (!this.publisher) {
         // throw new Error(`cannot run task "${task}" when no publisher is available`)
       }
-      const scriptName = 'prepare-assets'
-      const runScriptExists = await this.hasRunScript(u, dir, scriptName)
+      const scriptName = this.scriptNames.prepareAssets
 
       const fullPath = path.join(dir, PREPARED_ASSETS_DIR)
       await fse.mkdirp(fullPath)
-      if (!runScriptExists) {
-        await Promise.all([await fse.writeFile(outputFile, ''), await fse.emptyDir(fullPath)])
-        return 'OK'
-      }
 
       const ret = await this.run('npm', ['run', scriptName], dir, outputFile)
       const exists = await fse.pathExists(fullPath)
@@ -295,34 +301,6 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
 
     throw new Error(`Unknown task ${task} (at ${dir})`)
-  }
-
-  // TODO(imaman): cover
-  private async hasRunScript(u: UnitMetadata, dir: string, runScript: string) {
-    const output = await this.runCaptureStdout('npm', ['--json', 'run'], dir)
-    const parsed = JSON.parse(output)
-    // Two possible formats:
-    //   {
-    //      "build-tracker-service": {
-    //        "build": "tsc -b",
-    //        "prepare-assets": "blah blash",
-    //        "test": "jest"
-    //   }
-    // -or-
-    //   ***
-    //     "build": "tsc -b",
-    //     "prepare-assets": "blah blash",
-    //     "test": "jest"
-    //   ***
-
-    const entry = parsed[u.id]
-
-    if (entry) {
-      return Object.keys(entry).includes(runScript)
-    }
-
-    this.logger.info(`hasRunScript(${u.id}, ${runScript}) - output of npm command is:${JSON.stringify(output)}`)
-    return output.split('\n').find(line => line.startsWith(`  "${runScript}": "`))
   }
 
   private getPackageJson(uid: UnitId) {
@@ -473,7 +451,11 @@ export class YarnRepoProtocol implements RepoProtocol {
     const test = TaskKind('test')
     const publish = TaskKind('publish-assets')
 
-    return {
+    const unitIds = this.state.units.map(u => u.id)
+
+    const unitsWithPrepareAssets = unitIds.filter(at => this.hasRunScript(at, this.scriptNames.prepareAssets))
+
+    const ret: CatalogOfTasks = {
       inUnit: {
         [test]: [build],
         [pack]: [build],
@@ -500,12 +482,15 @@ export class YarnRepoProtocol implements RepoProtocol {
           inputsInDeps: ['dist/src'],
         },
         {
+          unitIds: unitsWithPrepareAssets,
           taskKind: publish,
           outputs: [PREPARED_ASSETS_DIR],
           inputsInUnit: ['dist/src'],
         },
       ],
     }
+
+    return ret
   }
 
   async computeTestsToRun(resolved: string): Promise<string[]> {

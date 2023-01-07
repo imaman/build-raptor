@@ -4,7 +4,7 @@ import { UnitId } from 'unit-metadata'
 export type TaskDefinition = {
   // The task kind this definition applies to.
   readonly taskKind: TaskKind
-  // The units this definition applies to. An empty array (or undefined) means "all units".
+  // The units this definition applies to. An empty array means "nothing". An undefined means "everything".
   readonly unitIds?: readonly UnitId[]
   readonly outputs?: readonly string[]
   // When a task has shadowing turned on, the execution engine will try to run it at the depending-most unit it can
