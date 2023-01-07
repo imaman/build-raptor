@@ -115,7 +115,7 @@ export class Planner {
         return false
       }
 
-      if (at.unitIds === '*' || at.unitIds === undefined) {
+      if (at.unitIds === undefined) {
         return true
       }
 
