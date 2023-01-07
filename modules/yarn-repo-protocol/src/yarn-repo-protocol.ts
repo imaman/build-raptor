@@ -464,7 +464,6 @@ export class YarnRepoProtocol implements RepoProtocol {
       tasks: [
         {
           taskKind: build,
-          unitIds: '*',
           outputs: ['dist'],
           shadowing: this.shadowing,
           inputsInDeps: ['dist/src'],
@@ -472,7 +471,6 @@ export class YarnRepoProtocol implements RepoProtocol {
         },
         {
           taskKind: test,
-          unitIds: '*',
           outputs: [JEST_OUTPUT_FILE],
           inputsInUnit: ['dist/src', 'dist/tests'],
           inputsInDeps: ['dist/src'],
