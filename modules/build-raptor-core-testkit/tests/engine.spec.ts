@@ -200,7 +200,7 @@ describe('engine', () => {
     const fork = await driver.repo(recipe).fork()
 
     await fork.run('OK', { taskKind: 'build' })
-    const stepByStep = await fork.getBuildRaptorDir().to('step-by-step.json').readJson()
+    const stepByStep = await fork.readStepByStepFile()
     expect(stepByStep[0]).toMatchObject({ step: 'TASK_STORE_PUT', taskName: 'b:build', files: ['dist'] })
     expect(stepByStep[1]).toMatchObject({ step: 'TASK_STORE_PUT', taskName: 'a:build', files: ['dist'] })
     expect(stepByStep).toHaveLength(2)
@@ -223,16 +223,15 @@ describe('engine', () => {
     }
 
     const fork = await driver.repo(recipe).fork()
-    const stepByStepFile = fork.getBuildRaptorDir().to('step-by-step.json')
 
     await fork.run('OK', { taskKind: 'build' })
-    const a = await stepByStepFile.readJson()
+    const a = await fork.readStepByStepFile()
     expect(a[0]).toMatchObject({ step: 'TASK_STORE_PUT', taskName: 'b:build' })
     expect(a[1]).toMatchObject({ step: 'TASK_STORE_PUT', taskName: 'a:build' })
     expect(a).toHaveLength(2)
 
     await fork.run('OK', { taskKind: 'build' })
-    const b = await fork.getBuildRaptorDir().to('step-by-step.json').readJson()
+    const b = await fork.readStepByStepFile()
     expect(b[0]).toMatchObject({ step: 'TASK_STORE_GET', taskName: 'b:build' })
     expect(b[1]).toMatchObject({ step: 'TASK_STORE_GET', taskName: 'a:build' })
     expect(b).toHaveLength(2)
