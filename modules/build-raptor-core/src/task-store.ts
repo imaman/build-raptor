@@ -215,10 +215,16 @@ export class TaskStore {
     outputs: readonly string[],
     verdict: 'OK' | 'FAIL',
   ): Promise<void> {
-    const buf = await this.bundle(dir, outputs)
-    const blobId = await this.putBlob(buf, taskName)
+    const blobId = await this.recordBlob(taskName, dir, outputs)
     this.putVerdict(taskName, fingerprint, verdict, blobId)
     this.publisher?.publish('taskStore', { opcode: 'RECORDED', taskName, blobId, files: [...outputs] })
+  }
+
+
+  private async recordBlob(taskName: TaskName, dir: string, outputs: readonly string[]) {
+    const buf = await this.bundle(dir, outputs)
+    const blobId = await this.putBlob(buf, taskName)
+    return blobId
   }
 
   async restoreTask(
