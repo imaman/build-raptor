@@ -138,6 +138,49 @@ describe('yarn-repo-protocol.e2e', () => {
     expect(await run.outputOf('publish-assets', 'a')).toEqual(['> a@1.0.0 prepare-assets', '> touch prepared-assets/x'])
     expect(run.taskNames()).toEqual(['a:build', 'a:publish-assets'])
   })
+  test('publish-assets publishes a blob', async () => {
+    const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
+    const recipe = {
+      'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+      'modules/a/package.json': driver.packageJson('a', [], { 'prepare-assets': 'echo "a" > prepared-assets/x' }),
+      'modules/a/src/a.ts': `export function a(n: number) { return n * 100 }`,
+      'modules/a/tests/a.spec.ts': ``,
+    }
+
+    const fork = await driver.repo(recipe).fork()
+    await fork.run('OK', { taskKind: 'publish-assets' })
+
+    const stepByStep = await fork.readStepByStepFile()
+    const blobId = stepByStep.find(at => at.taskName === 'a:publish-assets')?.blobId
+    expect(await driver.slurpBlob(blobId)).toEqual({ 'prepared-assets/x': 'a\n' })
+  })
+  test('takes just the current files when publishing an asset', async () => {
+    const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
+    const recipe = {
+      'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+      'modules/a/package.json': driver.packageJson('a', [], { 'prepare-assets': 'echo "a" > prepared-assets/x1' }),
+      'modules/a/src/a.ts': `export function a(n: number) { return n * 100 }`,
+      'modules/a/tests/a.spec.ts': ``,
+    }
+
+    const fork = await driver.repo(recipe).fork()
+
+    const readBlob = async (taskName: string) => {
+      const stepByStep = await fork.readStepByStepFile()
+      const blobId = stepByStep.find(at => at.taskName === taskName)?.blobId
+      return await driver.slurpBlob(blobId)
+    }
+
+    await fork.run('OK', { taskKind: 'publish-assets' })
+    expect(Object.keys(await readBlob('a:publish-assets'))).toEqual(['prepared-assets/x1'])
+
+    await fork
+      .file('modules/a/package.json')
+      .write(JSON.stringify(driver.packageJson('a', [], { 'prepare-assets': 'echo "a" > prepared-assets/x2' })))
+    await fork.file('modules/a/src/a.ts').write(JSON.stringify(`export function afoo(n: number) { return n * 100 }`))
+    await fork.run('OK', { taskKind: 'publish-assets' })
+    expect(Object.keys(await readBlob('a:publish-assets'))).toEqual(['prepared-assets/x2'])
+  })
   test('when the test fails, the task output includes the failure message prodcued by jest', async () => {
     const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
     const recipe = {
