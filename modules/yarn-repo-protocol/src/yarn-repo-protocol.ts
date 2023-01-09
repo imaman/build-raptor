@@ -272,12 +272,10 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
 
     if (task === 'publish-assets') {
-      if (!this.publisher) {
-        // throw new Error(`cannot run task "${task}" when no publisher is available`)
-      }
       const scriptName = this.scriptNames.prepareAssets
 
       const fullPath = path.join(dir, PREPARED_ASSETS_DIR)
+      await fse.rm(fullPath, { force: true, recursive: true })
       await fse.mkdirp(fullPath)
 
       const ret = await this.run('npm', ['run', scriptName], dir, outputFile)
