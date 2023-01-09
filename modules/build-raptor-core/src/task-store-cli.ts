@@ -1,9 +1,10 @@
-import { computeObjectHash } from 'misc'
-import { TaskStore } from './task-store'
-import * as path from 'path'
-import * as os from 'os'
+import * as fs from 'fs'
 import { createNopLogger } from 'logger'
-import { dumpFile, FilesystemStorageClient, Int, switchOn, toReasonableFileName } from 'misc'
+import { FilesystemStorageClient } from 'misc'
+import * as os from 'os'
+import * as path from 'path'
+
+import { BlobId, TaskStore } from './task-store'
 
 function print(...args: unknown[]) {
   console.log(...args) // eslint-disable-line no-console
@@ -19,14 +20,12 @@ async function main(args: string[]) {
   const sc = await FilesystemStorageClient.create(path.join(os.homedir(), '.build-raptor/storage'))
   const taskStore = new TaskStore(sc, createNopLogger())
 
-  const blobId = args[2].trim()
-  const key = { type: 'blob', blobId }
+  const blobId = BlobId(args[2].trim())
 
-  const h = computeObjectHash({ key })
-
-  const f = `std-${h}`
-
-  print(f)
+  const outputDir = path.join(process.cwd(), blobId)
+  fs.mkdirSync(outputDir)
+  await taskStore.restoreBlob(blobId, outputDir)
+  print(`Blob restored to ${outputDir}`)
 }
 
 main(process.argv)

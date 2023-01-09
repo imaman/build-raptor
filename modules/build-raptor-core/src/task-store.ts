@@ -22,7 +22,7 @@ const unzip = util.promisify(zlib.unzip)
 const metadataSchema = z.object({ outputs: z.string().array() })
 type Metadata = z.infer<typeof metadataSchema>
 
-type BlobId = Brand<string, 'BlobId'>
+export type BlobId = Brand<string, 'BlobId'>
 
 function validate(input: string): asserts input is BlobId {
   if (input.length === 0) {
@@ -30,7 +30,7 @@ function validate(input: string): asserts input is BlobId {
   }
 }
 
-const BlobId: (s: string) => BlobId = (s: string) => {
+export const BlobId: (s: string) => BlobId = (s: string) => {
   validate(s)
   return s
 }
@@ -219,7 +219,6 @@ export class TaskStore {
     this.putVerdict(taskName, fingerprint, verdict, blobId)
     this.publisher?.publish('taskStore', { opcode: 'RECORDED', taskName, blobId, files: [...outputs] })
   }
-
 
   private async recordBlob(taskName: TaskName, dir: string, outputs: readonly string[]) {
     const buf = await this.bundle(dir, outputs)
