@@ -227,10 +227,15 @@ export class TaskStore {
     dir: string,
   ): Promise<'FAIL' | 'OK' | 'FLAKY' | 'UNKNOWN'> {
     const [verdict, blobId] = await this.getVerdict(taskName, fingerprint)
-    const buf = await this.getBlob(blobId)
-    const files = await this.unbundle(buf, dir)
+    const files = await this.restoreBlob(blobId, dir)
     this.publisher?.publish('taskStore', { opcode: 'RESTORED', taskName, blobId, files })
     return verdict
+  }
+
+  async restoreBlob(blobId: BlobId, dir: string) {
+    const buf = await this.getBlob(blobId)
+    const files = await this.unbundle(buf, dir)
+    return files
   }
 
   async checkVerdict(taskName: TaskName, fingerprint: Fingerprint): Promise<'FAIL' | 'OK' | 'FLAKY' | 'UNKNOWN'> {
