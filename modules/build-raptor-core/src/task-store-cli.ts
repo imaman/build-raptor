@@ -1,13 +1,16 @@
 import { computeObjectHash } from 'misc'
 import * as path from 'path'
 
+function print(...args: unknown[]) {
+  console.log(...args) // eslint-disable-line no-console
+}
+
 function main(args: string[]) {
   if (args.length !== 3) {
-    console.log(`Usage: ${path.basename(__filename)} <blob-id>`)
+    print(`Usage: ${path.basename(__filename)} <blob-id>`)
     process.exitCode = 1
     return
   }
-
 
   const blobId = args[2].trim()
   const key = { type: 'blob', blobId }
@@ -16,8 +19,7 @@ function main(args: string[]) {
 
   const f = `std-${h}`
 
-  console.log(f)
+  print(f)
 }
-
 
 main(process.argv)
