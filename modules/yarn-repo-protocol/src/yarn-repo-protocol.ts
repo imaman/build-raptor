@@ -275,7 +275,6 @@ export class YarnRepoProtocol implements RepoProtocol {
       const scriptName = this.scriptNames.prepareAssets
 
       const fullPath = path.join(dir, PREPARED_ASSETS_DIR)
-      // TODO(imaman): cover. the test should publish assets from a package, then change the names of the output files, and publish again.
       await fse.rm(fullPath, { force: true, recursive: true })
       await fse.mkdirp(fullPath)
 
