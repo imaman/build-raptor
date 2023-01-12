@@ -308,54 +308,36 @@ describe('yarn-repo-protocol.e2e', () => {
     expect(run3.executionTypeOf('a', 'build')).toEqual('EXECUTED')
   })
   describe('validations', () => {
-    test('invokes the "validate" run script', async () => {
+    test('a test tasks runs the "validate" run script and places its output in the tasks output file', async () => {
       const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
       const recipe = {
         'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
         'modules/a/package.json': driver.packageJson('a', [], { validate: 'node dist/tests/a.pqr' }),
         'modules/a/src/a.ts': `export function a(n: number) { return n * 333 }`,
         'modules/a/tests/a.pqr.ts': `console.log("pqr test is running")`,
+        'modules/a/tests/a.spec.ts': `test('a', () => { expect(1).toEqual(1) })`,
       }
 
       const fork = await driver.repo(recipe).fork()
 
-      const run = await fork.run('OK', { taskKind: 'validate' })
-      expect(run.executionTypeOf('a', 'validate')).toEqual('EXECUTED')
-      expect(await run.outputOf('validate', 'a')).toContain('pqr test is running')
+      const run = await fork.run('OK', { taskKind: 'test' })
+      expect(run.executionTypeOf('a', 'test')).toEqual('EXECUTED')
+      expect(await run.outputOf('test', 'a')).toContain('pqr test is running')
     })
-    test('caches "validate" tasks if nothing has changed', async () => {
+    test('if the validation fails, the task fails', async () => {
       const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
       const recipe = {
         'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
         'modules/a/package.json': driver.packageJson('a', [], { validate: 'node dist/tests/a.pqr' }),
-        'modules/a/src/a.ts': `export function a(n: number) { return n * 321 }`,
-        'modules/a/tests/a.pqr.ts': `console.log("pqr test is running")`,
-      }
-
-      const fork = await driver.repo(recipe).fork()
-
-      const run1 = await fork.run('OK', { taskKind: 'validate' })
-      expect(run1.executionTypeOf('a', 'validate')).toEqual('EXECUTED')
-
-      const run2 = await fork.run('OK', { taskKind: 'validate' })
-      expect(run2.executionTypeOf('a', 'validate')).toEqual('CACHED')
-    })
-    test('does not try to run "validate" in units that do not define such a run script', async () => {
-      const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
-      const recipe = {
-        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
-        'modules/a/package.json': driver.packageJson('a', ['b']),
-        'modules/a/src/a.ts': `export function a(n: number) { return n * 321 }`,
+        'modules/a/src/a.ts': `export function a(n: number) { return n * 333 }`,
+        'modules/a/tests/a.pqr.ts': `process.exit(1)`,
         'modules/a/tests/a.spec.ts': `test('a', () => { expect(1).toEqual(1) })`,
-        'modules/b/package.json': driver.packageJson('b', [], { validate: 'node dist/tests/b.pqr' }),
-        'modules/b/src/b.ts': `export function b(n: number) { return n * 642 }`,
-        'modules/b/tests/b.pqr.ts': `console.log("b.pqr test is running")`,
       }
 
       const fork = await driver.repo(recipe).fork()
 
-      const run1 = await fork.run('OK', { taskKind: 'validate' })
-      expect(run1.executionTypeOf('b', 'validate')).toEqual('EXECUTED')
+      const run = await fork.run('FAIL', { taskKind: 'test' })
+      expect(run.executionTypeOf('a', 'test')).toEqual('EXECUTED')
     })
     test.todo('runs if source code has changed')
     test.todo('runs if testing code has changed')

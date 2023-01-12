@@ -18,6 +18,7 @@ import * as path from 'path'
 import { ExitStatus, Publisher, RepoProtocol } from 'repo-protocol'
 import { CatalogOfTasks } from 'repo-protocol'
 import { TaskKind } from 'task-name'
+import * as Tmp from 'tmp-promise'
 import { PackageJson, TsConfigJson } from 'type-fest'
 import { UnitId, UnitMetadata } from 'unit-metadata'
 import webpack, { Stats, WebpackPluginInstance } from 'webpack'
@@ -43,6 +44,11 @@ interface State {
   readonly units: UnitMetadata[]
   readonly packageByUnitId: Map<UnitId, PackageJson>
   readonly versionByPackageId: Map<string, string>
+}
+
+async function getTempFile() {
+  const ret = (await Tmp.file()).path
+  return ret
 }
 
 export class YarnRepoProtocol implements RepoProtocol {
@@ -269,20 +275,22 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
 
     if (task === 'test') {
-      const jof = path.join(dir, JEST_OUTPUT_FILE)
-      const testsToRun = await this.computeTestsToRun(jof)
-      const ret = await this.run(
-        'npx',
-        ['jest', ...testsToRun, '--json', '--outputFile', JEST_OUTPUT_FILE],
-        dir,
-        outputFile,
-      )
-      const written = fse.readFileSync(jof, 'utf-8')
-      try {
-        JSON.parse(written)
-      } catch (e) {
-        throw new Error(`failed to parse ${jof} <${e}>`)
+      const tempFile = await getTempFile()
+      const [a, b] = await Promise.all([
+        this.runJest(u, dir, task, outputFile),
+        this.runValidate(u, dir, task, tempFile),
+      ])
+      const ret = switchOn(a, {
+        CRASH: () => a,
+        FAIL: () => a,
+        OK: () => b,
+      })
+
+      if (ret === 'OK') {
+        const toAppend = await fse.readFile(tempFile)
+        await fse.appendFile(outputFile, toAppend)
       }
+
       return ret
     }
 
@@ -323,12 +331,34 @@ export class YarnRepoProtocol implements RepoProtocol {
       return ret
     }
 
-    if (task === 'validate') {
-      const ret = await this.run('npm', ['run', this.scriptNames.validate], dir, outputFile)
-      return ret
+    throw new Error(`Unknown task ${task} (at ${dir})`)
+  }
+
+  private async runJest(u: UnitMetadata, dir: string, task: TaskKind, outputFile: string): Promise<ExitStatus> {
+    const jof = path.join(dir, JEST_OUTPUT_FILE)
+    const testsToRun = await this.computeTestsToRun(jof)
+    const ret = await this.run(
+      'npx',
+      ['jest', ...testsToRun, '--json', '--outputFile', JEST_OUTPUT_FILE],
+      dir,
+      outputFile,
+    )
+    const written = fse.readFileSync(jof, 'utf-8')
+    try {
+      JSON.parse(written)
+    } catch (e) {
+      throw new Error(`failed to parse ${jof} <${e}>`)
+    }
+    return ret
+  }
+
+  private async runValidate(u: UnitMetadata, dir: string, task: TaskKind, outputFile: string): Promise<ExitStatus> {
+    if (!this.hasRunScript(u.id, this.scriptNames.validate)) {
+      return 'OK'
     }
 
-    throw new Error(`Unknown task ${task} (at ${dir})`)
+    const ret = await this.run('npm', ['run', this.scriptNames.validate], dir, outputFile)
+    return ret
   }
 
   private getPackageJson(uid: UnitId) {
@@ -478,7 +508,6 @@ export class YarnRepoProtocol implements RepoProtocol {
     const pack = TaskKind('pack')
     const test = TaskKind('test')
     const publish = TaskKind('publish-assets')
-    const validate = TaskKind('validate')
 
     const unitIds = this.state.units.map(u => u.id)
 
@@ -501,13 +530,6 @@ export class YarnRepoProtocol implements RepoProtocol {
         {
           taskKind: test,
           outputs: [JEST_OUTPUT_FILE],
-          inputsInUnit: [this.dist('s'), this.dist('t')],
-          inputsInDeps: [this.dist('s')],
-        },
-        {
-          taskKind: validate,
-          unitIds: unitsWith(this.scriptNames.validate),
-          outputs: [],
           inputsInUnit: [this.dist('s'), this.dist('t')],
           inputsInDeps: [this.dist('s')],
         },
