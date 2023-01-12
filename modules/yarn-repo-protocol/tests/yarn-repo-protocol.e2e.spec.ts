@@ -307,4 +307,22 @@ describe('yarn-repo-protocol.e2e', () => {
     const run3 = await fork.run('OK', { taskKind: 'build' })
     expect(run3.executionTypeOf('a', 'build')).toEqual('EXECUTED')
   })
+  describe('validations', () => {
+    test('invokes the "validate" run script', async () => {
+      const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': driver.packageJson('a', [], { validate: 'node dist/tests/a.pqr' }),
+        'modules/a/src/a.ts': `export function a(n: number) { return n * 333 }`,
+        'modules/a/tests/a.pqr.ts': `console.log("pqr test is running")`,
+      }
+
+      const fork = await driver.repo(recipe).fork()
+
+      const run1 = await fork.run('OK', { taskKind: 'validate' })
+      expect(run1.executionTypeOf('a', 'build')).toEqual('EXECUTED')
+      expect(run1.executionTypeOf('a', 'validate')).toEqual('EXECUTED')
+      expect(await run1.outputOf('validate', 'a')).toContain('pqr test is running')
+    })
+  })
 })

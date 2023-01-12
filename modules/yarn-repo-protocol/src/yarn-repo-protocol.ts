@@ -48,6 +48,7 @@ interface State {
 export class YarnRepoProtocol implements RepoProtocol {
   private readonly scriptNames = {
     build: 'build',
+    validate: 'validate',
     prepareAssets: 'prepare-assets',
   }
 
@@ -322,6 +323,11 @@ export class YarnRepoProtocol implements RepoProtocol {
       return ret
     }
 
+    if (task === 'validate') {
+      const ret = await this.run('npm', ['run', this.scriptNames.validate], dir, outputFile)
+      return ret
+    }
+
     throw new Error(`Unknown task ${task} (at ${dir})`)
   }
 
@@ -472,6 +478,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     const pack = TaskKind('pack')
     const test = TaskKind('test')
     const publish = TaskKind('publish-assets')
+    const validate = TaskKind('validate')
 
     const unitIds = this.state.units.map(u => u.id)
 
@@ -494,6 +501,12 @@ export class YarnRepoProtocol implements RepoProtocol {
         {
           taskKind: test,
           outputs: [JEST_OUTPUT_FILE],
+          inputsInUnit: [this.dist('s'), this.dist('t')],
+          inputsInDeps: [this.dist('s')],
+        },
+        {
+          taskKind: validate,
+          outputs: [],
           inputsInUnit: [this.dist('s'), this.dist('t')],
           inputsInDeps: [this.dist('s')],
         },
