@@ -10,7 +10,7 @@
   "scripts": {
     "build": "tsc -b",
     "ncc": "ncc build/src/index.js -o build/src/index.node.js",
-    "prepare-assets": "echo 'abc' > prepared-assets/a && echo 'def' > prepared-assets/d",
+    "prepare-assets": "echo 'abc' > prepared-assets/x2 && echo 'def' > prepared-assets/y2",
     "test": "jest"
   },
   "dependencies": {

@@ -22,7 +22,7 @@ const unzip = util.promisify(zlib.unzip)
 const metadataSchema = z.object({ outputs: z.string().array() })
 type Metadata = z.infer<typeof metadataSchema>
 
-type BlobId = Brand<string, 'BlobId'>
+export type BlobId = Brand<string, 'BlobId'>
 
 function validate(input: string): asserts input is BlobId {
   if (input.length === 0) {
@@ -30,7 +30,7 @@ function validate(input: string): asserts input is BlobId {
   }
 }
 
-const BlobId: (s: string) => BlobId = (s: string) => {
+export const BlobId: (s: string) => BlobId = (s: string) => {
   validate(s)
   return s
 }
@@ -186,7 +186,7 @@ export class TaskStore {
 
   private async unbundle(buf: Buffer, dir: string) {
     if (buf.length === 0) {
-      return
+      return []
     }
     const metadataLen = buf.slice(0, LEN_BUF_SIZE).readInt32BE()
 
@@ -205,6 +205,7 @@ export class TaskStore {
     } catch (e) {
       throw new Error(`unbundling a buffer (${buf.length} bytes) into ${dir} has failed: ${e}`)
     }
+    return metadata.outputs
   }
 
   async recordTask(
@@ -214,10 +215,15 @@ export class TaskStore {
     outputs: readonly string[],
     verdict: 'OK' | 'FAIL',
   ): Promise<void> {
+    const blobId = await this.recordBlob(taskName, dir, outputs)
+    this.putVerdict(taskName, fingerprint, verdict, blobId)
+    this.publisher?.publish('taskStore', { opcode: 'RECORDED', taskName, blobId, files: [...outputs] })
+  }
+
+  private async recordBlob(taskName: TaskName, dir: string, outputs: readonly string[]) {
     const buf = await this.bundle(dir, outputs)
     const blobId = await this.putBlob(buf, taskName)
-    this.putVerdict(taskName, fingerprint, verdict, blobId)
-    this.publisher?.publish('taskStore', { opcode: 'RECORDED', taskName, blobId })
+    return blobId
   }
 
   async restoreTask(
@@ -226,10 +232,15 @@ export class TaskStore {
     dir: string,
   ): Promise<'FAIL' | 'OK' | 'FLAKY' | 'UNKNOWN'> {
     const [verdict, blobId] = await this.getVerdict(taskName, fingerprint)
-    const buf = await this.getBlob(blobId)
-    await this.unbundle(buf, dir)
-    this.publisher?.publish('taskStore', { opcode: 'RESTORED', taskName, blobId })
+    const files = await this.restoreBlob(blobId, dir)
+    this.publisher?.publish('taskStore', { opcode: 'RESTORED', taskName, blobId, files })
     return verdict
+  }
+
+  async restoreBlob(blobId: BlobId, dir: string) {
+    const buf = await this.getBlob(blobId)
+    const files = await this.unbundle(buf, dir)
+    return files
   }
 
   async checkVerdict(taskName: TaskName, fingerprint: Fingerprint): Promise<'FAIL' | 'OK' | 'FLAKY' | 'UNKNOWN'> {

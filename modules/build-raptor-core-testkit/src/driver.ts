@@ -1,6 +1,7 @@
-import { Breakdown, EngineBootstrapper } from 'build-raptor-core'
+import { BlobId, Breakdown, EngineBootstrapper, StepByStep, TaskStore } from 'build-raptor-core'
 import * as fse from 'fs-extra'
-import { folderify, FolderifyRecipe, InMemoryStorageClient, Int, sortBy, StorageClient } from 'misc'
+import { createNopLogger } from 'logger'
+import { folderify, FolderifyRecipe, InMemoryStorageClient, Int, slurpDir, sortBy, StorageClient } from 'misc'
 import * as path from 'path'
 import { RepoProtocol } from 'repo-protocol'
 import { TaskKind, TaskName } from 'task-name'
@@ -199,6 +200,11 @@ class Fork {
   getBuildRaptorDir() {
     return this.file(BUILD_RAPTOR_DIR_NAME)
   }
+
+  async readStepByStepFile() {
+    const unparsed = await this.getBuildRaptorDir().to('step-by-step.json').readJson()
+    return StepByStep.parse(unparsed)
+  }
 }
 
 class Repo {
@@ -261,5 +267,17 @@ export class Driver {
       },
       dependencies: Object.fromEntries(dependencies.map(d => [d, '1.0.0'])),
     }
+  }
+
+  async slurpBlob(blobId?: string) {
+    if (!blobId) {
+      throw new Error(`bad blobId: <${blobId}>`)
+    }
+    const taskStore = new TaskStore(this.storageClient, createNopLogger())
+
+    const outputDir = path.join(process.cwd(), blobId)
+    await fse.mkdirp(outputDir)
+    await taskStore.restoreBlob(BlobId(blobId), outputDir)
+    return await slurpDir(outputDir)
   }
 }

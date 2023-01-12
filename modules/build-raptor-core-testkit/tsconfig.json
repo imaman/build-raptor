@@ -7,6 +7,21 @@
   "references": [
     {
       "path": "../build-raptor-core"
+    },
+    {
+      "path": "../logger"
+    },
+    {
+      "path": "../misc"
+    },
+    {
+      "path": "../repo-protocol"
+    },
+    {
+      "path": "../task-name"
+    },
+    {
+      "path": "../unit-metadata"
     }
   ],
   "include": ["src/**/*", "tests/**/*"]

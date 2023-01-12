@@ -222,7 +222,7 @@ yargs(hideBin(process.argv))
   // TODO(imaman): 'pack', 'publish', etc. should not be an array option (and not separate commands)
   .command(
     'publish-assets',
-    'publish assets',
+    'publish deployables (as blobs)',
     yargs => withBuildOptions(yargs),
     async argv => {
       await run({
