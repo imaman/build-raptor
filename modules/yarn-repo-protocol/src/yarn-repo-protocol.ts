@@ -64,6 +64,7 @@ export class YarnRepoProtocol implements RepoProtocol {
   constructor(
     private readonly logger: Logger,
     private readonly shadowing: boolean = false,
+    // TODO(imaman): deprecate it.
     private readonly publisher?: Publisher,
   ) {}
 
