@@ -176,8 +176,7 @@ describe('yarn-repo-protocol.e2e', () => {
 
     await fork
       .file('modules/a/package.json')
-      .write(JSON.stringify(driver.packageJson('a', [], { 'prepare-assets': 'echo "a" > prepared-assets/x2' })))
-    await fork.file('modules/a/src/a.ts').write(JSON.stringify(`export function afoo(n: number) { return n * 100 }`))
+      .write(driver.packageJson('a', [], { 'prepare-assets': 'echo "a" > prepared-assets/x2' }))
     await fork.run('OK', { taskKind: 'publish-assets' })
     expect(Object.keys(await readBlob('a:publish-assets'))).toEqual(['prepared-assets/x2'])
   })
