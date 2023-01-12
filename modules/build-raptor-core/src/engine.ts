@@ -84,7 +84,7 @@ export class Engine {
 
   async run(buildRunId: BuildRunId) {
     await this.fingerprintLedger.updateRun(buildRunId)
-    await this.repoProtocol.initialize(this.rootDir)
+    await this.repoProtocol.initialize(this.rootDir, this.eventPublisher)
     try {
       const model = await this.loadModel(buildRunId)
 
