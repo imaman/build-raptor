@@ -41,6 +41,9 @@ export class YarnRepoProtocol implements RepoProtocol {
     prepareAssets: 'prepare-assets',
   }
 
+  private readonly src = 'src'
+  private readonly tests = 'tests'
+
   constructor(
     private readonly logger: Logger,
     private readonly shadowing: boolean = false,
@@ -150,7 +153,7 @@ export class YarnRepoProtocol implements RepoProtocol {
             path: path.relative(u.pathInRepo, dp.pathInRepo),
           }
         }),
-        include: ['src/**/*', 'tests/**/*'],
+        include: [`${this.src}/**/*`, `${this.tests}/**/*`],
       }
 
       if (!tsconf.references?.length) {
@@ -217,7 +220,7 @@ export class YarnRepoProtocol implements RepoProtocol {
   }
 
   private async checkBuiltFiles(dir: string) {
-    for (const codeDir of ['src', 'tests']) {
+    for (const codeDir of [this.src, this.tests]) {
       const srcFiles = new Set<string>(
         await DirectoryScanner.listPaths(path.join(dir, codeDir), { startingPointMustExist: false }),
       )
@@ -368,7 +371,7 @@ export class YarnRepoProtocol implements RepoProtocol {
       webpack(
         {
           context: dir,
-          entry: './dist/src/index.js',
+          entry: `./dist/${this.src}/index.js`,
           output: {
             filename: `${PACK_DIR}/${MAIN_FILE_NAME}`,
             path: dir,
@@ -464,26 +467,26 @@ export class YarnRepoProtocol implements RepoProtocol {
           taskKind: build,
           outputs: ['dist'],
           shadowing: this.shadowing,
-          inputsInDeps: ['dist/src'],
-          inputsInUnit: ['src', 'tests', 'package.json'],
+          inputsInDeps: [`dist/${this.src}`],
+          inputsInUnit: [this.src, this.tests, 'package.json'],
         },
         {
           taskKind: test,
           outputs: [JEST_OUTPUT_FILE],
-          inputsInUnit: ['dist/src', 'dist/tests'],
-          inputsInDeps: ['dist/src'],
+          inputsInUnit: [`dist/${this.src}`, `dist/${this.tests}`],
+          inputsInDeps: ['dist/${this.src}'],
         },
         {
           taskKind: pack,
           outputs: [PACK_DIR],
-          inputsInUnit: ['dist/src'],
-          inputsInDeps: ['dist/src'],
+          inputsInUnit: ['dist/${this.src}'],
+          inputsInDeps: ['dist/${this.src}'],
         },
         {
           unitIds: unitsWithPrepareAssets,
           taskKind: publish,
           outputs: [PREPARED_ASSETS_DIR],
-          inputsInUnit: ['dist/src'],
+          inputsInUnit: [`dist/${this.src}`],
         },
       ],
     }
@@ -495,7 +498,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     const exists = await fse.pathExists(resolved)
     if (!exists) {
       this.logger.info('jest-output.json does not exist. running everything!')
-      return ['tests']
+      return [this.tests]
     }
 
     const content = await fse.readFile(resolved, 'utf-8')
@@ -521,7 +524,7 @@ export class YarnRepoProtocol implements RepoProtocol {
       this.logger.info(`No failed tests found in ${resolved}`)
       // TODO(imaman): rethink this. maybe we want to run nothing if there are no failed tests.
       // It boilsdown to whether we trust jest-output.json or not.
-      return ['tests']
+      return [this.tests]
     }
 
     const synopsis = failedTests.map(ft => ft.assertionResults.map(x => ({ fullName: x.fullName, status: x.status })))
