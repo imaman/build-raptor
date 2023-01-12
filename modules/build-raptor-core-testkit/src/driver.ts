@@ -1,7 +1,16 @@
 import { BlobId, Breakdown, EngineBootstrapper, StepByStep, TaskStore } from 'build-raptor-core'
 import * as fse from 'fs-extra'
 import { createNopLogger } from 'logger'
-import { folderify, FolderifyRecipe, InMemoryStorageClient, Int, slurpDir, sortBy, StorageClient } from 'misc'
+import {
+  folderify,
+  FolderifyRecipe,
+  InMemoryStorageClient,
+  Int,
+  shouldNeverHappen,
+  slurpDir,
+  sortBy,
+  StorageClient,
+} from 'misc'
 import * as path from 'path'
 import { RepoProtocol } from 'repo-protocol'
 import { TaskKind, TaskName } from 'task-name'
@@ -124,10 +133,17 @@ class File {
     return await fse.readJSON(resolved)
   }
 
-  async write(content: string) {
+  async write(content: string | object) {
     const resolved = this.resolve()
     await fse.mkdirp(path.dirname(resolved))
-    await fse.writeFile(resolved, content)
+
+    const c =
+      typeof content === 'string'
+        ? content
+        : typeof content === 'object'
+        ? JSON.stringify(content)
+        : shouldNeverHappen(content)
+    await fse.writeFile(resolved, c)
   }
 
   async exists() {

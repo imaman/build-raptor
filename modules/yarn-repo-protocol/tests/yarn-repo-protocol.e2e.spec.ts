@@ -287,4 +287,25 @@ describe('yarn-repo-protocol.e2e', () => {
     expect(run4.executionTypeOf('a', 'test')).toEqual('CACHED')
     expect(run4.executionTypeOf('b', 'test')).toEqual('CACHED')
   })
+  test('code is rebuilt when package.json changes', async () => {
+    const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
+    const recipe = {
+      'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+      'modules/a/package.json': driver.packageJson('a'),
+      'modules/a/src/a.ts': `export function a(n: number) { return n * 333 }`,
+      'modules/a/tests/a.spec.ts': `test('a', () => { expect(1).toEqual(1) })`,
+    }
+
+    const fork = await driver.repo(recipe).fork()
+
+    const run1 = await fork.run('OK', { taskKind: 'build' })
+    expect(run1.executionTypeOf('a', 'build')).toEqual('EXECUTED')
+
+    const run2 = await fork.run('OK', { taskKind: 'build' })
+    expect(run2.executionTypeOf('a', 'build')).toEqual('CACHED')
+
+    fork.file('modules/a/package.json').write(driver.packageJson('a', [], { foo: '# nothing' }))
+    const run3 = await fork.run('OK', { taskKind: 'build' })
+    expect(run3.executionTypeOf('a', 'build')).toEqual('EXECUTED')
+  })
 })
