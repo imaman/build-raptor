@@ -465,7 +465,7 @@ export class YarnRepoProtocol implements RepoProtocol {
           outputs: ['dist'],
           shadowing: this.shadowing,
           inputsInDeps: ['dist/src'],
-          inputsInUnit: ['src', 'tests'],
+          inputsInUnit: ['src', 'tests', 'package.json'],
         },
         {
           taskKind: test,
