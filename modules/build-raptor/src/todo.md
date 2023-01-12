@@ -147,10 +147,10 @@
 - custom jest output
 - jestoutput to be part of the inputs
 - distinguish between fingerprint of inputs and of output
-- reports outputs for all tasks (even those that did not run)
 - tasks that always run
 - purge the local cache when it grows too large
 - output should indicate concurrency
 - stop calling lambda. dump a detailed JSON file so that user-code can then do whatever it wants with it.
 - task-store: two things which have the same content but where compiled at different times should have the same blobid.
 - rebuild when package.json changes
+- support other test runners

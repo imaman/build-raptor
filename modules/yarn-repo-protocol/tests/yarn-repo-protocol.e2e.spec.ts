@@ -176,8 +176,7 @@ describe('yarn-repo-protocol.e2e', () => {
 
     await fork
       .file('modules/a/package.json')
-      .write(JSON.stringify(driver.packageJson('a', [], { 'prepare-assets': 'echo "a" > prepared-assets/x2' })))
-    await fork.file('modules/a/src/a.ts').write(JSON.stringify(`export function afoo(n: number) { return n * 100 }`))
+      .write(driver.packageJson('a', [], { 'prepare-assets': 'echo "a" > prepared-assets/x2' }))
     await fork.run('OK', { taskKind: 'publish-assets' })
     expect(Object.keys(await readBlob('a:publish-assets'))).toEqual(['prepared-assets/x2'])
   })
@@ -286,5 +285,26 @@ describe('yarn-repo-protocol.e2e', () => {
     expect(await run4.outputOf('test', 'a')).toEqual([])
     expect(run4.executionTypeOf('a', 'test')).toEqual('CACHED')
     expect(run4.executionTypeOf('b', 'test')).toEqual('CACHED')
+  })
+  test('code is rebuilt when package.json changes', async () => {
+    const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
+    const recipe = {
+      'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+      'modules/a/package.json': driver.packageJson('a'),
+      'modules/a/src/a.ts': `export function a(n: number) { return n * 333 }`,
+      'modules/a/tests/a.spec.ts': `test('a', () => { expect(1).toEqual(1) })`,
+    }
+
+    const fork = await driver.repo(recipe).fork()
+
+    const run1 = await fork.run('OK', { taskKind: 'build' })
+    expect(run1.executionTypeOf('a', 'build')).toEqual('EXECUTED')
+
+    const run2 = await fork.run('OK', { taskKind: 'build' })
+    expect(run2.executionTypeOf('a', 'build')).toEqual('CACHED')
+
+    fork.file('modules/a/package.json').write(driver.packageJson('a', [], { foo: '# nothing' }))
+    const run3 = await fork.run('OK', { taskKind: 'build' })
+    expect(run3.executionTypeOf('a', 'build')).toEqual('EXECUTED')
   })
 })
