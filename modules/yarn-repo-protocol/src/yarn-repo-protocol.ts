@@ -483,6 +483,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     const unitIds = this.state.units.map(u => u.id)
 
     const unitsWithPrepareAssets = unitIds.filter(at => this.hasRunScript(at, this.scriptNames.prepareAssets))
+    const unitsWithValidate = unitIds.filter(at => this.hasRunScript(at, this.scriptNames.validate))
 
     const ret: CatalogOfTasks = {
       inUnit: {
@@ -506,6 +507,7 @@ export class YarnRepoProtocol implements RepoProtocol {
         },
         {
           taskKind: validate,
+          unitIds: unitsWithValidate,
           outputs: [],
           inputsInUnit: [this.dist('s'), this.dist('t')],
           inputsInDeps: [this.dist('s')],
@@ -517,8 +519,8 @@ export class YarnRepoProtocol implements RepoProtocol {
           inputsInDeps: [this.dist('s')],
         },
         {
-          unitIds: unitsWithPrepareAssets,
           taskKind: publish,
+          unitIds: unitsWithPrepareAssets,
           outputs: [PREPARED_ASSETS_DIR],
           inputsInUnit: [this.dist('s')],
         },

@@ -328,7 +328,7 @@ describe('yarn-repo-protocol.e2e', () => {
       const recipe = {
         'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
         'modules/a/package.json': driver.packageJson('a', [], { validate: 'node dist/tests/a.pqr' }),
-        'modules/a/src/a.ts': `export function a(n: number) { return n * 333 }`,
+        'modules/a/src/a.ts': `export function a(n: number) { return n * 321 }`,
         'modules/a/tests/a.pqr.ts': `console.log("pqr test is running")`,
       }
 
@@ -339,6 +339,23 @@ describe('yarn-repo-protocol.e2e', () => {
 
       const run2 = await fork.run('OK', { taskKind: 'validate' })
       expect(run2.executionTypeOf('a', 'validate')).toEqual('CACHED')
+    })
+    test('does not try to run "validate" in units that do not define such a run script', async () => {
+      const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': driver.packageJson('a', ['b']),
+        'modules/a/src/a.ts': `export function a(n: number) { return n * 321 }`,
+        'modules/a/tests/a.spec.ts': `test('a', () => { expect(1).toEqual(1) })`,
+        'modules/b/package.json': driver.packageJson('b', [], { validate: 'node dist/tests/b.pqr' }),
+        'modules/b/src/b.ts': `export function b(n: number) { return n * 642 }`,
+        'modules/b/tests/b.pqr.ts': `console.log("b.pqr test is running")`,
+      }
+
+      const fork = await driver.repo(recipe).fork()
+
+      const run1 = await fork.run('OK', { taskKind: 'validate' })
+      expect(run1.executionTypeOf('b', 'validate')).toEqual('EXECUTED')
     })
   })
 })
