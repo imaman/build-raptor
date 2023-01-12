@@ -3,7 +3,17 @@ import escapeStringRegexp from 'escape-string-regexp'
 import execa from 'execa'
 import * as fse from 'fs-extra'
 import { Logger } from 'logger'
-import { DirectoryScanner, failMe, Graph, hardGet, pairsToRecord, promises, switchOn, uniqueBy } from 'misc'
+import {
+  DirectoryScanner,
+  failMe,
+  Graph,
+  hardGet,
+  pairsToRecord,
+  promises,
+  shouldNeverHappen,
+  switchOn,
+  uniqueBy,
+} from 'misc'
 import * as path from 'path'
 import { ExitStatus, Publisher, RepoProtocol } from 'repo-protocol'
 import { CatalogOfTasks } from 'repo-protocol'
@@ -52,6 +62,17 @@ export class YarnRepoProtocol implements RepoProtocol {
 
   private readonly tsconfigBasePathInRepo: string = 'tsconfig-base.json'
   private state_: State | undefined
+
+  private dist(which?: 't' | 's') {
+    const d = `dist`
+    return which === undefined
+      ? d
+      : which === 's'
+      ? `${d}/${this.src}`
+      : which === 't'
+      ? `${d}/${this.tests}`
+      : shouldNeverHappen(which)
+  }
 
   private get state() {
     return this.state_ ?? failMe('state was not set')
@@ -144,7 +165,7 @@ export class YarnRepoProtocol implements RepoProtocol {
         compilerOptions: {
           ...(baseExists ? {} : defaultOptions),
           composite: true,
-          outDir: 'dist',
+          outDir: this.dist(),
         },
         references: deps.map(d => {
           const dp =
@@ -225,7 +246,7 @@ export class YarnRepoProtocol implements RepoProtocol {
         await DirectoryScanner.listPaths(path.join(dir, codeDir), { startingPointMustExist: false }),
       )
 
-      const d = path.join(dir, `dist/${codeDir}`)
+      const d = path.join(dir, `${this.dist()}/${codeDir}`)
       const distSrcFiles = await DirectoryScanner.listPaths(d, { startingPointMustExist: false })
 
       const toDelete = distSrcFiles.filter(f => !srcFiles.has(f.replace(/\.js$/, '.ts').replace(/\.d\.ts$/, '.ts')))
@@ -371,7 +392,7 @@ export class YarnRepoProtocol implements RepoProtocol {
       webpack(
         {
           context: dir,
-          entry: `./dist/${this.src}/index.js`,
+          entry: `./${this.dist('s')}/index.js`,
           output: {
             filename: `${PACK_DIR}/${MAIN_FILE_NAME}`,
             path: dir,
@@ -465,28 +486,28 @@ export class YarnRepoProtocol implements RepoProtocol {
       tasks: [
         {
           taskKind: build,
-          outputs: ['dist'],
+          outputs: [this.dist()],
           shadowing: this.shadowing,
-          inputsInDeps: [`dist/${this.src}`],
+          inputsInDeps: [this.dist('s')],
           inputsInUnit: [this.src, this.tests, 'package.json'],
         },
         {
           taskKind: test,
           outputs: [JEST_OUTPUT_FILE],
-          inputsInUnit: [`dist/${this.src}`, `dist/${this.tests}`],
-          inputsInDeps: ['dist/${this.src}'],
+          inputsInUnit: [this.dist('s'), this.dist('t')],
+          inputsInDeps: [this.dist('s')],
         },
         {
           taskKind: pack,
           outputs: [PACK_DIR],
-          inputsInUnit: ['dist/${this.src}'],
-          inputsInDeps: ['dist/${this.src}'],
+          inputsInUnit: [this.dist('s')],
+          inputsInDeps: [this.dist('s')],
         },
         {
           unitIds: unitsWithPrepareAssets,
           taskKind: publish,
           outputs: [PREPARED_ASSETS_DIR],
-          inputsInUnit: [`dist/${this.src}`],
+          inputsInUnit: [this.dist('s')],
         },
       ],
     }
