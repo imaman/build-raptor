@@ -1,4 +1,4 @@
-import { BlobId, Breakdown, EngineBootstrapper, StepByStep, TaskStore } from 'build-raptor-core'
+import { BlobId, Breakdown, EngineBootstrapper, Step, StepByName, StepByStep, StepName, TaskStore } from 'build-raptor-core'
 import * as fse from 'fs-extra'
 import { createNopLogger } from 'logger'
 import {
@@ -221,7 +221,25 @@ class Fork {
     const unparsed = await this.getBuildRaptorDir().to('step-by-step.json').readJson()
     return StepByStep.parse(unparsed)
   }
+
+  async getSteps<N extends StepName>(stepName: N): Promise<StepByName<N>[]> {
+    const parsed = await this.readStepByStepFile()
+    const ret = Fork.filterSteps<N>(parsed, stepName)
+    return ret
+  }
+
+
+  static filterSteps<N extends StepName>(input: Step[], stepName: N) {
+    return input.flatMap(at => at.step === stepName ? [at as StepByName<N>] : [])
+  }
+  
 }
+
+export function filterSteps<N extends StepName>(input: Step[], stepName: N): StepByName<N>[] {
+  return input.flatMap(at => at.step === stepName ? [at as StepByName<N>] : [])
+}
+
+
 
 class Repo {
   constructor(private readonly recipe: FolderifyRecipe, private readonly driver: Driver) {}
