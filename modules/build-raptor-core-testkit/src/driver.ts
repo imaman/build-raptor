@@ -1,4 +1,13 @@
-import { BlobId, Breakdown, EngineBootstrapper, Step, StepByName, StepByStep, StepName, TaskStore } from 'build-raptor-core'
+import {
+  BlobId,
+  Breakdown,
+  EngineBootstrapper,
+  Step,
+  StepByName,
+  StepByStep,
+  StepName,
+  TaskStore,
+} from 'build-raptor-core'
 import * as fse from 'fs-extra'
 import { createNopLogger } from 'logger'
 import {
@@ -228,18 +237,11 @@ class Fork {
     return ret
   }
 
-
-  static filterSteps<N extends StepName>(input: Step[], stepName: N) {
-    return input.flatMap(at => at.step === stepName ? [at as StepByName<N>] : [])
+  private static filterSteps<N extends StepName>(input: Step[], stepName: N) {
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+    return input.flatMap(at => (at.step === stepName ? [at as StepByName<N>] : []))
   }
-  
 }
-
-export function filterSteps<N extends StepName>(input: Step[], stepName: N): StepByName<N>[] {
-  return input.flatMap(at => at.step === stepName ? [at as StepByName<N>] : [])
-}
-
-
 
 class Repo {
   constructor(private readonly recipe: FolderifyRecipe, private readonly driver: Driver) {}

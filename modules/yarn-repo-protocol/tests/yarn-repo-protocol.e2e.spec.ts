@@ -1,7 +1,5 @@
-import { Step, StepByName, StepName } from 'build-raptor-core'
-import { Driver, filterSteps } from 'build-raptor-core-testkit'
+import { Driver } from 'build-raptor-core-testkit'
 import { createNopLogger } from 'logger'
-import { format } from 'prettier'
 
 import { YarnRepoProtocol } from '../src/yarn-repo-protocol'
 
@@ -170,7 +168,10 @@ describe('yarn-repo-protocol.e2e', () => {
 
     const readBlob = async (taskName: string) => {
       const steps = await fork.readStepByStepFile()
-      const blobId = steps.filter(at => at.taskName === taskName).flatMap(at => at.step === 'TASK_STORE_GET' || at.step === 'TASK_STORE_PUT' ? [at] : []).find(Boolean)?.blobId
+      const blobId = steps
+        .filter(at => at.taskName === taskName)
+        .flatMap(at => (at.step === 'TASK_STORE_GET' || at.step === 'TASK_STORE_PUT' ? [at] : []))
+        .find(Boolean)?.blobId
       return await driver.slurpBlob(blobId)
     }
 
@@ -359,9 +360,9 @@ describe('yarn-repo-protocol.e2e', () => {
 
       const fork = await driver.repo(recipe).fork()
 
-      const run = await fork.run('FAIL', { taskKind: 'test' })
+      const _run = await fork.run('FAIL', { taskKind: 'test' })
       const steps = await fork.readStepByStepFile()
-      expect(steps.filter(at => at.step === 'TEST_ENDED')).toEqual([{x: 1}])
+      expect(steps.filter(at => at.step === 'TEST_ENDED')).toEqual([{ x: 1 }])
     })
   })
 })
