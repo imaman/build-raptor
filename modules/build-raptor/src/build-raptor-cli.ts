@@ -1,7 +1,7 @@
 import { DefaultAssetPublisher, EngineBootstrapper } from 'build-raptor-core'
 import * as fse from 'fs-extra'
 import { createDefaultLogger } from 'logger'
-import { dumpFile, FilesystemStorageClient, Int, switchOn, toReasonableFileName } from 'misc'
+import { dumpFile, failMe, FilesystemStorageClient, Int, shouldNeverHappen, switchOn, toReasonableFileName } from 'misc'
 import * as os from 'os'
 import * as path from 'path'
 import { getS3StorageClientFactory } from 's3-storage-client'
@@ -10,6 +10,9 @@ import { UnitMetadata } from 'unit-metadata'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import { YarnRepoProtocol } from 'yarn-repo-protocol'
+
+type TestReporting = 'just-failing' | 'tree'
+
 interface Options {
   command: 'build' | 'test' | 'pack' | 'publish-assets'
   dir: string | undefined
@@ -19,6 +22,7 @@ interface Options {
   compact: boolean
   buildOutputLocation: string[]
   concurrency: number
+  testReporting?: TestReporting
 }
 
 async function createStorageClient() {
@@ -68,8 +72,28 @@ async function run(options: Options) {
     buildRaptorDir,
   )
 
-  bootstrapper.subscribable.on('executionStarted', tn => {
-    logger.print(`\n\n\n\n\n\n\n================================= ${tn} =================================`)
+  bootstrapper.subscribable.on('testEnded', arg => {
+    const tr = options.testReporting ?? 'just-failing'
+    if (tr === 'just-failing') {
+      return
+    }
+
+    if (tr === 'tree') {
+      const v = switchOn(arg.verdict, {
+        TEST_CRASHED: () => '💣 [crashed]',
+        TEST_FAILED: () => '❌',
+        TEST_PASSED: () => '✅',
+        TEST_TIMEDOUT: () => '⏲️ [timedout]',
+      })
+      logger.print(`${v} ${arg.testPath.join(': ')}`)
+      return
+    }
+
+    shouldNeverHappen(tr)
+  })
+
+  bootstrapper.subscribable.on('executionStarted', arg => {
+    logger.print(`=============================== ${arg} =================================`)
   })
 
   bootstrapper.subscribable.on('executionEnded', async arg => {
@@ -188,8 +212,13 @@ yargs(hideBin(process.argv))
   .command(
     'test',
     'run tests',
-    yargs => withBuildOptions(yargs),
+    yargs =>
+      withBuildOptions(yargs).option('test-reporting', {
+        choices: ['just-failing', 'tree'],
+        describe: 'test reporing policy',
+      }),
     async argv => {
+      const tr = argv['test-reporting']
       await run({
         dir: argv.dir,
         command: 'test',
@@ -199,6 +228,7 @@ yargs(hideBin(process.argv))
         buildOutputLocation: argv['build-output-locations'],
         concurrency: argv['concurrency'],
         compact: argv.compact,
+        testReporting: tr === 'just-failing' || tr === 'tree' ? tr : failMe(`unsupported value: ${tr}`),
       })
     },
   )
