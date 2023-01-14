@@ -55,11 +55,11 @@ export class SimpleNodeRepoProtocol implements RepoProtocol {
     outputFile: string,
     _buildRunId: BuildRunId,
   ): Promise<ExitStatus> {
-    const task = TaskName().undo(taskName).taskKind
+    const taskKind = TaskName().undo(taskName).taskKind
     const packageJson = await this.readPackageJsonAt(dir)
-    const script = packageJson?.scripts[task]
+    const script = packageJson?.scripts[taskKind]
     if (script === undefined) {
-      throw new Error(`Missing script: "${task}"`)
+      throw new Error(`Missing script for ${taskName}`)
     }
 
     const fd = await fse.open(outputFile, 'w')
@@ -71,7 +71,7 @@ export class SimpleNodeRepoProtocol implements RepoProtocol {
 
       return 'FAIL'
     } catch (e) {
-      throw new Error(`Crashed when running task ${task} in ${dir} (command: ${script}): ${util.inspect(e)}`)
+      throw new Error(`Crashed when running task ${taskName} in ${dir} (command: ${script}): ${util.inspect(e)}`)
     } finally {
       await fse.close(fd)
     }
