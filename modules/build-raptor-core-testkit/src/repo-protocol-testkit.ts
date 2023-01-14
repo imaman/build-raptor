@@ -254,11 +254,10 @@ class RepoProtocolImpl implements RepoProtocol {
   async execute(
     u: UnitMetadata,
     dir: string,
-    task: TaskKind,
+    tn: TaskName,
     outputFile: string,
     buildRunId: BuildRunId,
   ): Promise<ExitStatus> {
-    const tn = TaskName(u.id, task)
     mapIncrement(this.state.countByTask, tn, 1)
     mapIncrement(this.state.countByTaskInRun, TaskInRun(tn, buildRunId), 1)
     const taskCb = this.state.map.get(tn) ?? (() => 'OK')

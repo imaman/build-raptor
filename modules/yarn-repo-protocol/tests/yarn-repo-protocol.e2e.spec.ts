@@ -150,10 +150,11 @@ describe('yarn-repo-protocol.e2e', () => {
     const fork = await driver.repo(recipe).fork()
     await fork.run('OK', { taskKind: 'publish-assets' })
 
-    const stepByStep = await fork.readStepByStepFile()
-    const blobId = stepByStep.find(at => at.taskName === 'a:publish-assets')?.blobId
+    const steps = await fork.getSteps('TASK_STORE_PUT')
+    const blobId = steps.find(at => at.taskName === 'a:publish-assets')?.blobId
     expect(await driver.slurpBlob(blobId)).toEqual({ 'prepared-assets/x': 'a\n' })
   })
+
   test('takes just the current files when publishing an asset', async () => {
     const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
     const recipe = {
@@ -166,8 +167,11 @@ describe('yarn-repo-protocol.e2e', () => {
     const fork = await driver.repo(recipe).fork()
 
     const readBlob = async (taskName: string) => {
-      const stepByStep = await fork.readStepByStepFile()
-      const blobId = stepByStep.find(at => at.taskName === taskName)?.blobId
+      const steps = await fork.readStepByStepFile()
+      const blobId = steps
+        .filter(at => at.taskName === taskName)
+        .flatMap(at => (at.step === 'TASK_STORE_GET' || at.step === 'TASK_STORE_PUT' ? [at] : []))
+        .find(Boolean)?.blobId
       return await driver.slurpBlob(blobId)
     }
 
@@ -338,6 +342,42 @@ describe('yarn-repo-protocol.e2e', () => {
 
       const run = await fork.run('FAIL', { taskKind: 'test' })
       expect(run.executionTypeOf('a', 'test')).toEqual('EXECUTED')
+    })
+  })
+  describe('test reporting', () => {
+    test('publishes test events', async () => {
+      const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': driver.packageJson('a'),
+        'modules/a/src/a.ts': `//`,
+        'modules/a/tests/a.spec.ts': `
+          describe('a', () => {
+            test('foo', () => { expect(1).toEqual(1) })
+            test('bar', () => { expect(1).toEqual(2) })
+          })`,
+      }
+
+      const fork = await driver.repo(recipe).fork()
+
+      const _run = await fork.run('FAIL', { taskKind: 'test' })
+      const steps = await fork.readStepByStepFile()
+      expect(steps.filter(at => at.step === 'TEST_ENDED')).toEqual([
+        {
+          step: 'TEST_ENDED',
+          taskName: 'a:test',
+          fileName: 'modules/a/dist/tests/a.spec.js',
+          testPath: ['a', 'foo'],
+          verdict: 'TEST_PASSED',
+        },
+        {
+          step: 'TEST_ENDED',
+          taskName: 'a:test',
+          fileName: 'modules/a/dist/tests/a.spec.js',
+          testPath: ['a', 'bar'],
+          verdict: 'TEST_FAILED',
+        },
+      ])
     })
   })
 })

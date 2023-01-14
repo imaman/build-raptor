@@ -75,6 +75,15 @@ export class Engine {
           : shouldNeverHappen(e.opcode)
       this.steps.push({ blobId: e.blobId, taskName: e.taskName, step, files: e.files })
     })
+    this.eventPublisher.on('testEnded', e => {
+      this.steps.push({
+        step: 'TEST_ENDED',
+        taskName: e.taskName,
+        fileName: e.fileName,
+        testPath: e.testPath,
+        verdict: e.verdict,
+      })
+    })
     this.fingerprintLedger = this.options.fingerprintLedger
       ? new PersistedFingerprintLedger(logger, ledgerFile)
       : new NopFingerprintLedger()
@@ -84,7 +93,7 @@ export class Engine {
 
   async run(buildRunId: BuildRunId) {
     await this.fingerprintLedger.updateRun(buildRunId)
-    await this.repoProtocol.initialize(this.rootDir)
+    await this.repoProtocol.initialize(this.rootDir, this.eventPublisher)
     try {
       const model = await this.loadModel(buildRunId)
 

@@ -4,7 +4,7 @@ import * as fse from 'fs-extra'
 import { Graph, promises } from 'misc'
 import * as path from 'path'
 import { CatalogOfTasks, ExitStatus, RepoProtocol } from 'repo-protocol'
-import { TaskKind } from 'task-name'
+import { TaskKind, TaskName } from 'task-name'
 import { UnitId, UnitMetadata } from 'unit-metadata'
 import * as util from 'util'
 
@@ -51,14 +51,15 @@ export class SimpleNodeRepoProtocol implements RepoProtocol {
   async execute(
     _u: UnitMetadata,
     dir: string,
-    task: TaskKind,
+    taskName: TaskName,
     outputFile: string,
     _buildRunId: BuildRunId,
   ): Promise<ExitStatus> {
+    const taskKind = TaskName().undo(taskName).taskKind
     const packageJson = await this.readPackageJsonAt(dir)
-    const script = packageJson?.scripts[task]
+    const script = packageJson?.scripts[taskKind]
     if (script === undefined) {
-      throw new Error(`Missing script: "${task}"`)
+      throw new Error(`Missing script for ${taskName}`)
     }
 
     const fd = await fse.open(outputFile, 'w')
@@ -70,7 +71,7 @@ export class SimpleNodeRepoProtocol implements RepoProtocol {
 
       return 'FAIL'
     } catch (e) {
-      throw new Error(`Crashed when running task ${task} in ${dir} (command: ${script}): ${util.inspect(e)}`)
+      throw new Error(`Crashed when running task ${taskName} in ${dir} (command: ${script}): ${util.inspect(e)}`)
     } finally {
       await fse.close(fd)
     }

@@ -1,4 +1,13 @@
-import { BlobId, Breakdown, EngineBootstrapper, StepByStep, TaskStore } from 'build-raptor-core'
+import {
+  BlobId,
+  Breakdown,
+  EngineBootstrapper,
+  Step,
+  StepByName,
+  StepByStep,
+  StepName,
+  TaskStore,
+} from 'build-raptor-core'
 import * as fse from 'fs-extra'
 import { createNopLogger } from 'logger'
 import {
@@ -220,6 +229,17 @@ class Fork {
   async readStepByStepFile() {
     const unparsed = await this.getBuildRaptorDir().to('step-by-step.json').readJson()
     return StepByStep.parse(unparsed)
+  }
+
+  async getSteps<N extends StepName>(stepName: N): Promise<StepByName<N>[]> {
+    const parsed = await this.readStepByStepFile()
+    const ret = Fork.filterSteps<N>(parsed, stepName)
+    return ret
+  }
+
+  private static filterSteps<N extends StepName>(input: Step[], stepName: N) {
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+    return input.flatMap(at => (at.step === stepName ? [at as StepByName<N>] : []))
   }
 }
 
