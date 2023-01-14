@@ -1,9 +1,19 @@
 import { DefaultAssetPublisher, EngineBootstrapper } from 'build-raptor-core'
 import * as fse from 'fs-extra'
 import { createDefaultLogger } from 'logger'
-import { dumpFile, failMe, FilesystemStorageClient, Int, shouldNeverHappen, switchOn, toReasonableFileName } from 'misc'
+import {
+  assigningGet,
+  dumpFile,
+  failMe,
+  FilesystemStorageClient,
+  Int,
+  shouldNeverHappen,
+  switchOn,
+  toReasonableFileName,
+} from 'misc'
 import * as os from 'os'
 import * as path from 'path'
+import { RepoProtocolEvent } from 'repo-protocol'
 import { getS3StorageClientFactory } from 's3-storage-client'
 import { TaskName } from 'task-name'
 import { UnitMetadata } from 'unit-metadata'
@@ -72,6 +82,7 @@ async function run(options: Options) {
     buildRaptorDir,
   )
 
+  const testOutput = new Map<TaskName, RepoProtocolEvent['testEnded'][]>()
   bootstrapper.subscribable.on('testEnded', arg => {
     const tr = options.testReporting ?? 'just-failing'
     if (tr === 'just-failing') {
@@ -79,13 +90,7 @@ async function run(options: Options) {
     }
 
     if (tr === 'tree') {
-      const v = switchOn(arg.verdict, {
-        TEST_CRASHED: () => '💣 [crashed]',
-        TEST_FAILED: () => '❌',
-        TEST_PASSED: () => '✅',
-        TEST_TIMEDOUT: () => '⏲️ [timedout]',
-      })
-      logger.print(`${v} ${arg.testPath.join(': ')}`)
+      assigningGet(testOutput, arg.taskName, () => []).push(arg)
       return
     }
 
@@ -108,6 +113,18 @@ async function run(options: Options) {
       logger.info(`wrote output of ${arg.taskName} to ${fileName}`)
     } finally {
       stream.end()
+    }
+
+    const arr = testOutput.get(arg.taskName) ?? []
+    for (const at of arr) {
+      const v = switchOn(at.verdict, {
+        TEST_CRASHED: () => '💣 [crashed]',
+        TEST_FAILED: () => '❌',
+        TEST_PASSED: () => '✅',
+        TEST_TIMEDOUT: () => '⏲️ [timedout]',
+      })
+
+      logger.print(`${v} ${at.testPath.join(': ')}`)
     }
 
     const doPrint =
