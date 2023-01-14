@@ -362,7 +362,22 @@ describe('yarn-repo-protocol.e2e', () => {
 
       const _run = await fork.run('FAIL', { taskKind: 'test' })
       const steps = await fork.readStepByStepFile()
-      expect(steps.filter(at => at.step === 'TEST_ENDED')).toEqual([{ x: 1 }])
+      expect(steps.filter(at => at.step === 'TEST_ENDED')).toEqual([
+        {
+          fileName: 'modules/a/dist/tests/a.spec.js',
+          qualifiedName: 'a foo',
+          step: 'TEST_ENDED',
+          taskName: 'a:test',
+          verdict: 'TEST_PASSED',
+        },
+        {
+          fileName: 'modules/a/dist/tests/a.spec.js',
+          qualifiedName: 'a bar',
+          step: 'TEST_ENDED',
+          taskName: 'a:test',
+          verdict: 'TEST_FAILED',
+        },
+      ])
     })
   })
 })
