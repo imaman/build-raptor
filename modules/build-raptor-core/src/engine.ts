@@ -75,6 +75,15 @@ export class Engine {
           : shouldNeverHappen(e.opcode)
       this.steps.push({ blobId: e.blobId, taskName: e.taskName, step, files: e.files })
     })
+    this.eventPublisher.on('testEnded', e => {
+      this.steps.push({
+        step: 'TEST_ENDED',
+        taskName: e.taskName,
+        fileName: e.fileName,
+        qualifiedName: e.qualifiedName,
+        verdict: e.verdict,
+      })
+    })
     this.fingerprintLedger = this.options.fingerprintLedger
       ? new PersistedFingerprintLedger(logger, ledgerFile)
       : new NopFingerprintLedger()

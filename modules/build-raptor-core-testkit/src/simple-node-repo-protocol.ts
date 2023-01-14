@@ -4,7 +4,7 @@ import * as fse from 'fs-extra'
 import { Graph, promises } from 'misc'
 import * as path from 'path'
 import { CatalogOfTasks, ExitStatus, RepoProtocol } from 'repo-protocol'
-import { TaskKind } from 'task-name'
+import { TaskKind, TaskName } from 'task-name'
 import { UnitId, UnitMetadata } from 'unit-metadata'
 import * as util from 'util'
 
@@ -51,10 +51,11 @@ export class SimpleNodeRepoProtocol implements RepoProtocol {
   async execute(
     _u: UnitMetadata,
     dir: string,
-    task: TaskKind,
+    taskName: TaskName,
     outputFile: string,
     _buildRunId: BuildRunId,
   ): Promise<ExitStatus> {
+    const task = TaskName().undo(taskName).taskKind
     const packageJson = await this.readPackageJsonAt(dir)
     const script = packageJson?.scripts[task]
     if (script === undefined) {

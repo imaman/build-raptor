@@ -12,12 +12,13 @@ import {
   promises,
   shouldNeverHappen,
   switchOn,
+  TypedPublisher,
   uniqueBy,
 } from 'misc'
 import * as path from 'path'
-import { ExitStatus, Publisher, RepoProtocol } from 'repo-protocol'
+import { ExitStatus, Publisher, RepoProtocol, RepoProtocolEvent } from 'repo-protocol'
 import { CatalogOfTasks } from 'repo-protocol'
-import { TaskKind } from 'task-name'
+import { TaskKind, TaskName } from 'task-name'
 import * as Tmp from 'tmp-promise'
 import { PackageJson, TsConfigJson } from 'type-fest'
 import { UnitId, UnitMetadata } from 'unit-metadata'
@@ -44,6 +45,7 @@ interface State {
   readonly units: UnitMetadata[]
   readonly packageByUnitId: Map<UnitId, PackageJson>
   readonly versionByPackageId: Map<string, string>
+  readonly publisher: TypedPublisher<RepoProtocolEvent>
 }
 
 async function getTempFile() {
@@ -92,7 +94,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     return runScripts.includes(runScript)
   }
 
-  async initialize(rootDir: string): Promise<void> {
+  async initialize(rootDir: string, publisher: TypedPublisher<RepoProtocolEvent>): Promise<void> {
     const yarnInfo = await this.getYarnInfo(rootDir)
 
     const units = computeUnits(yarnInfo)
@@ -130,7 +132,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     await this.generateTsConfigFiles(rootDir, units, graph)
 
     await this.generateSymlinksToPackages(rootDir, units)
-    this.state_ = { yarnInfo, graph, rootDir, units, packageByUnitId, versionByPackageId }
+    this.state_ = { yarnInfo, graph, rootDir, units, packageByUnitId, versionByPackageId, publisher }
   }
 
   private async generateSymlinksToPackages(rootDir: string, units: UnitMetadata[]) {
@@ -265,7 +267,8 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
   }
 
-  async execute(u: UnitMetadata, dir: string, task: TaskKind, outputFile: string): Promise<ExitStatus> {
+  async execute(u: UnitMetadata, dir: string, taskName: TaskName, outputFile: string): Promise<ExitStatus> {
+    const task = TaskName().undo(taskName).taskKind
     if (task === 'build') {
       const ret = await this.run('npm', ['run', this.scriptNames.build], dir, outputFile)
       return await switchOn(ret, {
@@ -278,7 +281,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     if (task === 'test') {
       const tempFile = await getTempFile()
       const [a, b] = await Promise.all([
-        this.runJest(u, dir, task, outputFile),
+        this.runJest(u, dir, taskName, outputFile),
         this.runValidate(u, dir, task, tempFile),
       ])
       const ret = switchOn(a, {
@@ -335,7 +338,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     throw new Error(`Unknown task ${task} (at ${dir})`)
   }
 
-  private async runJest(u: UnitMetadata, dir: string, task: TaskKind, outputFile: string): Promise<ExitStatus> {
+  private async runJest(u: UnitMetadata, dir: string, taskName: TaskName, outputFile: string): Promise<ExitStatus> {
     const jof = path.join(dir, JEST_OUTPUT_FILE)
     const testsToRun = await this.computeTestsToRun(jof)
     const ret = await this.run(
@@ -344,12 +347,26 @@ export class YarnRepoProtocol implements RepoProtocol {
       dir,
       outputFile,
     )
-    const written = fse.readFileSync(jof, 'utf-8')
+    const latest = fse.readFileSync(jof, 'utf-8')
+    let parsed
     try {
-      JSON.parse(written)
+      parsed = JSON.parse(latest)
     } catch (e) {
       throw new Error(`failed to parse ${jof} <${e}>`)
     }
+
+    const jestJson: JestJson = JestJson.parse(parsed)
+    jestJson.testResults.forEach(tr => {
+      const fileName = path.relative(this.state.rootDir, tr.name)
+      tr.assertionResults.forEach(ar => {
+        const qualifiedName = ar.fullName
+        const verdict = ar.status === 'passed' ? 'TEST_PASSED' : ar.status === 'failed' ? 'TEST_FAILED' : undefined
+        if (verdict) {
+          this.state.publisher.publish('testEnded', { verdict, fileName, qualifiedName, taskName })
+        }
+      })
+    })
+
     return ret
   }
 

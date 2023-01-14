@@ -1,6 +1,6 @@
 import { BuildRunId } from 'build-run-id'
 import { Graph, TypedPublisher } from 'misc'
-import { TaskKind } from 'task-name'
+import { TaskName } from 'task-name'
 import { UnitId, UnitMetadata } from 'unit-metadata'
 
 import { CatalogOfTasks } from './catalog-of-tasks'
@@ -12,12 +12,19 @@ export interface RepoProtocolEvent {
     verdict: 'TEST_PASSED' | 'TEST_FAILED' | 'TEST_CRASHED' | 'TEST_TIMEDOUT'
     qualifiedName: string
     fileName: string
+    taskName: TaskName
   }
 }
 
 export interface RepoProtocol {
   initialize(rootDir: string, publisher: TypedPublisher<RepoProtocolEvent>): Promise<void>
-  execute(u: UnitMetadata, dir: string, task: TaskKind, outputFile: string, buildRunId: BuildRunId): Promise<ExitStatus>
+  execute(
+    u: UnitMetadata,
+    dir: string,
+    taskName: TaskName,
+    outputFile: string,
+    buildRunId: BuildRunId,
+  ): Promise<ExitStatus>
   getGraph(): Promise<Graph<UnitId>>
   getUnits(): Promise<UnitMetadata[]>
   getTasks(): Promise<CatalogOfTasks>
