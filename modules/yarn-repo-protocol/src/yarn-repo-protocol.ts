@@ -359,10 +359,10 @@ export class YarnRepoProtocol implements RepoProtocol {
     jestJson.testResults.forEach(tr => {
       const fileName = path.relative(this.state.rootDir, tr.name)
       tr.assertionResults.forEach(ar => {
-        const qualifiedName = ar.fullName
         const verdict = ar.status === 'passed' ? 'TEST_PASSED' : ar.status === 'failed' ? 'TEST_FAILED' : undefined
         if (verdict) {
-          this.state.publisher.publish('testEnded', { verdict, fileName, qualifiedName, taskName })
+          const testPath = [...ar.ancestorTitles, ar.title]
+          this.state.publisher.publish('testEnded', { verdict, fileName, testPath, taskName })
         }
       })
     })

@@ -49,7 +49,14 @@ export const JestJson = z.object({
       status: z.string(),
       name: z.string(),
       message: z.string(),
-      assertionResults: z.object({ fullName: z.string(), status: z.string() }).array(),
+      assertionResults: z
+        .object({
+          fullName: z.string(),
+          ancestorTitles: z.string().array(),
+          title: z.string(),
+          status: z.string(),
+        })
+        .array(),
     })
     .array(),
 })

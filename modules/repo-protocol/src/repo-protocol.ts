@@ -10,7 +10,7 @@ export type ExitStatus = 'OK' | 'FAIL' | 'CRASH'
 export interface RepoProtocolEvent {
   testEnded: {
     verdict: 'TEST_PASSED' | 'TEST_FAILED' | 'TEST_CRASHED' | 'TEST_TIMEDOUT'
-    qualifiedName: string
+    testPath: string[]
     fileName: string
     taskName: TaskName
   }

@@ -80,7 +80,7 @@ export class Engine {
         step: 'TEST_ENDED',
         taskName: e.taskName,
         fileName: e.fileName,
-        qualifiedName: e.qualifiedName,
+        testPath: e.testPath,
         verdict: e.verdict,
       })
     })
