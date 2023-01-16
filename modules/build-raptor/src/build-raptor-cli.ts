@@ -1,11 +1,12 @@
 import { DefaultAssetPublisher, EngineBootstrapper } from 'build-raptor-core'
 import * as fse from 'fs-extra'
-import { createDefaultLogger } from 'logger'
+import { createDefaultLogger, Logger } from 'logger'
 import {
   assigningGet,
   dumpFile,
   failMe,
   FilesystemStorageClient,
+  groupBy,
   Int,
   shouldNeverHappen,
   switchOn,
@@ -34,6 +35,9 @@ interface Options {
   concurrency: number
   testReporting?: TestReporting
 }
+
+
+type TestEndedEvent = RepoProtocolEvent['testEnded']
 
 async function createStorageClient() {
   return {
@@ -82,7 +86,7 @@ async function run(options: Options) {
     buildRaptorDir,
   )
 
-  const testOutput = new Map<TaskName, RepoProtocolEvent['testEnded'][]>()
+  const testOutput = new Map<TaskName, TestEndedEvent[]>()
   bootstrapper.subscribable.on('testEnded', arg => {
     const tr = options.testReporting ?? 'just-failing'
     if (tr === 'just-failing') {
@@ -115,17 +119,7 @@ async function run(options: Options) {
       stream.end()
     }
 
-    const arr = testOutput.get(arg.taskName) ?? []
-    for (const at of arr) {
-      const v = switchOn(at.verdict, {
-        TEST_CRASHED: () => '💣 [crashed]',
-        TEST_FAILED: () => '❌',
-        TEST_PASSED: () => '✅',
-        TEST_TIMEDOUT: () => '⏲️ [timedout]',
-      })
-
-      logger.print(`${v} ${at.testPath.join(': ')}`)
-    }
+    reportTests(logger, testOutput.get(arg.taskName) ?? [])
 
     const doPrint =
       options.printPassing ||
@@ -161,6 +155,88 @@ async function run(options: Options) {
   const { exitCode } = await runner()
   // eslint-disable-next-line require-atomic-updates
   process.exitCode = exitCode
+}
+
+function reportTests(logger: Logger, arr: TestEndedEvent[]) {
+  function compare(a: string[], b: string[]): 'EQ' | 'A_PREFIX' | 'B_PREFIX' | 'NOR' {
+    for (let i = 0; i < Math.min(a.length, b.length); ++i) {
+      if (a[i] === b[i]) {
+        continue
+      }
+
+      return 'NOR'
+    }
+
+    if (a.length < b.length) {
+      return 'A_PREFIX'
+    }
+    
+    if (b.length < a.length) {
+      return 'B_PREFIX'
+    }
+    return 'EQ'
+  } 
+
+  function recurse(arr: TestEndedEvent[], index: number, seen: Set<string>, parentKey: string[], key: string[]) {
+    if (seen.has(JSON.stringify(key))) {
+      return
+    }
+    seen.add(JSON.stringify(key))
+
+    let indent = '|  '
+    for (let i = 0; i < parentKey.length; ++i) {
+      indent += '  '
+    }
+
+    for (let i = parentKey.length; i < key.length; ++i) {
+      logger.print(`${indent}${key[i]}`)
+      indent += '  '
+    }
+
+    for (let i = index; i < arr.length; ++i) {
+      const at = arr[i]
+      const k = at.testPath.slice(0, -1)
+      const comp = compare(key, k)   
+      // console.log(`comparing ${JSON.stringify(key)} with ${JSON.stringify(k)}: ${comp} `)   
+      if (comp === 'EQ') {
+        const v = switchOn(at.verdict, {
+          TEST_CRASHED: () => '❌',
+          TEST_FAILED: () => '❌',
+          TEST_PASSED: () => '✅',
+          TEST_TIMEDOUT: () => '⏲️ [timedout]',
+        })
+    
+        logger.print(`${indent}${v} ${at.testPath.at(-1)}`)
+        continue
+      } 
+      
+      if (comp === 'A_PREFIX') {
+        // console.log(`\n\n\n tp=${JSON.stringify(at.testPath)}`)
+        // console.log(`recursing. newparent=${JSON.stringify(key)}. k=${JSON.stringify(k)}`)   
+        recurse(arr, i, seen, key, k)
+        continue
+      } 
+      
+      
+      if (comp === 'B_PREFIX') {
+        console.log(`L.221 ${JSON.stringify(arr, null, 2)}`)
+        console.log(`at=${JSON.stringify(at)}`)
+        throw new Error(`encountered an unanticipated prefix (a=${JSON.stringify(key)}, b=${JSON.stringify(k)})`)
+      }
+
+      if (comp === 'NOR') {
+        continue
+      }
+
+      shouldNeverHappen(comp)
+    }
+  }
+
+  for (const curr of Object.values(groupBy(arr, at => at.fileName))) {
+    const seen = new Set<string>()
+    console.log(`\n\n${curr[0].fileName}`)
+    recurse(curr, 0, seen, [], [])
+  }
 }
 
 function withBuildOptions<T>(y: yargs.Argv<T>) {

@@ -5,6 +5,7 @@ import * as util from 'util'
 
 type Jsonable = string | number | boolean | null | readonly Jsonable[] | { readonly [key: string]: Jsonable }
 
+// 17
 export function computeObjectHash(input: Record<string, Jsonable>): string {
   // TODO(imaman): add a test where a nested (sub) object of the input is not sorted.
   return computeHash(jsonStringify(input))
