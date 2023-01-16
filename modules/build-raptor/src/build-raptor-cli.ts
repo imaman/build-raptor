@@ -36,7 +36,6 @@ interface Options {
   testReporting?: TestReporting
 }
 
-
 type TestEndedEvent = RepoProtocolEvent['testEnded']
 
 async function createStorageClient() {
@@ -158,84 +157,42 @@ async function run(options: Options) {
 }
 
 function reportTests(logger: Logger, arr: TestEndedEvent[]) {
-  function compare(a: string[], b: string[]): 'EQ' | 'A_PREFIX' | 'B_PREFIX' | 'NOR' {
-    for (let i = 0; i < Math.min(a.length, b.length); ++i) {
-      if (a[i] === b[i]) {
-        continue
-      }
-
-      return 'NOR'
-    }
-
-    if (a.length < b.length) {
-      return 'A_PREFIX'
-    }
-    
-    if (b.length < a.length) {
-      return 'B_PREFIX'
-    }
-    return 'EQ'
-  } 
-
-  function recurse(arr: TestEndedEvent[], index: number, seen: Set<string>, parentKey: string[], key: string[]) {
-    if (seen.has(JSON.stringify(key))) {
-      return
-    }
-    seen.add(JSON.stringify(key))
-
+  function indent(prevKey: string[], key: string[]) {
     let indent = '|  '
-    for (let i = 0; i < parentKey.length; ++i) {
+    for (let i = 0; i < prevKey.length; ++i) {
       indent += '  '
     }
 
-    for (let i = parentKey.length; i < key.length; ++i) {
+    for (let i = prevKey.length; i < key.length; ++i) {
       logger.print(`${indent}${key[i]}`)
       indent += '  '
     }
 
-    for (let i = index; i < arr.length; ++i) {
-      const at = arr[i]
+    return indent
+  }
+
+  function printTests(tests: TestEndedEvent[]) {
+    let prev: string[] = []
+    for (let i = 0; i < tests.length; ++i) {
+      const at = tests[i]
       const k = at.testPath.slice(0, -1)
-      const comp = compare(key, k)   
-      // console.log(`comparing ${JSON.stringify(key)} with ${JSON.stringify(k)}: ${comp} `)   
-      if (comp === 'EQ') {
-        const v = switchOn(at.verdict, {
-          TEST_CRASHED: () => '❌',
-          TEST_FAILED: () => '❌',
-          TEST_PASSED: () => '✅',
-          TEST_TIMEDOUT: () => '⏲️ [timedout]',
-        })
-    
-        logger.print(`${indent}${v} ${at.testPath.at(-1)}`)
-        continue
-      } 
-      
-      if (comp === 'A_PREFIX') {
-        // console.log(`\n\n\n tp=${JSON.stringify(at.testPath)}`)
-        // console.log(`recursing. newparent=${JSON.stringify(key)}. k=${JSON.stringify(k)}`)   
-        recurse(arr, i, seen, key, k)
-        continue
-      } 
-      
-      
-      if (comp === 'B_PREFIX') {
-        console.log(`L.221 ${JSON.stringify(arr, null, 2)}`)
-        console.log(`at=${JSON.stringify(at)}`)
-        throw new Error(`encountered an unanticipated prefix (a=${JSON.stringify(key)}, b=${JSON.stringify(k)})`)
-      }
+      const spaces = indent(prev, k)
+      const v = switchOn(at.verdict, {
+        TEST_CRASHED: () => '❌',
+        TEST_FAILED: () => '❌',
+        TEST_PASSED: () => '✅',
+        TEST_TIMEDOUT: () => '⏲️ [timedout]',
+      })
 
-      if (comp === 'NOR') {
-        continue
-      }
+      logger.print(`${spaces}${v} ${at.testPath.at(-1)}`)
 
-      shouldNeverHappen(comp)
+      prev = k
     }
   }
 
   for (const curr of Object.values(groupBy(arr, at => at.fileName))) {
-    const seen = new Set<string>()
-    console.log(`\n\n${curr[0].fileName}`)
-    recurse(curr, 0, seen, [], [])
+    logger.print(`\n\n${curr[0].fileName}`)
+    printTests(curr)
   }
 }
 
