@@ -190,9 +190,9 @@ function reportTests(logger: Logger, arr: TestEndedEvent[]) {
     }
   }
 
-  for (const curr of Object.values(groupBy(arr, at => at.fileName))) {
-    logger.print(`\n\n${curr[0].fileName}`)
-    printTests(curr)
+  for (const [fileName, tests] of Object.entries(groupBy(arr, at => at.fileName))) {
+    logger.print(fileName)
+    printTests(tests)
   }
 }
 
