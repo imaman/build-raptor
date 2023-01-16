@@ -278,7 +278,8 @@ yargs(hideBin(process.argv))
         buildOutputLocation: argv['build-output-locations'],
         concurrency: argv['concurrency'],
         compact: argv.compact,
-        testReporting: tr === 'just-failing' || tr === 'tree' ? tr : failMe(`unsupported value: ${tr}`),
+        testReporting:
+          tr === 'just-failing' || tr === 'tree' || tr === undefined ? tr : failMe(`unsupported value: ${tr}`),
       })
     },
   )
