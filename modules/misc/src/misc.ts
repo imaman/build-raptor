@@ -11,6 +11,7 @@ export function computeObjectHash(input: Record<string, Jsonable>): string {
 }
 
 /**
+ *
  * @param input buffer or string to hash
  * @returns a 224 bit hash, in "hex" encoding.
  */

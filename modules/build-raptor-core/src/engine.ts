@@ -221,8 +221,8 @@ export class Engine {
     if (graph.isCyclic()) {
       throw new BuildFailedError(`Cyclic dependency detected in ${graph}`)
     }
-    this.logger.info(`unit graph=\n${graph}`)
 
+    this.logger.info(`unit graph=\n${graph}`)
     const scanner = new DirectoryScanner(this.rootDir, { predicate: ig.createFilter() })
     const fingerprinter = new Fingerprinter(scanner, this.logger, async (h, c) => {
       if (c) {

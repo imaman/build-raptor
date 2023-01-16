@@ -221,7 +221,7 @@ describe('engine', () => {
         scripts: { build: 'exit 0', test: 'echo "B" > o' },
       },
     }
-//
+
     const fork = await driver.repo(recipe).fork()
 
     await fork.run('OK', { taskKind: 'build' })
