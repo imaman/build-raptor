@@ -1,15 +1,29 @@
 import { DefaultAssetPublisher, EngineBootstrapper } from 'build-raptor-core'
 import * as fse from 'fs-extra'
-import { createDefaultLogger } from 'logger'
-import { dumpFile, FilesystemStorageClient, Int, switchOn, toReasonableFileName } from 'misc'
+import { createDefaultLogger, Logger } from 'logger'
+import {
+  assigningGet,
+  dumpFile,
+  failMe,
+  FilesystemStorageClient,
+  groupBy,
+  Int,
+  shouldNeverHappen,
+  switchOn,
+  toReasonableFileName,
+} from 'misc'
 import * as os from 'os'
 import * as path from 'path'
+import { RepoProtocolEvent } from 'repo-protocol'
 import { getS3StorageClientFactory } from 's3-storage-client'
 import { TaskName } from 'task-name'
 import { UnitMetadata } from 'unit-metadata'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import { YarnRepoProtocol } from 'yarn-repo-protocol'
+
+type TestReporting = 'just-failing' | 'tree'
+
 interface Options {
   command: 'build' | 'test' | 'pack' | 'publish-assets'
   dir: string | undefined
@@ -19,7 +33,10 @@ interface Options {
   compact: boolean
   buildOutputLocation: string[]
   concurrency: number
+  testReporting?: TestReporting
 }
+
+type TestEndedEvent = RepoProtocolEvent['testEnded']
 
 async function createStorageClient() {
   return {
@@ -68,8 +85,23 @@ async function run(options: Options) {
     buildRaptorDir,
   )
 
-  bootstrapper.subscribable.on('executionStarted', tn => {
-    logger.print(`\n\n\n\n\n\n\n================================= ${tn} =================================`)
+  const testOutput = new Map<TaskName, TestEndedEvent[]>()
+  bootstrapper.subscribable.on('testEnded', arg => {
+    const tr = options.testReporting ?? 'just-failing'
+    if (tr === 'just-failing') {
+      return
+    }
+
+    if (tr === 'tree') {
+      assigningGet(testOutput, arg.taskName, () => []).push(arg)
+      return
+    }
+
+    shouldNeverHappen(tr)
+  })
+
+  bootstrapper.subscribable.on('executionStarted', arg => {
+    logger.print(`=============================== ${arg} =================================`)
   })
 
   bootstrapper.subscribable.on('executionEnded', async arg => {
@@ -85,6 +117,8 @@ async function run(options: Options) {
     } finally {
       stream.end()
     }
+
+    reportTests(logger, testOutput.get(arg.taskName) ?? [])
 
     const doPrint =
       options.printPassing ||
@@ -120,6 +154,46 @@ async function run(options: Options) {
   const { exitCode } = await runner()
   // eslint-disable-next-line require-atomic-updates
   process.exitCode = exitCode
+}
+
+function reportTests(logger: Logger, arr: TestEndedEvent[]) {
+  function indent(prevKey: string[], key: string[]) {
+    let indent = '|  '
+    for (let i = 0; i < prevKey.length; ++i) {
+      indent += '  '
+    }
+
+    for (let i = prevKey.length; i < key.length; ++i) {
+      logger.print(`${indent}${key[i]}`)
+      indent += '  '
+    }
+
+    return indent
+  }
+
+  function printTests(tests: TestEndedEvent[]) {
+    let prev: string[] = []
+    for (let i = 0; i < tests.length; ++i) {
+      const at = tests[i]
+      const k = at.testPath.slice(0, -1)
+      const spaces = indent(prev, k)
+      const v = switchOn(at.verdict, {
+        TEST_CRASHED: () => '❌',
+        TEST_FAILED: () => '❌',
+        TEST_PASSED: () => '✅',
+        TEST_TIMEDOUT: () => '⏲️ [timedout]',
+      })
+
+      logger.print(`${spaces}${v} ${at.testPath.at(-1)}`)
+
+      prev = k
+    }
+  }
+
+  for (const [fileName, tests] of Object.entries(groupBy(arr, at => at.fileName))) {
+    logger.print(fileName)
+    printTests(tests)
+  }
 }
 
 function withBuildOptions<T>(y: yargs.Argv<T>) {
@@ -188,8 +262,13 @@ yargs(hideBin(process.argv))
   .command(
     'test',
     'run tests',
-    yargs => withBuildOptions(yargs),
+    yargs =>
+      withBuildOptions(yargs).option('test-reporting', {
+        choices: ['just-failing', 'tree'],
+        describe: 'test reporing policy',
+      }),
     async argv => {
+      const tr = argv['test-reporting']
       await run({
         dir: argv.dir,
         command: 'test',
@@ -199,6 +278,8 @@ yargs(hideBin(process.argv))
         buildOutputLocation: argv['build-output-locations'],
         concurrency: argv['concurrency'],
         compact: argv.compact,
+        testReporting:
+          tr === 'just-failing' || tr === 'tree' || tr === undefined ? tr : failMe(`unsupported value: ${tr}`),
       })
     },
   )
