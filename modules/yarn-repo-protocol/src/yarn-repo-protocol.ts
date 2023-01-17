@@ -53,6 +53,10 @@ async function getTempFile() {
   return ret
 }
 
+function isSimpleName(fileName: string) {
+  return path.basename(fileName) === fileName
+}
+
 export class YarnRepoProtocol implements RepoProtocol {
   private readonly scriptNames = {
     build: 'build',
@@ -68,9 +72,13 @@ export class YarnRepoProtocol implements RepoProtocol {
     private readonly shadowing: boolean = false,
     // TODO(imaman): deprecate it.
     private readonly publisher?: Publisher,
-  ) {}
+  ) {
+    if (!isSimpleName(this.tsconfigBaseName)) {
+      throw new Error(`tsconfig base file name must be a simple name (not a path). Got: "${this.tsconfigBaseName}"`)
+    }
+  }
 
-  private readonly tsconfigBasePathInRepo: string = 'tsconfig-base.json'
+  private readonly tsconfigBaseName: string = 'tsconfig-base.json'
   private state_: State | undefined
 
   private dist(which?: 't' | 's') {
@@ -151,7 +159,7 @@ export class YarnRepoProtocol implements RepoProtocol {
   }
 
   private async generateTsConfigFiles(rootDir: string, units: UnitMetadata[], graph: Graph<UnitId>) {
-    const baseExists = await fse.pathExists(path.join(rootDir, this.tsconfigBasePathInRepo))
+    const rootBaseExists = await fse.pathExists(path.join(rootDir, this.tsconfigBaseName))
 
     const defaultOptions: TsConfigJson.CompilerOptions = {
       module: 'CommonJS',
@@ -170,10 +178,16 @@ export class YarnRepoProtocol implements RepoProtocol {
     for (const u of units) {
       const deps = graph.neighborsOf(u.id)
 
+      const localBaseExists = await fse.pathExists(path.join(rootDir, u.pathInRepo, this.tsconfigBaseName))
+
       const tsconf: TsConfigJson = {
-        ...(baseExists ? { extends: path.relative(u.pathInRepo, this.tsconfigBasePathInRepo) } : {}),
+        ...(localBaseExists
+          ? { extends: this.tsconfigBaseName }
+          : rootBaseExists
+          ? { extends: path.relative(u.pathInRepo, this.tsconfigBaseName) }
+          : {}),
         compilerOptions: {
-          ...(baseExists ? {} : defaultOptions),
+          ...(rootBaseExists ? {} : defaultOptions),
           composite: true,
           outDir: this.dist(),
         },
