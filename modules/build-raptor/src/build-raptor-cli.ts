@@ -9,6 +9,7 @@ import {
   groupBy,
   Int,
   shouldNeverHappen,
+  sortBy,
   switchOn,
   toReasonableFileName,
 } from 'misc'
@@ -171,10 +172,20 @@ function reportTests(logger: Logger, arr: TestEndedEvent[]) {
     return indent
   }
 
+  function isPassing(tests: TestEndedEvent[]) {
+    return tests.every(at =>
+      switchOn(at.verdict, {
+        TEST_CRASHED: () => false,
+        TEST_FAILED: () => false,
+        TEST_PASSED: () => true,
+        TEST_TIMEDOUT: () => false,
+      }),
+    )
+  }
+
   function printTests(tests: TestEndedEvent[]) {
     let prev: string[] = []
-    for (let i = 0; i < tests.length; ++i) {
-      const at = tests[i]
+    for (const at of tests) {
       const k = at.testPath.slice(0, -1)
       const spaces = indent(prev, k)
       const v = switchOn(at.verdict, {
@@ -190,9 +201,17 @@ function reportTests(logger: Logger, arr: TestEndedEvent[]) {
     }
   }
 
-  for (const [fileName, tests] of Object.entries(groupBy(arr, at => at.fileName))) {
-    logger.print(fileName)
-    printTests(tests)
+  const list = Object.entries(groupBy(arr, at => at.fileName)).map(([fileName, tests]) => ({ fileName, tests }))
+  const sorted = sortBy(list, at => at.fileName)
+  const passing = sorted.filter(at => isPassing(at.tests))
+  if (passing.length === list.length) {
+    for (const at of passing) {
+      logger.print(`✅ PASSED ${at.fileName}`)
+    }
+  }
+  for (const at of sorted.filter(at => !isPassing(at.tests))) {
+    logger.print(at.fileName)
+    printTests(at.tests)
   }
 }
 
