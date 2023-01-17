@@ -154,3 +154,5 @@
 - task-store: two things which have the same content but where compiled at different times should have the same blobid.
 - rebuild when package.json changes
 - support other test runners
+- run -> test fails -> run again (only one test is exectued) -> change source code -> run (all tests should run)
+- tree output should include also cached tests.

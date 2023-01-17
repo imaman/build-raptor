@@ -287,10 +287,8 @@ export class YarnRepoProtocol implements RepoProtocol {
         OK: () => b,
       })
 
-      if (ret === 'OK') {
-        const toAppend = await fse.readFile(tempFile)
-        await fse.appendFile(outputFile, toAppend)
-      }
+      const toAppend = await fse.readFile(tempFile)
+      await fse.appendFile(outputFile, toAppend)
 
       return ret
     }
