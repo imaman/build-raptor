@@ -187,7 +187,7 @@ export class YarnRepoProtocol implements RepoProtocol {
           ? { extends: path.relative(u.pathInRepo, this.tsconfigBaseName) }
           : {}),
         compilerOptions: {
-          ...(rootBaseExists ? {} : defaultOptions),
+          ...(localBaseExists || rootBaseExists ? {} : defaultOptions),
           composite: true,
           outDir: this.dist(),
         },

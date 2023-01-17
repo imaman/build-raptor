@@ -202,11 +202,13 @@ describe('yarn-repo-protocol', () => {
       expect(JSON.parse(actual['apps/web/static/c/tsconfig.json']).extends).toEqual('../../../../tsconfig-base.json')
       expect(JSON.parse(actual['apps/web/fullstack/d/tsconfig.json']).extends).toEqual('../../../../tsconfig-base.json')
     })
-    test(`if tsconfig-base.json file is not present at the root directory, a default compilerOptions object is generated`, async () => {
+    test(`if no tsconfig-base.json file is present at the root directory, a default compilerOptions object is generated`, async () => {
       const d = await folderify({
         'package.json': { workspaces: ['libs/*'], private: true },
         'libs/a/package.json': { name: 'a', version: '1.0.0' },
         'libs/b/package.json': { name: 'b', version: '1.0.0' },
+        'libs/b/tsconfig-base.json': {},
+        'libs/c/package.json': { name: 'c', version: '1.0.0' },
       })
 
       const yrp = new YarnRepoProtocol(logger)
@@ -232,7 +234,15 @@ describe('yarn-repo-protocol', () => {
         include: ['src/**/*', 'tests/**/*'],
       }
       expect(JSON.parse(actual['libs/a/tsconfig.json'])).toEqual(expectedTsConfigJson)
-      expect(JSON.parse(actual['libs/b/tsconfig.json'])).toEqual(expectedTsConfigJson)
+      expect(JSON.parse(actual['libs/b/tsconfig.json'])).toEqual({
+        extends: 'tsconfig-base.json',
+        compilerOptions: {
+          composite: true,
+          outDir: 'dist',
+        },
+        include: ['src/**/*', 'tests/**/*'],
+      })
+      expect(JSON.parse(actual['libs/c/tsconfig.json'])).toEqual(expectedTsConfigJson)
     })
     describe('references', () => {
       test(`reflect the package's dependencies`, async () => {
