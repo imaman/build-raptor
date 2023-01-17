@@ -343,6 +343,21 @@ describe('yarn-repo-protocol.e2e', () => {
       const run = await fork.run('FAIL', { taskKind: 'test' })
       expect(run.executionTypeOf('a', 'test')).toEqual('EXECUTED')
     })
+    test('the output of the "validate" run script is appended to the tasks output file even if validation failed', async () => {
+      const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': driver.packageJson('a', [], { validate: 'node dist/tests/a.pqr' }),
+        'modules/a/src/a.ts': `export function a(n: number) { return n * 333 }`,
+        'modules/a/tests/a.pqr.ts': `throw new Error("WE HAVE A PROBLEM")`,
+        'modules/a/tests/a.spec.ts': `test('a', () => { expect(1).toEqual(1) })`,
+      }
+
+      const fork = await driver.repo(recipe).fork()
+
+      const run = await fork.run('FAIL', { taskKind: 'test' })
+      expect(await run.outputOf('test', 'a')).toContain('Error: WE HAVE A PROBLEM')
+    })
   })
   describe('test reporting', () => {
     test('publishes test events', async () => {
@@ -360,7 +375,7 @@ describe('yarn-repo-protocol.e2e', () => {
 
       const fork = await driver.repo(recipe).fork()
 
-      const _run = await fork.run('FAIL', { taskKind: 'test' })
+      await fork.run('FAIL', { taskKind: 'test' })
       const steps = await fork.readStepByStepFile()
       expect(steps.filter(at => at.step === 'TEST_ENDED')).toEqual([
         {
