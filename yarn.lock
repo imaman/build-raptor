@@ -1343,7 +1343,7 @@
     "@jest/types" "^26.6.2"
     expect "^26.6.2"
 
-"@jest/reporters@^26.6.2":
+"@jest/reporters@26.6.2", "@jest/reporters@^26.6.2":
   version "26.6.2"
   resolved "https://registry.yarnpkg.com/@jest/reporters/-/reporters-26.6.2.tgz#1f518b99637a5f18307bd3ecf9275f6882a667f6"
   integrity sha512-h2bW53APG4HvkOnVMo8q3QXa6pcaNt1HkwVsOPMBV6LD/q9oSpxNSYZQYkAnjdMjrJ86UuYeLo+aEZClV6opnw==

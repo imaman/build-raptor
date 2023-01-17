@@ -15,5 +15,8 @@
   "jest": {
     "preset": "../../jest.preset.js"
   },
-  "dependencies": {}
+  "dependencies": {},
+  "devDependencies": {
+    "@jest/reporters": "26.6.2"
+  }
 }
