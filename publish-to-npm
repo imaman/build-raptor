@@ -14,4 +14,4 @@ X=$(echo "$W" | sed "s/^v//")
 T="build-raptor@$X"
 echo tagging "$T"
 git tag "$T"
-git push
+git push --tags
