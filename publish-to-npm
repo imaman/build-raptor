@@ -1,0 +1,17 @@
+#!/bin/bash
+
+set -e
+
+yarn pack-all
+cd modules/build-raptor/pack
+V=$(npm info build-raptor version)
+sed -i 's/"version": "1.0.0"/"version": "'${V}'"/' package.json
+cat package.json
+W=$(npm version minor)
+echo pubishing "$W"
+npm publish
+X=$(echo "$W" | sed "s/^v//")
+T="build-raptor@$X"
+echo tagging "$T"
+git tag "$T"
+git push --tags
