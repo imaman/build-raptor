@@ -1,1 +1,2 @@
-export * from './build-raptor-jest-reporter'
+import {BuildRaptorJestReporter} from './build-raptor-jest-reporter'
+export = BuildRaptorJestReporter

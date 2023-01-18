@@ -277,7 +277,7 @@ export class Driver {
   readonly storageClient: StorageClient
   readonly repoProtocol: RepoProtocol
 
-  constructor(readonly testName: string, options: DriverOptions = {}) {
+  constructor(readonly testName?: string, options: DriverOptions = {}) {
     this.storageClient = options.storageClient ?? new InMemoryStorageClient()
     this.repoProtocol = options.repoProtocol ?? new SimpleNodeRepoProtocol('modules')
   }

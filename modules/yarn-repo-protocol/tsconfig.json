@@ -12,6 +12,9 @@
       "path": "../build-raptor-core-testkit"
     },
     {
+      "path": "../build-raptor-jest-reporter"
+    },
+    {
       "path": "../logger"
     },
     {
@@ -27,5 +30,8 @@
       "path": "../unit-metadata"
     }
   ],
-  "include": ["src/**/*", "tests/**/*"]
+  "include": [
+    "src/**/*",
+    "tests/**/*"
+  ]
 }

@@ -17,6 +17,6 @@
   },
   "dependencies": {},
   "devDependencies": {
-    "@jest/reporters": "26.6.2"
+    "@jest/reporters": "^29.3.1"
   }
 }
