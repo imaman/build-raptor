@@ -311,6 +311,39 @@ describe('yarn-repo-protocol.e2e', () => {
     const run3 = await fork.run('OK', { taskKind: 'build' })
     expect(run3.executionTypeOf('a', 'build')).toEqual('EXECUTED')
   })
+  describe('high definition rerun of tests', () => {
+    test('reruns tests when the source code changes', async () => {
+      const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': driver.packageJson('a'),
+        'modules/a/src/abs.ts': 'export function abs(n: number) { return n < 0 ? -n : n }',
+        'modules/a/tests/abs.spec.ts': `
+          import {abs} from '../src/abs'
+          test('return n if positive', () => { console.log('*POSI' + 'TIVE*'); expect(abs(1)).toEqual(1); })
+          test('return -n if negative', () => { console.log('*NEGA' + 'TIVE*'); expect(abs(-1)).toEqual(2) })
+        `,
+      }
+  
+      const fork = await driver.repo(recipe).fork()
+  
+      const runA = await fork.run('FAIL', { taskKind: 'test' })
+      expect(runA.getSummary('a', 'test')).toMatchObject({ execution: 'EXECUTED' })
+      expect(await runA.outputOf('test', 'a')).toContain('    *POSITIVE*')  
+      expect(await runA.outputOf('test', 'a')).toContain('    *NEGATIVE*')  
+
+      // fork.file('modules/a/tests/abs.spec.ts').write(`
+      //   import {abs} from '../src/abs'
+      //   test('return n if positive', () => { console.log('*POSI' + 'TIVE*'); expect(abs(1)).toEqual(1); })
+      //   test('return -n if negative', () => { console.log('*NEGA' + 'TIVE*'); expect(abs(-1)).toEqual(3) })
+      // `)
+
+      const runB = await fork.run('FAIL', { taskKind: 'test' })
+      expect(await runB.outputOf('test', 'a')).not.toContain('    *POSITIVE*')  
+      expect(await runB.outputOf('test', 'a')).toContain('    *NEGATIVE*')  
+
+    })  
+  })
   describe('validations', () => {
     test('a test tasks runs the "validate" run script and places its output in the tasks output file', async () => {
       const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
