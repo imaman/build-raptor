@@ -24,14 +24,14 @@
       "path": "../repo-protocol"
     },
     {
+      "path": "../reporter-output"
+    },
+    {
       "path": "../task-name"
     },
     {
       "path": "../unit-metadata"
     }
   ],
-  "include": [
-    "src/**/*",
-    "tests/**/*"
-  ]
+  "include": ["src/**/*", "tests/**/*"]
 }
