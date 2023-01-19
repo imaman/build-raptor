@@ -277,7 +277,7 @@ export class Driver {
   readonly storageClient: StorageClient
   readonly repoProtocol: RepoProtocol
 
-  constructor(readonly testName: string, options: DriverOptions = {}) {
+  constructor(readonly testName?: string, options: DriverOptions = {}) {
     this.storageClient = options.storageClient ?? new InMemoryStorageClient()
     this.repoProtocol = options.repoProtocol ?? new SimpleNodeRepoProtocol('modules')
   }
@@ -311,7 +311,8 @@ export class Driver {
     }
     const taskStore = new TaskStore(this.storageClient, createNopLogger())
 
-    const outputDir = path.join(process.cwd(), blobId)
+    const tempDir = await folderify({})
+    const outputDir = path.join(tempDir, blobId)
     await fse.mkdirp(outputDir)
     await taskStore.restoreBlob(BlobId(blobId), outputDir)
     return await slurpDir(outputDir)

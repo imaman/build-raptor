@@ -12,6 +12,9 @@
       "path": "../build-raptor-core-testkit"
     },
     {
+      "path": "../build-raptor-jest-reporter"
+    },
+    {
       "path": "../logger"
     },
     {
@@ -19,6 +22,9 @@
     },
     {
       "path": "../repo-protocol"
+    },
+    {
+      "path": "../reporter-output"
     },
     {
       "path": "../task-name"

@@ -1,5 +1,5 @@
 import * as fse from 'fs-extra'
-import { createDefaultLogger } from 'logger'
+import { createDefaultLogger, createNopLogger } from 'logger'
 import { DirectoryScanner, folderify, slurpDir, TypedPublisher } from 'misc'
 import * as path from 'path'
 import { RepoProtocolEvent } from 'repo-protocol'
@@ -9,7 +9,7 @@ import { UnitId } from 'unit-metadata'
 import { YarnRepoProtocol } from '../src/yarn-repo-protocol'
 
 describe('yarn-repo-protocol', () => {
-  const logger = createDefaultLogger('/tmp/abc')
+  const logger = createNopLogger()
   const p = new TypedPublisher<RepoProtocolEvent>()
   describe('initialize()', () => {
     test('rejects repos with inconsistent versions of out-of-repo deps', async () => {

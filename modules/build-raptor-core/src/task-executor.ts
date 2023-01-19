@@ -136,7 +136,7 @@ class SingleTaskExecutor {
       return
     }
 
-    const formatted = missing.map(at => `  - ${at}`).join('\n')
+    const formatted = missing.map(at => `  - ${at.pathInUnit}`).join('\n')
     this.logger.info(`missing outputs for task ${t.name}: ${JSON.stringify(missing)}`)
     throw new BuildFailedError(`Task ${this.taskName} failed to produce the following outputs:\n${formatted}`)
   }

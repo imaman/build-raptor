@@ -11,13 +11,15 @@ import {
   pairsToRecord,
   promises,
   shouldNeverHappen,
+  sortBy,
   switchOn,
   TypedPublisher,
   uniqueBy,
 } from 'misc'
 import * as path from 'path'
-import { ExitStatus, Publisher, RepoProtocol, RepoProtocolEvent } from 'repo-protocol'
+import { ExitStatus, Publisher, RepoProtocol, RepoProtocolEvent, RepoProtocolEventVerdict } from 'repo-protocol'
 import { CatalogOfTasks } from 'repo-protocol'
+import { ReporterOutput } from 'reporter-output'
 import { TaskKind, TaskName } from 'task-name'
 import * as Tmp from 'tmp-promise'
 import { PackageJson, TsConfigJson } from 'type-fest'
@@ -26,7 +28,7 @@ import webpack, { Stats, WebpackPluginInstance } from 'webpack'
 import ShebangPlugin from 'webpack-shebang-plugin'
 import { z } from 'zod'
 
-import { JestJson } from './jest-json'
+import { RerunList } from './rerun-list'
 
 const yarnWorkspacesInfoSchema = z.record(
   z.object({
@@ -350,31 +352,69 @@ export class YarnRepoProtocol implements RepoProtocol {
   private async runJest(dir: string, taskName: TaskName, outputFile: string): Promise<ExitStatus> {
     const jof = path.join(dir, JEST_OUTPUT_FILE)
     const testsToRun = await this.computeTestsToRun(jof)
+    const reporterOutputFile = (await Tmp.file()).path
     const ret = await this.run(
       'npx',
-      ['jest', ...testsToRun, '--json', '--outputFile', JEST_OUTPUT_FILE],
+      [
+        'jest',
+        ...testsToRun,
+        '--outputFile',
+        reporterOutputFile,
+        '--reporters',
+        'build-raptor-jest-reporter',
+        '--reporters',
+        'default',
+      ],
       dir,
       outputFile,
     )
-    const latest = fse.readFileSync(jof, 'utf-8')
-    let parsed
+    const latest = fse.readFileSync(reporterOutputFile, 'utf-8')
+    let reporterOutput
     try {
-      parsed = JSON.parse(latest)
+      const parsed = JSON.parse(latest)
+      reporterOutput = ReporterOutput.parse(parsed)
     } catch (e) {
-      throw new Error(`failed to parse ${jof} <${e}>`)
+      throw new Error(`failed to parse ${reporterOutputFile} <${e}>`)
     }
 
-    const jestJson: JestJson = JestJson.parse(parsed)
-    jestJson.testResults.forEach(tr => {
-      const fileName = path.relative(this.state.rootDir, tr.name)
-      tr.assertionResults.forEach(ar => {
-        const verdict = ar.status === 'passed' ? 'TEST_PASSED' : ar.status === 'failed' ? 'TEST_FAILED' : undefined
-        if (verdict) {
-          const testPath = [...ar.ancestorTitles, ar.title]
-          this.state.publisher.publish('testEnded', { verdict, fileName, testPath, taskName })
-        }
+    reporterOutput.cases.forEach(at => {
+      const fileName = path.relative(this.state.rootDir, at.fileName)
+      const verdict: RepoProtocolEventVerdict | undefined = switchOn(at.status, {
+        disabled: () => undefined,
+        failed: () => 'TEST_FAILED',
+        passed: () => 'TEST_PASSED',
+        pending: () => undefined,
+        skipped: () => undefined,
+        todo: () => undefined,
       })
+      if (verdict) {
+        const testPath = [...at.ancestorTitles, at.title]
+        this.state.publisher.publish('testEnded', {
+          verdict,
+          fileName,
+          testPath,
+          taskName,
+          durationMillis: at.duration,
+        })
+      }
     })
+
+    const failingCases = reporterOutput.cases.filter(at =>
+      switchOn(at.status, {
+        disabled: () => false,
+        failed: () => true,
+        passed: () => false,
+        pending: () => false,
+        skipped: () => false,
+        todo: () => false,
+      }),
+    )
+
+    const rerunList: RerunList = sortBy(
+      failingCases.map(at => ({ fileName: at.fileName, testCaseFullName: at.testCaseFullName })),
+      at => `${at.fileName} ${at.testCaseFullName}`,
+    )
+    await fse.writeJSON(jof, RerunList.parse(rerunList))
 
     return ret
   }
@@ -591,33 +631,27 @@ export class YarnRepoProtocol implements RepoProtocol {
       parsed = JSON.parse(content)
     } catch (e) {
       this.logger.print(`failed to parse ${resolved} <${e}> - overwriting with fallback content`)
-      const fallback: JestJson = { testResults: [] }
+      const fallback: RerunList = []
       parsed = fallback
     }
-    const jestJson: JestJson = JestJson.parse(parsed)
+    const rerunList = RerunList.parse(parsed)
 
-    const failedTests = jestJson.testResults.filter(x => x.status !== 'passed')
-    this.logger.info(
-      `file level jest data: ${JSON.stringify(
-        jestJson.testResults.map(x => ({ name: x.name, status: x.status })),
-        null,
-        2,
-      )}`,
-    )
-    if (failedTests.length === 0) {
+    if (rerunList.length === 0) {
       this.logger.info(`No failed tests found in ${resolved}`)
       // TODO(imaman): rethink this. maybe we want to run nothing if there are no failed tests.
       // It boilsdown to whether we trust jest-output.json or not.
       return [this.tests]
     }
 
-    const synopsis = failedTests.map(ft => ft.assertionResults.map(x => ({ fullName: x.fullName, status: x.status })))
-    this.logger.info(`assertionResults is:\n${JSON.stringify(synopsis, null, 2)}`)
-    const failedAssertionResults = failedTests.flatMap(ft =>
-      ft.assertionResults.filter(ar => ar.status === 'failed').map(ar => ar.fullName),
+    const names = sortBy(
+      rerunList.map(at => at.testCaseFullName),
+      x => x,
     )
-    const names = uniqueBy(failedAssertionResults, x => x).sort()
-    const ret = [...failedTests.map(x => x.name), '-t', names.map(x => escapeStringRegexp(x)).join('|')]
+    const fileNames = uniqueBy(
+      rerunList.map(at => at.fileName),
+      x => x,
+    )
+    const ret = [...fileNames, '-t', names.map(x => escapeStringRegexp(x)).join('|')]
     this.logger.info(`tests to run: ${JSON.stringify(ret)}`)
     return ret
   }

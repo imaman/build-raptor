@@ -28,8 +28,8 @@ async function run() {
     dir: process.env['GITHUB_WORKSPACE'] || failMe(),
     command: 'test',
     units: [],
-    printPassing: false,
     concurrency: Int().parse(core.getInput('concurrency', { trimWhitespace: true })),
+    printPassing: false,
   }
   const rootDir = options.dir ?? process.cwd()
 

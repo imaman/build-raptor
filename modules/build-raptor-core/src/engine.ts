@@ -82,6 +82,7 @@ export class Engine {
         fileName: e.fileName,
         testPath: e.testPath,
         verdict: e.verdict,
+        durationMillis: e.durationMillis,
       })
     })
     this.fingerprintLedger = this.options.fingerprintLedger
