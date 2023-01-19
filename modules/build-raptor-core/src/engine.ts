@@ -76,7 +76,7 @@ export class Engine {
       this.steps.push({ blobId: e.blobId, taskName: e.taskName, step, files: e.files })
     })
     this.eventPublisher.on('testEnded', e => {
-      this.steps.push({        
+      this.steps.push({
         step: 'TEST_ENDED',
         taskName: e.taskName,
         fileName: e.fileName,
