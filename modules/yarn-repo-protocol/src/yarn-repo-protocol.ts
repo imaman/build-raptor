@@ -352,7 +352,15 @@ export class YarnRepoProtocol implements RepoProtocol {
     const testsToRun = await this.computeTestsToRun(jof)
     const ret = await this.run(
       'npx',
-      ['jest', ...testsToRun, '--json', '--outputFile', JEST_OUTPUT_FILE, '--reporters', 'build-raptor-jest-reporter,default'],
+      [
+        'jest',
+        ...testsToRun,
+        '--json',
+        '--outputFile',
+        JEST_OUTPUT_FILE,
+        '--reporters',
+        'build-raptor-jest-reporter,default',
+      ],
       dir,
       outputFile,
     )
@@ -556,7 +564,7 @@ export class YarnRepoProtocol implements RepoProtocol {
         },
         {
           taskKind: test,
-          outputs: [JEST_OUTPUT_FILE],
+          outputs: [{ pathInUnit: JEST_OUTPUT_FILE, purge: 'ALWAYS' }],
           inputsInUnit: [this.dist('s'), this.dist('t')],
           inputsInDeps: [this.dist('s')],
         },

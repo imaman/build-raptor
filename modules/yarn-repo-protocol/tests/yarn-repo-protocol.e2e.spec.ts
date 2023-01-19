@@ -311,6 +311,68 @@ describe('yarn-repo-protocol.e2e', () => {
     const run3 = await fork.run('OK', { taskKind: 'build' })
     expect(run3.executionTypeOf('a', 'build')).toEqual('EXECUTED')
   })
+  describe('high definition rerun of tests', () => {
+    test('reruns just the tests that did not pass', async () => {
+      const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': driver.packageJson('a'),
+        'modules/a/src/abs.ts': 'export function abs(n: number) { return n }',
+        'modules/a/tests/abs.spec.ts': `
+          import {abs} from '../src/abs'
+          import {writeFileSync} from 'fs'
+          test('return n if positive', () => { writeFileSync('p', ''); expect(abs(1)).toEqual(1); })
+          test('return -n if negative', () => { writeFileSync('n', ''); expect(abs(-2)).toEqual(2) })
+        `,
+      }
+
+      const fork = await driver.repo(recipe).fork()
+
+      await fork.run('FAIL', { taskKind: 'test' })
+      const p = fork.file('modules/a/p')
+      const n = fork.file('modules/a/n')
+      expect(await p.exists()).toBe(true)
+      expect(await n.exists()).toBe(true)
+
+      await Promise.all([p.rm(), n.rm()])
+      await fork.run('FAIL', { taskKind: 'test' })
+      expect(await p.exists()).toBe(false)
+      expect(await n.exists()).toBe(true)
+    })
+    test('when the code is changed, all tests run', async () => {
+      const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': driver.packageJson('a'),
+        'modules/a/src/abs.ts': 'export function abs(n: number) { return n }',
+        'modules/a/tests/abs.spec.ts': `
+          import {abs} from '../src/abs'
+          import {writeFileSync} from 'fs'
+          test('return n if positive', () => { writeFileSync('p', ''); expect(abs(1)).toEqual(1); })
+          test('return -n if negative', () => { writeFileSync('n', ''); expect(abs(-2)).toEqual(2) })
+        `,
+      }
+
+      const fork = await driver.repo(recipe).fork()
+
+      await fork.run('FAIL', { taskKind: 'test' })
+      const p = fork.file('modules/a/p')
+      const n = fork.file('modules/a/n')
+      expect(await p.exists()).toBe(true)
+      expect(await n.exists()).toBe(true)
+
+      await Promise.all([p.rm(), n.rm()])
+      await fork.run('FAIL', { taskKind: 'test' })
+      expect(await p.exists()).toBe(false)
+      expect(await n.exists()).toBe(true)
+
+      await Promise.all([p.rm(), n.rm()])
+      await fork.file('modules/a/src/abs.ts').write(`export function abs(n: number) { return n < 0 ? -n : n }`)
+      await fork.run('OK', { taskKind: 'test' })
+      expect(await p.exists()).toBe(true)
+      expect(await n.exists()).toBe(true)
+    })
+  })
   describe('validations', () => {
     test('a test tasks runs the "validate" run script and places its output in the tasks output file', async () => {
       const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
