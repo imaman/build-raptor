@@ -9,7 +9,7 @@ import { UnitMetadata } from 'unit-metadata'
 import { ExecutionPlan } from './execution-plan'
 import { Model } from './model'
 import { Task } from './task'
-import { TaskInfo } from './task-info'
+import { OutputLocation, TaskInfo } from './task-info'
 import { TaskOutputRegistry, validateTaskInfos } from './validate-task-infos'
 
 export class Planner {
@@ -92,11 +92,21 @@ export class Planner {
       return ret
     }
 
+    const outputLocations: OutputLocation[] = (definition?.outputs ?? []).map(at => {
+      if (typeof at === 'string') {
+        return { pathInPackage: at, purge: 'BEFORE_RESTORE' }
+      }
+
+      return {
+        pathInPackage: at.pathInPackage,
+        purge: at.purge,
+      }
+    })
     const ret: TaskInfo = {
       taskName,
       deps,
       shadowing: definition?.shadowing ?? false,
-      outputLocations: definition?.outputs ?? [],
+      outputLocations,
       inputsInDeps: definition.inputsInDeps ?? [''],
       inputsInUnit: definition.inputsInUnit ?? [''],
     }

@@ -18,11 +18,11 @@ export class Purger {
   async purgeOutputsOfTask(task: Task, model: Model, selected: boolean) {
     const unit = model.getUnit(task.unitId)
     const dir = path.join(model.rootDir, unit.pathInRepo)
-    const locationsToPurge = selected
-      ? task.outputLocations.filter(at => at === 'jest-output.json')
-      : task.outputLocations
+    const locationsToPurge = task.outputLocations
+      .filter(at => (selected ? at.purge === 'ALWAYS' : true))
+      .map(at => at.pathInPackage)
     await this.removeLocations(dir, locationsToPurge)
-    this.logger.info(`purged output locations of task ${task.name}: ${task.outputLocations}`)
+    this.logger.info(`purged output locations of task ${task.name}: ${locationsToPurge}`)
     return task.outputLocations
   }
 }
