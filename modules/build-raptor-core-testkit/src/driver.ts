@@ -311,7 +311,8 @@ export class Driver {
     }
     const taskStore = new TaskStore(this.storageClient, createNopLogger())
 
-    const outputDir = path.join(process.cwd(), blobId)
+    const tempDir = await folderify({})
+    const outputDir = path.join(tempDir, blobId)
     await fse.mkdirp(outputDir)
     await taskStore.restoreBlob(BlobId(blobId), outputDir)
     return await slurpDir(outputDir)
