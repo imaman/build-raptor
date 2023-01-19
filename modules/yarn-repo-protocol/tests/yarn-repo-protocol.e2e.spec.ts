@@ -339,7 +339,7 @@ describe('yarn-repo-protocol.e2e', () => {
       expect(await p.exists()).toBe(false)
       expect(await n.exists()).toBe(true)
     })
-    test.skip('when the code is changed, all tests run', async () => {
+    test('when the code is changed, all tests run', async () => {
       const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
       const recipe = {
         'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
