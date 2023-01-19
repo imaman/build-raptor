@@ -1,7 +1,7 @@
 import { TaskKind, TaskName } from 'task-name'
 import { UnitId } from 'unit-metadata'
 
-type OutputDefinition = string | { pathInPackage: string; purge: 'ALWAYS' | 'BEFORE_RESTORE' }
+type OutputDefinition = string | { pathInUnit: string; purge: 'ALWAYS' | 'BEFORE_RESTORE' }
 
 export type TaskDefinition = {
   // The task kind this definition applies to.

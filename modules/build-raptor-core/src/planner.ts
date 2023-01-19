@@ -98,7 +98,7 @@ export class Planner {
       }
 
       return {
-        pathInUnit: at.pathInPackage,
+        pathInUnit: at.pathInUnit,
         purge: at.purge,
       }
     })
