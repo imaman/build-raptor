@@ -7,12 +7,15 @@ import { CatalogOfTasks } from './catalog-of-tasks'
 
 export type ExitStatus = 'OK' | 'FAIL' | 'CRASH'
 
+
+export type RepoProtocolEventVerdict =  'TEST_PASSED' | 'TEST_FAILED' | 'TEST_CRASHED' | 'TEST_TIMEDOUT'
 export interface RepoProtocolEvent {
   testEnded: {
-    verdict: 'TEST_PASSED' | 'TEST_FAILED' | 'TEST_CRASHED' | 'TEST_TIMEDOUT'
+    verdict: RepoProtocolEventVerdict
     testPath: string[]
     fileName: string
     taskName: TaskName
+    durationMillis?: number
   }
 }
 

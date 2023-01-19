@@ -2,25 +2,26 @@ import {type ReporterContext, type TestContext, type AggregatedResult, type Repo
 import { type TestCaseResult } from '@jest/test-result'
 import { Config } from '@jest/types'
 import * as fs from 'fs'
+import path from 'path'
+import { ReporterOutput } from 'reporter-output'
+
 
 export class BuildRaptorJestReporter  implements Reporter {
   private readonly file
-  private readonly acc: {testCaseResult: TestCaseResult, testFile: string}[] = []
+  private readonly cases: {testCaseResult: TestCaseResult, testFile: string}[] = []
   constructor(config: Config.GlobalConfig) {
     if (!config.outputFile) {
       throw new Error(`outputFile is missing (must be specified in the config)`)
     }
-    this.file = config.outputFile
-    fs.writeFileSync(this.file, '')
-    console.log(`L.15`)
+
+    this.file = path.isAbsolute(config.outputFile) ? config.outputFile : path.join(config.rootDir, config.outputFile)
   }
 
   onRunStart(
     results: AggregatedResult,
     options: ReporterOnStartOptions,
   ) {
-    // console.log(JSON.stringify({results, options}, null, 2))
-    fs.appendFileSync(this.file, `[`) // +
+    // +
   }
   onTestFileStart(test: Test) {
     // console.log(`L.13`) // +
@@ -36,15 +37,23 @@ export class BuildRaptorJestReporter  implements Reporter {
     test: Test,
     testCaseResult: TestCaseResult,
   ) {
-    this.acc.push({testFile: test.path, testCaseResult})
+    this.cases.push({testFile: test.path, testCaseResult})
   }
   onRunComplete(
     testContexts: Set<TestContext>,
     results: AggregatedResult,
   ) {
     console.log(`writing to ${this.file}`)
-    fs.writeFileSync(this.file, JSON.stringify(this.acc))
-    // console.log(JSON.stringify({results, testContexts}, null, 2))
+
+    const cases = this.cases.map(at => ({
+      fileName: at.testFile,
+      ancestorTitles: at.testCaseResult.ancestorTitles,
+      title: at.testCaseResult.title,
+      status: at.testCaseResult.status,
+      duration: at.testCaseResult.duration ?? undefined,
+    }))
+    const output: ReporterOutput = {cases}
+    fs.writeFileSync(this.file, JSON.stringify(ReporterOutput.parse(output)))
   }
 
   //////////////////////////////////////////////

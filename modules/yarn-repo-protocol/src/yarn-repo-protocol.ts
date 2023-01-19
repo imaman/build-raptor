@@ -16,7 +16,7 @@ import {
   uniqueBy,
 } from 'misc'
 import * as path from 'path'
-import { ExitStatus, Publisher, RepoProtocol, RepoProtocolEvent } from 'repo-protocol'
+import { ExitStatus, Publisher, RepoProtocol, RepoProtocolEvent, RepoProtocolEventVerdict } from 'repo-protocol'
 import { CatalogOfTasks } from 'repo-protocol'
 import { TaskKind, TaskName } from 'task-name'
 import * as Tmp from 'tmp-promise'
@@ -25,8 +25,8 @@ import { UnitId, UnitMetadata } from 'unit-metadata'
 import webpack, { Stats, WebpackPluginInstance } from 'webpack'
 import ShebangPlugin from 'webpack-shebang-plugin'
 import { z } from 'zod'
-
 import { JestJson } from './jest-json'
+import { ReporterOutput } from 'reporter-output'
 
 const yarnWorkspacesInfoSchema = z.record(
   z.object({
@@ -350,14 +350,14 @@ export class YarnRepoProtocol implements RepoProtocol {
   private async runJest(dir: string, taskName: TaskName, outputFile: string): Promise<ExitStatus> {
     const jof = path.join(dir, JEST_OUTPUT_FILE)
     const testsToRun = await this.computeTestsToRun(jof)
+    const reporterOutputFile = (await Tmp.file()).path
     const ret = await this.run(
       'npx',
       [
         'jest',
         ...testsToRun,
-        '--json',
         '--outputFile',
-        JEST_OUTPUT_FILE,
+        reporterOutputFile,
         '--reporters',
         'build-raptor-jest-reporter',
         '--reporters',
@@ -366,24 +366,30 @@ export class YarnRepoProtocol implements RepoProtocol {
       dir,
       outputFile,
     )
-    const latest = fse.readFileSync(jof, 'utf-8')
-    let parsed
+    const latest = fse.readFileSync(reporterOutputFile, 'utf-8')
+    let reporterOutput
     try {
-      parsed = JSON.parse(latest)
+      const parsed = JSON.parse(latest)
+      reporterOutput = ReporterOutput.parse(parsed)
     } catch (e) {
-      throw new Error(`failed to parse ${jof} <${e}>`)
+      throw new Error(`failed to parse ${reporterOutputFile} <${e}>`)
     }
 
-    const jestJson: JestJson = JestJson.parse(parsed)
-    jestJson.testResults.forEach(tr => {
-      const fileName = path.relative(this.state.rootDir, tr.name)
-      tr.assertionResults.forEach(ar => {
-        const verdict = ar.status === 'passed' ? 'TEST_PASSED' : ar.status === 'failed' ? 'TEST_FAILED' : undefined
-        if (verdict) {
-          const testPath = [...ar.ancestorTitles, ar.title]
-          this.state.publisher.publish('testEnded', { verdict, fileName, testPath, taskName })
-        }
+    await fse.writeJSON(jof, reporterOutput)
+    reporterOutput.cases.forEach(at => {
+      const fileName = path.relative(this.state.rootDir, at.fileName)
+      const verdict: RepoProtocolEventVerdict|undefined = switchOn(at.status, {
+        'disabled': () => undefined,
+        'failed': () => 'TEST_FAILED',
+        'passed': () => 'TEST_PASSED',
+        'pending': () => undefined,
+        'skipped': () => undefined,
+        'todo': () => undefined,
       })
+      if (verdict) {
+        const testPath = [...at.ancestorTitles, at.title]
+        this.state.publisher.publish('testEnded', { verdict, fileName, testPath, taskName, durationMillis: at.duration })
+      }
     })
 
     return ret
