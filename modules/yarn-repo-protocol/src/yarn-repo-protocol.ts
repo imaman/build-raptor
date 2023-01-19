@@ -28,7 +28,7 @@ import webpack, { Stats, WebpackPluginInstance } from 'webpack'
 import ShebangPlugin from 'webpack-shebang-plugin'
 import { z } from 'zod'
 
-import { RerunList as RerunList } from './rerun-list'
+import { RerunList } from './rerun-list'
 
 const yarnWorkspacesInfoSchema = z.record(
   z.object({
