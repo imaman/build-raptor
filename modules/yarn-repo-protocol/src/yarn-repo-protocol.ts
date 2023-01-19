@@ -11,6 +11,7 @@ import {
   pairsToRecord,
   promises,
   shouldNeverHappen,
+  sortBy,
   switchOn,
   TypedPublisher,
   uniqueBy,
@@ -610,30 +611,27 @@ export class YarnRepoProtocol implements RepoProtocol {
       const fallback: JestJson = { testResults: [] }
       parsed = fallback
     }
-    const jestJson: JestJson = JestJson.parse(parsed)
+    const reporterOutput = ReporterOutput.parse(parsed)
 
-    const failedTests = jestJson.testResults.filter(x => x.status !== 'passed')
-    this.logger.info(
-      `file level jest data: ${JSON.stringify(
-        jestJson.testResults.map(x => ({ name: x.name, status: x.status })),
-        null,
-        2,
-      )}`,
-    )
-    if (failedTests.length === 0) {
+    const failedCases = reporterOutput.cases.filter(c => switchOn(c.status, {
+      'disabled': () => false,
+      'failed': () => true,
+      'passed': () => false,
+      // TODO(imaman): what "pending" means?
+      'pending': () => false,
+      'skipped': () => false,
+      'todo': () => false,
+    }))
+    if (failedCases.length === 0) {
       this.logger.info(`No failed tests found in ${resolved}`)
       // TODO(imaman): rethink this. maybe we want to run nothing if there are no failed tests.
       // It boilsdown to whether we trust jest-output.json or not.
       return [this.tests]
     }
 
-    const synopsis = failedTests.map(ft => ft.assertionResults.map(x => ({ fullName: x.fullName, status: x.status })))
-    this.logger.info(`assertionResults is:\n${JSON.stringify(synopsis, null, 2)}`)
-    const failedAssertionResults = failedTests.flatMap(ft =>
-      ft.assertionResults.filter(ar => ar.status === 'failed').map(ar => ar.fullName),
-    )
-    const names = uniqueBy(failedAssertionResults, x => x).sort()
-    const ret = [...failedTests.map(x => x.name), '-t', names.map(x => escapeStringRegexp(x)).join('|')]
+    const names = sortBy(failedCases.map(at => at.testCaseFullName), x => x)
+    const fileNames = uniqueBy(failedCases.map(at => at.fileName), x => x)
+    const ret = [...fileNames, '-t', names.map(x => escapeStringRegexp(x)).join('|')]
     this.logger.info(`tests to run: ${JSON.stringify(ret)}`)
     return ret
   }

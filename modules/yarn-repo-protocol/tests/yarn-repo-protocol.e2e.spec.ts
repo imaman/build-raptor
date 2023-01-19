@@ -29,7 +29,6 @@ describe('yarn-repo-protocol.e2e', () => {
         'PASS dist/tests/times-two.spec.js',
         'Test Suites: 1 passed, 1 total',
         'Tests:       1 passed, 1 total',
-        'Test results written to: jest-output.json',
       ]),
     )
   })

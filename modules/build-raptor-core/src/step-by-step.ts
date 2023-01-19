@@ -18,6 +18,7 @@ export const Step = z.union([
     taskName: z.string(),
     fileName: z.string(),
     testPath: z.string().array(),
+    durationMillis: z.number().or(z.undefined()),
     verdict: z.union([
       z.literal('TEST_PASSED'),
       z.literal('TEST_FAILED'),

@@ -46,6 +46,7 @@ export class BuildRaptorJestReporter  implements Reporter {
     console.log(`writing to ${this.file}`)
 
     const cases = this.cases.map(at => ({
+      testCaseFullName: at.testCaseResult.fullName,
       fileName: at.testFile,
       ancestorTitles: at.testCaseResult.ancestorTitles,
       title: at.testCaseResult.title,

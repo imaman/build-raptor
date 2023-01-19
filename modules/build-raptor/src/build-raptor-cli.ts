@@ -195,7 +195,8 @@ function reportTests(logger: Logger, arr: TestEndedEvent[]) {
         TEST_TIMEDOUT: () => '⏲️ [timedout]',
       })
 
-      logger.print(`${spaces}${v} ${at.testPath.at(-1)}`)
+      const duration = at.durationMillis === undefined ? '' : ` [${(at.durationMillis / 1000).toFixed(3)}s]`
+      logger.print(`${spaces}${v} ${at.testPath.at(-1)}${duration}`)
 
       prev = k
     }

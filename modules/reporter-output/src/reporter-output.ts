@@ -3,6 +3,7 @@ import {z} from 'zod'
 export const ReporterOutput = z.object({
   cases: z.object({
     fileName:z.string(),
+    testCaseFullName: z.string(),
     ancestorTitles: z.string().array(),
     title: z.string(),
     status: z.union([z.literal('passed'),
