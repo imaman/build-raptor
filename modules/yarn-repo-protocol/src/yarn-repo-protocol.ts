@@ -359,7 +359,9 @@ export class YarnRepoProtocol implements RepoProtocol {
         '--outputFile',
         JEST_OUTPUT_FILE,
         '--reporters',
-        'build-raptor-jest-reporter,default',
+        'build-raptor-jest-reporter',
+        '--reporters',
+        'default'
       ],
       dir,
       outputFile,

@@ -12,6 +12,7 @@ export class BuildRaptorJestReporter  implements Reporter {
     }
     this.file = config.outputFile
     fs.writeFileSync(this.file, '')
+    console.log(`L.15`)
   }
 
   onRunStart(
@@ -41,7 +42,8 @@ export class BuildRaptorJestReporter  implements Reporter {
     testContexts: Set<TestContext>,
     results: AggregatedResult,
   ) {
-    // fs.writeFileSync(this.file, JSON.stringify()
+    console.log(`writing to ${this.file}`)
+    fs.writeFileSync(this.file, JSON.stringify(this.acc))
     // console.log(JSON.stringify({results, testContexts}, null, 2))
   }
 
