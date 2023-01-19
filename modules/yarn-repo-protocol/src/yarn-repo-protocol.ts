@@ -556,7 +556,7 @@ export class YarnRepoProtocol implements RepoProtocol {
         },
         {
           taskKind: test,
-          outputs: [JEST_OUTPUT_FILE],
+          outputs: [{ pathInUnit: JEST_OUTPUT_FILE, purge: 'ALWAYS' }],
           inputsInUnit: [this.dist('s'), this.dist('t')],
           inputsInDeps: [this.dist('s')],
         },

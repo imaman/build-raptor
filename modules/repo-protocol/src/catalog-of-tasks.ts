@@ -1,12 +1,14 @@
 import { TaskKind, TaskName } from 'task-name'
 import { UnitId } from 'unit-metadata'
 
+type OutputDefinition = string | { pathInUnit: string; purge: 'ALWAYS' | 'BEFORE_RESTORE' }
+
 export type TaskDefinition = {
   // The task kind this definition applies to.
   readonly taskKind: TaskKind
   // The units this definition applies to. An empty array means "nothing". An undefined means "everything".
   readonly unitIds?: readonly UnitId[]
-  readonly outputs?: readonly string[]
+  readonly outputs?: readonly OutputDefinition[]
   // When a task has shadowing turned on, the execution engine will try to run it at the depending-most unit it can
   // find and then it will not run it at the units it depends on. Here is a concrete example:
   // Assume we have units 'a', 'b', and 'c', such that 'a' depends on 'b' and on 'c'; and a task kind 't' in which

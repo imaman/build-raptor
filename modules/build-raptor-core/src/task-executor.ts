@@ -126,7 +126,7 @@ class SingleTaskExecutor {
     const unit = this.unit
     const missing = await promises(t.outputLocations)
       .filter(async loc => {
-        const resolved = path.join(this.model.rootDir, unit.pathInRepo, loc)
+        const resolved = path.join(this.model.rootDir, unit.pathInRepo, loc.pathInUnit)
         const exists = await fse.pathExists(resolved)
         return !exists
       })
@@ -228,9 +228,10 @@ class SingleTaskExecutor {
       const earlierVerdict = await this.getVerdict()
       this.diagnose(`earlierVerdict=${earlierVerdict}`)
       if (earlierVerdict === 'UNKNOWN') {
+        await this.purgeOutputs(false)
         return 'RUN_IT'
       }
-      await this.purgeOutputs()
+      await this.purgeOutputs(true)
       await this.restoreOutputs()
 
       if (earlierVerdict === 'FAIL') {
@@ -286,31 +287,32 @@ class SingleTaskExecutor {
       throw new Error(`Task ${JSON.stringify(t.name)} crashed`)
     }
 
+    const locations = t.outputLocations.map(at => at.pathInUnit)
     if (status === 'OK') {
       await this.validateOutputs()
       this.tracker.registerVerdict(t.name, status, outputFile)
-      await this.taskStore.recordTask(t.name, this.fp, this.dir, t.outputLocations, 'OK')
+      await this.taskStore.recordTask(t.name, this.fp, this.dir, locations, 'OK')
       return
     }
 
     if (status === 'FAIL') {
       this.tracker.registerVerdict(t.name, status, outputFile)
       // TODO(imaman): should not record outputs if task has failed.
-      await this.taskStore.recordTask(t.name, this.fp, this.dir, t.outputLocations, status)
+      await this.taskStore.recordTask(t.name, this.fp, this.dir, locations, status)
       return
     }
 
     shouldNeverHappen(status)
   }
 
-  private async purgeOutputs() {
+  private async purgeOutputs(isRestore: boolean) {
     this.diagnose(`purging outputs`)
     const shadowedTasks = this.tracker.getTasksShadowedBy(this.taskName)
     const taskNames = [this.taskName, ...shadowedTasks]
     const tasks = taskNames.map(tn => this.tracker.getTask(tn))
 
     await promises(tasks).forEach(20, async task => {
-      await this.purger.purgeOutputsOfTask(task, this.model)
+      await this.purger.purgeOutputsOfTask(task, this.model, isRestore)
     })
   }
 }

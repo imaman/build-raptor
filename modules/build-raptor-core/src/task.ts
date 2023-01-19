@@ -7,7 +7,7 @@ import { ExecutionRecord } from './execution-record'
 import { Fingerprint } from './fingerprint'
 import { Phase } from './phase'
 import { SlotIndex } from './slot-index'
-import { TaskInfo } from './task-info'
+import { OutputLocation, TaskInfo } from './task-info'
 type PathInRepo = string
 
 export class Task {
@@ -77,7 +77,7 @@ export class Task {
     return this.executionRecord
   }
 
-  get outputLocations(): readonly string[] {
+  get outputLocations(): readonly OutputLocation[] {
     return this.taskInfo.outputLocations
   }
 
