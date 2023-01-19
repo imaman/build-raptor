@@ -19,6 +19,7 @@ import {
 import * as path from 'path'
 import { ExitStatus, Publisher, RepoProtocol, RepoProtocolEvent, RepoProtocolEventVerdict } from 'repo-protocol'
 import { CatalogOfTasks } from 'repo-protocol'
+import { ReporterOutput } from 'reporter-output'
 import { TaskKind, TaskName } from 'task-name'
 import * as Tmp from 'tmp-promise'
 import { PackageJson, TsConfigJson } from 'type-fest'
@@ -26,8 +27,8 @@ import { UnitId, UnitMetadata } from 'unit-metadata'
 import webpack, { Stats, WebpackPluginInstance } from 'webpack'
 import ShebangPlugin from 'webpack-shebang-plugin'
 import { z } from 'zod'
-import { JestJson } from './jest-json'
-import { ReporterOutput } from 'reporter-output'
+
+import { RerunList as RerunList } from './rerun-list'
 
 const yarnWorkspacesInfoSchema = z.record(
   z.object({
@@ -362,7 +363,7 @@ export class YarnRepoProtocol implements RepoProtocol {
         '--reporters',
         'build-raptor-jest-reporter',
         '--reporters',
-        'default'
+        'default',
       ],
       dir,
       outputFile,
@@ -376,22 +377,44 @@ export class YarnRepoProtocol implements RepoProtocol {
       throw new Error(`failed to parse ${reporterOutputFile} <${e}>`)
     }
 
-    await fse.writeJSON(jof, reporterOutput)
     reporterOutput.cases.forEach(at => {
       const fileName = path.relative(this.state.rootDir, at.fileName)
-      const verdict: RepoProtocolEventVerdict|undefined = switchOn(at.status, {
-        'disabled': () => undefined,
-        'failed': () => 'TEST_FAILED',
-        'passed': () => 'TEST_PASSED',
-        'pending': () => undefined,
-        'skipped': () => undefined,
-        'todo': () => undefined,
+      const verdict: RepoProtocolEventVerdict | undefined = switchOn(at.status, {
+        disabled: () => undefined,
+        failed: () => 'TEST_FAILED',
+        passed: () => 'TEST_PASSED',
+        pending: () => undefined,
+        skipped: () => undefined,
+        todo: () => undefined,
       })
       if (verdict) {
         const testPath = [...at.ancestorTitles, at.title]
-        this.state.publisher.publish('testEnded', { verdict, fileName, testPath, taskName, durationMillis: at.duration })
+        this.state.publisher.publish('testEnded', {
+          verdict,
+          fileName,
+          testPath,
+          taskName,
+          durationMillis: at.duration,
+        })
       }
     })
+
+    const failingCases = reporterOutput.cases.filter(at =>
+      switchOn(at.status, {
+        disabled: () => false,
+        failed: () => true,
+        passed: () => false,
+        pending: () => false,
+        skipped: () => false,
+        todo: () => false,
+      }),
+    )
+
+    const rerunList: RerunList = sortBy(
+      failingCases.map(at => ({ fileName: at.fileName, testCaseFullName: at.testCaseFullName })),
+      at => `${at.fileName} ${at.testCaseFullName}`,
+    )
+    await fse.writeJSON(jof, RerunList.parse(rerunList))
 
     return ret
   }
@@ -608,29 +631,26 @@ export class YarnRepoProtocol implements RepoProtocol {
       parsed = JSON.parse(content)
     } catch (e) {
       this.logger.print(`failed to parse ${resolved} <${e}> - overwriting with fallback content`)
-      const fallback: JestJson = { testResults: [] }
+      const fallback: RerunList = []
       parsed = fallback
     }
-    const reporterOutput = ReporterOutput.parse(parsed)
+    const rerunList = RerunList.parse(parsed)
 
-    const failedCases = reporterOutput.cases.filter(c => switchOn(c.status, {
-      'disabled': () => false,
-      'failed': () => true,
-      'passed': () => false,
-      // TODO(imaman): what "pending" means?
-      'pending': () => false,
-      'skipped': () => false,
-      'todo': () => false,
-    }))
-    if (failedCases.length === 0) {
+    if (rerunList.length === 0) {
       this.logger.info(`No failed tests found in ${resolved}`)
       // TODO(imaman): rethink this. maybe we want to run nothing if there are no failed tests.
       // It boilsdown to whether we trust jest-output.json or not.
       return [this.tests]
     }
 
-    const names = sortBy(failedCases.map(at => at.testCaseFullName), x => x)
-    const fileNames = uniqueBy(failedCases.map(at => at.fileName), x => x)
+    const names = sortBy(
+      rerunList.map(at => at.testCaseFullName),
+      x => x,
+    )
+    const fileNames = uniqueBy(
+      rerunList.map(at => at.fileName),
+      x => x,
+    )
     const ret = [...fileNames, '-t', names.map(x => escapeStringRegexp(x)).join('|')]
     this.logger.info(`tests to run: ${JSON.stringify(ret)}`)
     return ret
