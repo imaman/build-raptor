@@ -227,10 +227,11 @@ class SingleTaskExecutor {
     if (phase === 'POSSIBLY_RESTORE_OUTPUTS') {
       const earlierVerdict = await this.getVerdict()
       this.diagnose(`earlierVerdict=${earlierVerdict}`)
+      await this.purgeOutputs(true)
       if (earlierVerdict === 'UNKNOWN') {
         return 'RUN_IT'
       }
-      await this.purgeOutputs()
+      await this.purgeOutputs(false)
       await this.restoreOutputs()
 
       if (earlierVerdict === 'FAIL') {
@@ -303,14 +304,14 @@ class SingleTaskExecutor {
     shouldNeverHappen(status)
   }
 
-  private async purgeOutputs() {
+  private async purgeOutputs(selected: boolean) {
     this.diagnose(`purging outputs`)
     const shadowedTasks = this.tracker.getTasksShadowedBy(this.taskName)
     const taskNames = [this.taskName, ...shadowedTasks]
     const tasks = taskNames.map(tn => this.tracker.getTask(tn))
 
     await promises(tasks).forEach(20, async task => {
-      await this.purger.purgeOutputsOfTask(task, this.model)
+      await this.purger.purgeOutputsOfTask(task, this.model, selected)
     })
   }
 }

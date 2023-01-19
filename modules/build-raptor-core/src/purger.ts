@@ -15,10 +15,13 @@ export class Purger {
     })
   }
 
-  async purgeOutputsOfTask(task: Task, model: Model) {
+  async purgeOutputsOfTask(task: Task, model: Model, selected: boolean) {
     const unit = model.getUnit(task.unitId)
     const dir = path.join(model.rootDir, unit.pathInRepo)
-    await this.removeLocations(dir, task.outputLocations)
+    const locationsToPurge = selected
+      ? task.outputLocations.filter(at => at === 'jest-output.json')
+      : task.outputLocations
+    await this.removeLocations(dir, locationsToPurge)
     this.logger.info(`purged output locations of task ${task.name}: ${task.outputLocations}`)
     return task.outputLocations
   }
