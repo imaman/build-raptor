@@ -32,9 +32,9 @@ function checkNameCollision(infos: TaskInfo[]) {
 
 function checkOutputCollisions(infos: TaskInfo[], reg: TaskOutputRegistryImpl) {
   const taskNameByOutput = new Map<string, TaskName>(
-    infos.flatMap(x => x.outputLocations.map(o => [norm(o.pathInPackage), x.taskName])),
+    infos.flatMap(x => x.outputLocations.map(o => [norm(o.pathInUnit), x.taskName])),
   )
-  const allLocations = infos.flatMap(x => x.outputLocations).map(x => norm(x.pathInPackage))
+  const allLocations = infos.flatMap(x => x.outputLocations).map(x => norm(x.pathInUnit))
 
   const upperByPath = new Map<string, string>()
   for (const a of allLocations) {
@@ -54,7 +54,7 @@ function checkOutputCollisions(infos: TaskInfo[], reg: TaskOutputRegistryImpl) {
 
   for (const i of infos) {
     for (const loc of i.outputLocations) {
-      const normed = norm(loc.pathInPackage)
+      const normed = norm(loc.pathInUnit)
       const upper = hardGet(upperByPath, normed)
       const other = hardGet(taskNameByOutput, upper)
       if (other !== i.taskName) {

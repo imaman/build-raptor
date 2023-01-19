@@ -126,7 +126,7 @@ class SingleTaskExecutor {
     const unit = this.unit
     const missing = await promises(t.outputLocations)
       .filter(async loc => {
-        const resolved = path.join(this.model.rootDir, unit.pathInRepo, loc.pathInPackage)
+        const resolved = path.join(this.model.rootDir, unit.pathInRepo, loc.pathInUnit)
         const exists = await fse.pathExists(resolved)
         return !exists
       })
@@ -287,7 +287,7 @@ class SingleTaskExecutor {
       throw new Error(`Task ${JSON.stringify(t.name)} crashed`)
     }
 
-    const locations = t.outputLocations.map(at => at.pathInPackage)
+    const locations = t.outputLocations.map(at => at.pathInUnit)
     if (status === 'OK') {
       await this.validateOutputs()
       this.tracker.registerVerdict(t.name, status, outputFile)

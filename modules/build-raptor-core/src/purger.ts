@@ -20,7 +20,7 @@ export class Purger {
     const dir = path.join(model.rootDir, unit.pathInRepo)
     const locationsToPurge = task.outputLocations
       .filter(at => (selected ? at.purge === 'ALWAYS' : true))
-      .map(at => at.pathInPackage)
+      .map(at => at.pathInUnit)
     await this.removeLocations(dir, locationsToPurge)
     this.logger.info(`purged output locations of task ${task.name}: ${locationsToPurge}`)
     return task.outputLocations
