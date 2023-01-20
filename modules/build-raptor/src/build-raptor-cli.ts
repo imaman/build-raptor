@@ -161,7 +161,7 @@ async function run(options: Options) {
 
 function reportTests(logger: Logger, arr: TestEndedEvent[]) {
   function indent(prevKey: string[], key: string[]) {
-    let indent = '|            '
+    let indent = '|    '
     for (let i = 0; i < prevKey.length; ++i) {
       indent += '  '
     }
@@ -197,10 +197,8 @@ function reportTests(logger: Logger, arr: TestEndedEvent[]) {
         TEST_TIMEDOUT: () => '⏲️ [timedout]',
       })
 
-      const duration = at.durationMillis === undefined ? '' : ` [${(at.durationMillis / 1000).toFixed(3)}s]`
-      const padded = duration.padStart(8, ' ')
-      const prefix = `|${padded}${spaces.slice(8)}`
-      logger.print(`${prefix}${v} ${at.testPath.at(-1)}`)
+      const duration = at.durationMillis === undefined ? '' : ` (${at.durationMillis} ms)`
+      logger.print(`${spaces}${v} ${at.testPath.at(-1)}${duration}`)
 
       prev = k
     }
@@ -315,7 +313,7 @@ yargs(hideBin(process.argv))
     },
   )
   .command(
-    'pack-modules',
+    'pack',
     'create publishable packages',
     yargs => withBuildOptions(yargs),
     async argv => {

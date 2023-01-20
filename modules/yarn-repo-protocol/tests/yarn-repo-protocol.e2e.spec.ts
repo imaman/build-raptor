@@ -393,7 +393,8 @@ describe('yarn-repo-protocol.e2e', () => {
       const n = fork.file('modules/a/n')
 
       const wipe = async () => await Promise.all([p.rm(), n.rm()])
-      const invoked = async () => [(await p.exists()) ? 'P' : '', (await n.exists()) ? 'N' : ''].join(',')
+      const invoked = async () =>
+        [(await p.exists()) ? 'P' : '', (await n.exists()) ? 'N' : ''].filter(Boolean).join(',')
 
       await fork.run('FAIL', { taskKind: 'test' })
       expect(await invoked()).toEqual('P,N')
@@ -431,7 +432,8 @@ describe('yarn-repo-protocol.e2e', () => {
       const n = fork.file('modules/a/n')
 
       const wipe = async () => await Promise.all([p.rm(), n.rm()])
-      const invoked = async () => [(await p.exists()) ? 'P' : '', (await n.exists()) ? 'N' : ''].join(',')
+      const invoked = async () =>
+        [(await p.exists()) ? 'P' : '', (await n.exists()) ? 'N' : ''].filter(Boolean).join(',')
 
       await fork.run('FAIL', { taskKind: 'test' })
       expect(await invoked()).toEqual('P,N')
