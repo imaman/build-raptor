@@ -152,6 +152,7 @@ async function run(options: Options) {
   const runner = await bootstrapper.makeRunner(options.command, options.units, {
     concurrency: Int(options.concurrency),
     buildRaptorDir,
+    testCaching: options.testCaching ?? true,
   })
   const { exitCode } = await runner()
   // eslint-disable-next-line require-atomic-updates
