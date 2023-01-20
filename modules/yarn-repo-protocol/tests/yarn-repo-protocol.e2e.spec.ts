@@ -320,8 +320,8 @@ describe('yarn-repo-protocol.e2e', () => {
         'modules/a/tests/abs.spec.ts': `
           import {abs} from '../src/abs'
           import {writeFileSync} from 'fs'
-          test('return n if positive', () => { writeFileSync('p', ''); expect(abs(1)).toEqual(1); })
-          test('return -n if negative', () => { writeFileSync('n', ''); expect(abs(-2)).toEqual(2) })
+          test('p', () => { writeFileSync('p', ''); expect(abs(1)).toEqual(1) })
+          test('n', () => { writeFileSync('n', ''); expect(abs(-2)).toEqual(2) })
         `,
       }
 
@@ -349,7 +349,7 @@ describe('yarn-repo-protocol.e2e', () => {
         'modules/a/tests/abs.spec.ts': `
           import {abs} from '../src/abs'
           import {writeFileSync} from 'fs'
-          test('p', () => { writeFileSync('p', ''); expect(abs(1)).toEqual(1); })
+          test('p', () => { writeFileSync('p', ''); expect(abs(1)).toEqual(1) })
           test('n', () => { writeFileSync('n', ''); expect(abs(-2)).toEqual(2) })
         `,
       }
@@ -383,7 +383,7 @@ describe('yarn-repo-protocol.e2e', () => {
         'modules/a/tests/abs.spec.ts': `
           import {abs} from '../src/abs'
           import {writeFileSync} from 'fs'
-          test('p', () => { writeFileSync('p', ''); expect(abs(1)).toEqual(1); })
+          test('p', () => { writeFileSync('p', ''); expect(abs(1)).toEqual(1) })
           test('n', () => { writeFileSync('n', ''); expect(abs(-2)).toEqual(2) })
         `,
       }
@@ -421,7 +421,7 @@ describe('yarn-repo-protocol.e2e', () => {
         'modules/a/tests/abs.spec.ts': `
           import {abs} from '../src/abs'
           import {writeFileSync} from 'fs'
-          test('p', () => { writeFileSync('p', ''); expect(abs(1)).toEqual(1); })
+          test('p', () => { writeFileSync('p', ''); expect(abs(1)).toEqual(1) })
           test('n', () => { writeFileSync('n', ''); expect(abs(-2)).toEqual(2) })
         `,
       }
