@@ -13,7 +13,6 @@ describe('build-raptor-action', () => {
     expect(8).toEqual(8)
   })
   test('16', () => {
-    expect(16).toEqual(-16)
-    // 1
+    expect(16).toEqual(16)
   })
 })
