@@ -162,12 +162,17 @@ async function run(options: Options) {
 function reportTests(logger: Logger, arr: TestEndedEvent[]) {
   function indent(prevKey: string[], key: string[]) {
     let indent = '|    '
-    for (let i = 0; i < prevKey.length; ++i) {
+    let i = 0
+    while (i < prevKey.length) {
+      if (prevKey[i] !== key[i]) {
+        break
+      }
       indent += '  '
+      ++i
     }
 
-    for (let i = prevKey.length; i < key.length; ++i) {
-      logger.print(`${indent}${key[i]}`)
+    for (let j = i; j < key.length; ++j) {
+      logger.print(`${indent}${key[j]}`)
       indent += '  '
     }
 
