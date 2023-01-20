@@ -309,8 +309,8 @@ export class YarnRepoProtocol implements RepoProtocol {
       return ret
     }
 
-    if (taskKind === 'pack') {
-      const stat = await this.pack(u, dir)
+    if (taskKind === 'pack-modules') {
+      const stat = await this.packModule(u, dir)
       if (stat?.hasErrors()) {
         await fse.writeFile(outputFile, JSON.stringify(stat?.toJson('errors-only'), null, 2))
       } else {
@@ -489,7 +489,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     return hardGet(this.state.versionByPackageId, d)
   }
 
-  private async pack(u: UnitMetadata, dir: string): Promise<Stats | undefined> {
+  private async packModule(u: UnitMetadata, dir: string): Promise<Stats | undefined> {
     const inrepo: string[] = this.state.units.map(u => u.id)
     const ret = await new Promise<Stats | undefined>(resolve => {
       webpack(
@@ -572,7 +572,7 @@ export class YarnRepoProtocol implements RepoProtocol {
 
   async getTasks(): Promise<CatalogOfTasks> {
     const build = TaskKind('build')
-    const pack = TaskKind('pack')
+    const packModule = TaskKind('pack-modules')
     const test = TaskKind('test')
     const publish = TaskKind('publish-assets')
 
@@ -583,7 +583,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     const ret: CatalogOfTasks = {
       inUnit: {
         [test]: [build],
-        [pack]: [build],
+        [packModule]: [build],
       },
       onDeps: {},
       tasks: [
@@ -601,7 +601,7 @@ export class YarnRepoProtocol implements RepoProtocol {
           inputsInDeps: [this.dist('s')],
         },
         {
-          taskKind: pack,
+          taskKind: packModule,
           outputs: [PACK_DIR],
           inputsInUnit: [this.dist('s')],
           inputsInDeps: [this.dist('s')],

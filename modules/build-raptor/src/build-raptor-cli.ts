@@ -26,7 +26,7 @@ import { YarnRepoProtocol } from 'yarn-repo-protocol'
 type TestReporting = 'just-failing' | 'tree'
 
 interface Options {
-  command: 'build' | 'test' | 'pack' | 'publish-assets'
+  command: 'build' | 'test' | 'pack-modules' | 'publish-assets'
   dir: string | undefined
   units: string[]
   githubActions: boolean
@@ -321,7 +321,7 @@ yargs(hideBin(process.argv))
     async argv => {
       await run({
         dir: argv.dir,
-        command: 'pack',
+        command: 'pack-modules',
         units: argv.units,
         githubActions: argv['github-actions'],
         printPassing: argv['print-passing'],
@@ -331,7 +331,7 @@ yargs(hideBin(process.argv))
       })
     },
   )
-  // TODO(imaman): 'pack', 'publish', etc. should not be an array option (and not separate commands)
+  // TODO(imaman): 'pack-modules', 'publish', etc. should not be an array option (and not separate commands)
   .command(
     'publish-assets',
     'publish deployables (as blobs)',

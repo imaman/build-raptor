@@ -107,7 +107,7 @@
 - [ ] CLI flag to control whether failed tasks are re-run. In particular. should default to "no-rerun" in dev machine mode.
 - [ ] no re-run of failed builds. just failed tests.
 - [ ] when not re-running failed tests, dump their logs directly to the console (as-if they were invoked).
-- [ ] when trying to specify dist/tsbuildinfo.json as an output location (as oppopsed to just dist/) compilation becomes signfiicanlty slower (looks like no incremental comilation is happening, because build-raptor deletes it). dist/src+dist/tests is terribel because then there is a mismatch between tsbuildinfo and dist/src (or dist/tests) resulting in under compilation. using dist/ works, but then we can use dist/ for placing the outputs of other tasks (such as pack).
+- [ ] when trying to specify dist/tsbuildinfo.json as an output location (as oppopsed to just dist/) compilation becomes signfiicanlty slower (looks like no incremental comilation is happening, because build-raptor deletes it). dist/src+dist/tests is terribel because then there is a mismatch between tsbuildinfo and dist/src (or dist/tests) resulting in under compilation. using dist/ works, but then we can use dist/ for placing the outputs of other tasks (such as pack-modules).
 - [ ] when there is a task which decalres output location 'dist' and another one which decalres output-location 'dist-foo' build-raptor emits an "output collision error". apparently we compares prefixes instead of comparing path-segments.
 - [ ] this error message is confusing: 'this build-raptor run has crashed due to an unexpected error Error: Output location <xdist-pack> does not exist (under </home/imaman/code/imaman/build-raptor/modules/build-failed-error>)'
 - [ ] get rid of the --build-output-locations flag
