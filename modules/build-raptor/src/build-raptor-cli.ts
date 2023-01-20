@@ -35,6 +35,7 @@ interface Options {
   buildOutputLocation: string[]
   concurrency: number
   testReporting?: TestReporting
+  testCaching?: boolean
 }
 
 type TestEndedEvent = RepoProtocolEvent['testEnded']
@@ -151,6 +152,7 @@ async function run(options: Options) {
   const runner = await bootstrapper.makeRunner(options.command, options.units, {
     concurrency: Int(options.concurrency),
     buildRaptorDir,
+    testCaching: options.testCaching ?? true,
   })
   const { exitCode } = await runner()
   // eslint-disable-next-line require-atomic-updates
@@ -159,7 +161,7 @@ async function run(options: Options) {
 
 function reportTests(logger: Logger, arr: TestEndedEvent[]) {
   function indent(prevKey: string[], key: string[]) {
-    let indent = '|  '
+    let indent = '|    '
     for (let i = 0; i < prevKey.length; ++i) {
       indent += '  '
     }
@@ -195,7 +197,7 @@ function reportTests(logger: Logger, arr: TestEndedEvent[]) {
         TEST_TIMEDOUT: () => '⏲️ [timedout]',
       })
 
-      const duration = at.durationMillis === undefined ? '' : ` [${(at.durationMillis / 1000).toFixed(3)}s]`
+      const duration = at.durationMillis === undefined ? '' : ` (${at.durationMillis} ms)`
       logger.print(`${spaces}${v} ${at.testPath.at(-1)}${duration}`)
 
       prev = k
@@ -283,10 +285,16 @@ yargs(hideBin(process.argv))
     'test',
     'run tests',
     yargs =>
-      withBuildOptions(yargs).option('test-reporting', {
-        choices: ['just-failing', 'tree'],
-        describe: 'test reporing policy',
-      }),
+      withBuildOptions(yargs)
+        .option('test-reporting', {
+          choices: ['just-failing', 'tree'],
+          describe: 'test reporing policy',
+        })
+        .option('test-caching', {
+          describe: 'whether to skip running tests that have already passed',
+          type: 'boolean',
+          default: true,
+        }),
     async argv => {
       const tr = argv['test-reporting']
       await run({
@@ -298,6 +306,7 @@ yargs(hideBin(process.argv))
         buildOutputLocation: argv['build-output-locations'],
         concurrency: argv['concurrency'],
         compact: argv.compact,
+        testCaching: argv['test-caching'],
         testReporting:
           tr === 'just-failing' || tr === 'tree' || tr === undefined ? tr : failMe(`unsupported value: ${tr}`),
       })

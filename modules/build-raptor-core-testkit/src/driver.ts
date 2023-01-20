@@ -174,6 +174,7 @@ interface RunOptions {
   taskKind?: string
   concurrencyLevel?: number
   checkGitIgnore?: boolean
+  testCaching?: boolean
 }
 
 const BUILD_RAPTOR_DIR_NAME = '.build-raptor'
@@ -201,6 +202,7 @@ class Fork {
       checkGitIgnore: options.checkGitIgnore ?? false,
       concurrency: concurrencyLevel,
       buildRaptorDir: this.buildRaptorDir,
+      testCaching: options.testCaching,
     })
     const output = await runner()
     if (expectedStatus === output.overallVerdict) {

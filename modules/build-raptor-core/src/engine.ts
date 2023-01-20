@@ -27,6 +27,7 @@ export interface EngineOptions {
   concurrency: Int
   buildRaptorDir: string
   fingerprintLedger?: boolean
+  testCaching?: boolean
 }
 
 export class Engine {
@@ -63,6 +64,7 @@ export class Engine {
       concurrency: options.concurrency,
       buildRaptorDir: options.buildRaptorDir,
       fingerprintLedger: options.fingerprintLedger ?? false,
+      testCaching: options.testCaching ?? true,
     }
     const ledgerFile = path.join(this.options.buildRaptorDir, 'fingerprint-ledger.json')
     this.stepByStepFile = path.join(this.options.buildRaptorDir, 'step-by-step.json')
@@ -135,6 +137,7 @@ export class Engine {
       this.eventPublisher,
       this.fingerprintLedger,
       this.purger,
+      this.options.testCaching,
     )
 
     const batchScheduler = (batch: TaskName[]) => {

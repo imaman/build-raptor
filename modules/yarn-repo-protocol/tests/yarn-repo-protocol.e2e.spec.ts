@@ -320,8 +320,8 @@ describe('yarn-repo-protocol.e2e', () => {
         'modules/a/tests/abs.spec.ts': `
           import {abs} from '../src/abs'
           import {writeFileSync} from 'fs'
-          test('return n if positive', () => { writeFileSync('p', ''); expect(abs(1)).toEqual(1); })
-          test('return -n if negative', () => { writeFileSync('n', ''); expect(abs(-2)).toEqual(2) })
+          test('p', () => { writeFileSync('p', ''); expect(abs(1)).toEqual(1) })
+          test('n', () => { writeFileSync('n', ''); expect(abs(-2)).toEqual(2) })
         `,
       }
 
@@ -340,15 +340,17 @@ describe('yarn-repo-protocol.e2e', () => {
     })
     test('when the code is changed, all tests run', async () => {
       const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
+
+      const buggyImpl = 'export function abs(n: number) { return n }'
       const recipe = {
         'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
         'modules/a/package.json': driver.packageJson('a'),
-        'modules/a/src/abs.ts': 'export function abs(n: number) { return n }',
+        'modules/a/src/abs.ts': buggyImpl,
         'modules/a/tests/abs.spec.ts': `
           import {abs} from '../src/abs'
           import {writeFileSync} from 'fs'
-          test('return n if positive', () => { writeFileSync('p', ''); expect(abs(1)).toEqual(1); })
-          test('return -n if negative', () => { writeFileSync('n', ''); expect(abs(-2)).toEqual(2) })
+          test('p', () => { writeFileSync('p', ''); expect(abs(1)).toEqual(1) })
+          test('n', () => { writeFileSync('n', ''); expect(abs(-2)).toEqual(2) })
         `,
       }
 
@@ -370,6 +372,79 @@ describe('yarn-repo-protocol.e2e', () => {
       await fork.run('OK', { taskKind: 'test' })
       expect(await p.exists()).toBe(true)
       expect(await n.exists()).toBe(true)
+    })
+    test('when code is reverted, does not run all tests', async () => {
+      const buggyImpl = 'export function abs(n: number) { return n }'
+      const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': driver.packageJson('a'),
+        'modules/a/src/abs.ts': buggyImpl,
+        'modules/a/tests/abs.spec.ts': `
+          import {abs} from '../src/abs'
+          import {writeFileSync} from 'fs'
+          test('p', () => { writeFileSync('p', ''); expect(abs(1)).toEqual(1) })
+          test('n', () => { writeFileSync('n', ''); expect(abs(-2)).toEqual(2) })
+        `,
+      }
+
+      const fork = await driver.repo(recipe).fork()
+      const p = fork.file('modules/a/p')
+      const n = fork.file('modules/a/n')
+
+      const wipe = async () => await Promise.all([p.rm(), n.rm()])
+      const invoked = async () =>
+        [(await p.exists()) ? 'P' : '', (await n.exists()) ? 'N' : ''].filter(Boolean).join(',')
+
+      await fork.run('FAIL', { taskKind: 'test' })
+      expect(await invoked()).toEqual('P,N')
+
+      await wipe()
+      await fork.run('FAIL', { taskKind: 'test' })
+      expect(await invoked()).toEqual('N')
+
+      await wipe()
+      await fork.file('modules/a/src/abs.ts').write(`export function abs(n: number) { return n < 0 ? -n : n }`)
+      await fork.run('OK', { taskKind: 'test' })
+      expect(await invoked()).toEqual('P,N')
+
+      await wipe()
+      await fork.file('modules/a/src/abs.ts').write(buggyImpl)
+      await fork.run('FAIL', { taskKind: 'test' })
+      expect(await invoked()).toEqual('N')
+    })
+    test('when test-caching is false reruns all tests', async () => {
+      const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': driver.packageJson('a'),
+        'modules/a/src/abs.ts': 'export function abs(n: number) { return n }',
+        'modules/a/tests/abs.spec.ts': `
+          import {abs} from '../src/abs'
+          import {writeFileSync} from 'fs'
+          test('p', () => { writeFileSync('p', ''); expect(abs(1)).toEqual(1) })
+          test('n', () => { writeFileSync('n', ''); expect(abs(-2)).toEqual(2) })
+        `,
+      }
+
+      const fork = await driver.repo(recipe).fork()
+      const p = fork.file('modules/a/p')
+      const n = fork.file('modules/a/n')
+
+      const wipe = async () => await Promise.all([p.rm(), n.rm()])
+      const invoked = async () =>
+        [(await p.exists()) ? 'P' : '', (await n.exists()) ? 'N' : ''].filter(Boolean).join(',')
+
+      await fork.run('FAIL', { taskKind: 'test' })
+      expect(await invoked()).toEqual('P,N')
+
+      await wipe()
+      await fork.run('FAIL', { taskKind: 'test' })
+      expect(await invoked()).toEqual('N')
+
+      await wipe()
+      await fork.run('FAIL', { taskKind: 'test', testCaching: false })
+      expect(await invoked()).toEqual('P,N')
     })
   })
   describe('validations', () => {

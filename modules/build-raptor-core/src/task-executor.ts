@@ -29,6 +29,7 @@ export class TaskExecutor {
     private readonly eventPublisher: TypedPublisher<EngineEventScheme>,
     private readonly fingerprintLedger: FingerprintLedger,
     private readonly purger: Purger,
+    private readonly testCaching: boolean,
   ) {}
 
   async executeTask(taskName: TaskName, deps: TaskName[]) {
@@ -44,6 +45,7 @@ export class TaskExecutor {
       this.eventPublisher,
       this.fingerprintLedger,
       this.purger,
+      this.testCaching,
     )
     await ste.executeTask()
   }
@@ -51,6 +53,7 @@ export class TaskExecutor {
 
 class SingleTaskExecutor {
   private readonly phasePublisher = new TypedPublisher<{ phase: Phase }>()
+  private readonly isTest: boolean
 
   constructor(
     private readonly taskName: TaskName,
@@ -64,8 +67,11 @@ class SingleTaskExecutor {
     private readonly eventPublisher: TypedPublisher<EngineEventScheme>,
     private readonly fingerprintLedger: FingerprintLedger,
     private readonly purger: Purger,
+    private readonly testCaching: boolean,
     private readonly taskToDiagnose?: string,
-  ) {}
+  ) {
+    this.isTest = TaskName().undo(this.taskName).taskKind === 'test'
+  }
 
   private diagnose(message: string) {
     if (this.taskName !== this.taskToDiagnose) {
@@ -227,7 +233,7 @@ class SingleTaskExecutor {
     if (phase === 'POSSIBLY_RESTORE_OUTPUTS') {
       const earlierVerdict = await this.getVerdict()
       this.diagnose(`earlierVerdict=${earlierVerdict}`)
-      if (earlierVerdict === 'UNKNOWN') {
+      if (earlierVerdict === 'UNKNOWN' || (this.isTest && !this.testCaching)) {
         await this.purgeOutputs(false)
         return 'RUN_IT'
       }
