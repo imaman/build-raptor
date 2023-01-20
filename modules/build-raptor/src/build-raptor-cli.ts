@@ -315,7 +315,7 @@ yargs(hideBin(process.argv))
     },
   )
   .command(
-    'pack-modules',
+    'pack',
     'create publishable packages',
     yargs => withBuildOptions(yargs),
     async argv => {
