@@ -156,3 +156,4 @@
 - support other test runners
 - run -> test fails -> run again (only one test is exectued) -> change source code -> run (all tests should run)
 - tree output should include also cached tests.
+- --confidence=9/10
