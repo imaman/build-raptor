@@ -137,6 +137,7 @@ export class Engine {
       this.eventPublisher,
       this.fingerprintLedger,
       this.purger,
+      this.options.testCaching,
     )
 
     const batchScheduler = (batch: TaskName[]) => {

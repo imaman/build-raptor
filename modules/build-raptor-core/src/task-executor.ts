@@ -29,6 +29,7 @@ export class TaskExecutor {
     private readonly eventPublisher: TypedPublisher<EngineEventScheme>,
     private readonly fingerprintLedger: FingerprintLedger,
     private readonly purger: Purger,
+    private readonly testCaching: boolean,
   ) {}
 
   async executeTask(taskName: TaskName, deps: TaskName[]) {
@@ -44,6 +45,7 @@ export class TaskExecutor {
       this.eventPublisher,
       this.fingerprintLedger,
       this.purger,
+      this.testCaching,
     )
     await ste.executeTask()
   }
@@ -64,6 +66,7 @@ class SingleTaskExecutor {
     private readonly eventPublisher: TypedPublisher<EngineEventScheme>,
     private readonly fingerprintLedger: FingerprintLedger,
     private readonly purger: Purger,
+    private readonly testCaching: boolean,
     private readonly taskToDiagnose?: string,
   ) {}
 
