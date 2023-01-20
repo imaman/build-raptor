@@ -412,6 +412,38 @@ describe('yarn-repo-protocol.e2e', () => {
       await fork.run('FAIL', { taskKind: 'test' })
       expect(await invoked()).toEqual({ p: false, n: true })
     })
+    test('when test-caching is false reruns all tests', async () => {
+      const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': driver.packageJson('a'),
+        'modules/a/src/abs.ts': 'export function abs(n: number) { return n }',
+        'modules/a/tests/abs.spec.ts': `
+          import {abs} from '../src/abs'
+          import {writeFileSync} from 'fs'
+          test('p', () => { writeFileSync('p', ''); expect(abs(1)).toEqual(1); })
+          test('n', () => { writeFileSync('n', ''); expect(abs(-2)).toEqual(2) })
+        `,
+      }
+
+      const fork = await driver.repo(recipe).fork()
+      const p = fork.file('modules/a/p')
+      const n = fork.file('modules/a/n')
+
+      const wipe = async () => await Promise.all([p.rm(), n.rm()])
+      const invoked = async () => ({ p: await p.exists(), n: await n.exists() })
+
+      await fork.run('FAIL', { taskKind: 'test' })
+      expect(await invoked()).toEqual({ p: true, n: true })
+
+      await wipe()
+      await fork.run('FAIL', { taskKind: 'test' })
+      expect(await invoked()).toEqual({ p: false, n: true })
+
+      await wipe()
+      await fork.run('FAIL', { taskKind: 'test', testCaching: false })
+      expect(await invoked()).toEqual({ p: true, n: true })
+    })
   })
   describe('validations', () => {
     test('a test tasks runs the "validate" run script and places its output in the tasks output file', async () => {
