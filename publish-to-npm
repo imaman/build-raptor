@@ -2,7 +2,7 @@
 
 set -e
 
-yarn pack-all
+yarn pack-modules
 cd modules/build-raptor/pack
 V=$(npm info build-raptor version)
 sed -i 's/"version": "1.0.0"/"version": "'${V}'"/' package.json
