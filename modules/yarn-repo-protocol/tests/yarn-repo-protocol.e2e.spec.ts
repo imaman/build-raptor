@@ -393,24 +393,24 @@ describe('yarn-repo-protocol.e2e', () => {
       const n = fork.file('modules/a/n')
 
       const wipe = async () => await Promise.all([p.rm(), n.rm()])
-      const invoked = async () => ({ p: await p.exists(), n: await n.exists() })
+      const invoked = async () => [(await p.exists()) ? 'P' : '', (await n.exists()) ? 'N' : ''].join(',')
 
       await fork.run('FAIL', { taskKind: 'test' })
-      expect(await invoked()).toEqual({ p: true, n: true })
+      expect(await invoked()).toEqual('P,N')
 
       await wipe()
       await fork.run('FAIL', { taskKind: 'test' })
-      expect(await invoked()).toEqual({ p: false, n: true })
+      expect(await invoked()).toEqual('N')
 
       await wipe()
       await fork.file('modules/a/src/abs.ts').write(`export function abs(n: number) { return n < 0 ? -n : n }`)
       await fork.run('OK', { taskKind: 'test' })
-      expect(await invoked()).toEqual({ p: true, n: true })
+      expect(await invoked()).toEqual('P,N')
 
       await wipe()
       await fork.file('modules/a/src/abs.ts').write(buggyImpl)
       await fork.run('FAIL', { taskKind: 'test' })
-      expect(await invoked()).toEqual({ p: false, n: true })
+      expect(await invoked()).toEqual('N')
     })
     test('when test-caching is false reruns all tests', async () => {
       const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
@@ -431,18 +431,18 @@ describe('yarn-repo-protocol.e2e', () => {
       const n = fork.file('modules/a/n')
 
       const wipe = async () => await Promise.all([p.rm(), n.rm()])
-      const invoked = async () => ({ p: await p.exists(), n: await n.exists() })
+      const invoked = async () => [(await p.exists()) ? 'P' : '', (await n.exists()) ? 'N' : ''].join(',')
 
       await fork.run('FAIL', { taskKind: 'test' })
-      expect(await invoked()).toEqual({ p: true, n: true })
+      expect(await invoked()).toEqual('P,N')
 
       await wipe()
       await fork.run('FAIL', { taskKind: 'test' })
-      expect(await invoked()).toEqual({ p: false, n: true })
+      expect(await invoked()).toEqual('N')
 
       await wipe()
       await fork.run('FAIL', { taskKind: 'test', testCaching: false })
-      expect(await invoked()).toEqual({ p: true, n: true })
+      expect(await invoked()).toEqual('P,N')
     })
   })
   describe('validations', () => {
