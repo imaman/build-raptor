@@ -15,7 +15,6 @@ describe('validate-task-infos', () => {
   test('an empty list of task-info is always allowed', () => {
     const input: TaskInfo[] = []
     expect(validateTaskInfos(input)).toBeTruthy()
-    expect(5).toEqual(6)
   })
   describe('task name collision', () => {
     test('yells on two (or more) tasks with the same name', () => {
