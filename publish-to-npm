@@ -3,15 +3,29 @@
 set -e
 
 yarn pack-all
-cd modules/build-raptor/pack
-V=$(npm info build-raptor version)
-sed -i 's/"version": "1.0.0"/"version": "'${V}'"/' package.json
-cat package.json
-W=$(npm version minor)
-echo pubishing "$W"
+pushd modules/build-raptor/pack
+CURRENT_VERSION=$(npm info build-raptor version)
+npm pkg set "version=$CURRENT_VERSION"
+npm version minor
+NEXT_VERSION=$(npm pkg get version | tr -d '"')
+echo "resolved new version: $NEXT_VERSION"
+npm pkg set "dependencies.build-raptor-jest-reporter=$NEXT_VERSION"
+
+
+echo "pubishing build-raptor $NEXT_VERSION"
 npm publish
-X=$(echo "$W" | sed "s/^v//")
-T="build-raptor@$X"
+
+popd
+pushd modules/build-raptor-jest-reporter/pack
+npm pkg set "version=$NEXT_VERSION"
+
+echo "pubishing build-raptor-jest-reporter $NEXT_VERSION"
+npm publish
+
+
+
+
+T="published@$NEXT_VERSION"
 echo tagging "$T"
 git tag "$T"
 git push --tags
