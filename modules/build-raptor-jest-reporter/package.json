@@ -16,11 +16,7 @@
     "preset": "../../jest.preset.js"
   },
   "dependencies": {
-    "reporter-output": "1.0.0"
+    "jest-reporter-impl": "1.0.0"
   },
-  "devDependencies": {
-    "@jest/reporters": "^29.3.1",
-    "@jest/test-result": "^29.3.1",
-    "@jest/types": "^29.3.1"
-  }
+  "devDependencies": {}
 }
