@@ -9,7 +9,7 @@
     "dist/src"
   ],
   "scripts": {
-    "build": "tsc -b",
+    "build": "tsc -b && cp src/a.js dist/src/index.js",
     "test": "jest"
   },
   "jest": {
