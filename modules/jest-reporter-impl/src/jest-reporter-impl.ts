@@ -5,7 +5,7 @@ import * as fs from 'fs'
 import path from 'path'
 import { ReporterOutput } from 'reporter-output'
 
-export class JestReporterImpl implements Reporter {
+class JestReporterImpl implements Reporter {
   private readonly file
   private readonly cases: { testCaseResult: TestCaseResult; testFile: string }[] = []
   constructor(config: Config.GlobalConfig) {
@@ -34,4 +34,8 @@ export class JestReporterImpl implements Reporter {
     const output: ReporterOutput = { cases }
     fs.writeFileSync(this.file, JSON.stringify(ReporterOutput.parse(output)))
   }
+}
+
+export function create(config: Config.GlobalConfig): Reporter {
+  return new JestReporterImpl(config)
 }

@@ -10,6 +10,7 @@
   ],
   "scripts": {
     "build": "tsc -b && cp src/a.js dist/src/index.js",
+    "prepare": "cp src/a.js pack/main.js",
     "test": "jest"
   },
   "jest": {
