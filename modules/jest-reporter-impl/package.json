@@ -1,5 +1,5 @@
 {
-  "name": "build-raptor-jest-reporter",
+  "name": "jest-reporter-impl",
   "version": "1.0.0",
   "description": "",
   "keywords": [],
@@ -9,15 +9,18 @@
     "dist/src"
   ],
   "scripts": {
-    "build": "tsc -b && cp src/a.js dist/src/index.js",
-    "prepare": "adjust-bundle",
+    "build": "tsc -b",
     "test": "jest"
   },
   "jest": {
     "preset": "../../jest.preset.js"
   },
   "dependencies": {
-    "jest-reporter-impl": "1.0.0"
+    "reporter-output": "1.0.0"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "@jest/reporters": "^29.3.1",
+    "@jest/test-result": "^29.3.1",
+    "@jest/types": "^29.3.1"
+  }
 }

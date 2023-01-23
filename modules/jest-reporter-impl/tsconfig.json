@@ -6,7 +6,7 @@
   },
   "references": [
     {
-      "path": "../jest-reporter-impl"
+      "path": "../reporter-output"
     }
   ],
   "include": ["src/**/*", "tests/**/*"]
