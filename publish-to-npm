@@ -24,6 +24,8 @@ npm publish
 popd
 pushd modules/build-raptor-jest-reporter/pack
 npm pkg set "version=$NEXT_VERSION"
+cd ../
+npm run prepare
 echo "pubishing build-raptor-jest-reporter $NEXT_VERSION"
 npm publish
 
