@@ -10,7 +10,7 @@
   ],
   "scripts": {
     "build": "tsc -b && cp src/a.js dist/src/index.js",
-    "prepare": "cp src/a.js pack/main.js",
+    "prepare": "cp src/a.js pack/main.js # we suppress most of build-raptor's pack-all behavior due to a webpack issue",
     "test": "jest"
   },
   "jest": {
