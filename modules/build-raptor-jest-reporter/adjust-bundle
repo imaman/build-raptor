@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 # we suppress most of build-raptor's pack-all behavior due to a webpack issue
 cp src/a.js pack/main.js
 cd pack
