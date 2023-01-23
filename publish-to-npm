@@ -16,9 +16,14 @@ echo "pubishing build-raptor $NEXT_VERSION"
 npm publish
 
 popd
+pushd modules/jest-reporter-impl/pack
+npm pkg set "version=$NEXT_VERSION"
+echo "pubishing jest-reporter-impl $NEXT_VERSION"
+npm publish
+
+popd
 pushd modules/build-raptor-jest-reporter/pack
 npm pkg set "version=$NEXT_VERSION"
-
 echo "pubishing build-raptor-jest-reporter $NEXT_VERSION"
 npm publish
 
