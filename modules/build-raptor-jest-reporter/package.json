@@ -10,14 +10,11 @@
   ],
   "scripts": {
     "build": "tsc -b && cp src/a.js dist/src/index.js",
-    "prepare": "adjust-bundle",
     "test": "jest"
   },
   "jest": {
     "preset": "../../jest.preset.js"
   },
-  "dependencies": {
-    "jest-reporter-impl": "1.0.0"
-  },
+  "dependencies": {},
   "devDependencies": {}
 }

@@ -500,7 +500,7 @@ export class YarnRepoProtocol implements RepoProtocol {
             filename: `${PACK_DIR}/${MAIN_FILE_NAME}`,
             path: dir,
           },
-          mode: 'development',
+          mode: 'production', // intentional
           // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
           plugins: [new ShebangPlugin() as WebpackPluginInstance],
           externals: [
