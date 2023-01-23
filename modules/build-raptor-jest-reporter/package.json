@@ -10,7 +10,6 @@
   ],
   "scripts": {
     "build": "tsc -b && cp src/a.js dist/src/index.js",
-    "prepare": "adjust-bundle",
     "test": "jest"
   },
   "jest": {
