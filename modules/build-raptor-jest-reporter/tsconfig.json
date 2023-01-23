@@ -4,10 +4,5 @@
     "composite": true,
     "outDir": "dist"
   },
-  "references": [
-    {
-      "path": "../jest-reporter-impl"
-    }
-  ],
   "include": ["src/**/*", "tests/**/*"]
 }

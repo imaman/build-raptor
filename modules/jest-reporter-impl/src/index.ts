@@ -5,9 +5,11 @@ import * as fs from 'fs'
 import path from 'path'
 import { ReporterOutput } from 'reporter-output'
 
+// A build-raptor-specific Jest reporter.
 class JestReporterImpl implements Reporter {
   private readonly file
   private readonly cases: { testCaseResult: TestCaseResult; testFile: string }[] = []
+
   constructor(config: Config.GlobalConfig) {
     if (!config.outputFile) {
       throw new Error(`outputFile is missing (must be specified in the config)`)
