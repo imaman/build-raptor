@@ -490,7 +490,24 @@ export class YarnRepoProtocol implements RepoProtocol {
   }
 
   private async pack(u: UnitMetadata, dir: string): Promise<Stats | undefined> {
-    const inrepo: string[] = this.state.units.map(u => u.id)
+    const metadataByUnitId = new Map<UnitId, UnitMetadata>(this.state.units.map(u => [u.id, u]))
+
+    const inRepoDeps = this.state.graph.traverseFrom(u.id).filter(at => at !== u.id)
+    // Webpack resolves package names based on the information in package.json and will bundle the compiled JavaScript
+    // files, but will not include TypeScript debugging support for dependency modules, unless explicit aliasing is
+    // used.
+    const alias = Object.fromEntries(
+      inRepoDeps.map(at => [
+        at,
+        path.join(
+          this.state.rootDir,
+          metadataByUnitId.get(at)?.pathInRepo ?? failMe(`unit not found "${at}"`),
+          this.src,
+          'index.ts',
+        ),
+      ]),
+    )
+    this.logger.print(`alias of ${u.id} is:\n${JSON.stringify(alias, null, 2)}`)
     const ret = await new Promise<Stats | undefined>(resolve => {
       webpack(
         {
@@ -503,15 +520,24 @@ export class YarnRepoProtocol implements RepoProtocol {
           mode: 'development',
           // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
           plugins: [new ShebangPlugin() as WebpackPluginInstance],
+          module: {
+            rules: [
+              {
+                test: /\.(js|ts)x?$/,
+                use: ['babel-loader'],
+                exclude: /node_modules/,
+              },
+            ],
+          },
           externals: [
-            function (arg, callback) {
+            (arg, callback) => {
               const req = arg.request ?? ''
               let decision = 'R'
               if (req.startsWith('.')) {
                 decision = 'bundle'
               }
 
-              if (inrepo.includes(req)) {
+              if (this.isInRepo(req)) {
                 decision = 'bundle'
               }
 
@@ -522,6 +548,10 @@ export class YarnRepoProtocol implements RepoProtocol {
               }
             },
           ],
+          resolve: {
+            extensions: ['.ts', '.js'],
+            alias,
+          },
         },
         async (err, stats) => {
           if (err) {
