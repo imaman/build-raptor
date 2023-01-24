@@ -627,14 +627,21 @@ export class YarnRepoProtocol implements RepoProtocol {
 
     const content = await fse.readFile(resolved, 'utf-8')
     let parsed
+    const fallback: RerunList = RerunList.parse([])
     try {
       parsed = JSON.parse(content)
     } catch (e) {
-      this.logger.print(`failed to parse ${resolved} <${e}> - overwriting with fallback content`)
-      const fallback: RerunList = []
+      this.logger.info(`failed to JSON parse ${resolved} <${e}> - using fallback`)
       parsed = fallback
     }
-    const rerunList = RerunList.parse(parsed)
+    let rerunList
+
+    try {
+      rerunList = RerunList.parse(parsed)
+    } catch (e) {
+      this.logger.info(`failed to parse rerun-list from ${resolved} <${e}> - using fallback`)
+      rerunList = fallback
+    }
 
     if (rerunList.length === 0) {
       this.logger.info(`No failed tests found in ${resolved}`)
