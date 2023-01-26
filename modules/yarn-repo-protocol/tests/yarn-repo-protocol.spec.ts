@@ -1,5 +1,5 @@
 import * as fse from 'fs-extra'
-import { createDefaultLogger, createNopLogger } from 'logger'
+import { createNopLogger } from 'logger'
 import { DirectoryScanner, folderify, slurpDir, TypedPublisher } from 'misc'
 import * as path from 'path'
 import { RepoProtocolEvent } from 'repo-protocol'
