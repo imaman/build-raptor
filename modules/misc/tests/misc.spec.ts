@@ -54,7 +54,7 @@ describe('misc', () => {
     test('error message', async () => {
       const nonExistingPath = path.join((await Tmp.dir()).path, 'foo')
       await expect(runDumpFile(nonExistingPath)).rejects.toThrowError(
-        `Cannot dump non existing __file: ${nonExistingPath}`,
+        `Cannot dump non existing file: ${nonExistingPath}`,
       )
     })
   })
