@@ -295,7 +295,7 @@ yargs(hideBin(process.argv))
     yargs =>
       withBuildOptions(yargs)
         .option('test-reporting', {
-          choices: ['just-failing', 'tree'],
+          choices: ['just-failing', 'tree', 'tree-just-failing'],
           describe: 'test reporing policy',
         })
         .option('test-caching', {
@@ -316,7 +316,9 @@ yargs(hideBin(process.argv))
         compact: argv.compact,
         testCaching: argv['test-caching'],
         testReporting:
-          tr === 'just-failing' || tr === 'tree' || tr === undefined ? tr : failMe(`unsupported value: ${tr}`),
+          tr === 'just-failing' || tr === 'tree' || tr === 'tree-just-failing' || tr === undefined
+            ? tr
+            : failMe(`unsupported value: ${tr}`),
       })
     },
   )
