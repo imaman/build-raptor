@@ -23,7 +23,7 @@ import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import { YarnRepoProtocol } from 'yarn-repo-protocol'
 
-type TestReporting = 'just-failing' | 'tree'
+type TestReporting = 'just-failing' | 'tree' | 'tree-just-failing'
 
 interface Options {
   command: 'build' | 'test' | 'pack' | 'publish-assets'
@@ -89,17 +89,7 @@ async function run(options: Options) {
 
   const testOutput = new Map<TaskName, TestEndedEvent[]>()
   bootstrapper.subscribable.on('testEnded', arg => {
-    const tr = options.testReporting ?? 'just-failing'
-    if (tr === 'just-failing') {
-      return
-    }
-
-    if (tr === 'tree') {
-      assigningGet(testOutput, arg.taskName, () => []).push(arg)
-      return
-    }
-
-    shouldNeverHappen(tr)
+    assigningGet(testOutput, arg.taskName, () => []).push(arg)
   })
 
   bootstrapper.subscribable.on('executionStarted', arg => {
@@ -120,7 +110,7 @@ async function run(options: Options) {
       stream.end()
     }
 
-    reportTests(logger, testOutput.get(arg.taskName) ?? [])
+    reportTests(logger, testOutput.get(arg.taskName) ?? [], options.testReporting ?? 'just-failing')
 
     const doPrint =
       options.printPassing ||
@@ -159,7 +149,20 @@ async function run(options: Options) {
   process.exitCode = exitCode
 }
 
-function reportTests(logger: Logger, arr: TestEndedEvent[]) {
+function reportTests(logger: Logger, arr: TestEndedEvent[], tr: TestReporting) {
+  if (tr === 'just-failing') {
+    return
+  }
+
+  let printPassing
+  if (tr === 'tree') {
+    printPassing = true
+  } else if (tr === 'tree-just-failing') {
+    printPassing = false
+  } else {
+    shouldNeverHappen(tr)
+  }
+
   function indent(prevKey: string[], key: string[]) {
     let indent = '|    '
     let i = 0
@@ -212,7 +215,7 @@ function reportTests(logger: Logger, arr: TestEndedEvent[]) {
   const list = Object.entries(groupBy(arr, at => at.fileName)).map(([fileName, tests]) => ({ fileName, tests }))
   const sorted = sortBy(list, at => at.fileName)
   const passing = sorted.filter(at => isPassing(at.tests))
-  if (passing.length === list.length) {
+  if (printPassing) {
     for (const at of passing) {
       logger.print(`✅ PASSED ${at.fileName}`)
     }
@@ -292,7 +295,7 @@ yargs(hideBin(process.argv))
     yargs =>
       withBuildOptions(yargs)
         .option('test-reporting', {
-          choices: ['just-failing', 'tree'],
+          choices: ['just-failing', 'tree', 'tree-just-failing'],
           describe: 'test reporing policy',
         })
         .option('test-caching', {
@@ -313,7 +316,9 @@ yargs(hideBin(process.argv))
         compact: argv.compact,
         testCaching: argv['test-caching'],
         testReporting:
-          tr === 'just-failing' || tr === 'tree' || tr === undefined ? tr : failMe(`unsupported value: ${tr}`),
+          tr === 'just-failing' || tr === 'tree' || tr === 'tree-just-failing' || tr === undefined
+            ? tr
+            : failMe(`unsupported value: ${tr}`),
       })
     },
   )
