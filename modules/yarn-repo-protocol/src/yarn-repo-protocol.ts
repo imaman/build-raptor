@@ -290,6 +290,9 @@ export class YarnRepoProtocol implements RepoProtocol {
       }
 
       const toDelete = distFiles.filter(f => !inputFileExists(f))
+      if (toDelete.length) {
+        this.logger.info(`deleting unmatched dist files: ${JSON.stringify({ inputFiles, toDelete })}`)
+      }
       for (const f of toDelete) {
         await fse.rm(path.join(d, f))
       }
