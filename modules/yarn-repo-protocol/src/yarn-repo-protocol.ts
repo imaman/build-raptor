@@ -268,15 +268,28 @@ export class YarnRepoProtocol implements RepoProtocol {
 
   private async checkBuiltFiles(dir: string) {
     for (const codeDir of [this.src, this.tests]) {
-      const srcFiles = new Set<string>(
+      const inputFiles = new Set<string>(
         await DirectoryScanner.listPaths(path.join(dir, codeDir), { startingPointMustExist: false }),
       )
 
       const d = path.join(dir, `${this.dist()}/${codeDir}`)
-      const distSrcFiles = await DirectoryScanner.listPaths(d, { startingPointMustExist: false })
+      const distFiles = await DirectoryScanner.listPaths(d, { startingPointMustExist: false })
 
-      const toDelete = distSrcFiles.filter(f => !srcFiles.has(f.replace(/\.js$/, '.ts').replace(/\.d\.ts$/, '.ts')))
+      const replaceSuffix = (f: string, targetSuffx: string) =>
+        f.replace(/\.js$/, targetSuffx).replace(/\.d\.ts$/, targetSuffx)
 
+      const inputFileExists = (f: string) => {
+        if (inputFiles.has(replaceSuffix(f, '.ts'))) {
+          return true
+        }
+        if (inputFiles.has(replaceSuffix(f, '.tsx'))) {
+          return true
+        }
+
+        return false
+      }
+
+      const toDelete = distFiles.filter(f => !inputFileExists(f))
       for (const f of toDelete) {
         await fse.rm(path.join(d, f))
       }
