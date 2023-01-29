@@ -32,7 +32,7 @@ describe('yarn-repo-protocol.e2e', () => {
       ]),
     )
   })
-  test('deletes dist/src/*.{js,d.ts} files that do not have a matching *.ts file under src/', async () => {
+  test('deletes dist/src/*.{js,d.ts} files that do not have a matching *.ts (or *.tsx) file under src/', async () => {
     const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
@@ -55,6 +55,23 @@ describe('yarn-repo-protocol.e2e', () => {
     expect(await Promise.all([xjs.exists(), xdts.exists()])).toEqual([true, true])
     await fork.run('OK', { taskKind: 'build' })
     expect(await Promise.all([xjs.exists(), xdts.exists()])).toEqual([false, false])
+  })
+  test('does not delete dist/src/*.{js,d.ts} files that have a matching *.tsx file under src/', async () => {
+    const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
+    const recipe = {
+      'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+      'modules/a/package.json': driver.packageJson('a'),
+      'modules/a/src/a.tsx': 'export function a() {}',
+      'modules/a/tests/a.spec.ts': '//',
+    }
+
+    const fork = await driver.repo(recipe).fork()
+
+    const ajs = fork.file('modules/a/dist/src/a.js')
+    const adts = fork.file('modules/a/dist/src/a.d.ts')
+
+    await fork.run('OK', { taskKind: 'build' })
+    expect(await Promise.all([ajs.exists(), adts.exists()])).toEqual([true, true])
   })
   test('deletes dist/tests/*.{js,d.ts} files that do not have a matching *.ts file under tests/', async () => {
     const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
