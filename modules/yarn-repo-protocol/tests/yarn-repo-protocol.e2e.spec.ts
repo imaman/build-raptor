@@ -32,7 +32,7 @@ describe('yarn-repo-protocol.e2e', () => {
       ]),
     )
   })
-  test('deletes dist/src/*.{js,d.ts} files that do not have a matching *.ts (or *.tsx) file under src/', async () => {
+  test('deletes dist/src/*.{js,d.ts} files that do not have a matching *.ts file under src/', async () => {
     const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
