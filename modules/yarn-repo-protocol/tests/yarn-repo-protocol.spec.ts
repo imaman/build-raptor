@@ -230,6 +230,7 @@ describe('yarn-repo-protocol', () => {
           outDir: 'dist',
           strict: true,
           target: 'ES2021',
+          resolveJsonModule: true,
         },
         include: ['src/**/*', 'src/**/*.json', 'tests/**/*', 'tests/**/*.json'],
       }
@@ -267,7 +268,7 @@ describe('yarn-repo-protocol', () => {
         expect(JSON.parse(actual['modules/b/tsconfig.json'])).toEqual({
           extends: '../../tsconfig-base.json',
           compilerOptions: { composite: true, outDir: 'dist' },
-          include: ['src/**/*', 'tests/**/*'],
+          include: ['src/**/*', 'src/**/*.json', 'tests/**/*', 'tests/**/*.json'],
           references: [{ path: '../c' }],
         })
       })
