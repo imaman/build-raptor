@@ -175,6 +175,7 @@ export class YarnRepoProtocol implements RepoProtocol {
       moduleResolution: 'node',
       allowSyntheticDefaultImports: true,
       esModuleInterop: true,
+      resolveJsonModule: true,
     }
 
     for (const u of units) {
