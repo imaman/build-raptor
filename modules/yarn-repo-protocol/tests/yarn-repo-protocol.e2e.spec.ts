@@ -39,13 +39,13 @@ describe('yarn-repo-protocol.e2e', () => {
       'modules/a/package.json': driver.packageJson('a'),
       'modules/a/src/a.ts': `import * as z from './z.json'; export const a = () => z.z1 + z.z2`,
       'modules/a/src/z.json': { z1: 'foo', z2: 'boo' },
-      'modules/a/tests/a.spec.ts': `import {a} from '../src/a'; test('a', () => expect(a()).toEqual('x')`,
+      'modules/a/tests/a.spec.ts': `import {a} from '../src/a'; test('a', () => expect(a()).toEqual('x'))`,
     }
 
     const fork = await driver.repo(recipe).fork()
 
     const run = await fork.run('FAIL', { taskKind: 'test' })
-    expect(await run.outputOf('test', 'a')).toEqual(expect.arrayContaining(['_##_DD']))
+    expect(await run.outputOf('test', 'a')).toEqual(expect.arrayContaining([`    Received: \"fooboo\"`]))
   })
   test('deletes dist/src/*.{js,d.ts} files that do not have a matching *.ts file under src/', async () => {
     const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
