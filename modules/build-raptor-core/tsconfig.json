@@ -30,5 +30,5 @@
       "path": "../unit-metadata"
     }
   ],
-  "include": ["src/**/*", "tests/**/*"]
+  "include": ["src/**/*", "src/**/*.json", "tests/**/*", "tests/**/*.json"]
 }

@@ -175,6 +175,7 @@ export class YarnRepoProtocol implements RepoProtocol {
       moduleResolution: 'node',
       allowSyntheticDefaultImports: true,
       esModuleInterop: true,
+      resolveJsonModule: true,
     }
 
     for (const u of units) {
@@ -184,7 +185,7 @@ export class YarnRepoProtocol implements RepoProtocol {
 
       const tsconf: TsConfigJson = {
         ...(localBaseExists
-          ? { extends: this.tsconfigBaseName }
+          ? { extends: `./${this.tsconfigBaseName}` }
           : rootBaseExists
           ? { extends: path.relative(u.pathInRepo, this.tsconfigBaseName) }
           : {}),
@@ -200,7 +201,7 @@ export class YarnRepoProtocol implements RepoProtocol {
             path: path.relative(u.pathInRepo, dp.pathInRepo),
           }
         }),
-        include: [`${this.src}/**/*`, `${this.tests}/**/*`],
+        include: [`${this.src}/**/*`, `${this.src}/**/*.json`, `${this.tests}/**/*`, `${this.tests}/**/*.json`],
       }
 
       if (!tsconf.references?.length) {
@@ -279,6 +280,9 @@ export class YarnRepoProtocol implements RepoProtocol {
         f.replace(/\.js$/, targetSuffx).replace(/\.d\.ts$/, targetSuffx)
 
       const inputFileExists = (f: string) => {
+        if (inputFiles.has(f)) {
+          return true
+        }
         if (inputFiles.has(replaceSuffix(f, '.ts'))) {
           return true
         }
