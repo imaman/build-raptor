@@ -280,6 +280,9 @@ export class YarnRepoProtocol implements RepoProtocol {
         f.replace(/\.js$/, targetSuffx).replace(/\.d\.ts$/, targetSuffx)
 
       const inputFileExists = (f: string) => {
+        if (inputFiles.has(f)) {
+          return true
+        }
         if (inputFiles.has(replaceSuffix(f, '.ts'))) {
           return true
         }
