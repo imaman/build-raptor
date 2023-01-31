@@ -179,9 +179,9 @@ describe('yarn-repo-protocol', () => {
       await yrp.initialize(d, p)
 
       const actual = await slurpDir(d)
-      expect(JSON.parse(actual['libs/a/tsconfig.json']).extends).toEqual('tsconfig-base.json')
+      expect(JSON.parse(actual['libs/a/tsconfig.json']).extends).toEqual('./tsconfig-base.json')
       expect(JSON.parse(actual['libs/b/tsconfig.json']).extends).toEqual('../../tsconfig-base.json')
-      expect(JSON.parse(actual['libs/c/tsconfig.json']).extends).toEqual('tsconfig-base.json')
+      expect(JSON.parse(actual['libs/c/tsconfig.json']).extends).toEqual('./tsconfig-base.json')
     })
     test(`extends a tsconfig-base file at the repo's root`, async () => {
       const d = await folderify({
@@ -235,7 +235,7 @@ describe('yarn-repo-protocol', () => {
       }
       expect(JSON.parse(actual['libs/a/tsconfig.json'])).toEqual(expectedTsConfigJson)
       expect(JSON.parse(actual['libs/b/tsconfig.json'])).toEqual({
-        extends: 'tsconfig-base.json',
+        extends: './tsconfig-base.json',
         compilerOptions: {
           composite: true,
           outDir: 'dist',
