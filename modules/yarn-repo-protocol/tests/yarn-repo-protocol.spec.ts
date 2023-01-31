@@ -160,7 +160,7 @@ describe('yarn-repo-protocol', () => {
       expect(JSON.parse(actual['modules/a/tsconfig.json'])).toEqual({
         extends: '../../tsconfig-base.json',
         compilerOptions: { composite: true, outDir: 'dist' },
-        include: ['src/**/*', 'tests/**/*'],
+        include: ['src/**/*', 'src/**/*.json', 'tests/**/*', 'tests/**/*.json'],
       })
     })
     test(`extends a local tsconfig-base.json file if one is present`, async () => {
@@ -231,7 +231,7 @@ describe('yarn-repo-protocol', () => {
           strict: true,
           target: 'ES2021',
         },
-        include: ['src/**/*', 'tests/**/*'],
+        include: ['src/**/*', 'src/**/*.json', 'tests/**/*', 'tests/**/*.json'],
       }
       expect(JSON.parse(actual['libs/a/tsconfig.json'])).toEqual(expectedTsConfigJson)
       expect(JSON.parse(actual['libs/b/tsconfig.json'])).toEqual({
@@ -240,7 +240,7 @@ describe('yarn-repo-protocol', () => {
           composite: true,
           outDir: 'dist',
         },
-        include: ['src/**/*', 'tests/**/*'],
+        include: ['src/**/*', 'src/**/*.json', 'tests/**/*', 'tests/**/*.json'],
       })
       expect(JSON.parse(actual['libs/c/tsconfig.json'])).toEqual(expectedTsConfigJson)
     })
@@ -261,7 +261,7 @@ describe('yarn-repo-protocol', () => {
         expect(JSON.parse(actual['modules/a/tsconfig.json'])).toEqual({
           extends: '../../tsconfig-base.json',
           compilerOptions: { composite: true, outDir: 'dist' },
-          include: ['src/**/*', 'tests/**/*'],
+          include: ['src/**/*', 'src/**/*.json', 'tests/**/*', 'tests/**/*.json'],
           references: [{ path: '../b' }, { path: '../c' }],
         })
         expect(JSON.parse(actual['modules/b/tsconfig.json'])).toEqual({
@@ -360,7 +360,7 @@ describe('yarn-repo-protocol', () => {
         expect(JSON.parse(actual['modules/a/tsconfig.json'])).toEqual({
           extends: '../../tsconfig-base.json',
           compilerOptions: { composite: true, outDir: 'dist' },
-          include: ['src/**/*', 'tests/**/*'],
+          include: ['src/**/*', 'src/**/*.json', 'tests/**/*', 'tests/**/*.json'],
         })
       })
       test(`does not overwrite a pre-existing tsconfig.json if its content is correct`, async () => {
