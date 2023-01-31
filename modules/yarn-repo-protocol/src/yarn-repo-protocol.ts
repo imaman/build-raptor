@@ -200,7 +200,7 @@ export class YarnRepoProtocol implements RepoProtocol {
             path: path.relative(u.pathInRepo, dp.pathInRepo),
           }
         }),
-        include: [`${this.src}/**/*`, `${this.tests}/**/*`],
+        include: [`${this.src}/**/*`, `${this.src}/**/*.json`, `${this.tests}/**/*`, `${this.tests}/**/*.json`],
       }
 
       if (!tsconf.references?.length) {
