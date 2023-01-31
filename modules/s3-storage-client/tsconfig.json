@@ -12,5 +12,5 @@
       "path": "../misc"
     }
   ],
-  "include": ["src/**/*", "tests/**/*"]
+  "include": ["src/**/*", "src/**/*.json", "tests/**/*", "tests/**/*.json"]
 }
