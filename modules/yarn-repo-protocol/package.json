@@ -28,7 +28,7 @@
     "task-name": "1.0.0",
     "tmp-promise": "^3.0.3",
     "unit-metadata": "1.0.0",
-    "webpack": "^5.72.0",
+    "webpack": "^5.76.0",
     "webpack-shebang-plugin": "^1.1.7",
     "zod": "^3.11.6"
   },
