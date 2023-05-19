@@ -66,14 +66,9 @@ async function run(options: Options) {
   logger.info(`Logger initialized`)
   logger.print(`logging to ${logFile}`)
   const isCi = getEnv('CI') === 'true'
+  const commitHash = getEnv('GITHUB_SHA')
   if (isCi) {
-    logger.print(
-      `details:\n${JSON.stringify(
-        { isCi, commitHash: getEnv('GITHUB_SHA'), startedAt: new Date(t0).toISOString() },
-        null,
-        2,
-      )}`,
-    )
+    logger.print(`details:\n${JSON.stringify({ isCi, commitHash, startedAt: new Date(t0).toISOString() }, null, 2)}`)
   }
 
   const buildRaptorDirTasks = path.join(buildRaptorDir, 'tasks')
@@ -82,13 +77,17 @@ async function run(options: Options) {
   const { storageClient, lambdaClient } = await storageClientFactory(logger)
   logger.info(`(typeof lambdaClient)=${typeof lambdaClient}`)
   const assetPublisher = new DefaultAssetPublisher(storageClient, logger, async (u: UnitMetadata, resolved: string) => {
-    if (!lambdaClient) {
+    if (!lambdaClient || !isCi) {
       return
+    }
+
+    if (!commitHash) {
+      throw new Error(`missing commit hash in CI`)
     }
 
     await lambdaClient.invoke('d-prod-buildTrackerService', {
       endpointName: 'registerAssetRequest',
-      endpointRequest: { packageName: u.id, commitHash: 'N/A', casReference: resolved },
+      endpointRequest: { packageName: u.id, commitHash, casReference: resolved },
     })
   })
   const repoProtocol = new YarnRepoProtocol(logger, undefined, assetPublisher)
