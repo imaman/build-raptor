@@ -47,6 +47,10 @@ async function createStorageClient() {
   }
 }
 
+function getEnv(envVarName: 'GITHUB_SHA' | 'CI') {
+  return process.env[envVarName] // eslint-disable-line no-process-env
+}
+
 async function run(options: Options) {
   const t0 = Date.now()
 
@@ -58,8 +62,14 @@ async function run(options: Options) {
   await fse.ensureDir(buildRaptorDir)
   const logFile = path.join(buildRaptorDir, 'main.log')
   const logger = createDefaultLogger(logFile)
+
   logger.info(`Logger initialized`)
   logger.print(`logging to ${logFile}`)
+  const isCi = getEnv('CI') === 'true'
+  const commitHash = getEnv('GITHUB_SHA')
+  if (isCi) {
+    logger.print(`details:\n${JSON.stringify({ isCi, commitHash, startedAt: new Date(t0).toISOString() }, null, 2)}`)
+  }
 
   const buildRaptorDirTasks = path.join(buildRaptorDir, 'tasks')
   await fse.rm(buildRaptorDirTasks, { recursive: true, force: true })
@@ -67,13 +77,17 @@ async function run(options: Options) {
   const { storageClient, lambdaClient } = await storageClientFactory(logger)
   logger.info(`(typeof lambdaClient)=${typeof lambdaClient}`)
   const assetPublisher = new DefaultAssetPublisher(storageClient, logger, async (u: UnitMetadata, resolved: string) => {
-    if (!lambdaClient) {
+    if (!lambdaClient || !isCi) {
       return
+    }
+
+    if (!commitHash) {
+      throw new Error(`missing commit hash in CI`)
     }
 
     await lambdaClient.invoke('d-prod-buildTrackerService', {
       endpointName: 'registerAssetRequest',
-      endpointRequest: { packageName: u.id, commitHash: 'N/A', casReference: resolved },
+      endpointRequest: { packageName: u.id, commitHash, casReference: resolved },
     })
   })
   const repoProtocol = new YarnRepoProtocol(logger, undefined, assetPublisher)
