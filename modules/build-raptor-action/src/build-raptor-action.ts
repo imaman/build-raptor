@@ -17,6 +17,10 @@ interface Options {
   printPassing: boolean
 }
 
+function getEnv(envVarName: 'GITHUB_SHA' | 'CI') {
+  return process.env[envVarName] // eslint-disable-line no-process-env
+}
+
 async function run() {
   const t0 = Date.now()
 
@@ -40,6 +44,18 @@ async function run() {
 
   logger.info(`Logger initialized`)
   logger.print(`logging to ${logFile}`)
+
+  const isCi = getEnv('CI') === 'true'
+  if (isCi || true) {
+    logger.print(
+      `details:\n${JSON.stringify(
+        { isCi, commitHash: getEnv('GITHUB_SHA'), startedAt: new Date(t0).toISOString() },
+        null,
+        2,
+      )}`,
+    )
+  }
+
 
   const repoProtocol = new YarnRepoProtocol(logger)
   const { storageClient } = await storageClientFactory(logger)
