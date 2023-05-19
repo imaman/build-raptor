@@ -66,7 +66,7 @@ async function run(options: Options) {
   logger.info(`Logger initialized`)
   logger.print(`logging to ${logFile}`)
   const isCi = getEnv('CI') === 'true'
-  if (isCi) {
+  if (isCi || true) {
     logger.print(
       `details:\n${JSON.stringify(
         { isCi, commitHash: getEnv('GITHUB_SHA'), startedAt: new Date(t0).toISOString() },
