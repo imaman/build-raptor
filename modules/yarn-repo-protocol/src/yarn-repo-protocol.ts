@@ -73,7 +73,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     private readonly logger: Logger,
     private readonly shadowing: boolean = false,
     // TODO(imaman): deprecate it.
-    private readonly publisher?: Publisher,
+    private readonly assetPublisher?: Publisher,
   ) {
     if (!isSimpleName(this.tsconfigBaseName)) {
       throw new Error(`tsconfig base file name must be a simple name (not a path). Got: "${this.tsconfigBaseName}"`)
@@ -359,7 +359,8 @@ export class YarnRepoProtocol implements RepoProtocol {
         files.map(async f => {
           const contentToPublish = await fse.readFile(path.join(fullPath, f))
           this.logger.info(`unit ${u.id}: publishing asset ${f}`)
-          await this.publisher?.publishAsset(u, contentToPublish, f)
+          const casAddress = await this.assetPublisher?.publishAsset(u, contentToPublish, f)
+          this.logger.info(`unit ${u.id}: asset ${f} published to cas ${casAddress}`)
         }),
       )
 

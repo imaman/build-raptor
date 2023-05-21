@@ -7,8 +7,7 @@ import { CatalogOfTasks } from './catalog-of-tasks'
 
 export type ExitStatus = 'OK' | 'FAIL' | 'CRASH'
 
-
-export type RepoProtocolEventVerdict =  'TEST_PASSED' | 'TEST_FAILED' | 'TEST_CRASHED' | 'TEST_TIMEDOUT'
+export type RepoProtocolEventVerdict = 'TEST_PASSED' | 'TEST_FAILED' | 'TEST_CRASHED' | 'TEST_TIMEDOUT'
 export interface RepoProtocolEvent {
   testEnded: {
     verdict: RepoProtocolEventVerdict
@@ -35,5 +34,5 @@ export interface RepoProtocol {
 }
 
 export interface Publisher {
-  publishAsset(u: UnitMetadata, content: Buffer, name: string): Promise<void>
+  publishAsset(u: UnitMetadata, content: Buffer, name: string): Promise<string>
 }
