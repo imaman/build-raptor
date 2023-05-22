@@ -16,6 +16,12 @@ export interface RepoProtocolEvent {
     taskName: TaskName
     durationMillis?: number
   }
+  assetPublished: {
+    taskName: TaskName
+    casAddress: string
+    fingerprint: string
+    file: string
+  }
 }
 
 export interface RepoProtocol {

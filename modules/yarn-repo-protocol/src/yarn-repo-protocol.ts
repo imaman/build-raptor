@@ -303,7 +303,13 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
   }
 
-  async execute(u: UnitMetadata, dir: string, taskName: TaskName, outputFile: string): Promise<ExitStatus> {
+  async execute(
+    u: UnitMetadata,
+    dir: string,
+    taskName: TaskName,
+    outputFile: string,
+    fingerprint: string,
+  ): Promise<ExitStatus> {
     const taskKind = TaskName().undo(taskName).taskKind
     if (taskKind === 'build') {
       const ret = await this.run('npm', ['run', this.scriptNames.build], dir, outputFile)
@@ -354,13 +360,25 @@ export class YarnRepoProtocol implements RepoProtocol {
         )
       }
 
+      const ap = this.assetPublisher
+      if (!ap) {
+        this.logger.info(`skipping ${taskName} because asset-publisher is not present`)
+        return ret
+      }
+
       const files = await fse.readdir(fullPath)
       await Promise.all(
         files.map(async f => {
           const contentToPublish = await fse.readFile(path.join(fullPath, f))
           this.logger.info(`unit ${u.id}: publishing asset ${f}`)
-          const casAddress = await this.assetPublisher?.publishAsset(u, contentToPublish, f)
+          const casAddress = await ap.publishAsset(u, contentToPublish, f)
           this.logger.info(`unit ${u.id}: asset ${f} published to cas ${casAddress}`)
+          this.state.publisher.publish('assetPublished', {
+            taskName,
+            fingerprint,
+            casAddress,
+            file: f,
+          })
         }),
       )
 
