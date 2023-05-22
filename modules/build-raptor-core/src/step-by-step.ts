@@ -28,6 +28,13 @@ export const Step = z.union([
       z.literal('TEST_TIMEDOUT'),
     ]),
   }),
+  z.object({
+    step: z.literal('ASSET_PUBLISHED'),
+    taskName: z.string(),
+    fingerprint: z.string(),
+    casAddress: z.string(),
+    file: z.string(),
+  }),
 ])
 
 export type Step = z.infer<typeof Step>

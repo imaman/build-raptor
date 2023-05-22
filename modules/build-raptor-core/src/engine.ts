@@ -87,6 +87,16 @@ export class Engine {
         durationMillis: e.durationMillis,
       })
     })
+    this.eventPublisher.on('assetPublished', e => {
+      this.steps.push({
+        step: 'ASSET_PUBLISHED',
+        taskName: e.taskName,
+        fingerprint: e.fingerprint,
+        casAddress: e.casAddress,
+        file: e.file,
+      })
+    })
+
     this.fingerprintLedger = this.options.fingerprintLedger
       ? new PersistedFingerprintLedger(logger, ledgerFile)
       : new NopFingerprintLedger()
