@@ -26,6 +26,7 @@ export interface RepoProtocol {
     taskName: TaskName,
     outputFile: string,
     buildRunId: BuildRunId,
+    fingerprint: string,
   ): Promise<ExitStatus>
   getGraph(): Promise<Graph<UnitId>>
   getUnits(): Promise<UnitMetadata[]>

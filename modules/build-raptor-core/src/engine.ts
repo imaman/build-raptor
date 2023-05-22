@@ -75,7 +75,7 @@ export class Engine {
           : e.opcode === 'RESTORED'
           ? 'TASK_STORE_GET'
           : shouldNeverHappen(e.opcode)
-      this.steps.push({ blobId: e.blobId, taskName: e.taskName, step, files: e.files })
+      this.steps.push({ blobId: e.blobId, taskName: e.taskName, step, fingerprint: e.fingerprint, files: e.files })
     })
     this.eventPublisher.on('testEnded', e => {
       this.steps.push({

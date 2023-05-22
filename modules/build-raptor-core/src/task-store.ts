@@ -217,7 +217,7 @@ export class TaskStore {
   ): Promise<void> {
     const blobId = await this.recordBlob(taskName, dir, outputs)
     this.putVerdict(taskName, fingerprint, verdict, blobId)
-    this.publisher?.publish('taskStore', { opcode: 'RECORDED', taskName, blobId, files: [...outputs] })
+    this.publisher?.publish('taskStore', { opcode: 'RECORDED', taskName, blobId, fingerprint, files: [...outputs] })
   }
 
   private async recordBlob(taskName: TaskName, dir: string, outputs: readonly string[]) {
@@ -233,7 +233,7 @@ export class TaskStore {
   ): Promise<'FAIL' | 'OK' | 'FLAKY' | 'UNKNOWN'> {
     const [verdict, blobId] = await this.getVerdict(taskName, fingerprint)
     const files = await this.restoreBlob(blobId, dir)
-    this.publisher?.publish('taskStore', { opcode: 'RESTORED', taskName, blobId, files })
+    this.publisher?.publish('taskStore', { opcode: 'RESTORED', taskName, blobId, fingerprint, files })
     return verdict
   }
 

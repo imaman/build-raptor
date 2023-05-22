@@ -3,12 +3,14 @@ import { z } from 'zod'
 export const Step = z.union([
   z.object({
     step: z.literal('TASK_STORE_PUT'),
+    fingerprint: z.string().optional(),
     taskName: z.string(),
     blobId: z.string(),
     files: z.string().array(),
   }),
   z.object({
     step: z.literal('TASK_STORE_GET'),
+    fingerprint: z.string().optional(),
     taskName: z.string(),
     blobId: z.string(),
     files: z.string().array(),
