@@ -47,7 +47,7 @@ function getEnv(envVarName: EnvVarName) {
   return process.env[envVarName] // eslint-disable-line no-process-env
 }
 
-async function findPRForCommit(commitHash: string): Promise<string> {
+async function findPRForCommit(commitHash: string): Promise<number | undefined> {
   if (!commitHash || !commitHash.match(/^[a-f0-9]{40}$/)) {
     throw new Error('Invalid commit hash.')
   }
@@ -59,42 +59,22 @@ async function findPRForCommit(commitHash: string): Promise<string> {
     throw new Error('Required repo environment variable(s) missing or invalid.')
   }
 
-  const axiosInstance = axios.create({
-    baseURL: 'https://api.github.com/graphql',
-    headers: {
-      Authorization: `Bearer ${getEnv('GITHUB_TOKEN')}`,
+  const response = await axios.get(
+    `https://api.github.com/repos/${repoOwner}/${repoName}/commits/${commitHash}/pulls`,
+    {
+      headers: {
+        Accept: 'application/vnd.github+json',
+        Authorization: `Bearer ${getEnv('GITHUB_TOKEN')}`,
+        'X-GitHub-Api-Version': '2022-11-28',
+      },
     },
-  })
+  )
 
-  //GraphQL API. Assumes only one PR per commit
-  const query = `
-    query ($owner: String!, $name: String!, $commitHash: GitObjectID!) {
-      repository(owner: $owner, name: $name) {
-        ref(qualifiedName: $commitHash) {
-          associatedPullRequests(first: 1) {
-            edges {
-              node {
-                number
-              }
-            }
-          }
-        }
-      }
-    }
-  `
-
-  const variables = {
-    owner: repoOwner,
-    name: repoName,
-    commitHash,
+  if (response.data.length > 0) {
+    return response.data[0].number
   }
 
-  const response = await axiosInstance.post('', { query, variables })
-  const pullRequest = response.data.data.repository.ref.associatedPullRequests.edges[0]
-  if (pullRequest) {
-    return `PR/${pullRequest.node.number.toString()}`
-  }
-  return 'PR/undefined'
+  return
 }
 
 async function createStorageClient() {
@@ -121,7 +101,7 @@ async function run(options: Options) {
   const isCi = getEnv('CI') === 'true'
   const commitHash = getEnv('GITHUB_SHA')
 
-  let pullRequest = 'n/a'
+  let pullRequest: number | undefined
   try {
     if (commitHash) {
       pullRequest = await findPRForCommit(commitHash)
