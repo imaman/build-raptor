@@ -24,7 +24,7 @@ import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import { YarnRepoProtocol } from 'yarn-repo-protocol'
 
-import { RegisterAssetRequest } from './build-tracker-api'
+import { GithubResponseSchema, RegisterAssetRequest } from './build-raptor-api'
 
 type TestReporting = 'just-failing' | 'tree' | 'tree-just-failing'
 
@@ -72,8 +72,10 @@ async function findPRForCommit(commitHash: string): Promise<number | undefined> 
     },
   )
 
-  if (response.data.length > 0) {
-    return response.data[0].number
+  const parsedData = GithubResponseSchema.parse(response.data)
+
+  if (parsedData.length > 0) {
+    return parsedData[0].number
   }
 
   return
