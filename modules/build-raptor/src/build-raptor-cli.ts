@@ -1,4 +1,5 @@
 import { DefaultAssetPublisher, EngineBootstrapper } from 'build-raptor-core'
+import { getEnv } from 'build-raptor-core'
 import * as fse from 'fs-extra'
 import { createDefaultLogger, Logger } from 'logger'
 import {
@@ -47,10 +48,6 @@ async function createStorageClient() {
   }
 }
 
-function getEnv(envVarName: 'GITHUB_SHA' | 'CI') {
-  return process.env[envVarName] // eslint-disable-line no-process-env
-}
-
 async function run(options: Options) {
   const t0 = Date.now()
 
@@ -67,8 +64,12 @@ async function run(options: Options) {
   logger.print(`logging to ${logFile}`)
   const isCi = getEnv('CI') === 'true'
   const commitHash = getEnv('GITHUB_SHA')
+  const latestMainPR = getEnv('GITHUB_MAIN_PR_NUM')
+
   if (isCi) {
-    logger.print(`details:\n${JSON.stringify({ isCi, commitHash, startedAt: new Date(t0).toISOString() }, null, 2)}`)
+    logger.print(
+      `details:\n${JSON.stringify({ isCi, commitHash, latestMainPR, startedAt: new Date(t0).toISOString() }, null, 2)}`,
+    )
   }
 
   const buildRaptorDirTasks = path.join(buildRaptorDir, 'tasks')
@@ -85,9 +86,13 @@ async function run(options: Options) {
       throw new Error(`missing commit hash in CI`)
     }
 
+    if (!latestMainPR) {
+      throw new Error(`missing latest main PR from build-raptor action`)
+    }
+
     await lambdaClient.invoke('d-prod-buildTrackerService', {
-      endpointName: 'registerAssetRequest',
-      endpointRequest: { packageName: u.id, commitHash, casReference: resolved },
+      endpointName: 'registerAsset',
+      endpointRequest: { packageName: u.id, commitHash, latestMainPR, casReference: resolved },
     })
   })
   const repoProtocol = new YarnRepoProtocol(logger, undefined, assetPublisher)
