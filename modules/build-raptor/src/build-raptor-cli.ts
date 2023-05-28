@@ -24,6 +24,8 @@ import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import { YarnRepoProtocol } from 'yarn-repo-protocol'
 
+import { RegisterAssetRequest } from './build-tracker-api'
+
 type TestReporting = 'just-failing' | 'tree' | 'tree-just-failing'
 
 interface Options {
@@ -126,15 +128,19 @@ async function run(options: Options) {
       return
     }
 
-    if (!commitHash) {
-      throw new Error(`missing commit hash in CI`)
+    const endpointData = { packageName: u.id, commitHash, pullRequest, casReference: resolved }
+    const parsedRequest = RegisterAssetRequest.safeParse(endpointData)
+
+    if (!parsedRequest.success) {
+      throw new Error(`Invalid request data: ${endpointData}`)
     }
 
     await lambdaClient.invoke('d-prod-buildTrackerService', {
       endpointName: 'registerAsset',
-      endpointRequest: { packageName: u.id, commitHash, pullRequest, casReference: resolved },
+      endpointRequest: parsedRequest,
     })
   })
+
   const repoProtocol = new YarnRepoProtocol(logger, undefined, assetPublisher)
   const bootstrapper = await EngineBootstrapper.create(
     rootDir,
