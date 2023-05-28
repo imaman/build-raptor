@@ -81,7 +81,7 @@ async function run() {
         {
           isCi,
           commitHash: getEnv('GITHUB_SHA'),
-          latestPrNumber: getEnv('GITHUB_MAIN_PR_NUM'),
+          latestMainPR: getEnv('GITHUB_MAIN_PR_NUM'),
           startedAt: new Date(t0).toISOString(),
         },
         null,
