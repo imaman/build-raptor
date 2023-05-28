@@ -1,5 +1,5 @@
+import axios from 'axios'
 import { DefaultAssetPublisher, EngineBootstrapper } from 'build-raptor-core'
-import { getEnv } from 'build-raptor-core'
 import * as fse from 'fs-extra'
 import { createDefaultLogger, Logger } from 'logger'
 import {
@@ -41,6 +41,62 @@ interface Options {
 
 type TestEndedEvent = RepoProtocolEvent['testEnded']
 
+type EnvVarName = 'GITHUB_SHA' | 'GITHUB_REPOSITORY' | 'GITHUB_REF' | 'GITHUB_REPOSITORY_OWNER' | 'GITHUB_TOKEN' | 'CI'
+
+function getEnv(envVarName: EnvVarName) {
+  return process.env[envVarName] // eslint-disable-line no-process-env
+}
+
+async function findPRForCommit(commitHash: string): Promise<string> {
+  if (!commitHash || !commitHash.match(/^[a-f0-9]{40}$/)) {
+    throw new Error('Invalid commit hash.')
+  }
+
+  const repoOwner = getEnv('GITHUB_REPOSITORY_OWNER')
+  const repoName = getEnv('GITHUB_REPOSITORY')
+
+  if (!repoOwner || !repoName) {
+    throw new Error('Required repo environment variable(s) missing or invalid.')
+  }
+
+  const axiosInstance = axios.create({
+    baseURL: 'https://api.github.com/graphql',
+    headers: {
+      Authorization: `Bearer ${getEnv('GITHUB_TOKEN')}`,
+    },
+  })
+
+  //GraphQL API. Assumes only one PR per commit
+  const query = `
+    query ($owner: String!, $name: String!, $commitHash: GitObjectID!) {
+      repository(owner: $owner, name: $name) {
+        ref(qualifiedName: $commitHash) {
+          associatedPullRequests(first: 1) {
+            edges {
+              node {
+                number
+              }
+            }
+          }
+        }
+      }
+    }
+  `
+
+  const variables = {
+    owner: repoOwner,
+    name: repoName,
+    commitHash,
+  }
+
+  const response = await axiosInstance.post('', { query, variables })
+  const pullRequest = response.data.data.repository.ref.associatedPullRequests.edges[0]
+  if (pullRequest) {
+    return `PR/${pullRequest.node.number.toString()}`
+  }
+  return 'PR/undefined'
+}
+
 async function createStorageClient() {
   return {
     storageClient: await FilesystemStorageClient.create(path.join(os.homedir(), '.build-raptor/storage')),
@@ -64,11 +120,19 @@ async function run(options: Options) {
   logger.print(`logging to ${logFile}`)
   const isCi = getEnv('CI') === 'true'
   const commitHash = getEnv('GITHUB_SHA')
-  const latestMainPR = getEnv('GITHUB_MAIN_PR_NUM')
+
+  let pullRequest = 'n/a'
+  try {
+    if (commitHash) {
+      pullRequest = await findPRForCommit(commitHash)
+    }
+  } catch (error) {
+    logger.error(`Failed to find PR for commit ${commitHash}`, error)
+  }
 
   if (isCi) {
     logger.print(
-      `details:\n${JSON.stringify({ isCi, commitHash, latestMainPR, startedAt: new Date(t0).toISOString() }, null, 2)}`,
+      `details:\n${JSON.stringify({ isCi, commitHash, pullRequest, startedAt: new Date(t0).toISOString() }, null, 2)}`,
     )
   }
 
@@ -86,13 +150,9 @@ async function run(options: Options) {
       throw new Error(`missing commit hash in CI`)
     }
 
-    if (!latestMainPR) {
-      throw new Error(`missing latest main PR from build-raptor action`)
-    }
-
     await lambdaClient.invoke('d-prod-buildTrackerService', {
       endpointName: 'registerAsset',
-      endpointRequest: { packageName: u.id, commitHash, latestMainPR, casReference: resolved },
+      endpointRequest: { packageName: u.id, commitHash, pullRequest, casReference: resolved },
     })
   })
   const repoProtocol = new YarnRepoProtocol(logger, undefined, assetPublisher)

@@ -1,9 +1,7 @@
 import * as core from '@actions/core'
-import axios from 'axios'
 import { EngineBootstrapper } from 'build-raptor-core'
 import { Breakdown } from 'build-raptor-core'
 import { TaskSummary } from 'build-raptor-core'
-import { getEnv, setEnv } from 'build-raptor-core'
 import * as fse from 'fs-extra'
 import { createDefaultLogger } from 'logger'
 import { dumpFile, failMe, Int, shouldNeverHappen } from 'misc'
@@ -19,28 +17,8 @@ interface Options {
   printPassing: boolean
 }
 
-async function getLatestMainMergedPRNumber(): Promise<number> {
-  const response = await axios.get(
-    `https://api.github.com/repos/moojo-tech/antelope/pulls?state=closed&base=main&sort=updated&direction=desc`,
-    {
-      headers: {
-        Accept: 'application/vnd.github.v3+json',
-        Authorization: `Bearer ${process.env.GITHUB_TOKEN}`, // eslint-disable-line no-process-env
-      },
-    },
-  )
-
-  const mergedPulls = response.data.filter((pull: { merged: boolean }) => pull.merged === true)
-  if (mergedPulls.length === 0) {
-    throw new Error('No merged PRs found')
-  }
-
-  const latestMergedPR = mergedPulls[0]
-  const latestMergedPRNumber = latestMergedPR.number
-  if (typeof latestMergedPRNumber !== 'number') {
-    throw new Error('response value is not a number')
-  }
-  return latestMergedPRNumber
+function getEnv(envVarName: 'GITHUB_SHA' | 'CI') {
+  return process.env[envVarName] // eslint-disable-line no-process-env
 }
 
 async function run() {
@@ -69,21 +47,9 @@ async function run() {
 
   const isCi = getEnv('CI') === 'true'
   if (isCi) {
-    try {
-      const latestMainPR = await getLatestMainMergedPRNumber()
-      setEnv('GITHUB_MAIN_PR_NUM', latestMainPR.toString())
-    } catch (error) {
-      logger.error('Could not get latest main PR number', error)
-    }
-
     logger.print(
       `details:\n${JSON.stringify(
-        {
-          isCi,
-          commitHash: getEnv('GITHUB_SHA'),
-          latestMainPR: getEnv('GITHUB_MAIN_PR_NUM'),
-          startedAt: new Date(t0).toISOString(),
-        },
+        { isCi, commitHash: getEnv('GITHUB_SHA'), startedAt: new Date(t0).toISOString() },
         null,
         2,
       )}`,
