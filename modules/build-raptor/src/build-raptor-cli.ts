@@ -1,4 +1,3 @@
-import axios from 'axios'
 import { DefaultAssetPublisher, EngineBootstrapper } from 'build-raptor-core'
 import * as fse from 'fs-extra'
 import { createDefaultLogger, Logger } from 'logger'
@@ -24,7 +23,8 @@ import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import { YarnRepoProtocol } from 'yarn-repo-protocol'
 
-import { GithubResponseSchema, RegisterAssetRequest } from './build-raptor-api'
+import { RegisterAssetRequest } from './build-raptor-api'
+import { getPRForCommit } from './endpoint-requester'
 
 type TestReporting = 'just-failing' | 'tree' | 'tree-just-failing'
 
@@ -45,40 +45,8 @@ type TestEndedEvent = RepoProtocolEvent['testEnded']
 
 type EnvVarName = 'GITHUB_SHA' | 'GITHUB_REPOSITORY' | 'GITHUB_REF' | 'GITHUB_REPOSITORY_OWNER' | 'GITHUB_TOKEN' | 'CI'
 
-function getEnv(envVarName: EnvVarName) {
+export function getEnv(envVarName: EnvVarName) {
   return process.env[envVarName] // eslint-disable-line no-process-env
-}
-
-async function findPRForCommit(commitHash: string): Promise<number | undefined> {
-  if (!commitHash || !commitHash.match(/^[a-f0-9]{40}$/)) {
-    throw new Error('Invalid commit hash.')
-  }
-
-  const repoOwner = getEnv('GITHUB_REPOSITORY_OWNER')
-  const repoName = getEnv('GITHUB_REPOSITORY')
-
-  if (!repoOwner || !repoName) {
-    throw new Error('Required repo environment variable(s) missing or invalid.')
-  }
-
-  const response = await axios.get(
-    `https://api.github.com/repos/${repoOwner}/${repoName}/commits/${commitHash}/pulls`,
-    {
-      headers: {
-        Accept: 'application/vnd.github+json',
-        Authorization: `Bearer ${getEnv('GITHUB_TOKEN')}`,
-        'X-GitHub-Api-Version': '2022-11-28',
-      },
-    },
-  )
-
-  const parsedData = GithubResponseSchema.parse(response.data)
-
-  if (parsedData.length > 0) {
-    return parsedData[0].number
-  }
-
-  return
 }
 
 async function createStorageClient() {
@@ -106,12 +74,9 @@ async function run(options: Options) {
   const commitHash = getEnv('GITHUB_SHA')
 
   let pullRequest: number | undefined
-  try {
-    if (commitHash) {
-      pullRequest = await findPRForCommit(commitHash)
-    }
-  } catch (error) {
-    logger.error(`Failed to find PR for commit ${commitHash}`, error)
+
+  if (commitHash) {
+    pullRequest = await getPRForCommit(commitHash)
   }
 
   if (isCi) {
@@ -130,16 +95,14 @@ async function run(options: Options) {
       return
     }
 
-    const endpointData = { packageName: u.id, commitHash, pullRequest, casReference: resolved }
-    const parsedRequest = RegisterAssetRequest.safeParse(endpointData)
-
-    if (!parsedRequest.success) {
-      throw new Error(`Invalid request data: ${endpointData}`)
-    }
-
     await lambdaClient.invoke('d-prod-buildTrackerService', {
       endpointName: 'registerAsset',
-      endpointRequest: parsedRequest,
+      endpointRequest: RegisterAssetRequest.parse({
+        packageName: u.id,
+        commitHash,
+        pullRequest,
+        casReference: resolved,
+      }),
     })
   })
 
