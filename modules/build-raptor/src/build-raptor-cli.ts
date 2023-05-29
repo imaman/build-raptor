@@ -57,6 +57,7 @@ async function createStorageClient() {
 }
 
 async function run(options: Options) {
+  process.env.AWS_SDK_JS_SUPPRESS_MAINTENANCE_MODE_MESSAGE = '1' // eslint-disable-line no-process-env
   const t0 = Date.now()
 
   // Should be called as early as possible to secure the secret.
