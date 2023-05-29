@@ -1,18 +1,15 @@
 import axios from 'axios'
 
 import { GithubResponseSchema } from './build-raptor-api'
-import { getEnv } from './build-raptor-cli'
 
-export async function getPRForCommit(commitHash: string): Promise<number | undefined> {
+export async function getPRForCommit(
+  commitHash: string,
+  repoOwner: string,
+  repoName: string,
+  gitToken: string,
+): Promise<number | undefined> {
   if (!commitHash || !commitHash.match(/^[a-f0-9]{40}$/)) {
     throw new Error('Invalid commit hash.')
-  }
-
-  const repoOwner = getEnv('GITHUB_REPOSITORY_OWNER')
-  const repoName = getEnv('GITHUB_REPOSITORY')
-
-  if (!repoOwner || !repoName) {
-    throw new Error('Required repo environment variable(s) missing or invalid.')
   }
 
   const response = await axios.get(
@@ -20,7 +17,7 @@ export async function getPRForCommit(commitHash: string): Promise<number | undef
     {
       headers: {
         Accept: 'application/vnd.github+json',
-        Authorization: `Bearer ${getEnv('GITHUB_TOKEN')}`,
+        Authorization: `Bearer ${gitToken}`,
         'X-GitHub-Api-Version': '2022-11-28',
       },
     },

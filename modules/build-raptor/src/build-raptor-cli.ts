@@ -71,12 +71,20 @@ async function run(options: Options) {
   logger.info(`Logger initialized`)
   logger.print(`logging to ${logFile}`)
   const isCi = getEnv('CI') === 'true'
-  const commitHash = getEnv('GITHUB_SHA')
 
   let pullRequest: number | undefined
+  const commitHash = getEnv('GITHUB_SHA')
 
   if (commitHash) {
-    pullRequest = await getPRForCommit(commitHash)
+    const repoOwner = getEnv('GITHUB_REPOSITORY_OWNER')
+    const repoName = getEnv('GITHUB_REPOSITORY')
+    const gitToken = getEnv('GITHUB_TOKEN')
+
+    if (!repoOwner || !repoName || !gitToken) {
+      throw new Error('Required git environment variable(s) missing or invalid.')
+    }
+
+    pullRequest = await getPRForCommit(commitHash, repoOwner, repoName, gitToken)
   }
 
   if (isCi) {
