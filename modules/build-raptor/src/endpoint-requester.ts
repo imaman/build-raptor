@@ -29,5 +29,6 @@ export async function getPRForCommit(
     return parsedData[0].number
   }
 
+  // nothing found
   return
 }
