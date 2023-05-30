@@ -103,14 +103,16 @@ async function run(options: Options) {
       return
     }
 
+    const req: RegisterAssetRequest = {
+      packageName: u.id,
+      commitHash: commitHash ?? 'N/A',
+      prNumber: pullRequest,
+      casReference: resolved,
+    }
+
     await lambdaClient.invoke('d-prod-buildTrackerService', {
       endpointName: 'registerAsset',
-      endpointRequest: RegisterAssetRequest.parse({
-        packageName: u.id,
-        commitHash,
-        pullRequest,
-        casReference: resolved,
-      }),
+      endpointRequest: RegisterAssetRequest.parse(req),
     })
   })
 

@@ -12,3 +12,4 @@ export const RegisterAssetRequest = z.object({
   prNumber: z.number().int().positive().optional(),
   casReference: z.string(),
 })
+export type RegisterAssetRequest = z.infer<typeof RegisterAssetRequest>
