@@ -4,7 +4,6 @@ import { GithubResponseSchema } from './build-raptor-api'
 
 export async function getPRForCommit(
   commitHash: string,
-  repoOwner: string,
   repoName: string,
   gitToken: string,
 ): Promise<number | undefined> {
@@ -12,16 +11,13 @@ export async function getPRForCommit(
     throw new Error('Invalid commit hash.')
   }
 
-  const response = await axios.get(
-    `https://api.github.com/repos/${repoOwner}/${repoName}/commits/${commitHash}/pulls`,
-    {
-      headers: {
-        Accept: 'application/vnd.github+json',
-        Authorization: `Bearer ${gitToken}`,
-        'X-GitHub-Api-Version': '2022-11-28',
-      },
+  const response = await axios.get(`https://api.github.com/repos/${repoName}/commits/${commitHash}/pulls`, {
+    headers: {
+      Accept: 'application/vnd.github+json',
+      Authorization: `Bearer ${gitToken}`,
+      'X-GitHub-Api-Version': '2022-11-28',
     },
-  )
+  })
 
   const parsedData = GithubResponseSchema.parse(response.data)
 

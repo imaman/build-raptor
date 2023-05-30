@@ -77,15 +77,14 @@ async function run(options: Options) {
   const commitHash = getEnv('GITHUB_SHA')
 
   if (commitHash) {
-    const repoOwner = getEnv('GITHUB_REPOSITORY_OWNER')
     const repoName = getEnv('GITHUB_REPOSITORY')
     const gitToken = getEnv('GITHUB_TOKEN')
 
-    if (!repoOwner || !repoName || !gitToken) {
+    if (!repoName || !gitToken) {
       throw new Error('Required git environment variable(s) missing or invalid.')
     }
 
-    pullRequest = await getPRForCommit(commitHash, repoOwner, repoName, gitToken)
+    pullRequest = await getPRForCommit(commitHash, repoName, gitToken)
   }
 
   if (isCi) {
