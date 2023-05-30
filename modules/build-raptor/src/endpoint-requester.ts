@@ -11,6 +11,7 @@ export async function getPRForCommit(
     throw new Error('Invalid commit hash.')
   }
 
+  // repoName is expected to be in the format of "owner/repo"
   const response = await axios.get(`https://api.github.com/repos/${repoName}/commits/${commitHash}/pulls`, {
     headers: {
       Accept: 'application/vnd.github+json',
