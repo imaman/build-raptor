@@ -75,7 +75,7 @@ export class Engine {
           : e.opcode === 'RESTORED'
           ? 'TASK_STORE_GET'
           : shouldNeverHappen(e.opcode)
-      this.steps.push({ blobId: e.blobId, taskName: e.taskName, step, files: e.files })
+      this.steps.push({ blobId: e.blobId, taskName: e.taskName, step, fingerprint: e.fingerprint, files: e.files })
     })
     this.eventPublisher.on('testEnded', e => {
       this.steps.push({
@@ -87,6 +87,16 @@ export class Engine {
         durationMillis: e.durationMillis,
       })
     })
+    this.eventPublisher.on('assetPublished', e => {
+      this.steps.push({
+        step: 'ASSET_PUBLISHED',
+        taskName: e.taskName,
+        fingerprint: e.fingerprint,
+        casAddress: e.casAddress,
+        file: e.file,
+      })
+    })
+
     this.fingerprintLedger = this.options.fingerprintLedger
       ? new PersistedFingerprintLedger(logger, ledgerFile)
       : new NopFingerprintLedger()

@@ -405,6 +405,7 @@ describe('yarn-repo-protocol', () => {
         path.join(d, 'modules/a'),
         TaskName(UnitId('a'), TaskKind('build')),
         '/dev/null',
+        'fingerprint-foo',
       )
       expect(buildResult).toEqual('OK')
       const actual = await DirectoryScanner.listPaths(path.join(d, 'modules/a/dist'))
