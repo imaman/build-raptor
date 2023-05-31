@@ -23,6 +23,9 @@ import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import { YarnRepoProtocol } from 'yarn-repo-protocol'
 
+import { RegisterAssetRequest } from './build-raptor-api'
+import { getPRForCommit } from './endpoint-requester'
+
 type TestReporting = 'just-failing' | 'tree' | 'tree-just-failing'
 
 interface Options {
@@ -40,6 +43,12 @@ interface Options {
 
 type TestEndedEvent = RepoProtocolEvent['testEnded']
 
+type EnvVarName = 'GITHUB_SHA' | 'GITHUB_REPOSITORY' | 'GITHUB_REF' | 'GITHUB_REPOSITORY_OWNER' | 'GITHUB_TOKEN' | 'CI'
+
+export function getEnv(envVarName: EnvVarName) {
+  return process.env[envVarName] // eslint-disable-line no-process-env
+}
+
 async function createStorageClient() {
   return {
     storageClient: await FilesystemStorageClient.create(path.join(os.homedir(), '.build-raptor/storage')),
@@ -47,11 +56,8 @@ async function createStorageClient() {
   }
 }
 
-function getEnv(envVarName: 'GITHUB_SHA' | 'CI') {
-  return process.env[envVarName] // eslint-disable-line no-process-env
-}
-
 async function run(options: Options) {
+  process.env.AWS_SDK_JS_SUPPRESS_MAINTENANCE_MODE_MESSAGE = '1' // eslint-disable-line no-process-env
   const t0 = Date.now()
 
   // Should be called as early as possible to secure the secret.
@@ -66,9 +72,25 @@ async function run(options: Options) {
   logger.info(`Logger initialized`)
   logger.print(`logging to ${logFile}`)
   const isCi = getEnv('CI') === 'true'
+
+  let pullRequest: number | undefined
   const commitHash = getEnv('GITHUB_SHA')
+
+  if (commitHash) {
+    const repoName = getEnv('GITHUB_REPOSITORY')
+    const gitToken = getEnv('GITHUB_TOKEN')
+
+    if (!repoName || !gitToken) {
+      throw new Error('Required git environment variable(s) missing or invalid.')
+    }
+
+    pullRequest = await getPRForCommit(commitHash, repoName, gitToken)
+  }
+
   if (isCi) {
-    logger.print(`details:\n${JSON.stringify({ isCi, commitHash, startedAt: new Date(t0).toISOString() }, null, 2)}`)
+    logger.print(
+      `details:\n${JSON.stringify({ isCi, commitHash, pullRequest, startedAt: new Date(t0).toISOString() }, null, 2)}`,
+    )
   }
 
   const buildRaptorDirTasks = path.join(buildRaptorDir, 'tasks')
@@ -81,15 +103,19 @@ async function run(options: Options) {
       return
     }
 
-    if (!commitHash) {
-      throw new Error(`missing commit hash in CI`)
+    const req: RegisterAssetRequest = {
+      packageName: u.id,
+      commitHash: commitHash ?? 'N/A',
+      prNumber: pullRequest,
+      casReference: resolved,
     }
 
     await lambdaClient.invoke('d-prod-buildTrackerService', {
-      endpointName: 'registerAssetRequest',
-      endpointRequest: { packageName: u.id, commitHash, casReference: resolved },
+      endpointName: 'registerAsset',
+      endpointRequest: RegisterAssetRequest.parse(req),
     })
   })
+
   const repoProtocol = new YarnRepoProtocol(logger, undefined, assetPublisher)
   const bootstrapper = await EngineBootstrapper.create(
     rootDir,
