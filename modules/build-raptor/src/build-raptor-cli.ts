@@ -18,7 +18,6 @@ import * as path from 'path'
 import { RepoProtocolEvent } from 'repo-protocol'
 import { getS3StorageClientFactory } from 's3-storage-client'
 import { TaskName } from 'task-name'
-import { UnitMetadata } from 'unit-metadata'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import { YarnRepoProtocol } from 'yarn-repo-protocol'
@@ -98,24 +97,7 @@ async function run(options: Options) {
 
   const { storageClient, lambdaClient } = await storageClientFactory(logger)
   logger.info(`(typeof lambdaClient)=${typeof lambdaClient}`)
-  const assetPublisher = new DefaultAssetPublisher(storageClient, logger, async (u: UnitMetadata, resolved: string) => {
-    if (!lambdaClient || !isCi) {
-      return
-    }
-
-    const req: RegisterAssetRequest = {
-      packageName: u.id,
-      commitHash: commitHash ?? 'N/A',
-      prNumber: pullRequest,
-      casReference: resolved,
-    }
-
-    await lambdaClient.invoke('d-prod-buildTrackerService', {
-      endpointName: 'registerAsset',
-      endpointRequest: RegisterAssetRequest.parse(req),
-    })
-  })
-
+  const assetPublisher = new DefaultAssetPublisher(storageClient, logger)
   const repoProtocol = new YarnRepoProtocol(logger, undefined, assetPublisher)
   const bootstrapper = await EngineBootstrapper.create(
     rootDir,
@@ -134,6 +116,27 @@ async function run(options: Options) {
 
   bootstrapper.subscribable.on('executionStarted', arg => {
     logger.print(`=============================== ${arg} =================================`)
+  })
+
+  bootstrapper.subscribable.on('assetPublished', async arg => {
+    if (!lambdaClient || !isCi) {
+      return
+    }
+
+    const req: RegisterAssetRequest = {
+      packageName: TaskName().undo(arg.taskName).unitId,
+      commitHash: commitHash ?? 'N/A',
+      prNumber: pullRequest,
+      casReference: arg.casAddress,
+    }
+
+    const payload = {
+      endpointName: 'registerAsset',
+      endpointRequest: RegisterAssetRequest.parse(req),
+    }
+
+    logger.info(`sending lambda payload: ${JSON.stringify(payload)}`)
+    await lambdaClient.invoke('d-prod-buildTrackerService', payload)
   })
 
   bootstrapper.subscribable.on('executionEnded', async arg => {
