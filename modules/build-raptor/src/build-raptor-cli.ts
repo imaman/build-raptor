@@ -393,7 +393,7 @@ yargs(hideBin(process.argv))
     'publish-assets',
     'publish deployables (as blobs)',
     yargs =>
-      withBuildOptions(yargs).option('call-report-assets', {
+      withBuildOptions(yargs).option('register-assets', {
         describe: 'whether to invoke the register-asset-endpoint with the details of each published asset',
         type: 'boolean',
         default: true,
@@ -408,7 +408,7 @@ yargs(hideBin(process.argv))
         buildOutputLocation: argv['build-output-locations'],
         concurrency: argv['concurrency'],
         compact: argv.compact,
-        callRegisterAsset: argv['call-report-assets'],
+        callRegisterAsset: argv['register-assets'],
       })
     },
   )
