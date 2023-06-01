@@ -2,6 +2,11 @@ import { z } from 'zod'
 
 export const Step = z.union([
   z.object({
+    step: z.literal('BUILD_RUN_STARTED'),
+    buildRunId: z.string(),
+    commitHash: z.string().optional(),
+  }),
+  z.object({
     step: z.literal('TASK_STORE_PUT'),
     fingerprint: z.string().optional(),
     taskName: z.string(),
