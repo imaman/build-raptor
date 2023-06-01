@@ -236,8 +236,8 @@ describe('engine', () => {
     expect(rb.buildRunId).not.toEqual(ra.buildRunId)
     const b = await fork.readStepByStepFile()
     expect(b[0]).toMatchObject({ step: 'BUILD_RUN_STARTED', buildRunId: rb.buildRunId })
-    expect(b[0]).toMatchObject({ step: 'TASK_STORE_GET', taskName: 'b:build' })
-    expect(b[1]).toMatchObject({ step: 'TASK_STORE_GET', taskName: 'a:build' })
+    expect(b[1]).toMatchObject({ step: 'TASK_STORE_GET', taskName: 'b:build' })
+    expect(b[2]).toMatchObject({ step: 'TASK_STORE_GET', taskName: 'a:build' })
     expect(b).toHaveLength(3)
   })
   test('builds only the units that were specified', async () => {
