@@ -5,6 +5,7 @@ export const Step = z.union([
     step: z.literal('BUILD_RUN_STARTED'),
     buildRunId: z.string(),
     commitHash: z.string().optional(),
+    prNumber: z.number(),
   }),
   z.object({
     step: z.literal('TASK_STORE_PUT'),
