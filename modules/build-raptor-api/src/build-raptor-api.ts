@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-export const Step = z.union([
+export const Step = z.discriminatedUnion('step', [
   z.object({
     step: z.literal('BUILD_RUN_STARTED'),
     buildRunId: z.string(),

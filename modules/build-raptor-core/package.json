@@ -28,7 +28,7 @@
     "type-fest": "^2.12.2",
     "unit-metadata": "1.0.0",
     "uuid": "^8.3.2",
-    "zod": "^3.11.6"
+    "zod": "^3.21.4"
   },
   "devDependencies": {
     "@types/fs-extra": "^9.0.0",

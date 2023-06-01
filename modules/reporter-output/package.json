@@ -16,6 +16,6 @@
     "preset": "../../jest.preset.js"
   },
   "dependencies": {
-    "zod": "^3.11.6"
+    "zod": "^3.21.4"
   }
 }
