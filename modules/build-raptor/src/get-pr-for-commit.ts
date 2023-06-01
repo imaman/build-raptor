@@ -1,6 +1,11 @@
 import axios from 'axios'
+import { z } from 'zod'
 
-import { GithubResponseSchema } from './build-raptor-api'
+const GithubResponseItemSchema = z.object({
+  number: z.number().int().positive().optional(),
+})
+
+export const GithubResponseSchema = z.array(GithubResponseItemSchema)
 
 export async function getPrForCommit(
   commitHash: string,
