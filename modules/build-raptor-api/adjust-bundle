@@ -1,0 +1,10 @@
+#!/bin/bash
+
+set -e
+
+D=$(realpath "$(dirname $0)")
+
+cd $D
+cp dist/src/*d.ts pack
+cd pack
+
