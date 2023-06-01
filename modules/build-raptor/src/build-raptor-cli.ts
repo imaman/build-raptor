@@ -98,7 +98,7 @@ async function run(options: Options) {
   const { storageClient, lambdaClient } = await storageClientFactory(logger)
   logger.info(`(typeof lambdaClient)=${typeof lambdaClient}`)
   const assetPublisher = new DefaultAssetPublisher(storageClient, logger)
-  const repoProtocol = new YarnRepoProtocol(logger, undefined, assetPublisher)
+  const repoProtocol = new YarnRepoProtocol(logger, false, assetPublisher)
   const bootstrapper = await EngineBootstrapper.create(
     rootDir,
     storageClient,

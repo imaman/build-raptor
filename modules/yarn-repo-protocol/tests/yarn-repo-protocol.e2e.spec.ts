@@ -1,3 +1,4 @@
+import { NopAssetPublisher } from 'build-raptor-core'
 import { Driver } from 'build-raptor-core-testkit'
 import { createNopLogger } from 'logger'
 
@@ -6,10 +7,14 @@ import { YarnRepoProtocol } from '../src/yarn-repo-protocol'
 jest.setTimeout(90000)
 describe('yarn-repo-protocol.e2e', () => {
   const logger = createNopLogger()
+
+  function newYarnRepoProtocol() {
+    return new YarnRepoProtocol(logger, false, new NopAssetPublisher())
+  }
   const testName = () => expect.getState().currentTestName
 
   test('runs tsc and jest when building and testing (respectively)', async () => {
-    const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
+    const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
       'modules/a/package.json': driver.packageJson('a'),
@@ -33,7 +38,7 @@ describe('yarn-repo-protocol.e2e', () => {
     )
   })
   test('supports the importing of *.json files', async () => {
-    const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
+    const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
       'modules/a/package.json': driver.packageJson('a'),
@@ -48,7 +53,7 @@ describe('yarn-repo-protocol.e2e', () => {
     expect(await run.outputOf('test', 'a')).toEqual(expect.arrayContaining([`    Received: \"fooboo\"`]))
   })
   test('deletes dist/src/*.{js,d.ts} files that do not have a matching *.ts file under src/', async () => {
-    const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
+    const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
       'modules/a/package.json': driver.packageJson('a'),
@@ -72,7 +77,7 @@ describe('yarn-repo-protocol.e2e', () => {
     expect(await Promise.all([xjs.exists(), xdts.exists()])).toEqual([false, false])
   })
   test('does not delete dist/src/*.{js,d.ts} files that have a matching *.tsx file under src/', async () => {
-    const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
+    const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
       'modules/a/package.json': driver.packageJson('a'),
@@ -89,7 +94,7 @@ describe('yarn-repo-protocol.e2e', () => {
     expect(await Promise.all([ajs.exists(), adts.exists()])).toEqual([true, true])
   })
   test('deletes dist/tests/*.{js,d.ts} files that do not have a matching *.ts file under tests/', async () => {
-    const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
+    const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
       'modules/a/package.json': driver.packageJson('a'),
@@ -113,7 +118,7 @@ describe('yarn-repo-protocol.e2e', () => {
     expect(await Promise.all([xjs.exists(), xdts.exists()])).toEqual([false, false])
   })
   test('can run code that imports code from another package', async () => {
-    const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
+    const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
       'modules/a/package.json': driver.packageJson('a', ['b']),
@@ -136,7 +141,7 @@ describe('yarn-repo-protocol.e2e', () => {
     expect(await run.outputOf('test', 'a')).toEqual(expect.arrayContaining(['    Expected: 703', '    Received: 702']))
   })
   test('publish-assets runs prepare-assets', async () => {
-    const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
+    const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
       'modules/a/package.json': driver.packageJson('a', [], { 'prepare-assets': 'touch prepared-assets/x' }),
@@ -151,7 +156,7 @@ describe('yarn-repo-protocol.e2e', () => {
     expect(await run.outputOf('publish-assets', 'a')).toEqual(['> a@1.0.0 prepare-assets', '> touch prepared-assets/x'])
   })
   test('publish-assets runs only in packages which define a prepare-assets run script', async () => {
-    const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
+    const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
       'modules/a/package.json': driver.packageJson('a', [], { 'prepare-assets': 'touch prepared-assets/x' }),
@@ -169,8 +174,8 @@ describe('yarn-repo-protocol.e2e', () => {
     expect(await run.outputOf('publish-assets', 'a')).toEqual(['> a@1.0.0 prepare-assets', '> touch prepared-assets/x'])
     expect(run.taskNames()).toEqual(['a:build', 'a:publish-assets'])
   })
-  test('publish-assets publishes a blob', async () => {
-    const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
+  test('publish-assets publishes a blob and generates a matching ASSET_PUBLSIHED step with a fingerprint', async () => {
+    const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
       'modules/a/package.json': driver.packageJson('a', [], { 'prepare-assets': 'echo "a" > prepared-assets/x' }),
@@ -180,14 +185,16 @@ describe('yarn-repo-protocol.e2e', () => {
 
     const fork = await driver.repo(recipe).fork()
     await fork.run('OK', { taskKind: 'publish-assets' })
-
-    const steps = await fork.getSteps('TASK_STORE_PUT')
-    const blobId = steps.find(at => at.taskName === 'a:publish-assets')?.blobId
+    const putSteps = await fork.getSteps('TASK_STORE_PUT')
+    const blobId = putSteps.find(at => at.taskName === 'a:publish-assets')?.blobId
     expect(await driver.slurpBlob(blobId)).toEqual({ 'prepared-assets/x': 'a\n' })
+
+    const assetSteps = await fork.getSteps('ASSET_PUBLISHED')
+    expect(assetSteps.find(at => at.taskName === 'a:publish-assets')?.fingerprint).toHaveLength(56)
   })
 
   test('takes just the current files when publishing an asset', async () => {
-    const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
+    const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
       'modules/a/package.json': driver.packageJson('a', [], { 'prepare-assets': 'echo "a" > prepared-assets/x1' }),
@@ -216,7 +223,7 @@ describe('yarn-repo-protocol.e2e', () => {
     expect(Object.keys(await readBlob('a:publish-assets'))).toEqual(['prepared-assets/x2'])
   })
   test('when the test fails, the task output includes the failure message prodcued by jest', async () => {
-    const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
+    const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
       'modules/a/package.json': driver.packageJson('a'),
@@ -242,7 +249,7 @@ describe('yarn-repo-protocol.e2e', () => {
   })
 
   test('runs tasks and captures their output', async () => {
-    const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
+    const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
       'modules/a/package.json': driver.packageJson('a'),
@@ -258,7 +265,7 @@ describe('yarn-repo-protocol.e2e', () => {
   })
 
   test('reruns tests when the source code changes', async () => {
-    const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
+    const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
       'modules/a/package.json': driver.packageJson('a'),
@@ -283,7 +290,7 @@ describe('yarn-repo-protocol.e2e', () => {
     expect(await runB.outputOf('test', 'a')).toContain('PASS dist/tests/times-two.spec.js')
   })
   test('if nothing has changed the tasks are cached', async () => {
-    const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
+    const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
       'modules/a/package.json': driver.packageJson('a', ['b']),
@@ -322,7 +329,7 @@ describe('yarn-repo-protocol.e2e', () => {
     expect(run4.executionTypeOf('b', 'test')).toEqual('CACHED')
   })
   test('code is rebuilt when package.json changes', async () => {
-    const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
+    const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
       'modules/a/package.json': driver.packageJson('a'),
@@ -344,7 +351,7 @@ describe('yarn-repo-protocol.e2e', () => {
   })
   describe('high definition rerun of tests', () => {
     test('reruns just the tests that did not pass', async () => {
-      const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
       const recipe = {
         'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
         'modules/a/package.json': driver.packageJson('a'),
@@ -371,7 +378,7 @@ describe('yarn-repo-protocol.e2e', () => {
       expect(await n.exists()).toBe(true)
     })
     test('when the code is changed, all tests run', async () => {
-      const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
 
       const buggyImpl = 'export function abs(n: number) { return n }'
       const recipe = {
@@ -407,7 +414,7 @@ describe('yarn-repo-protocol.e2e', () => {
     })
     test('when code is reverted, does not run all tests', async () => {
       const buggyImpl = 'export function abs(n: number) { return n }'
-      const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
       const recipe = {
         'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
         'modules/a/package.json': driver.packageJson('a'),
@@ -446,7 +453,7 @@ describe('yarn-repo-protocol.e2e', () => {
       expect(await invoked()).toEqual('N')
     })
     test('when test-caching is false reruns all tests', async () => {
-      const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
       const recipe = {
         'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
         'modules/a/package.json': driver.packageJson('a'),
@@ -481,7 +488,7 @@ describe('yarn-repo-protocol.e2e', () => {
   })
   describe('validations', () => {
     test('a test tasks runs the "validate" run script and places its output in the tasks output file', async () => {
-      const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
       const recipe = {
         'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
         'modules/a/package.json': driver.packageJson('a', [], { validate: 'node dist/tests/a.pqr' }),
@@ -497,7 +504,7 @@ describe('yarn-repo-protocol.e2e', () => {
       expect(await run.outputOf('test', 'a')).toContain('pqr test is running')
     })
     test('if the validation fails, the task fails', async () => {
-      const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
       const recipe = {
         'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
         'modules/a/package.json': driver.packageJson('a', [], { validate: 'node dist/tests/a.pqr' }),
@@ -512,7 +519,7 @@ describe('yarn-repo-protocol.e2e', () => {
       expect(run.executionTypeOf('a', 'test')).toEqual('EXECUTED')
     })
     test('the output of the "validate" run script is appended to the tasks output file even if validation failed', async () => {
-      const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
       const recipe = {
         'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
         'modules/a/package.json': driver.packageJson('a', [], { validate: 'node dist/tests/a.pqr' }),
@@ -529,7 +536,7 @@ describe('yarn-repo-protocol.e2e', () => {
   })
   describe('test reporting', () => {
     test('publishes test events', async () => {
-      const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
       const recipe = {
         'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
         'modules/a/package.json': driver.packageJson('a'),

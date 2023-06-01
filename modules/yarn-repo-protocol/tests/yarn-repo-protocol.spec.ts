@@ -1,3 +1,4 @@
+import { NopAssetPublisher } from 'build-raptor-core'
 import * as fse from 'fs-extra'
 import { createNopLogger } from 'logger'
 import { DirectoryScanner, folderify, slurpDir, TypedPublisher } from 'misc'
@@ -11,6 +12,10 @@ import { YarnRepoProtocol } from '../src/yarn-repo-protocol'
 describe('yarn-repo-protocol', () => {
   const logger = createNopLogger()
   const p = new TypedPublisher<RepoProtocolEvent>()
+  function newYarnRepoProtocol() {
+    return new YarnRepoProtocol(logger, false, new NopAssetPublisher())
+  }
+
   describe('initialize()', () => {
     test('rejects repos with inconsistent versions of out-of-repo deps', async () => {
       const d = await folderify({
@@ -19,7 +24,7 @@ describe('yarn-repo-protocol', () => {
         'modules/b/package.json': { name: 'b', version: '1.0.0', dependencies: { foo: '3.20.1' } },
       })
 
-      const yrp = new YarnRepoProtocol(logger)
+      const yrp = newYarnRepoProtocol()
       await expect(yrp.initialize(d, p)).rejects.toThrow('Inconsistent version for depenedency "foo": 3.20.0, 3.20.1')
     })
     test('detects versions inconsistencies that happen between a dependency and a dev-depenedency', async () => {
@@ -29,7 +34,7 @@ describe('yarn-repo-protocol', () => {
         'modules/b/package.json': { name: 'b', version: '1.0.0', dependencies: { boo: '4.20.1' } },
       })
 
-      const yrp = new YarnRepoProtocol(logger)
+      const yrp = newYarnRepoProtocol()
       await expect(yrp.initialize(d, p)).rejects.toThrow('Inconsistent version for depenedency "boo": 4.20.0, 4.20.1')
     })
     test('does not yell if the versions are consistent', async () => {
@@ -42,7 +47,7 @@ describe('yarn-repo-protocol', () => {
         'modules/e/package.json': { name: 'e', version: '1', dependencies: { y: '3' } },
       })
 
-      const yrp = new YarnRepoProtocol(logger)
+      const yrp = newYarnRepoProtocol()
       expect(await yrp.initialize(d, p)).toBeUndefined()
     })
     test('rejects repos with a version mismatch on an in-repo dep', async () => {
@@ -52,7 +57,7 @@ describe('yarn-repo-protocol', () => {
         'modules/b/package.json': { name: 'b', version: '1.0.1' },
       })
 
-      const yrp = new YarnRepoProtocol(logger)
+      const yrp = newYarnRepoProtocol()
       await expect(yrp.initialize(d, p)).rejects.toThrow('Version mismatch for dependency "b" of "a": 1.0.1 vs. 1.0.0')
     })
   })
@@ -64,7 +69,7 @@ describe('yarn-repo-protocol', () => {
         'modules/b/package.json': { name: 'b', version: '1.0.0', dependencies: { goo: '100.1.0', boo: '200.1.0' } },
       })
 
-      const yrp = new YarnRepoProtocol(logger)
+      const yrp = newYarnRepoProtocol()
       await yrp.initialize(d, p)
 
       expect(await yrp.computePackingPackageJson(UnitId('a'))).toMatchObject({
@@ -86,7 +91,7 @@ describe('yarn-repo-protocol', () => {
         'modules/c/package.json': { name: 'c', version: '1.0.0', dependencies: { y: '200.1.0' } },
       })
 
-      const yrp = new YarnRepoProtocol(logger)
+      const yrp = newYarnRepoProtocol()
       await yrp.initialize(d, p)
 
       expect(await yrp.computePackingPackageJson(UnitId('a'))).toEqual({
@@ -117,7 +122,7 @@ describe('yarn-repo-protocol', () => {
       'modules/c/package.json': { name: 'c', version: '1.0.0', devDependencies: { y: '200.1.0' } },
     })
 
-    const yrp = new YarnRepoProtocol(logger)
+    const yrp = newYarnRepoProtocol()
     await yrp.initialize(d, p)
 
     expect(await yrp.computePackingPackageJson(UnitId('a'))).toEqual({
@@ -135,7 +140,7 @@ describe('yarn-repo-protocol', () => {
       'modules/c/package.json': { name: 'c', version: '1.0.0', devDependencies: { y: '200.1.0' } },
     })
 
-    const yrp = new YarnRepoProtocol(logger)
+    const yrp = newYarnRepoProtocol()
     await yrp.initialize(d, p)
 
     expect(await yrp.computePackingPackageJson(UnitId('a'))).toEqual({
@@ -153,7 +158,7 @@ describe('yarn-repo-protocol', () => {
         'modules/a/package.json': { name: 'a', version: '1.0.0' },
       })
 
-      const yrp = new YarnRepoProtocol(logger)
+      const yrp = newYarnRepoProtocol()
       await yrp.initialize(d, p)
 
       const actual = await slurpDir(d)
@@ -175,7 +180,7 @@ describe('yarn-repo-protocol', () => {
         'libs/c/tsconfig-base.json': {},
       })
 
-      const yrp = new YarnRepoProtocol(logger)
+      const yrp = newYarnRepoProtocol()
       await yrp.initialize(d, p)
 
       const actual = await slurpDir(d)
@@ -193,7 +198,7 @@ describe('yarn-repo-protocol', () => {
         'apps/web/fullstack/d/package.json': { name: 'd', version: '1.0.0' },
       })
 
-      const yrp = new YarnRepoProtocol(logger)
+      const yrp = newYarnRepoProtocol()
       await yrp.initialize(d, p)
 
       const actual = await slurpDir(d)
@@ -211,7 +216,7 @@ describe('yarn-repo-protocol', () => {
         'libs/c/package.json': { name: 'c', version: '1.0.0' },
       })
 
-      const yrp = new YarnRepoProtocol(logger)
+      const yrp = newYarnRepoProtocol()
       await yrp.initialize(d, p)
 
       const actual = await slurpDir(d)
@@ -255,7 +260,7 @@ describe('yarn-repo-protocol', () => {
           'modules/c/package.json': { name: 'c', version: '1.0.0' },
         })
 
-        const yrp = new YarnRepoProtocol(logger)
+        const yrp = newYarnRepoProtocol()
         await yrp.initialize(d, p)
 
         const actual = await slurpDir(d)
@@ -282,7 +287,7 @@ describe('yarn-repo-protocol', () => {
           'modules/libs/d/package.json': { name: 'd', version: '1.0.0', dependencies: { c: '1.0.0' } },
         })
 
-        const yrp = new YarnRepoProtocol(logger)
+        const yrp = newYarnRepoProtocol()
         await yrp.initialize(d, p)
 
         const actual = await slurpDir(d)
@@ -302,7 +307,7 @@ describe('yarn-repo-protocol', () => {
           'modules/b/package.json': { name: 'b', version: '1.0.0' },
         })
 
-        const yrp = new YarnRepoProtocol(logger)
+        const yrp = newYarnRepoProtocol()
         await yrp.initialize(d, p)
 
         const actual = await slurpDir(d)
@@ -316,7 +321,7 @@ describe('yarn-repo-protocol', () => {
           'modules/c/package.json': { name: 'c', version: '1.0.0' },
         })
 
-        const yrp = new YarnRepoProtocol(logger)
+        const yrp = newYarnRepoProtocol()
         await yrp.initialize(d, p)
 
         const actual = await slurpDir(d)
@@ -332,7 +337,7 @@ describe('yarn-repo-protocol', () => {
           'modules/d/package.json': { name: 'd', version: '1.0.0', devDependencies: { x: '1.0.0' } },
         })
 
-        const yrp = new YarnRepoProtocol(logger)
+        const yrp = newYarnRepoProtocol()
         await yrp.initialize(d, p)
 
         const actual = await slurpDir(d)
@@ -354,7 +359,7 @@ describe('yarn-repo-protocol', () => {
           },
         })
 
-        const yrp = new YarnRepoProtocol(logger)
+        const yrp = newYarnRepoProtocol()
         await yrp.initialize(d, p)
 
         const actual = await slurpDir(d)
@@ -370,13 +375,13 @@ describe('yarn-repo-protocol', () => {
           'modules/a/package.json': { name: 'a', version: '1.0.0' },
         })
 
-        const yrpA = new YarnRepoProtocol(logger)
+        const yrpA = newYarnRepoProtocol()
         await yrpA.initialize(d, p)
 
         const tsconfigPath = path.join(d, 'modules/a/tsconfig.json')
         const statA = await fse.stat(tsconfigPath)
 
-        const yrpB = new YarnRepoProtocol(logger)
+        const yrpB = newYarnRepoProtocol()
         await yrpB.initialize(d, p)
 
         const statB = await fse.stat(tsconfigPath)
@@ -398,7 +403,7 @@ describe('yarn-repo-protocol', () => {
         'modules/a/dist/src/b.d.ts': '',
       })
 
-      const yrp = new YarnRepoProtocol(logger)
+      const yrp = newYarnRepoProtocol()
       await yrp.initialize(d, p)
       const buildResult = await yrp.execute(
         { id: UnitId('a'), pathInRepo: 'modules/a' },
