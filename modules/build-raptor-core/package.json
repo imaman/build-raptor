@@ -16,6 +16,7 @@
   "dependencies": {
     "brand": "1.0.0",
     "build-failed-error": "1.0.0",
+    "build-raptor-api": "1.0.0",
     "build-run-id": "1.0.0",
     "fs-extra": "^9.0.0",
     "ignore": "^5.1.9",
