@@ -23,7 +23,7 @@ import { hideBin } from 'yargs/helpers'
 import { YarnRepoProtocol } from 'yarn-repo-protocol'
 
 import { RegisterAssetRequest } from './build-raptor-api'
-import { getPRForCommit } from './endpoint-requester'
+import { getPrForCommit } from './endpoint-requester'
 
 type TestReporting = 'just-failing' | 'tree' | 'tree-just-failing'
 
@@ -84,7 +84,7 @@ async function run(options: Options) {
       throw new Error('Required git environment variable(s) missing or invalid.')
     }
 
-    pullRequest = await getPRForCommit(commitHash, repoName, gitToken)
+    pullRequest = await getPrForCommit(commitHash, repoName, gitToken)
   }
 
   if (isCi) {

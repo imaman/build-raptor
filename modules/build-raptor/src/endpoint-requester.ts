@@ -2,7 +2,7 @@ import axios from 'axios'
 
 import { GithubResponseSchema } from './build-raptor-api'
 
-export async function getPRForCommit(
+export async function getPrForCommit(
   commitHash: string,
   repoName: string,
   gitToken: string,
