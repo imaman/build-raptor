@@ -6,7 +6,9 @@
   "author": "",
   "main": "dist/src/index.js",
   "files": [
-    "dist/src"
+    "dist/src/**/*.d.ts",
+    "dist/src/**/*.js",
+    "dist/src/**/*.json"
   ],
   "scripts": {
     "build": "tsc -b",
