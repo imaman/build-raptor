@@ -6,6 +6,6 @@ D=$(realpath "$(dirname $0)")
 
 cd $D
 mkdir -p pack/dist
-cp -r dist/src pack/src
+cp -r dist/src pack/dist
 cd pack
 
