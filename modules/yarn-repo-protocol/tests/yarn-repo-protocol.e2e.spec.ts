@@ -169,7 +169,7 @@ describe('yarn-repo-protocol.e2e', () => {
     expect(await run.outputOf('publish-assets', 'a')).toEqual(['> a@1.0.0 prepare-assets', '> touch prepared-assets/x'])
     expect(run.taskNames()).toEqual(['a:build', 'a:publish-assets'])
   })
-  test('publish-assets publishes a blob', async () => {
+  test('publish-assets publishes a blob and generates a matching ASSET_PUBLSIHED step with a fingerprint', async () => {
     const driver = new Driver(testName(), { repoProtocol: new YarnRepoProtocol(logger) })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
@@ -180,10 +180,13 @@ describe('yarn-repo-protocol.e2e', () => {
 
     const fork = await driver.repo(recipe).fork()
     await fork.run('OK', { taskKind: 'publish-assets' })
-
-    const steps = await fork.getSteps('TASK_STORE_PUT')
-    const blobId = steps.find(at => at.taskName === 'a:publish-assets')?.blobId
+    const putSteps = await fork.getSteps('TASK_STORE_PUT')
+    const blobId = putSteps.find(at => at.taskName === 'a:publish-assets')?.blobId
     expect(await driver.slurpBlob(blobId)).toEqual({ 'prepared-assets/x': 'a\n' })
+
+    const assetSteps = await fork.getSteps('ASSET_PUBLISHED')
+    const s = assetSteps.find(at => at.taskName === 'a:publish-assets')
+    expect(s?.fingerprint).toHaveLength(56)
   })
 
   test('takes just the current files when publishing an asset', async () => {
