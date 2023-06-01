@@ -207,7 +207,7 @@ describe('yarn-repo-protocol.e2e', () => {
     const readBlob = async (taskName: string) => {
       const steps = await fork.readStepByStepFile()
       const blobId = steps
-        .filter(at => at.taskName === taskName)
+        .filter(at => at.step !== 'BUILD_RUN_STARTED' && at.taskName === taskName)
         .flatMap(at => (at.step === 'TASK_STORE_GET' || at.step === 'TASK_STORE_PUT' ? [at] : []))
         .find(Boolean)?.blobId
       return await driver.slurpBlob(blobId)

@@ -28,6 +28,7 @@ export interface EngineOptions {
   buildRaptorDir: string
   fingerprintLedger?: boolean
   testCaching?: boolean
+  commitHash: string | undefined
 }
 
 export class Engine {
@@ -65,6 +66,7 @@ export class Engine {
       buildRaptorDir: options.buildRaptorDir,
       fingerprintLedger: options.fingerprintLedger ?? false,
       testCaching: options.testCaching ?? true,
+      commitHash: options.commitHash,
     }
     const ledgerFile = path.join(this.options.buildRaptorDir, 'fingerprint-ledger.json')
     this.stepByStepFile = path.join(this.options.buildRaptorDir, 'step-by-step.json')
@@ -75,7 +77,16 @@ export class Engine {
           : e.opcode === 'RESTORED'
           ? 'TASK_STORE_GET'
           : shouldNeverHappen(e.opcode)
-      this.steps.push({ blobId: e.blobId, taskName: e.taskName, step, fingerprint: e.fingerprint, files: e.files })
+      const { taskKind, unitId } = TaskName().undo(e.taskName)
+      this.steps.push({
+        blobId: e.blobId,
+        taskName: e.taskName,
+        taskKind,
+        unitId,
+        step,
+        fingerprint: e.fingerprint,
+        files: e.files,
+      })
     })
     this.eventPublisher.on('testEnded', e => {
       this.steps.push({
@@ -88,9 +99,12 @@ export class Engine {
       })
     })
     this.eventPublisher.on('assetPublished', e => {
+      const { taskKind, unitId } = TaskName().undo(e.taskName)
       this.steps.push({
         step: 'ASSET_PUBLISHED',
         taskName: e.taskName,
+        taskKind,
+        unitId,
         fingerprint: e.fingerprint,
         casAddress: e.casAddress,
         file: e.file,
@@ -105,6 +119,7 @@ export class Engine {
   }
 
   async run(buildRunId: BuildRunId) {
+    this.steps.push({ step: 'BUILD_RUN_STARTED', buildRunId, commitHash: this.options.commitHash })
     await this.fingerprintLedger.updateRun(buildRunId)
     await this.repoProtocol.initialize(this.rootDir, this.eventPublisher)
     try {

@@ -199,11 +199,12 @@ describe('engine', () => {
 
     const fork = await driver.repo(recipe).fork()
 
-    await fork.run('OK', { taskKind: 'build' })
+    const { buildRunId } = await fork.run('OK', { taskKind: 'build' })
     const stepByStep = await fork.readStepByStepFile()
-    expect(stepByStep[0]).toMatchObject({ step: 'TASK_STORE_PUT', taskName: 'b:build', files: ['dist'] })
-    expect(stepByStep[1]).toMatchObject({ step: 'TASK_STORE_PUT', taskName: 'a:build', files: ['dist'] })
-    expect(stepByStep).toHaveLength(2)
+    expect(stepByStep[0]).toMatchObject({ step: 'BUILD_RUN_STARTED', buildRunId })
+    expect(stepByStep[1]).toMatchObject({ step: 'TASK_STORE_PUT', taskName: 'b:build', files: ['dist'] })
+    expect(stepByStep[2]).toMatchObject({ step: 'TASK_STORE_PUT', taskName: 'a:build', files: ['dist'] })
+    expect(stepByStep).toHaveLength(3)
   })
   test('the step-by-step is overwritten at the next build run', async () => {
     const driver = new Driver(testName())
@@ -224,17 +225,20 @@ describe('engine', () => {
 
     const fork = await driver.repo(recipe).fork()
 
-    await fork.run('OK', { taskKind: 'build' })
+    const ra = await fork.run('OK', { taskKind: 'build' })
     const a = await fork.readStepByStepFile()
-    expect(a[0]).toMatchObject({ step: 'TASK_STORE_PUT', taskName: 'b:build' })
-    expect(a[1]).toMatchObject({ step: 'TASK_STORE_PUT', taskName: 'a:build' })
-    expect(a).toHaveLength(2)
+    expect(a[0]).toMatchObject({ step: 'BUILD_RUN_STARTED', buildRunId: ra.buildRunId })
+    expect(a[1]).toMatchObject({ step: 'TASK_STORE_PUT', taskName: 'b:build' })
+    expect(a[2]).toMatchObject({ step: 'TASK_STORE_PUT', taskName: 'a:build' })
+    expect(a).toHaveLength(3)
 
-    await fork.run('OK', { taskKind: 'build' })
+    const rb = await fork.run('OK', { taskKind: 'build' })
+    expect(rb.buildRunId).not.toEqual(ra.buildRunId)
     const b = await fork.readStepByStepFile()
-    expect(b[0]).toMatchObject({ step: 'TASK_STORE_GET', taskName: 'b:build' })
-    expect(b[1]).toMatchObject({ step: 'TASK_STORE_GET', taskName: 'a:build' })
-    expect(b).toHaveLength(2)
+    expect(b[0]).toMatchObject({ step: 'BUILD_RUN_STARTED', buildRunId: rb.buildRunId })
+    expect(b[1]).toMatchObject({ step: 'TASK_STORE_GET', taskName: 'b:build' })
+    expect(b[2]).toMatchObject({ step: 'TASK_STORE_GET', taskName: 'a:build' })
+    expect(b).toHaveLength(3)
   })
   test('builds only the units that were specified', async () => {
     const driver = new Driver(testName())

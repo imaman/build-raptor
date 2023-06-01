@@ -2,9 +2,16 @@ import { z } from 'zod'
 
 export const Step = z.union([
   z.object({
+    step: z.literal('BUILD_RUN_STARTED'),
+    buildRunId: z.string(),
+    commitHash: z.string().optional(),
+  }),
+  z.object({
     step: z.literal('TASK_STORE_PUT'),
     fingerprint: z.string().optional(),
     taskName: z.string(),
+    unitId: z.string(),
+    taskKind: z.string(),
     blobId: z.string(),
     files: z.string().array(),
   }),
@@ -12,6 +19,8 @@ export const Step = z.union([
     step: z.literal('TASK_STORE_GET'),
     fingerprint: z.string().optional(),
     taskName: z.string(),
+    unitId: z.string(),
+    taskKind: z.string(),
     blobId: z.string(),
     files: z.string().array(),
   }),
@@ -31,6 +40,8 @@ export const Step = z.union([
   z.object({
     step: z.literal('ASSET_PUBLISHED'),
     taskName: z.string(),
+    unitId: z.string(),
+    taskKind: z.string(),
     fingerprint: z.string(),
     casAddress: z.string(),
     file: z.string(),

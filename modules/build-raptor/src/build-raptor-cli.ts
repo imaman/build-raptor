@@ -192,6 +192,7 @@ async function run(options: Options) {
     concurrency: Int(options.concurrency),
     buildRaptorDir,
     testCaching: options.testCaching ?? true,
+    commitHash,
   })
   const { exitCode } = await runner()
   // eslint-disable-next-line require-atomic-updates
