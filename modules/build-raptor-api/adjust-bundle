@@ -5,7 +5,8 @@ set -e
 D=$(realpath "$(dirname $0)")
 
 cd $D
-mkdir -p pack/dist
-cp -r dist/src pack/dist
+cp -r dist pack
+rm pack/main.js
 cd pack
+npm pkg set "main=dist/src/index.js"
 
