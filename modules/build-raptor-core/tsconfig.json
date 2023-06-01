@@ -12,6 +12,9 @@
       "path": "../build-failed-error"
     },
     {
+      "path": "../build-raptor-api"
+    },
+    {
       "path": "../build-run-id"
     },
     {
