@@ -38,6 +38,7 @@ interface Options {
   concurrency: number
   testReporting?: TestReporting
   testCaching?: boolean
+  callRegisterAsset?: boolean
 }
 
 type TestEndedEvent = RepoProtocolEvent['testEnded']
@@ -118,7 +119,12 @@ async function run(options: Options) {
     logger.print(`=============================== ${arg} =================================`)
   })
 
+  const callRegisterAsset = options.callRegisterAsset ?? true
   bootstrapper.subscribable.on('assetPublished', async arg => {
+    if (!callRegisterAsset) {
+      logger.info(`NOT calling register-asset endpoint as the command line option is off`)
+      return
+    }
     if (!lambdaClient || !isCi) {
       return
     }
@@ -386,7 +392,12 @@ yargs(hideBin(process.argv))
   .command(
     'publish-assets',
     'publish deployables (as blobs)',
-    yargs => withBuildOptions(yargs),
+    yargs =>
+      withBuildOptions(yargs).option('register-assets', {
+        describe: 'whether to invoke the register-asset-endpoint with the details of each published asset',
+        type: 'boolean',
+        default: true,
+      }),
     async argv => {
       await run({
         dir: argv.dir,
@@ -397,6 +408,7 @@ yargs(hideBin(process.argv))
         buildOutputLocation: argv['build-output-locations'],
         concurrency: argv['concurrency'],
         compact: argv.compact,
+        callRegisterAsset: argv['register-assets'],
       })
     },
   )
