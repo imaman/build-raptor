@@ -28,12 +28,6 @@ echo "pubishing build-raptor-api $NEXT_VERSION"
 # npm publish
 popd
 
-popd
-pushd modules/build-raptor-api/pack
-npm pkg set "version=$NEXT_VERSION"
-echo "pubishing build-raptor-api $NEXT_VERSION"
-npm publish
-
 pushd modules/build-raptor/pack
 echo "pubishing build-raptor $NEXT_VERSION"
 # npm publish
