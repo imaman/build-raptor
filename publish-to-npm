@@ -19,21 +19,23 @@ pushd modules/build-raptor-jest-reporter/pack
 npm pkg set "version=$NEXT_VERSION"
 ../adjust-bundle
 echo "pubishing build-raptor-jest-reporter $NEXT_VERSION"
+npm publish
 popd
 
 pushd modules/build-raptor-api/pack
 npm pkg set "version=$NEXT_VERSION"
 ../adjust-bundle
 echo "pubishing build-raptor-api $NEXT_VERSION"
-# npm publish
+npm publish
 popd
 
 pushd modules/build-raptor/pack
 echo "pubishing build-raptor $NEXT_VERSION"
-# npm publish
+npm publish
+popd
 
 
-# T="published@$NEXT_VERSION"
-# echo tagging "$T"
-# git tag "$T"
-# git push --tags
+T="published@$NEXT_VERSION"
+echo tagging "$T"
+git tag "$T"
+git push --tags
