@@ -1,5 +1,5 @@
 import * as core from '@actions/core'
-import { EngineBootstrapper } from 'build-raptor-core'
+import { EngineBootstrapper, NopAssetPublisher } from 'build-raptor-core'
 import { Breakdown } from 'build-raptor-core'
 import { TaskSummary } from 'build-raptor-core'
 import * as fse from 'fs-extra'
@@ -56,7 +56,7 @@ async function run() {
     )
   }
 
-  const repoProtocol = new YarnRepoProtocol(logger)
+  const repoProtocol = new YarnRepoProtocol(logger, false, new NopAssetPublisher())
   const { storageClient } = await storageClientFactory(logger)
   const bootstrapper = await EngineBootstrapper.create(rootDir, storageClient, repoProtocol, t0, '', logger)
 
