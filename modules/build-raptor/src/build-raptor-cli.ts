@@ -22,8 +22,8 @@ import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import { YarnRepoProtocol } from 'yarn-repo-protocol'
 
-import { RegisterAssetRequest } from './build-raptor-api'
 import { getPrForCommit } from './get-pr-for-commit'
+import { RegisterAssetRequest } from './register-asset-request'
 
 type TestReporting = 'just-failing' | 'tree' | 'tree-just-failing'
 

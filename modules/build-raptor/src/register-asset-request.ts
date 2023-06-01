@@ -7,3 +7,4 @@ export const RegisterAssetRequest = z.object({
   casReference: z.string(),
 })
 export type RegisterAssetRequest = z.infer<typeof RegisterAssetRequest>
+f
