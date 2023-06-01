@@ -45,15 +45,10 @@ async function run() {
   logger.info(`Logger initialized`)
   logger.print(`logging to ${logFile}`)
 
+  const commitHash = getEnv('GITHUB_SHA')
   const isCi = getEnv('CI') === 'true'
   if (isCi) {
-    logger.print(
-      `details:\n${JSON.stringify(
-        { isCi, commitHash: getEnv('GITHUB_SHA'), startedAt: new Date(t0).toISOString() },
-        null,
-        2,
-      )}`,
-    )
+    logger.print(`details:\n${JSON.stringify({ isCi, commitHash, startedAt: new Date(t0).toISOString() }, null, 2)}`)
   }
 
   const repoProtocol = new YarnRepoProtocol(logger, false, new NopAssetPublisher())
@@ -69,6 +64,7 @@ async function run() {
   const runner = await bootstrapper.makeRunner(options.command, options.units, {
     concurrency: options.concurrency,
     buildRaptorDir,
+    commitHash,
   })
   const out = await runner()
 
