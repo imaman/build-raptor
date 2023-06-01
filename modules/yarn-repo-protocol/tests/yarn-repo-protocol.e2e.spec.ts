@@ -190,29 +190,7 @@ describe('yarn-repo-protocol.e2e', () => {
     expect(await driver.slurpBlob(blobId)).toEqual({ 'prepared-assets/x': 'a\n' })
 
     const assetSteps = await fork.getSteps('ASSET_PUBLISHED')
-    // [
-    //   {
-    //     "step": "TASK_STORE_PUT",
-    //     "fingerprint": "052a5570f0bbc6d34b3fc7e7dff524ac3a638dc8deb220c20e18684e",
-    //     "taskName": "a:build",
-    //     "blobId": "f24cac44b8819f5950c1f9c877120efe36e7a7d6612869956ac75d7a",
-    //     "files": [
-    //       "dist"
-    //     ]
-    //   },
-    //   {
-    //     "step": "TASK_STORE_PUT",
-    //     "fingerprint": "f3d68409e7c8cfe48f9c7d7a8d775ce5228cc695d8c39a82c62a2834",
-    //     "taskName": "a:publish-assets",
-    //     "blobId": "8e6f087cb25ec330546620a902e79ddca2e7a198866b7a30f1c17f2e",
-    //     "files": [
-    //       "prepared-assets"
-    //     ]
-    //   }
-    // ]
-
-    const s = assetSteps.find(at => at.taskName === 'a:publish-assets')
-    expect(s?.fingerprint).toHaveLength(56)
+    expect(assetSteps.find(at => at.taskName === 'a:publish-assets')?.fingerprint).toHaveLength(56)
   })
 
   test('takes just the current files when publishing an asset', async () => {
