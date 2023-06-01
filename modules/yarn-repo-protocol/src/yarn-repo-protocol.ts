@@ -308,7 +308,6 @@ export class YarnRepoProtocol implements RepoProtocol {
     dir: string,
     taskName: TaskName,
     outputFile: string,
-    _buildRunId: string,
     fingerprint: string,
   ): Promise<ExitStatus> {
     const taskKind = TaskName().undo(taskName).taskKind
