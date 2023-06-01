@@ -5,6 +5,7 @@ set -e
 D=$(realpath "$(dirname $0)")
 
 cd $D
-cp dist/src/*d.ts pack
+mkdir -p pack/dist
+cp -r dist/src pack/src
 cd pack
 
