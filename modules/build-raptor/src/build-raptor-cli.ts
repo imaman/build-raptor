@@ -122,7 +122,7 @@ async function run(options: Options) {
   const callRegisterAsset = options.callRegisterAsset ?? true
   bootstrapper.subscribable.on('assetPublished', async arg => {
     if (!callRegisterAsset) {
-      logger.info(`NOT calling register-asset endpoint as the command line options is off`)
+      logger.info(`NOT calling register-asset endpoint as the command line option is off`)
       return
     }
     if (!lambdaClient || !isCi) {
