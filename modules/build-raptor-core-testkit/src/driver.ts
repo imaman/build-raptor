@@ -195,6 +195,7 @@ class Fork {
       concurrency: concurrencyLevel,
       buildRaptorDir: this.buildRaptorDir,
       testCaching: options.testCaching,
+      commitHash: 'COMMIT-HASH-FOR-TESTING',
     })
     const output = await runner()
     if (expectedStatus === output.overallVerdict) {

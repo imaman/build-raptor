@@ -31,6 +31,7 @@ export const Step = z.union([
   z.object({
     step: z.literal('ASSET_PUBLISHED'),
     taskName: z.string(),
+    commitHash: z.string().optional(),
     fingerprint: z.string(),
     casAddress: z.string(),
     file: z.string(),

@@ -28,6 +28,7 @@ export interface EngineOptions {
   buildRaptorDir: string
   fingerprintLedger?: boolean
   testCaching?: boolean
+  commitHash: string | undefined
 }
 
 export class Engine {
@@ -65,6 +66,7 @@ export class Engine {
       buildRaptorDir: options.buildRaptorDir,
       fingerprintLedger: options.fingerprintLedger ?? false,
       testCaching: options.testCaching ?? true,
+      commitHash: options.commitHash,
     }
     const ledgerFile = path.join(this.options.buildRaptorDir, 'fingerprint-ledger.json')
     this.stepByStepFile = path.join(this.options.buildRaptorDir, 'step-by-step.json')
@@ -91,6 +93,7 @@ export class Engine {
       this.steps.push({
         step: 'ASSET_PUBLISHED',
         taskName: e.taskName,
+        commitHash: this.options.commitHash,
         fingerprint: e.fingerprint,
         casAddress: e.casAddress,
         file: e.file,
