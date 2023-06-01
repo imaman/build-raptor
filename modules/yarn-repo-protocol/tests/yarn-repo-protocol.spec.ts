@@ -405,6 +405,7 @@ describe('yarn-repo-protocol', () => {
         path.join(d, 'modules/a'),
         TaskName(UnitId('a'), TaskKind('build')),
         '/dev/null',
+        'my-build-run-id',
         'fingerprint-foo',
       )
       expect(buildResult).toEqual('OK')
