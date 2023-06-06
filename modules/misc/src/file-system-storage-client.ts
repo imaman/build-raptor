@@ -2,14 +2,28 @@ import * as fse from 'fs-extra'
 import * as path from 'path'
 
 import { shouldNeverHappen } from '.'
+import { cleanDirectory } from './directory-cleaner'
 import { computeHash, computeObjectHash } from './misc'
 import { Key, StorageClient } from './storage-client'
+
+interface Options {
+  /**
+   * If defined, cleanup of the directory will be triggered if the toal size (in bytes) of all files in the directory
+   * exceeds this value. If undefined, no cleanup will take place.
+   */
+  triggerCleanupIfByteSizeExceeds?: number
+}
 
 export class FilesystemStorageClient implements StorageClient {
   private constructor(private readonly dir: string) {}
 
-  static async create(dir: string): Promise<FilesystemStorageClient> {
+  static async create(dir: string, options?: Options): Promise<FilesystemStorageClient> {
     await fse.ensureDir(dir)
+
+    const { triggerCleanupIfByteSizeExceeds } = options ?? {}
+    if (triggerCleanupIfByteSizeExceeds) {
+      cleanDirectory(dir, 0.5, triggerCleanupIfByteSizeExceeds)
+    }
     return new FilesystemStorageClient(dir)
   }
 
