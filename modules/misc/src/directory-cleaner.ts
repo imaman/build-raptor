@@ -1,26 +1,28 @@
 import * as fs from 'fs'
 import * as path from 'path'
 
-export function cleanDirectory(directoryPath: string, deletionFactor: number, sizeTrigger: number) {
+import { sortBy } from './arrays'
+
+export function cleanDirectory(directoryPath: string, deletionFactor: number, sizeTriggerInBytes: number | 'ALWAYS') {
   const size = calculateDirectorySize(directoryPath)
-  if (size < sizeTrigger) {
+  if (sizeTriggerInBytes !== 'ALWAYS' && size <= sizeTriggerInBytes) {
     return { size, deleted: 0 }
   }
 
-  const deleted = deleteFiles(directoryPath, deletionFactor)
-  return { size, deleted }
+  const filesDeleted = deleteFiles(directoryPath, deletionFactor)
+  return { size, deleted: filesDeleted.length }
 }
 
 function calculateDirectorySize(directoryPath: string) {
-  let totalSize = 0
+  let ret = 0
 
   for (const f of fs.readdirSync(directoryPath)) {
-    const subFilePath = path.join(directoryPath, f)
-    const stats = fs.statSync(subFilePath)
-    totalSize += stats.size
+    const resolved = path.join(directoryPath, f)
+    const stats = fs.statSync(resolved)
+    ret += stats.size
   }
 
-  return totalSize
+  return ret
 }
 
 function deleteFiles(directoryPath: string, deletionFactor: number) {
@@ -33,18 +35,16 @@ function deleteFiles(directoryPath: string, deletionFactor: number) {
   }
 
   // Sort files based on last access time in ascending order
-  files.sort((fileA, fileB) => {
-    const statA = fs.statSync(path.join(directoryPath, fileA))
-    const statB = fs.statSync(path.join(directoryPath, fileB))
-    return statA.atime.getTime() - statB.atime.getTime()
-  })
+  const mapped = files.map(f => ({ f, atime: fs.statSync(path.join(directoryPath, f)).atime.toISOString() }))
+  const sorted = sortBy(mapped, at => at.atime)
 
   // Calculate the number of files to delete (half of the total)
-  const numFilesToDelete = Math.min(files.length, Math.floor(files.length * deletionFactor))
+  const numFilesToDelete = Math.min(sorted.length, Math.floor(sorted.length * deletionFactor))
 
   // Delete the oldest files
-  for (let i = 0; i < numFilesToDelete; i++) {
-    const filePath = path.join(directoryPath, files[i])
+  const ret = sorted.slice(0, numFilesToDelete).map(at => at.f)
+  for (const f of ret) {
+    const filePath = path.join(directoryPath, f)
 
     try {
       fs.unlinkSync(filePath)
@@ -53,5 +53,5 @@ function deleteFiles(directoryPath: string, deletionFactor: number) {
     }
   }
 
-  return numFilesToDelete
+  return ret
 }

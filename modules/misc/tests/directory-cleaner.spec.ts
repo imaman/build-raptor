@@ -6,17 +6,74 @@ import { chaoticDeterministicString } from '../src'
 import { cleanDirectory } from '../src/directory-cleaner'
 
 describe('directory-cleaner', () => {
-  test('g', () => {
-    const h = new Helper()
-    h.createDirectoryWithFiles(3, 100)
+  describe('ALWAYS', () => {
+    test('deletes the least recently accessed files', () => {
+      const h = new Helper()
+      h.createDirectoryWithFiles(3)
 
-    h.setAccessTime('file_0', '2022-01-01')
-    h.setAccessTime('file_1', '2022-03-01')
-    h.setAccessTime('file_2', '2022-08-01')
+      h.setAccessTime('file_0', '2022-01-01')
+      h.setAccessTime('file_1', '2022-03-01')
+      h.setAccessTime('file_2', '2022-08-01')
 
-    expect(cleanDirectory(h.directoryPath, 0.5, 200)).toEqual({ size: 300, deleted: 1 })
+      expect(cleanDirectory(h.directoryPath, 0.5, 'ALWAYS')).toEqual({ size: 0, deleted: 1 })
 
-    expect(h.listFiles()).toEqual(['file_1', 'file_2'])
+      expect(h.listFiles()).toEqual(['file_1', 'file_2'])
+    })
+    test('when deletion factor is 0.8 deletes 80% of the files', () => {
+      const h = new Helper()
+      h.createDirectoryWithFiles(10)
+
+      h.setAccessTime('file_0', '2010-01-01')
+      h.setAccessTime('file_1', '2011-01-01')
+      h.setAccessTime('file_2', '2012-01-01')
+      h.setAccessTime('file_3', '2013-01-01')
+      h.setAccessTime('file_4', '2014-01-01')
+      h.setAccessTime('file_5', '2015-01-01')
+      h.setAccessTime('file_6', '2016-01-01')
+      h.setAccessTime('file_7', '2017-01-01')
+      h.setAccessTime('file_8', '2018-01-01')
+      h.setAccessTime('file_9', '2019-01-01')
+
+      expect(cleanDirectory(h.directoryPath, 0.8, 'ALWAYS')).toEqual({ size: 0, deleted: 8 })
+
+      expect(h.listFiles()).toEqual(['file_8', 'file_9'])
+    })
+    test('deletes just the least recently accessed files', () => {
+      const h = new Helper()
+      h.createDirectoryWithFiles(4)
+
+      h.setAccessTime('file_0', '2010-01-01')
+      h.setAccessTime('file_1', '2001-01-01')
+      h.setAccessTime('file_2', '2002-01-01')
+      h.setAccessTime('file_3', '2013-01-01')
+
+      expect(cleanDirectory(h.directoryPath, 0.5, 'ALWAYS')).toEqual({ size: 0, deleted: 2 })
+      expect(h.listFiles()).toEqual(['file_0', 'file_3'])
+
+      // Run again with factor of 0.5, so delete half of the remaining half.
+      expect(cleanDirectory(h.directoryPath, 0.5, 'ALWAYS')).toEqual({ size: 0, deleted: 1 })
+      expect(h.listFiles()).toEqual(['file_3'])
+    })
+    describe('sizeTriggerInBytes', () => {
+      test('dooes not do any deletion if total size is below this value', () => {
+        const h = new Helper()
+
+        // 4 files * 100 bytes = 400 bytes
+        h.createDirectoryWithFiles(4, 100)
+
+        expect(cleanDirectory(h.directoryPath, 0.75, 500)).toEqual({ size: 400, deleted: 0 })
+        expect(h.listFiles()).toHaveLength(4)
+
+        expect(cleanDirectory(h.directoryPath, 0.75, 401)).toEqual({ size: 400, deleted: 0 })
+        expect(h.listFiles()).toHaveLength(4)
+
+        expect(cleanDirectory(h.directoryPath, 0.75, 400)).toEqual({ size: 400, deleted: 0 })
+        expect(h.listFiles()).toHaveLength(4)
+
+        expect(cleanDirectory(h.directoryPath, 0.75, 399)).toEqual({ size: 400, deleted: 3 })
+        expect(h.listFiles()).toHaveLength(1)
+      })
+    })
   })
   describe('helper', () => {
     test('creates files', () => {
@@ -49,7 +106,7 @@ class Helper {
     return fs.readdirSync(filePath).sort()
   }
 
-  createDirectoryWithFiles(numFiles: number, sizeOfEachFileInBytes: number) {
+  createDirectoryWithFiles(numFiles: number, sizeOfEachFileInBytes = 0) {
     // Generate and populate files with random access times
     for (let i = 0; i < numFiles; i++) {
       // Create an empty file
@@ -65,7 +122,11 @@ class Helper {
 
   setAccessTime(fileName: string, aTimeInMillis: string, mTimeInMillis = FIXED_MTIME) {
     // Set the access time of the file
-    fs.utimesSync(this.pathToFile(fileName), Date.parse(aTimeInMillis), Date.parse(mTimeInMillis))
+    fs.utimesSync(
+      this.pathToFile(fileName),
+      Math.floor(Date.parse(aTimeInMillis) / 1000),
+      Math.floor(Date.parse(mTimeInMillis) / 1000),
+    )
   }
 }
 
