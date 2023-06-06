@@ -49,9 +49,12 @@ export function getEnv(envVarName: EnvVarName) {
   return process.env[envVarName] // eslint-disable-line no-process-env
 }
 
+const GB = 1024 * 1024 * 1024
 async function createStorageClient() {
   return {
-    storageClient: await FilesystemStorageClient.create(path.join(os.homedir(), '.build-raptor/storage')),
+    storageClient: await FilesystemStorageClient.create(path.join(os.homedir(), '.build-raptor/storage'), {
+      triggerCleanupIfByteSizeExceeds: 2 * GB,
+    }),
     lambdaClient: undefined,
   }
 }
