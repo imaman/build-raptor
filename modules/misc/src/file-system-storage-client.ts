@@ -2,7 +2,7 @@ import * as fse from 'fs-extra'
 import * as path from 'path'
 
 import { shouldNeverHappen } from '.'
-import { cleanDirectory } from './directory-cleaner'
+import { cleanDirectory } from './clean-directory'
 import { computeHash, computeObjectHash } from './misc'
 import { Key, StorageClient } from './storage-client'
 
