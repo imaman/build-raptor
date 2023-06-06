@@ -38,15 +38,12 @@ function deleteFiles(directoryPath: string, deletionFactor: number) {
     throw new Error(`failed when reading ${directoryPath}: ${e}`)
   }
 
-  // Sort files based on last access time in ascending order
   const mapped = files.map(f => ({ f, atime: fs.statSync(path.join(directoryPath, f)).atime.toISOString() }))
   const sorted = sortBy(mapped, at => at.atime)
 
-  // Calculate the number of files to delete (half of the total)
   const numFilesToDelete = Math.min(sorted.length, Math.floor(sorted.length * deletionFactor))
-
-  // Delete the oldest files
   const ret = sorted.slice(0, numFilesToDelete).map(at => at.f)
+
   for (const f of ret) {
     const filePath = path.join(directoryPath, f)
 
