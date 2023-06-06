@@ -3,9 +3,13 @@ import * as path from 'path'
 
 import { sortBy } from './arrays'
 
-export function cleanDirectory(directoryPath: string, deletionFactor: number, sizeTriggerInBytes: number | 'ALWAYS') {
+export function cleanDirectory(
+  directoryPath: string,
+  deletionFactor: number,
+  triggerCleanupIfByteSizeExceeds: number | 'ALWAYS',
+) {
   const size = calculateDirectorySize(directoryPath)
-  if (sizeTriggerInBytes !== 'ALWAYS' && size <= sizeTriggerInBytes) {
+  if (triggerCleanupIfByteSizeExceeds !== 'ALWAYS' && size <= triggerCleanupIfByteSizeExceeds) {
     return { size, deleted: 0 }
   }
 

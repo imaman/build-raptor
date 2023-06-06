@@ -54,6 +54,18 @@ describe('directory-cleaner', () => {
       expect(cleanDirectory(h.directoryPath, 0.5, 'ALWAYS')).toEqual({ size: 0, deleted: 1 })
       expect(h.listFiles()).toEqual(['file_3'])
     })
+    test('does not mix modification time (which should be just ignroed) with access time', () => {
+      const h = new Helper()
+      h.createDirectoryWithFiles(4)
+
+      h.setAccessTime('file_0', '2004-01-01', '2015-01-01')
+      h.setAccessTime('file_1', '2003-01-01', '2016-01-01')
+      h.setAccessTime('file_2', '2004-01-01', '2015-01-01')
+      h.setAccessTime('file_3', '2003-01-01', '2016-01-01')
+
+      expect(cleanDirectory(h.directoryPath, 0.5, 'ALWAYS')).toEqual({ size: 0, deleted: 2 })
+      expect(h.listFiles()).toEqual(['file_0', 'file_2'])
+    })
     describe('sizeTriggerInBytes', () => {
       test('dooes not do any deletion if total size is below this value', () => {
         const h = new Helper()
