@@ -1,5 +1,4 @@
 import { BuildFailedError } from 'build-failed-error'
-import { StepByStep } from 'build-raptor-api'
 import { BuildRunId } from 'build-run-id'
 import * as fse from 'fs-extra'
 import ignore from 'ignore'
@@ -36,8 +35,7 @@ export class Engine {
   private readonly options: Required<EngineOptions>
   private readonly fingerprintLedger
   private readonly purger
-  private readonly stepByStepFile: string
-  private readonly steps = new StepByStepTransmitter()
+  private readonly steps
   /**
    *
    * @param logger
@@ -69,7 +67,8 @@ export class Engine {
       commitHash: options.commitHash,
     }
     const ledgerFile = path.join(this.options.buildRaptorDir, 'fingerprint-ledger.json')
-    this.stepByStepFile = path.join(this.options.buildRaptorDir, 'step-by-step.json')
+    const stepByStepFile = path.join(this.options.buildRaptorDir, 'step-by-step.json')
+    this.steps = new StepByStepTransmitter(stepByStepFile, this.logger)
     this.eventPublisher.on('taskStore', e => {
       const step =
         e.opcode === 'RECORDED'
@@ -136,17 +135,11 @@ export class Engine {
       }
 
       const tracker = await this.execute(plan, model)
-      await Promise.all([this.fingerprintLedger.close(), this.writeStepByStep()])
+      await Promise.all([this.fingerprintLedger.close(), this.steps.close()])
       return tracker
     } finally {
       await this.repoProtocol.close()
     }
-  }
-
-  private async writeStepByStep() {
-    const parsed = StepByStep.parse(this.steps)
-    await fse.writeJSON(this.stepByStepFile, parsed)
-    this.logger.info(`step by step written to ${this.stepByStepFile}`)
   }
 
   async execute(plan: ExecutionPlan, model: Model) {
