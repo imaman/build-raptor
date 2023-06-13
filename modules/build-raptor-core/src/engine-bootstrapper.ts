@@ -11,6 +11,7 @@ import * as uuid from 'uuid'
 import { Breakdown } from './breakdown'
 import { Engine, EngineOptions } from './engine'
 import { EngineEventScheme } from './engine-event-scheme'
+import { StepByStepTransmitter } from './step-by-step-transmitter'
 import { Task } from './task'
 import { TaskStore } from './task-store'
 import { TaskSummary } from './task-summary'
@@ -31,6 +32,14 @@ export class EngineBootstrapper {
     this.logger.info(`rootDir is ${this.rootDir}`)
     this.logger.info(`The console outputs (stdout/stderr) of tasks are stored under ${taskOutputDir}`)
     const taskStore = new TaskStore(this.storageClient, this.logger, this.eventPublisher)
+
+    const stepByStepFile = path.join(options.buildRaptorDir, 'step-by-step.json')
+    const transmitter = await StepByStepTransmitter.create(
+      stepByStepFile,
+      options.stepByStepProcessorModuleName,
+      this.logger,
+    )
+    options.buildRaptorDir
     const engine = new Engine(
       this.logger,
       this.rootDir,
@@ -40,6 +49,7 @@ export class EngineBootstrapper {
       command,
       units,
       this.eventPublisher,
+      transmitter,
       options,
     )
     return engine
