@@ -322,6 +322,11 @@ function withBuildOptions<T>(y: yargs.Argv<T>) {
       type: 'boolean',
       default: false,
     })
+    .options('step-by-step-processor', {
+      describe: 'path to a program to receive events describing the running build over a pipe',
+      type: 'string',
+      demandOption: false,
+    })
 }
 
 yargs(hideBin(process.argv))
