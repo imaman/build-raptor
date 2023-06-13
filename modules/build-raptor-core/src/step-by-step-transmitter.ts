@@ -43,7 +43,7 @@ export class StepByStepTransmitter {
       }
     }
 
-    this.logger.info(`processor=${util.inspect(processor)}`)
+    logger.info(`processor=${util.inspect(processor)}`)
     return new StepByStepTransmitter(stepByStepFile, processor, logger)
   }
 }
