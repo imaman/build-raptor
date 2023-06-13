@@ -29,13 +29,13 @@ export interface EngineOptions {
   fingerprintLedger?: boolean
   testCaching?: boolean
   commitHash: string | undefined
+  stepByStepProcessorModuleName?: string
 }
 
 export class Engine {
-  private readonly options: Required<EngineOptions>
+  private readonly options: Required<Omit<EngineOptions, 'stepByStepProcessorModuleName'>>
   private readonly fingerprintLedger
   private readonly purger
-  private readonly steps
   /**
    *
    * @param logger
@@ -56,6 +56,7 @@ export class Engine {
     private readonly command: string,
     private readonly units: string[],
     private readonly eventPublisher: TypedPublisher<EngineEventScheme>,
+    private readonly steps: StepByStepTransmitter,
     options: EngineOptions,
   ) {
     this.options = {
@@ -67,8 +68,6 @@ export class Engine {
       commitHash: options.commitHash,
     }
     const ledgerFile = path.join(this.options.buildRaptorDir, 'fingerprint-ledger.json')
-    const stepByStepFile = path.join(this.options.buildRaptorDir, 'step-by-step.json')
-    this.steps = new StepByStepTransmitter(stepByStepFile, this.logger)
     this.eventPublisher.on('taskStore', e => {
       const step =
         e.opcode === 'RECORDED'
