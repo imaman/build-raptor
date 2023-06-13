@@ -324,7 +324,7 @@ function withBuildOptions<T>(y: yargs.Argv<T>) {
       default: false,
     })
     .options('step-by-step-processor', {
-      describe: 'path to a program to receive events describing the running build over a pipe',
+      describe: `name of a node module implementing build-raptor's step-by-step-processor protocol`,
       type: 'string',
       demandOption: false,
     })
