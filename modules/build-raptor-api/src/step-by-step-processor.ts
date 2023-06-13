@@ -2,7 +2,7 @@ import { Step } from './build-raptor-api'
 
 /**
  * Class to be extended by a module which is intended to receive steps in realtime (i.e, while the build is
- * running). The module should have a default export of a const declaration of this type. A typical module will
+ * running). The module should have have a `const export` of `processor: StepByStepProcessor`. A typical module will
  * therefore look as follows:
  *
  *
@@ -10,7 +10,7 @@ import { Step } from './build-raptor-api'
  * ... // class body goes here
  * }
  *
- * export default const processor: StepByStepProcessor = new MyProcessor()
+ * export const processor: StepByStepProcessor = new MyProcessor()
  */
 export abstract class StepByStepProcessor {
   abstract process(step: Step): Promise<void>
