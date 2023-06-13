@@ -193,6 +193,7 @@ async function run(options: Options) {
   })
 
   const runner = await bootstrapper.makeRunner(options.command, options.units, {
+    stepByStepProcessorModuleName: options.stepByStepProcessor,
     concurrency: Int(options.concurrency),
     buildRaptorDir,
     testCaching: options.testCaching ?? true,
