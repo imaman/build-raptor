@@ -3,12 +3,13 @@ import * as fs from 'fs'
 import { Logger } from 'logger'
 
 export class StepByStepTransmitter {
-  private readonly steps: StepByStep = []
+  private readonly steps: Step[] = []
 
   constructor(private readonly stepByStepFile: string, private readonly logger: Logger) {}
 
   push(step: Step) {
-    this.steps.push(step)
+    const parsed = Step.parse(step)
+    this.steps.push(parsed)
   }
 
   async close() {
