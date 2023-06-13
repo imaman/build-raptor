@@ -39,6 +39,7 @@ interface Options {
   testReporting?: TestReporting
   testCaching?: boolean
   callRegisterAsset?: boolean
+  stepByStepProcessor?: string
 }
 
 type TestEndedEvent = RepoProtocolEvent['testEnded']
@@ -344,6 +345,7 @@ yargs(hideBin(process.argv))
         buildOutputLocation: argv['build-output-locations'],
         concurrency: argv['concurrency'],
         compact: argv.compact,
+        stepByStepProcessor: argv['step-by-step-processor'],
       })
     },
   )
@@ -377,6 +379,7 @@ yargs(hideBin(process.argv))
           tr === 'just-failing' || tr === 'tree' || tr === 'tree-just-failing' || tr === undefined
             ? tr
             : failMe(`unsupported value: ${tr}`),
+        stepByStepProcessor: argv['step-by-step-processor'],
       })
     },
   )
@@ -394,6 +397,7 @@ yargs(hideBin(process.argv))
         buildOutputLocation: argv['build-output-locations'],
         concurrency: argv['concurrency'],
         compact: argv.compact,
+        stepByStepProcessor: argv['step-by-step-processor'],
       })
     },
   )
@@ -418,6 +422,7 @@ yargs(hideBin(process.argv))
         concurrency: argv['concurrency'],
         compact: argv.compact,
         callRegisterAsset: argv['register-assets'],
+        stepByStepProcessor: argv['step-by-step-processor'],
       })
     },
   )

@@ -17,6 +17,7 @@ import { Fingerprinter } from './fingerprinter'
 import { Model } from './model'
 import { Planner } from './planner'
 import { Purger } from './purger'
+import { StepByStepTransmitter } from './step-by-step-transmitter'
 import { Task } from './task'
 import { TaskExecutor } from './task-executor'
 import { TaskStore } from './task-store'
@@ -35,9 +36,8 @@ export class Engine {
   private readonly options: Required<EngineOptions>
   private readonly fingerprintLedger
   private readonly purger
-  private readonly steps: StepByStep = []
   private readonly stepByStepFile: string
-
+  private readonly steps = new StepByStepTransmitter()
   /**
    *
    * @param logger
