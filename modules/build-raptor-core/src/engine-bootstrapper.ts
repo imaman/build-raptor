@@ -34,11 +34,7 @@ export class EngineBootstrapper {
     const taskStore = new TaskStore(this.storageClient, this.logger, this.eventPublisher)
 
     const stepByStepFile = path.join(options.buildRaptorDir, 'step-by-step.json')
-    const transmitter = await StepByStepTransmitter.create(
-      stepByStepFile,
-      options.stepByStepProcessorModuleName,
-      this.logger,
-    )
+    const transmitter = await StepByStepTransmitter.create(stepByStepFile, options.stepByStepPipe, this.logger)
     options.buildRaptorDir
     const engine = new Engine(
       this.logger,

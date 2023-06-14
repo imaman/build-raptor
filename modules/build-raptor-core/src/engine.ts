@@ -29,7 +29,7 @@ export interface EngineOptions {
   fingerprintLedger?: boolean
   testCaching?: boolean
   commitHash: string | undefined
-  stepByStepProcessorModuleName?: string
+  stepByStepPipe?: string
 }
 
 export class Engine {
