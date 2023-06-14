@@ -19,7 +19,7 @@ export class StepByStepTransmitter {
     this.steps.push(parsed)
 
     if (this.stepByStepProcessor) {
-      this.promises.push(this.stepByStepProcessor.process(parsed))
+      this.promises.push(Promise.resolve(this.stepByStepProcessor(parsed)))
     }
   }
 
@@ -30,12 +30,27 @@ export class StepByStepTransmitter {
     this.logger.info(`step by step written to ${this.stepByStepFile}`)
   }
 
-  static async create(stepByStepFile: string, stepByStepProcessorModuleName: string | undefined, logger: Logger) {
+  static async create(
+    stepByStepFile: string,
+    stepByStepProcessorModuleName: string | undefined,
+    logger: Logger,
+    lookFor = 'processor',
+  ) {
     let processor
     if (stepByStepProcessorModuleName) {
       // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-      const imported = loadDynamically(stepByStepProcessorModuleName) as { processor?: unknown }
-      processor = imported.processor
+      const imported = loadDynamically(stepByStepProcessorModuleName) as object
+      const temp = Object.entries(imported)
+        .flatMap(([k, v]) => (k === lookFor ? [v] : []))
+        .find(Boolean)
+      if (!temp) {
+        throw new Error(
+          `could not find ${lookFor} in module ${stepByStepProcessorModuleName} which exports ${util.inspect(
+            imported,
+          )}`,
+        )
+      }
+      processor = temp as StepByStepProcessor // eslint-disable-line @typescript-eslint/consistent-type-assertions
     }
 
     logger.info(`processor=${util.inspect(processor)}`)
