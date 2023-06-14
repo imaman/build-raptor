@@ -1,4 +1,5 @@
 import { Step, StepByStep, StepByStepProcessor } from 'build-raptor-api'
+import { loadDynamically } from 'build-raptor-dynamic-loader'
 import * as fs from 'fs'
 import { Logger } from 'logger'
 import * as util from 'util'
@@ -32,7 +33,8 @@ export class StepByStepTransmitter {
   static async create(stepByStepFile: string, stepByStepProcessorModuleName: string | undefined, logger: Logger) {
     let processor
     if (stepByStepProcessorModuleName) {
-      const imported = await import(stepByStepProcessorModuleName)
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+      const imported = loadDynamically(stepByStepProcessorModuleName) as { processor?: unknown }
       processor = imported.processor
       if (!(processor instanceof StepByStepProcessor)) {
         throw new Error(
