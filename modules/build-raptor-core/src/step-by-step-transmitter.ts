@@ -36,13 +36,6 @@ export class StepByStepTransmitter {
       // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       const imported = loadDynamically(stepByStepProcessorModuleName) as { processor?: unknown }
       processor = imported.processor
-      if (!(processor instanceof StepByStepProcessor)) {
-        throw new Error(
-          `object loaded from ${stepByStepProcessorModuleName} is not an instance of ${
-            StepByStepProcessor.name
-          }: ${util.inspect(processor)}`,
-        )
-      }
     }
 
     logger.info(`processor=${util.inspect(processor)}`)
