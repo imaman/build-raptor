@@ -29,11 +29,11 @@ export interface EngineOptions {
   fingerprintLedger?: boolean
   testCaching?: boolean
   commitHash: string | undefined
-  stepByStepPipe?: string
+  stepByStepProcessorModuleName?: string
 }
 
 export class Engine {
-  private readonly options: Required<Omit<EngineOptions, 'stepByStepPipe'>>
+  private readonly options: Required<Omit<EngineOptions, 'stepByStepProcessorModuleName'>>
   private readonly fingerprintLedger
   private readonly purger
   /**

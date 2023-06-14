@@ -193,7 +193,7 @@ async function run(options: Options) {
   })
 
   const runner = await bootstrapper.makeRunner(options.command, options.units, {
-    stepByStepPipe: options.stepByStepProcessor,
+    stepByStepProcessorModuleName: options.stepByStepProcessor,
     concurrency: Int(options.concurrency),
     buildRaptorDir,
     testCaching: options.testCaching ?? true,
@@ -324,8 +324,8 @@ function withBuildOptions<T>(y: yargs.Argv<T>) {
       type: 'boolean',
       default: false,
     })
-    .options('step-by-step-pipe', {
-      describe: `path to a file (typically, a named pipe) where step-by-steps events will be written to in realtime`,
+    .options('step-by-step-processor', {
+      describe: `name of a node module implementing build-raptor's step-by-step-processor protocol`,
       type: 'string',
       demandOption: false,
     })
@@ -346,7 +346,7 @@ yargs(hideBin(process.argv))
         buildOutputLocation: argv['build-output-locations'],
         concurrency: argv['concurrency'],
         compact: argv.compact,
-        stepByStepProcessor: argv['step-by-step-pipe'],
+        stepByStepProcessor: argv['step-by-step-processor'],
       })
     },
   )
@@ -380,7 +380,7 @@ yargs(hideBin(process.argv))
           tr === 'just-failing' || tr === 'tree' || tr === 'tree-just-failing' || tr === undefined
             ? tr
             : failMe(`unsupported value: ${tr}`),
-        stepByStepProcessor: argv['step-by-step-pipe'],
+        stepByStepProcessor: argv['step-by-step-processor'],
       })
     },
   )
@@ -398,7 +398,7 @@ yargs(hideBin(process.argv))
         buildOutputLocation: argv['build-output-locations'],
         concurrency: argv['concurrency'],
         compact: argv.compact,
-        stepByStepProcessor: argv['step-by-step-pipe'],
+        stepByStepProcessor: argv['step-by-step-processor'],
       })
     },
   )
@@ -423,7 +423,7 @@ yargs(hideBin(process.argv))
         concurrency: argv['concurrency'],
         compact: argv.compact,
         callRegisterAsset: argv['register-assets'],
-        stepByStepProcessor: argv['step-by-step-pipe'],
+        stepByStepProcessor: argv['step-by-step-processor'],
       })
     },
   )
