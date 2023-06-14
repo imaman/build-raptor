@@ -2635,6 +2635,11 @@ buffer@4.9.2:
     ieee754 "^1.1.4"
     isarray "^1.0.0"
 
+build-raptor-dynamic-loader@^0.62.0:
+  version "0.62.0"
+  resolved "https://registry.yarnpkg.com/build-raptor-dynamic-loader/-/build-raptor-dynamic-loader-0.62.0.tgz#4db3107b1462d29e705219c240bd340783858aaa"
+  integrity sha512-ociXTrta84AFwWGiVBw/rEir7H3KiwXQ4xkw1wGnEMCBG4Ad8lvp4rDYBpXOxs5FzOe77nSOJqal2HYQ7rmZOQ==
+
 call-bind@^1.0.0, call-bind@^1.0.2:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/call-bind/-/call-bind-1.0.2.tgz#b1d4e89e688119c3c9a903ad30abb2f6a919be3c"
