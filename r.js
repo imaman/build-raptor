@@ -6,23 +6,30 @@ const pipeName = '/tmp/my-pipe'
 const readableStream = fs.createReadStream(pipeName)
 
 let acc = ''
-// Listen for 'data' event to read data from the named pipe
-readableStream.on('data', data => {
-  console.log(`data=${data.toString('utf-8')}`)
-  acc += data.toString('utf-8')
-  console.log(`acc=${JSON.stringify(acc)}`)
+
+function dump() {
   while (true) {
     const eol = acc.indexOf('\n')
     if (eol < 0) {
       break
     }
     const part = acc.slice(0, eol)
-    console.log(`Received: ${JSON.parse(part).message}`)
     acc = acc.slice(eol + 1)
+    console.log(`Received: ${JSON.parse(part).message} (left=${acc.length})`)
   }
+}
+
+// Listen for 'data' event to read data from the named pipe
+readableStream.on('data', data => {
+  acc += data.toString('utf-8')
+  dump()
 })
 
 // Listen for 'end' event to know when reading is complete
 readableStream.on('end', () => {
   console.log('Finished reading from the named pipe.')
+  dump()
+  setTimeout(() => {
+    console.log(`very last timeout fired!`)
+  }, 2000)
 })

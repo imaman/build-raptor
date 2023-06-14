@@ -9,12 +9,20 @@ let n = 0
 const id = setInterval(() => {
   ++n
   console.log(`sending ${n}`)
-  writableStream.write(JSON.stringify({ message: `you are number ${n}` }) + '\n')
+  writableStream.write(JSON.stringify({ message: `you are number ${String(n).padStart(2, '0')}` }) + '\n')
   if (n >= 20) {
     clearInterval(id)
     console.log(`shut down commencing...`)
     writableStream.end(() => {
       console.log(`... completed`)
+      console.log(`*************************************************************`)
+      console.log(`*************************************************************`)
+      console.log(`*************************************************************`)
+      console.log(`*************************************************************`)
+      console.log(`*************************************************************`)
+      console.log(`*************************************************************`)
+      console.log(`*************************************************************`)
+      console.log(`*************************************************************`)
     })
   }
 })
