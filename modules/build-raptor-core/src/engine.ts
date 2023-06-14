@@ -33,7 +33,7 @@ export interface EngineOptions {
 }
 
 export class Engine {
-  private readonly options: Required<Omit<EngineOptions, 'stepByStepProcessorModuleName'>>
+  private readonly options: Required<Omit<EngineOptions, 'stepByStepPipe'>>
   private readonly fingerprintLedger
   private readonly purger
   /**

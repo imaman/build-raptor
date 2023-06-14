@@ -1,49 +1,38 @@
-import { Step, StepByStep, StepByStepProcessor } from 'build-raptor-api'
+import { Step, StepByStep } from 'build-raptor-api'
 import * as fs from 'fs'
 import { Logger } from 'logger'
-import * as util from 'util'
 
 export class StepByStepTransmitter {
   private readonly steps: Step[] = []
-  private readonly promises: Promise<void>[] = []
+  private readonly stream: fs.WriteStream | undefined
 
   private constructor(
     private readonly stepByStepFile: string,
-    private readonly stepByStepProcessor: StepByStepProcessor | undefined,
+    stepByStepPipe: string | undefined,
     private readonly logger: Logger,
-  ) {}
+  ) {
+    if (stepByStepPipe) {
+      this.stream = fs.createWriteStream(stepByStepPipe)
+    }
+  }
 
   push(step: Step) {
     const parsed = Step.parse(step)
     this.steps.push(parsed)
-
-    if (this.stepByStepProcessor) {
-      this.promises.push(this.stepByStepProcessor.process(parsed))
+    if (this.stream) {
+      this.stream.write(JSON.stringify(parsed))
+      this.stream.write('\n')
     }
   }
 
   async close() {
-    await Promise.all(this.promises)
+    await new Promise<void>(res => this.stream?.end(() => res()))
     const parsed = StepByStep.parse(this.steps)
     fs.writeFileSync(this.stepByStepFile, JSON.stringify(parsed))
     this.logger.info(`step by step written to ${this.stepByStepFile}`)
   }
 
-  static async create(stepByStepFile: string, stepByStepProcessorModuleName: string | undefined, logger: Logger) {
-    let processor
-    if (stepByStepProcessorModuleName) {
-      const imported = await import(stepByStepProcessorModuleName)
-      processor = imported.processor
-      if (!(processor instanceof StepByStepProcessor)) {
-        throw new Error(
-          `object loaded from ${stepByStepProcessorModuleName} is not an instance of ${
-            StepByStepProcessor.name
-          }: ${util.inspect(processor)}`,
-        )
-      }
-    }
-
-    logger.info(`processor=${util.inspect(processor)}`)
-    return new StepByStepTransmitter(stepByStepFile, processor, logger)
+  static async create(stepByStepFile: string, stepByStepPipe: string | undefined, logger: Logger) {
+    return new StepByStepTransmitter(stepByStepFile, stepByStepPipe, logger)
   }
 }
