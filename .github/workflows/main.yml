@@ -67,10 +67,10 @@ jobs:
           npm --version
           echo running yarn --version
           yarn --version
-          echo GITHUB_JOB is {{ env.GITHUB_JOB }}
-          echo GITHUB_RUN_ID is {{ env.GITHUB_RUN_ID	 }}
-          echo GITHUB_RUN_NUMBER is {{ env.GITHUB_RUN_NUMBER	 }}
-          echo GITHUB_SERVER_URL is {{ env.GITHUB_SERVER_URL	 }}
+          echo GITHUB_JOB is ${{ env.GITHUB_JOB }}
+          echo GITHUB_RUN_ID is ${{ env.GITHUB_RUN_ID	 }}
+          echo GITHUB_RUN_NUMBER is ${{ env.GITHUB_RUN_NUMBER	 }}
+          echo GITHUB_SERVER_URL is ${{ env.GITHUB_SERVER_URL	 }}
       - name: install
         run: yarn --frozen-lockfile
       - name: build build-raptor-action
