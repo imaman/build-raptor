@@ -134,6 +134,7 @@ export class Engine {
       }
 
       const tracker = await this.execute(plan, model)
+      this.steps.push({ step: 'BUILD_RUN_ENDED' })
       await Promise.all([this.fingerprintLedger.close(), this.steps.close()])
       return tracker
     } finally {

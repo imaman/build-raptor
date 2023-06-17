@@ -7,6 +7,9 @@ export const Step = z.discriminatedUnion('step', [
     commitHash: z.string().optional(),
   }),
   z.object({
+    step: z.literal('BUILD_RUN_ENDED'),
+  }),
+  z.object({
     step: z.literal('TASK_STORE_PUT'),
     fingerprint: z.string().optional(),
     taskName: z.string(),
