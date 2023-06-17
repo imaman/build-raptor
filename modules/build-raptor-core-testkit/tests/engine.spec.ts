@@ -204,7 +204,8 @@ describe('engine', () => {
     expect(stepByStep[0]).toMatchObject({ step: 'BUILD_RUN_STARTED', buildRunId })
     expect(stepByStep[1]).toMatchObject({ step: 'TASK_STORE_PUT', taskName: 'b:build', files: ['dist'] })
     expect(stepByStep[2]).toMatchObject({ step: 'TASK_STORE_PUT', taskName: 'a:build', files: ['dist'] })
-    expect(stepByStep).toHaveLength(3)
+    expect(stepByStep[3]).toMatchObject({ step: 'BUILD_RUN_ENDED' })
+    expect(stepByStep).toHaveLength(4)
   })
   test('the step-by-step is overwritten at the next build run', async () => {
     const driver = new Driver(testName())
