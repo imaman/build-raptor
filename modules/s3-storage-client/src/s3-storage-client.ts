@@ -52,10 +52,13 @@ export class S3StorageClient implements StorageClient {
   }
 
   private async putObjectImpl(resolved: string, hint: unknown, content: string | Buffer): Promise<string> {
-    this.logger.info(`putting object (key hint=${hint}), object length: ${content.toString().length} chars`)
+    const t0 = Date.now()
+    const len = content.toString().length
+    this.logger.info(`putting object (key hint=${hint}), object length: ${len} chars`)
 
     try {
       await this.s3.putObject({ Bucket: this.bucketName, Key: resolved, Body: content })
+      this.logger.info(`s3.putObject() took ${Date.now() - t0}ms (object length: ${len} chars)`)
     } catch (e) {
       this.logger.error(`putObject error at ${resolved} (key hint=${hint}), `, e)
       throw new Error(`Failed to put an object into the persistent storage`)
@@ -67,6 +70,7 @@ export class S3StorageClient implements StorageClient {
   getObject(key: Key, type: 'string'): Promise<string>
   getObject(key: Key, type: 'buffer'): Promise<Buffer>
   async getObject(key: Key, type?: 'string' | 'buffer'): Promise<string | Buffer> {
+    const t0 = Date.now()
     let resp
     try {
       resp = await this.s3.getObject({ Bucket: this.bucketName, Key: this.keyToPath(key) })
@@ -86,7 +90,11 @@ export class S3StorageClient implements StorageClient {
     }
 
     const buffer = await streamTobuffer(body)
-    this.logger.info(`returning an object from key ${JSON.stringify(key)}, buffer length: ${buffer.length} bytes`)
+    this.logger.info(
+      `returning an object from key ${JSON.stringify(key)}, buffer length: ${buffer.length} bytes. time=${
+        Date.now() - t0
+      }ms`,
+    )
     if (type === 'buffer') {
       return buffer
     }
