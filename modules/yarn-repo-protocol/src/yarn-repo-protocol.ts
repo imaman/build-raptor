@@ -29,6 +29,7 @@ import ShebangPlugin from 'webpack-shebang-plugin'
 import { z } from 'zod'
 
 import { RerunList } from './rerun-list'
+import { YarnRepoProtocolConfig } from './yarn-repo-protocol-config'
 
 const yarnWorkspacesInfoSchema = z.record(
   z.object({
@@ -48,6 +49,7 @@ interface State {
   readonly packageByUnitId: Map<UnitId, PackageJson>
   readonly versionByPackageId: Map<string, string>
   readonly publisher: TypedPublisher<RepoProtocolEvent>
+  readonly config: YarnRepoProtocolConfig
 }
 
 async function getTempFile() {
@@ -104,9 +106,14 @@ export class YarnRepoProtocol implements RepoProtocol {
     return runScripts.includes(runScript)
   }
 
-  async initialize(rootDir: string, publisher: TypedPublisher<RepoProtocolEvent>): Promise<void> {
+  async initialize(
+    rootDir: string,
+    publisher: TypedPublisher<RepoProtocolEvent>,
+    repoProtocolConfig?: unknown,
+  ): Promise<void> {
     const yarnInfo = await this.getYarnInfo(rootDir)
 
+    const config = YarnRepoProtocolConfig.parse(repoProtocolConfig)
     const units = computeUnits(yarnInfo)
     const packageByUnitId = await readPackages(rootDir, units)
     const versionByPackageId = computeVersions([...packageByUnitId.values()])
@@ -142,7 +149,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     await this.generateTsConfigFiles(rootDir, units, graph)
 
     await this.generateSymlinksToPackages(rootDir, units)
-    this.state_ = { yarnInfo, graph, rootDir, units, packageByUnitId, versionByPackageId, publisher }
+    this.state_ = { yarnInfo, graph, rootDir, units, packageByUnitId, versionByPackageId, publisher, config }
   }
 
   private async generateSymlinksToPackages(rootDir: string, units: UnitMetadata[]) {
