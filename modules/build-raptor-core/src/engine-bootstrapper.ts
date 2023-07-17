@@ -43,7 +43,6 @@ export class EngineBootstrapper {
       options.stepByStepProcessorModuleName,
       this.logger,
     )
-    options.buildRaptorDir
     const engine = new Engine(
       this.logger,
       this.rootDir,
