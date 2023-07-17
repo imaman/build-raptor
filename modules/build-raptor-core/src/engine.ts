@@ -122,7 +122,7 @@ export class Engine {
   async run(buildRunId: BuildRunId) {
     this.steps.push({ step: 'BUILD_RUN_STARTED', buildRunId, commitHash: this.options.commitHash })
     await this.fingerprintLedger.updateRun(buildRunId)
-    await this.repoProtocol.initialize(this.rootDir, this.eventPublisher)
+    await this.repoProtocol.initialize(this.rootDir, this.eventPublisher, this.options.repoConfig.repoProtocol)
     try {
       const model = await this.loadModel(buildRunId)
 
