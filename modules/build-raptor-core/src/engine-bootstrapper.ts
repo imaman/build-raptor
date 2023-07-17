@@ -1,5 +1,6 @@
 import { BuildFailedError } from 'build-failed-error'
 import { BuildRunId } from 'build-run-id'
+import * as fs from 'fs'
 import { createDefaultLogger, Logger } from 'logger'
 import { errorLike, StorageClient, Subscribable, TypedPublisher } from 'misc'
 import * as path from 'path'
@@ -11,6 +12,7 @@ import * as uuid from 'uuid'
 import { Breakdown } from './breakdown'
 import { Engine, EngineOptions } from './engine'
 import { EngineEventScheme } from './engine-event-scheme'
+import { RepoConfig } from './repo-config'
 import { StepByStepTransmitter } from './step-by-step-transmitter'
 import { Task } from './task'
 import { TaskStore } from './task-store'
@@ -31,6 +33,8 @@ export class EngineBootstrapper {
     const taskOutputDir = (await Tmp.dir()).path
     this.logger.info(`rootDir is ${this.rootDir}`)
     this.logger.info(`The console outputs (stdout/stderr) of tasks are stored under ${taskOutputDir}`)
+    options.repoConfig = this.readRepoConfigFile()
+
     const taskStore = new TaskStore(this.storageClient, this.logger, this.eventPublisher)
 
     const stepByStepFile = path.join(options.buildRaptorDir, 'step-by-step.json')
@@ -53,6 +57,17 @@ export class EngineBootstrapper {
       options,
     )
     return engine
+  }
+
+  private readRepoConfigFile() {
+    const p = path.join(this.rootDir, '.build-raptor.json')
+    try {
+      const content = fs.readFileSync(p, 'utf-8')
+      const parsed = JSON.parse(content)
+      return RepoConfig.parse(parsed)
+    } catch (e) {
+      throw new Error(`could not read repo config file ${p} - ${e}`)
+    }
   }
 
   get subscribable(): Subscribable<EngineEventScheme> {

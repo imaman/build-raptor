@@ -16,6 +16,7 @@ import { Fingerprinter } from './fingerprinter'
 import { Model } from './model'
 import { Planner } from './planner'
 import { Purger } from './purger'
+import { RepoConfig } from './repo-config'
 import { StepByStepTransmitter } from './step-by-step-transmitter'
 import { Task } from './task'
 import { TaskExecutor } from './task-executor'
@@ -30,6 +31,7 @@ export interface EngineOptions {
   testCaching?: boolean
   commitHash: string | undefined
   stepByStepProcessorModuleName?: string
+  repoConfig?: RepoConfig
 }
 
 export class Engine {
