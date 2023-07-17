@@ -50,6 +50,7 @@ interface State {
   readonly versionByPackageId: Map<string, string>
   readonly publisher: TypedPublisher<RepoProtocolEvent>
   readonly config: YarnRepoProtocolConfig
+  uberBuildPromise?: Promise<ExitStatus>
 }
 
 async function getTempFile() {
@@ -320,6 +321,9 @@ export class YarnRepoProtocol implements RepoProtocol {
   ): Promise<ExitStatus> {
     const taskKind = TaskName().undo(taskName).taskKind
     if (taskKind === 'build') {
+      if (this.state.config.uberBuildStepEnabled) {
+        return await this.runUberBuild(outputFile)
+      }
       const ret = await this.run('npm', ['run', this.scriptNames.build], dir, outputFile)
       return await switchOn(ret, {
         CRASH: () => Promise.resolve(ret),
@@ -388,6 +392,16 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
 
     throw new Error(`Unknown task ${taskKind} (at ${dir})`)
+  }
+
+  private async runUberBuild(outputFile: string): Promise<ExitStatus> {
+    if (this.state.uberBuildPromise) {
+      return await this.state.uberBuildPromise
+    }
+
+    const dirs = this.state.units.map(at => at.pathInRepo)
+    this.state.uberBuildPromise = this.run('tsc', ['--build', ...dirs], this.state.rootDir, outputFile)
+    return await this.state.uberBuildPromise
   }
 
   private async runJest(dir: string, taskName: TaskName, outputFile: string): Promise<ExitStatus> {
