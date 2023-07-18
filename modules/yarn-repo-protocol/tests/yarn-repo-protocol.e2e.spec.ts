@@ -51,7 +51,7 @@ describe('yarn-repo-protocol.e2e', () => {
     const run = await fork.run('FAIL', { taskKind: 'test' })
     expect(await run.outputOf('test', 'a')).toEqual(expect.arrayContaining([`    Received: \"fooboo\"`]))
   })
-  test.skip('deletes dist/src/*.{js,d.ts} files that do not have a matching *.ts file under src/', async () => {
+  test('deletes dist/src/*.{js,d.ts} files that do not have a matching *.ts file under src/', async () => {
     const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
@@ -92,7 +92,7 @@ describe('yarn-repo-protocol.e2e', () => {
     await fork.run('OK', { taskKind: 'build' })
     expect(await Promise.all([ajs.exists(), adts.exists()])).toEqual([true, true])
   })
-  test.skip('deletes dist/tests/*.{js,d.ts} files that do not have a matching *.ts file under tests/', async () => {
+  test('deletes dist/tests/*.{js,d.ts} files that do not have a matching *.ts file under tests/', async () => {
     const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
