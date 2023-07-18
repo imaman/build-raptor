@@ -10,9 +10,11 @@ import { OutputLocation } from './task-info'
 export class Purger {
   constructor(private readonly logger: Logger) {}
 
-  private async removeLocations(dir: string, outputLocations: readonly string[]) {
+  private async removeLocations(dir: string, outputLocations: readonly string[], isRestore: boolean) {
     await promises(outputLocations).forEach(20, async o => {
-      await fse.rm(path.join(dir, o), { recursive: true, force: true })
+      const p = path.join(dir, o)
+      this.logger.info(`purging ${p} ${isRestore ? 'RESTORE' : ''}`)
+      await fse.rm(p, { recursive: true, force: true })
     })
   }
 
@@ -20,7 +22,7 @@ export class Purger {
     const unit = model.getUnit(task.unitId)
     const dir = path.join(model.rootDir, unit.pathInRepo)
     const locationsToPurge = task.outputLocations.filter(at => shouldPurge(at, isRestore)).map(at => at.pathInUnit)
-    await this.removeLocations(dir, locationsToPurge)
+    await this.removeLocations(dir, locationsToPurge, isRestore)
     this.logger.info(`purged output locations of task ${task.name}: ${locationsToPurge}`)
     return task.outputLocations
   }
