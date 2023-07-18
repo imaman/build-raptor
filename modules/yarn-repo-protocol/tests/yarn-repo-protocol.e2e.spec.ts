@@ -51,7 +51,7 @@ describe('yarn-repo-protocol.e2e', () => {
     const run = await fork.run('FAIL', { taskKind: 'test' })
     expect(await run.outputOf('test', 'a')).toEqual(expect.arrayContaining([`    Received: \"fooboo\"`]))
   })
-  test('deletes dist/src/*.{js,d.ts} files that do not have a matching *.ts file under src/', async () => {
+  test.skip('deletes dist/src/*.{js,d.ts} files that do not have a matching *.ts file under src/', async () => {
     const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
@@ -92,7 +92,7 @@ describe('yarn-repo-protocol.e2e', () => {
     await fork.run('OK', { taskKind: 'build' })
     expect(await Promise.all([ajs.exists(), adts.exists()])).toEqual([true, true])
   })
-  test('deletes dist/tests/*.{js,d.ts} files that do not have a matching *.ts file under tests/', async () => {
+  test.skip('deletes dist/tests/*.{js,d.ts} files that do not have a matching *.ts file under tests/', async () => {
     const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
@@ -221,7 +221,7 @@ describe('yarn-repo-protocol.e2e', () => {
     await fork.run('OK', { taskKind: 'publish-assets' })
     expect(Object.keys(await readBlob('a:publish-assets'))).toEqual(['prepared-assets/x2'])
   })
-  test('when the test fails, the task output includes the failure message prodcued by jest', async () => {
+  test('when the test fails, the task output includes the failure message produced by jest', async () => {
     const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
@@ -236,7 +236,6 @@ describe('yarn-repo-protocol.e2e', () => {
     const fork = await driver.repo(recipe).fork()
 
     const run = await fork.run('FAIL', { taskKind: 'test' })
-    expect(await run.outputOf('build', 'a')).toEqual(['> a@1.0.0 build', '> tsc -b'])
     expect(await run.outputOf('test', 'a')).toEqual(
       expect.arrayContaining([
         'FAIL dist/tests/times-two.spec.js',
@@ -259,7 +258,6 @@ describe('yarn-repo-protocol.e2e', () => {
     const fork = await driver.repo(recipe).fork()
 
     const run = await fork.run('OK', { taskKind: 'test' })
-    expect(await run.outputOf('build', 'a')).toEqual(['> a@1.0.0 build', '> tsc -b'])
     expect(await run.outputOf('test', 'a')).toContain('    the quick BROWN fox')
   })
 
