@@ -161,7 +161,7 @@ export class Engine {
       this.fingerprintLedger,
       this.purger,
       this.options.testCaching,
-      this.options.config.tasksToFineLog ?? [],
+      this.options.config.verbosePrintTasks ?? [],
     )
 
     const batchScheduler = (batch: TaskName[]) => {
