@@ -61,6 +61,9 @@ export class EngineBootstrapper {
   private readRepoConfigFile() {
     const p = path.join(this.rootDir, '.build-raptor.json')
     try {
+      if (!fs.existsSync(p)) {
+        return undefined
+      }
       const content = fs.readFileSync(p, 'utf-8')
       const parsed = JSON.parse(content)
       return RepoConfig.parse(parsed)

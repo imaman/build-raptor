@@ -159,6 +159,7 @@ export class Engine {
       this.fingerprintLedger,
       this.purger,
       this.options.testCaching,
+      this.options.repoConfig.tasksToFineLog ?? [],
     )
 
     const batchScheduler = (batch: TaskName[]) => {
