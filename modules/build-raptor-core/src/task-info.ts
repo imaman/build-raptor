@@ -1,6 +1,6 @@
 import { TaskName } from 'task-name'
 
-export type OutputLocation = { pathInUnit: string; purge: 'ALWAYS' | 'BEFORE_RESTORE' }
+export type OutputLocation = { pathInUnit: string; purge: 'ALWAYS' | 'NEVER' }
 
 export type TaskInfo = {
   readonly taskName: TaskName

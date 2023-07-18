@@ -6,7 +6,7 @@ import { validateTaskInfos } from '../src/validate-task-infos'
 function locs(arr: string[]): OutputLocation[] {
   return arr.map(at => ({
     pathInUnit: at,
-    purge: 'BEFORE_RESTORE',
+    purge: 'NEVER',
   }))
 }
 

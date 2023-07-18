@@ -25,7 +25,7 @@ export interface RepoProtocolEvent {
 }
 
 export interface RepoProtocol {
-  initialize(rootDir: string, publisher: TypedPublisher<RepoProtocolEvent>): Promise<void>
+  initialize(rootDir: string, publisher: TypedPublisher<RepoProtocolEvent>, repoProtocolConfig?: unknown): Promise<void>
   execute(
     u: UnitMetadata,
     dir: string,

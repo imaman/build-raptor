@@ -190,7 +190,7 @@ class Fork {
     const bootstrapper = await EngineBootstrapper.create(this.dir, this.storageClient, rp, Date.now(), this.testName)
 
     await fse.mkdirp(this.buildRaptorDir)
-    const runner = await bootstrapper.makeRunner(command, units, {
+    const runner = await bootstrapper.makeRunner(command, units, undefined, {
       checkGitIgnore: options.checkGitIgnore ?? false,
       concurrency: concurrencyLevel,
       buildRaptorDir: this.buildRaptorDir,

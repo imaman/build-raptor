@@ -40,6 +40,7 @@ interface Options {
   testCaching?: boolean
   callRegisterAsset?: boolean
   stepByStepProcessor?: string
+  buildRaptorConfigFile?: string
 }
 
 type TestEndedEvent = RepoProtocolEvent['testEnded']
@@ -104,15 +105,7 @@ async function run(options: Options) {
   logger.info(`(typeof lambdaClient)=${typeof lambdaClient}`)
   const assetPublisher = new DefaultAssetPublisher(storageClient, logger)
   const repoProtocol = new YarnRepoProtocol(logger, false, assetPublisher)
-  const bootstrapper = await EngineBootstrapper.create(
-    rootDir,
-    storageClient,
-    repoProtocol,
-    t0,
-    '',
-    logger,
-    buildRaptorDir,
-  )
+  const bootstrapper = await EngineBootstrapper.create(rootDir, storageClient, repoProtocol, t0, '', logger)
 
   const testOutput = new Map<TaskName, TestEndedEvent[]>()
   bootstrapper.subscribable.on('testEnded', arg => {
@@ -192,7 +185,7 @@ async function run(options: Options) {
     }
   })
 
-  const runner = await bootstrapper.makeRunner(options.command, options.units, {
+  const runner = await bootstrapper.makeRunner(options.command, options.units, options.buildRaptorConfigFile, {
     stepByStepProcessorModuleName: options.stepByStepProcessor,
     concurrency: Int(options.concurrency),
     buildRaptorDir,
@@ -329,6 +322,11 @@ function withBuildOptions<T>(y: yargs.Argv<T>) {
       type: 'string',
       demandOption: false,
     })
+    .options('config-file', {
+      describe: `repo-relative path to a build-raptor config file (defaults to '.build-raptor.json')`,
+      type: 'string',
+      demandOption: false,
+    })
 }
 
 yargs(hideBin(process.argv))
@@ -347,6 +345,7 @@ yargs(hideBin(process.argv))
         concurrency: argv['concurrency'],
         compact: argv.compact,
         stepByStepProcessor: argv['step-by-step-processor'],
+        buildRaptorConfigFile: argv['config-file'],
       })
     },
   )
@@ -381,6 +380,7 @@ yargs(hideBin(process.argv))
             ? tr
             : failMe(`unsupported value: ${tr}`),
         stepByStepProcessor: argv['step-by-step-processor'],
+        buildRaptorConfigFile: argv['config-file'],
       })
     },
   )
@@ -399,6 +399,7 @@ yargs(hideBin(process.argv))
         concurrency: argv['concurrency'],
         compact: argv.compact,
         stepByStepProcessor: argv['step-by-step-processor'],
+        buildRaptorConfigFile: argv['config-file'],
       })
     },
   )
@@ -424,6 +425,7 @@ yargs(hideBin(process.argv))
         compact: argv.compact,
         callRegisterAsset: argv['register-assets'],
         stepByStepProcessor: argv['step-by-step-processor'],
+        buildRaptorConfigFile: argv['config-file'],
       })
     },
   )

@@ -69,16 +69,12 @@ jobs:
           yarn --version
       - name: install
         run: yarn --frozen-lockfile
-      - name: build build-raptor-action
+      - name: build and test
         run: |
-          yarn workspace build-raptor-action build
-          yarn workspace build-raptor-action ncc
-      - name: build the repo
-        uses: ./modules/build-raptor-action
-        with:
-          concurrency: 8
+          yarn test
         env:
           s3_cache: ${{ secrets.S3_CACHE }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Archive artifacts
         uses: actions/upload-artifact@v2
         if: always()

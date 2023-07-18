@@ -29,6 +29,7 @@ import ShebangPlugin from 'webpack-shebang-plugin'
 import { z } from 'zod'
 
 import { RerunList } from './rerun-list'
+import { YarnRepoProtocolConfig } from './yarn-repo-protocol-config'
 
 const yarnWorkspacesInfoSchema = z.record(
   z.object({
@@ -48,6 +49,8 @@ interface State {
   readonly packageByUnitId: Map<UnitId, PackageJson>
   readonly versionByPackageId: Map<string, string>
   readonly publisher: TypedPublisher<RepoProtocolEvent>
+  readonly config: YarnRepoProtocolConfig
+  uberBuildPromise?: Promise<ExitStatus>
 }
 
 async function getTempFile() {
@@ -103,10 +106,26 @@ export class YarnRepoProtocol implements RepoProtocol {
     const runScripts = Object.keys(pj.scripts ?? {})
     return runScripts.includes(runScript)
   }
+  private parseConfig(untypedConfig: unknown | undefined) {
+    const parseResult = YarnRepoProtocolConfig.safeParse(untypedConfig ?? {}, { path: ['repoProtocol'] })
+    if (parseResult.success) {
+      return parseResult.data
+    }
 
-  async initialize(rootDir: string, publisher: TypedPublisher<RepoProtocolEvent>): Promise<void> {
+    const formattedIssues = parseResult.error.issues.map(at =>
+      at.path.length ? `Attribute: "${at.path.join('.')}": ${at.message}` : at.message,
+    )
+    throw new BuildFailedError(`bad config\n${formattedIssues.join('\n')}`)
+  }
+
+  async initialize(
+    rootDir: string,
+    publisher: TypedPublisher<RepoProtocolEvent>,
+    repoProtocolConfig?: unknown,
+  ): Promise<void> {
     const yarnInfo = await this.getYarnInfo(rootDir)
 
+    const config = this.parseConfig(repoProtocolConfig)
     const units = computeUnits(yarnInfo)
     const packageByUnitId = await readPackages(rootDir, units)
     const versionByPackageId = computeVersions([...packageByUnitId.values()])
@@ -142,7 +161,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     await this.generateTsConfigFiles(rootDir, units, graph)
 
     await this.generateSymlinksToPackages(rootDir, units)
-    this.state_ = { yarnInfo, graph, rootDir, units, packageByUnitId, versionByPackageId, publisher }
+    this.state_ = { yarnInfo, graph, rootDir, units, packageByUnitId, versionByPackageId, publisher, config }
   }
 
   private async generateSymlinksToPackages(rootDir: string, units: UnitMetadata[]) {
@@ -313,10 +332,15 @@ export class YarnRepoProtocol implements RepoProtocol {
   ): Promise<ExitStatus> {
     const taskKind = TaskName().undo(taskName).taskKind
     if (taskKind === 'build') {
-      const ret = await this.run('npm', ['run', this.scriptNames.build], dir, outputFile)
-      return await switchOn(ret, {
-        CRASH: () => Promise.resolve(ret),
-        FAIL: () => Promise.resolve(ret),
+      let buildStatus: ExitStatus
+      if (this.state.config.uberBuild ?? true) {
+        buildStatus = await this.runUberBuild(outputFile)
+      } else {
+        buildStatus = await this.run('npm', ['run', this.scriptNames.build], dir, outputFile)
+      }
+      return await switchOn(buildStatus, {
+        CRASH: () => Promise.resolve(buildStatus),
+        FAIL: () => Promise.resolve(buildStatus),
         OK: () => this.checkBuiltFiles(dir).then(() => 'OK'),
       })
     }
@@ -381,6 +405,22 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
 
     throw new Error(`Unknown task ${taskKind} (at ${dir})`)
+  }
+
+  private async runUberBuild(outputFile: string): Promise<ExitStatus> {
+    if (this.state.uberBuildPromise) {
+      const ret = await this.state.uberBuildPromise
+      await fse.writeFile(outputFile, 'uberbuild')
+      return ret
+    }
+
+    this.logger.info(`logging uberbuild in ${outputFile}`)
+    const dirs = this.state.units.map(at => at.pathInRepo)
+    const p = this.run('tsc', ['--build', ...dirs], this.state.rootDir, outputFile)
+    this.state.uberBuildPromise = p
+
+    const ret = await this.state.uberBuildPromise
+    return ret
   }
 
   private async runJest(dir: string, taskName: TaskName, outputFile: string): Promise<ExitStatus> {

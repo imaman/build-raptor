@@ -1,5 +1,6 @@
 import { BuildFailedError } from 'build-failed-error'
 import { BuildRunId } from 'build-run-id'
+import * as fs from 'fs'
 import { createDefaultLogger, Logger } from 'logger'
 import { errorLike, StorageClient, Subscribable, TypedPublisher } from 'misc'
 import * as path from 'path'
@@ -9,6 +10,7 @@ import * as util from 'util'
 import * as uuid from 'uuid'
 
 import { Breakdown } from './breakdown'
+import { BuildRaptorConfig } from './build-raptor-config'
 import { Engine, EngineOptions } from './engine'
 import { EngineEventScheme } from './engine-event-scheme'
 import { StepByStepTransmitter } from './step-by-step-transmitter'
@@ -24,13 +26,14 @@ export class EngineBootstrapper {
     readonly logger: Logger,
     readonly storageClient: StorageClient,
     readonly repoProtocol: RepoProtocol,
-    private readonly buildRaptorDir?: string,
   ) {}
 
-  private async makeEngine(command: string, units: string[], options: EngineOptions) {
+  private async makeEngine(command: string, units: string[], configFile: string | undefined, options: EngineOptions) {
     const taskOutputDir = (await Tmp.dir()).path
     this.logger.info(`rootDir is ${this.rootDir}`)
     this.logger.info(`The console outputs (stdout/stderr) of tasks are stored under ${taskOutputDir}`)
+    options.config = this.readConfigFile(configFile ?? '.build-raptor.json')
+
     const taskStore = new TaskStore(this.storageClient, this.logger, this.eventPublisher)
 
     const stepByStepFile = path.join(options.buildRaptorDir, 'step-by-step.json')
@@ -39,7 +42,6 @@ export class EngineBootstrapper {
       options.stepByStepProcessorModuleName,
       this.logger,
     )
-    options.buildRaptorDir
     const engine = new Engine(
       this.logger,
       this.rootDir,
@@ -53,6 +55,23 @@ export class EngineBootstrapper {
       options,
     )
     return engine
+  }
+
+  private readConfigFile(pathToConfigFile: string) {
+    if (path.isAbsolute(pathToConfigFile)) {
+      throw new Error(`pathToConfigFile should be relative (got: ${pathToConfigFile})`)
+    }
+    const p = path.join(this.rootDir, pathToConfigFile)
+    try {
+      if (!fs.existsSync(p)) {
+        return undefined
+      }
+      const content = fs.readFileSync(p, 'utf-8')
+      const parsed = JSON.parse(content)
+      return BuildRaptorConfig.parse(parsed)
+    } catch (e) {
+      throw new Error(`could not read repo config file ${p} - ${e}`)
+    }
   }
 
   get subscribable(): Subscribable<EngineEventScheme> {
@@ -72,11 +91,11 @@ export class EngineBootstrapper {
    * @param concurrency maximum number of tasks to run in parallel.
    * @returns
    */
-  async makeRunner(command: string, units: string[], options: EngineOptions) {
+  async makeRunner(command: string, units: string[], configFile: string | undefined, options: EngineOptions) {
     try {
       const t1 = Date.now()
       this.logger.info(`Creating a runner for ${JSON.stringify({ command, units, options })}`)
-      const engine = await this.makeEngine(command, units, options)
+      const engine = await this.makeEngine(command, units, configFile, options)
       const buildRunId = this.newBuildRunId()
       return async () => {
         try {
@@ -117,7 +136,6 @@ export class EngineBootstrapper {
     t0: number,
     name?: string,
     logger?: Logger,
-    buildRaptorDir?: string,
   ) {
     if (!logger) {
       const logFile = path.join(rootDir, 'build-raptor.log')
@@ -127,7 +145,7 @@ export class EngineBootstrapper {
       logger.print(`logging${formatted}to ${logFile}`)
     }
 
-    return new EngineBootstrapper(rootDir, t0, logger, storageClient, repoProtocol, buildRaptorDir)
+    return new EngineBootstrapper(rootDir, t0, logger, storageClient, repoProtocol)
   }
 }
 

@@ -30,6 +30,7 @@ export class TaskExecutor {
     private readonly fingerprintLedger: FingerprintLedger,
     private readonly purger: Purger,
     private readonly testCaching: boolean,
+    private readonly tasksToDiagnose: string[],
   ) {}
 
   async executeTask(taskName: TaskName, deps: TaskName[]) {
@@ -46,6 +47,7 @@ export class TaskExecutor {
       this.fingerprintLedger,
       this.purger,
       this.testCaching,
+      this.tasksToDiagnose.includes(taskName),
     )
     await ste.executeTask()
   }
@@ -68,17 +70,17 @@ class SingleTaskExecutor {
     private readonly fingerprintLedger: FingerprintLedger,
     private readonly purger: Purger,
     private readonly testCaching: boolean,
-    private readonly taskToDiagnose?: string,
+    private readonly shouldDiagnose?: boolean,
   ) {
     this.isTest = TaskName().undo(this.taskName).taskKind === 'test'
   }
 
   private diagnose(message: string) {
-    if (this.taskName !== this.taskToDiagnose) {
+    if (!this.shouldDiagnose) {
       return
     }
 
-    this.logger.print(message)
+    this.logger.print(`[${this.taskName}] ${message}`)
   }
 
   private get task() {
@@ -89,12 +91,13 @@ class SingleTaskExecutor {
     return this.model.getUnit(this.task.unitId)
   }
 
-  private async postProcess(status: ExitStatus, outputFile: string) {
+  private async postProcess(status: ExitStatus, outputFile: string, time: number) {
     // TODO(imaman): cover (await is dropped)
     await this.eventPublisher.publish('executionEnded', {
       taskName: this.taskName,
       status,
       outputFile,
+      time,
       pathInRepo: this.unit.pathInRepo,
     })
   }
@@ -232,7 +235,7 @@ class SingleTaskExecutor {
 
     if (phase === 'POSSIBLY_RESTORE_OUTPUTS') {
       const earlierVerdict = await this.getVerdict()
-      this.diagnose(`earlierVerdict=${earlierVerdict}`)
+      this.diagnose(`earlierVerdict is ${earlierVerdict}`)
       if (earlierVerdict === 'UNKNOWN' || (this.isTest && !this.testCaching)) {
         await this.purgeOutputs(false)
         return 'RUN_IT'
@@ -285,6 +288,7 @@ class SingleTaskExecutor {
   private async runIt() {
     const t = this.task
 
+    const t0 = Date.now()
     await this.eventPublisher.publish('executionStarted', t.name)
     const outputFile = path.join(this.taskOutputDir, `${t.id}.stdout`)
     const status = await this.repoProtocol.execute(
@@ -295,7 +299,7 @@ class SingleTaskExecutor {
       this.model.buildRunId,
       t.getFingerprint(),
     )
-    await this.postProcess(status, outputFile)
+    await this.postProcess(status, outputFile, Date.now() - t0)
     if (status === 'CRASH') {
       throw new Error(`Task ${JSON.stringify(t.name)} crashed`)
     }
@@ -319,13 +323,15 @@ class SingleTaskExecutor {
   }
 
   private async purgeOutputs(isRestore: boolean) {
+    if (isRestore) {
+      return
+    }
     this.diagnose(`purging outputs`)
-    const shadowedTasks = this.tracker.getTasksShadowedBy(this.taskName)
-    const taskNames = [this.taskName, ...shadowedTasks]
+    const taskNames = [this.taskName]
     const tasks = taskNames.map(tn => this.tracker.getTask(tn))
 
     await promises(tasks).forEach(20, async task => {
-      await this.purger.purgeOutputsOfTask(task, this.model, isRestore)
+      await this.purger.purgeOutputsOfTask(task, this.model)
     })
   }
 }

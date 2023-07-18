@@ -15,7 +15,8 @@
     "pack-all": "yarn build && node modules/build-raptor/dist/src/build-raptor-cli pack",
     "publish-assets": "yarn build && node modules/build-raptor/dist/src/build-raptor-cli publish-assets",
     "self-build": "yarn build && time -f 'wall time: %Es' node modules/build-raptor/dist/src/build-raptor-cli test --compact --test-reporting=tree",
-    "sort-package-json": "sort-package-json 'modules/*/package.json' 'package.json'"
+    "sort-package-json": "sort-package-json 'modules/*/package.json' 'package.json'",
+    "test": "yarn self-build"
   },
   "husky": {
     "hooks": {
