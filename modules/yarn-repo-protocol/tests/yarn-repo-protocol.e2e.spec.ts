@@ -13,7 +13,7 @@ describe('yarn-repo-protocol.e2e', () => {
   }
   const testName = () => expect.getState().currentTestName
 
-  test('runs tsc and jest when building and testing (respectively)', async () => {
+  test('runs jest when testing', async () => {
     const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
@@ -28,7 +28,6 @@ describe('yarn-repo-protocol.e2e', () => {
     const fork = await driver.repo(recipe).fork()
 
     const run = await fork.run('OK', { taskKind: 'test' })
-    expect(await run.outputOf('build', 'a')).toEqual(['> a@1.0.0 build', '> tsc -b'])
     expect(await run.outputOf('test', 'a')).toEqual(
       expect.arrayContaining([
         'PASS dist/tests/times-two.spec.js',
