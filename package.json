@@ -10,7 +10,7 @@
     "modules/*"
   ],
   "scripts": {
-    "build": "yarn workspace build-raptor build",
+    "build": "yarn workspace build-raptor-jest-reporter build && yarn workspace build-raptor build",
     "lint": "eslint --max-warnings 0 'modules/*/**/*.{ts,js,json,d.ts}'",
     "pack-all": "yarn build && node modules/build-raptor/dist/src/build-raptor-cli pack",
     "publish-assets": "yarn build && node modules/build-raptor/dist/src/build-raptor-cli publish-assets",
