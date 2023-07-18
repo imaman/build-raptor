@@ -5,7 +5,6 @@ export type OutputLocation = { pathInUnit: string; purge: 'ALWAYS' | 'NEVER' }
 export type TaskInfo = {
   readonly taskName: TaskName
   readonly deps: readonly TaskName[]
-  readonly shadowing: boolean
   readonly outputLocations: readonly OutputLocation[]
   readonly inputsInUnit: readonly string[]
   readonly inputsInDeps: readonly string[]

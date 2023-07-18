@@ -94,8 +94,4 @@ export class Task {
   setOutputFile(outputFile: string) {
     this.executionRecord.outputFile = outputFile
   }
-
-  get shadowingEnabled(): boolean {
-    return this.taskInfo.shadowing
-  }
 }

@@ -3,11 +3,10 @@ import { BuildRunId } from 'build-run-id'
 import * as fse from 'fs-extra'
 import ignore from 'ignore'
 import { Logger } from 'logger'
-import { DirectoryScanner, groupBy, Int, recordToPairs, shouldNeverHappen, TypedPublisher } from 'misc'
+import { DirectoryScanner, Int, shouldNeverHappen, TypedPublisher } from 'misc'
 import * as path from 'path'
 import { RepoProtocol } from 'repo-protocol'
 import { TaskName } from 'task-name'
-import * as util from 'util'
 
 import { BuildRaptorConfig } from './build-raptor-config'
 import { EngineEventScheme } from './engine-event-scheme'
@@ -18,7 +17,6 @@ import { Model } from './model'
 import { Planner } from './planner'
 import { Purger } from './purger'
 import { StepByStepTransmitter } from './step-by-step-transmitter'
-import { Task } from './task'
 import { TaskExecutor } from './task-executor'
 import { TaskStore } from './task-store'
 import { TaskTracker } from './task-tracker'
@@ -162,53 +160,6 @@ export class Engine {
       this.options.config.verbosePrintTasks ?? [],
     )
 
-    const batchScheduler = (batch: TaskName[]) => {
-      const tasks = batch.map(taskName => taskTracker.getTask(taskName))
-      const filtered = tasks.filter(t => t.shadowingEnabled)
-
-      if (!filtered.length) {
-        this.logger.info(`No batch scheduling for ${JSON.stringify(batch)}`)
-        return undefined
-      }
-
-      const grouping = groupBy(filtered, t => t.kind)
-      const shadowedBy = new Map<TaskName, TaskName>()
-      for (const [_, ts] of recordToPairs(grouping)) {
-        for (const t of ts) {
-          if (shadowedBy.has(t.name)) {
-            continue
-          }
-
-          const isSameKind = (tn: TaskName, task: Task) => TaskName().undo(tn).taskKind === task.kind
-          const isShadowing = (tn: TaskName) => {
-            if (!isSameKind(tn, t)) {
-              return false
-            }
-            const dependents = plan.taskGraph.backNeighborsOf(tn)
-            return dependents.filter(at => isSameKind(at, t)).length === 0
-          }
-
-          const shadowingTasks = plan.taskGraph
-            .traverseFrom(t.name, { direction: 'backwards' })
-            .filter(tn => isShadowing(tn))
-
-          const chosen = shadowingTasks.find(Boolean) ?? t.name
-          shadowedBy.set(t.name, chosen)
-        }
-      }
-
-      for (const [shadowed, shadowing] of shadowedBy) {
-        taskTracker.registerShadowing(shadowed, shadowing)
-        plan.errorPropagationGraph.edge(shadowed, shadowing)
-      }
-
-      this.logger.info(`shadowing of batch ${JSON.stringify(batch)} is: ${util.inspect(shadowedBy)}`)
-      // We return undefined because we do not use the batch-scheduling functionality. we go all the information
-      // we needed from the batch and stored it in taskTracker. This information will be used to affect the actual
-      // execution of the tasks.
-      return undefined
-    }
-
     const workFunction = async (tn: TaskName) => {
       try {
         const deps = plan.taskGraph.neighborsOf(tn)
@@ -221,7 +172,7 @@ export class Engine {
       }
     }
 
-    await plan.taskGraph.execute(this.options.concurrency, workFunction, batchScheduler)
+    await plan.taskGraph.execute(this.options.concurrency, workFunction)
     return taskTracker
   }
 

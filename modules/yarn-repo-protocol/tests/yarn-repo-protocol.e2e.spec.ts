@@ -9,7 +9,7 @@ describe('yarn-repo-protocol.e2e', () => {
   const logger = createNopLogger()
 
   function newYarnRepoProtocol() {
-    return new YarnRepoProtocol(logger, false, new NopAssetPublisher())
+    return new YarnRepoProtocol(logger, new NopAssetPublisher())
   }
   const testName = () => expect.getState().currentTestName
 

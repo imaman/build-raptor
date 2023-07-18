@@ -74,7 +74,6 @@ export class YarnRepoProtocol implements RepoProtocol {
 
   constructor(
     private readonly logger: Logger,
-    private readonly shadowing: boolean = false,
     // TODO(imaman): deprecate it.
     private readonly assetPublisher: Publisher,
   ) {
@@ -664,7 +663,6 @@ export class YarnRepoProtocol implements RepoProtocol {
         {
           taskKind: build,
           outputs: [this.dist()],
-          shadowing: this.shadowing,
           inputsInDeps: [this.dist('s')],
           inputsInUnit: [this.src, this.tests, 'package.json'],
         },

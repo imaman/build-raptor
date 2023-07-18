@@ -13,7 +13,7 @@ describe('yarn-repo-protocol', () => {
   const logger = createNopLogger()
   const p = new TypedPublisher<RepoProtocolEvent>()
   function newYarnRepoProtocol() {
-    return new YarnRepoProtocol(logger, false, new NopAssetPublisher())
+    return new YarnRepoProtocol(logger, new NopAssetPublisher())
   }
 
   describe('initialize()', () => {

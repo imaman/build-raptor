@@ -83,7 +83,6 @@ export class Planner {
       const ret: TaskInfo = {
         taskName,
         deps,
-        shadowing: false,
         outputLocations: [],
         inputsInDeps: [''],
         inputsInUnit: [''],
@@ -105,7 +104,6 @@ export class Planner {
     const ret: TaskInfo = {
       taskName,
       deps,
-      shadowing: definition?.shadowing ?? false,
       outputLocations,
       inputsInDeps: definition.inputsInDeps ?? [''],
       inputsInUnit: definition.inputsInUnit ?? [''],
