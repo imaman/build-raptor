@@ -596,7 +596,7 @@ describe('yarn-repo-protocol.e2e', () => {
       const run1 = await fork.run('FAIL', { taskKind: 'build' })
       expect(await run1.outputOf('build', 'c')).toEqual([
         `modules/b/src/index.ts(3,51): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.`,
-      ]) //('    Received: 321')
+      ])
 
       await fork.file('modules/c/src/index.ts').write(`export function c(n: number) { return n+3 }`)
       await fork
