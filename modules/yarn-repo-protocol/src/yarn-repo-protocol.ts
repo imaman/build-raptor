@@ -1,6 +1,7 @@
 import { BuildFailedError } from 'build-failed-error'
 import escapeStringRegexp from 'escape-string-regexp'
 import execa from 'execa'
+import * as fs from 'fs'
 import * as fse from 'fs-extra'
 import { Logger } from 'logger'
 import {
@@ -447,10 +448,11 @@ export class YarnRepoProtocol implements RepoProtocol {
       const parsed = JSON.parse(latest)
       reporterOutput = ReporterOutput.parse(parsed)
     } catch (e) {
+      const of = fs.readFileSync(outputFile, 'utf-8')
       throw new Error(
         `failed to parse ${reporterOutputFile} of ${taskName}: <${e}>. latest=<${latest}>, testsToRun=${JSON.stringify(
           testsToRun,
-        )}`,
+        )} outputFile=${of}`,
       )
     }
 
