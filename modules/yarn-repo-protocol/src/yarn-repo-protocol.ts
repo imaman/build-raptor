@@ -447,7 +447,7 @@ export class YarnRepoProtocol implements RepoProtocol {
       const parsed = JSON.parse(latest)
       reporterOutput = ReporterOutput.parse(parsed)
     } catch (e) {
-      throw new Error(`failed to parse ${reporterOutputFile} of ${taskName}: <${e}>`)
+      throw new Error(`failed to parse ${reporterOutputFile} of ${taskName}: <${e}>. latest=<${latest}>`)
     }
 
     reporterOutput.cases.forEach(at => {
