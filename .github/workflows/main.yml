@@ -69,10 +69,6 @@ jobs:
           yarn --version
       - name: install
         run: yarn --frozen-lockfile
-      - name: build build-raptor-action
-        run: |
-          yarn workspace build-raptor-action build
-          yarn workspace build-raptor-action ncc
       - name: build and test
         run: |
           yarn test
