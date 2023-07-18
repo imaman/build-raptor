@@ -570,4 +570,37 @@ describe('yarn-repo-protocol.e2e', () => {
       ])
     })
   })
+  describe('uber building', () => {
+    test('foo', async () => {
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': driver.packageJson('a', ['b']),
+        'modules/a/src/a.ts': `
+          import {b} from 'b'
+          export function a(n: number) { return b(n)*10+1 }`,
+        'modules/a/tests/a.spec.ts': `
+          import {a} from '../src/a'
+          test('a', () => { expect(a(0)).toEqual(-321) })
+        `,
+        'modules/b/package.json': driver.packageJson('b', ['c']),
+        'modules/b/src/index.ts': `
+          import {c} from 'c'
+          export function b(n: number) { return c(n)*10+2 }`,
+        'modules/b/tests/b.spec.ts': `import {b} from '../src'; test('b', () => {expect(b(0)).toEqual(32)})`,
+        'modules/c/package.json': driver.packageJson('c'),
+        'modules/c/src/index.ts': `
+          export function c(n: number) { return n+3 }`,
+        'modules/c/tests/c.spec.ts': `import {c} from '../src'; test('c', () => {expect(c(0)).toEqual(3)})`,
+      }
+
+      const fork = await driver.repo(recipe).fork()
+
+      const run1 = await fork.run('FAIL', { taskKind: 'test' })
+      expect(await run1.outputOf('test', 'a')).toContain('    Received: 321')
+      expect(run1.executionTypeOf('a', 'test')).toEqual('EXECUTED')
+      expect(run1.executionTypeOf('b', 'test')).toEqual('EXECUTED')
+      expect(run1.executionTypeOf('c', 'test')).toEqual('EXECUTED')
+    })
+  })
 })
