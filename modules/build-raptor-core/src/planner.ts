@@ -94,7 +94,7 @@ export class Planner {
 
     const outputLocations: OutputLocation[] = (definition?.outputs ?? []).map(at => {
       if (typeof at === 'string') {
-        return { pathInUnit: at, purge: 'BEFORE_RESTORE' }
+        return { pathInUnit: at, purge: 'NEVER' }
       }
 
       return {

@@ -31,6 +31,6 @@ export class Purger {
 function shouldPurge(loc: OutputLocation) {
   return switchOn(loc.purge, {
     ALWAYS: () => true,
-    BEFORE_RESTORE: () => false,
+    NEVER: () => false,
   })
 }
