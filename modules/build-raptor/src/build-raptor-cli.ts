@@ -185,13 +185,12 @@ async function run(options: Options) {
     }
   })
 
-  const runner = await bootstrapper.makeRunner(options.command, options.units, {
+  const runner = await bootstrapper.makeRunner(options.command, options.units, options.buildRaptorConfigFile, {
     stepByStepProcessorModuleName: options.stepByStepProcessor,
     concurrency: Int(options.concurrency),
     buildRaptorDir,
     testCaching: options.testCaching ?? true,
     commitHash,
-    buildRaptorConfigFile: options.buildRaptorConfigFile,
   })
   const { exitCode } = await runner()
   // eslint-disable-next-line require-atomic-updates
