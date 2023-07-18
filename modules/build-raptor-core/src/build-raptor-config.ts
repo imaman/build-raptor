@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-export const RepoConfig = z.object({
+export const BuildRaptorConfig = z.object({
   repoProtocol: z.unknown().optional(),
   /**
    * task names for which fine logging will be enabled. This allow the user to get detailed information about specific
@@ -8,4 +8,4 @@ export const RepoConfig = z.object({
    */
   tasksToFineLog: z.string().array().optional(),
 })
-export type RepoConfig = z.infer<typeof RepoConfig>
+export type RepoConfig = z.infer<typeof BuildRaptorConfig>

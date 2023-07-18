@@ -10,9 +10,9 @@ import * as util from 'util'
 import * as uuid from 'uuid'
 
 import { Breakdown } from './breakdown'
+import { BuildRaptorConfig } from './build-raptor-config'
 import { Engine, EngineOptions } from './engine'
 import { EngineEventScheme } from './engine-event-scheme'
-import { RepoConfig } from './repo-config'
 import { StepByStepTransmitter } from './step-by-step-transmitter'
 import { Task } from './task'
 import { TaskStore } from './task-store'
@@ -66,7 +66,7 @@ export class EngineBootstrapper {
       }
       const content = fs.readFileSync(p, 'utf-8')
       const parsed = JSON.parse(content)
-      return RepoConfig.parse(parsed)
+      return BuildRaptorConfig.parse(parsed)
     } catch (e) {
       throw new Error(`could not read repo config file ${p} - ${e}`)
     }
