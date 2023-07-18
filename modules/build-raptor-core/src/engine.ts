@@ -31,7 +31,7 @@ export interface EngineOptions {
   testCaching?: boolean
   commitHash: string | undefined
   stepByStepProcessorModuleName?: string
-  buildRaptorConfigFile: string
+  buildRaptorConfigFile?: string
   config?: BuildRaptorConfig
 }
 
@@ -69,6 +69,7 @@ export class Engine {
       fingerprintLedger: options.fingerprintLedger ?? false,
       testCaching: options.testCaching ?? true,
       commitHash: options.commitHash,
+      buildRaptorConfigFile: options.buildRaptorConfigFile ?? '.build-raptor.json',
       config: options.config ?? {},
     }
     const ledgerFile = path.join(this.options.buildRaptorDir, 'fingerprint-ledger.json')
