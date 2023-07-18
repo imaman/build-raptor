@@ -8,32 +8,6 @@ jest.setTimeout(30000)
 describe('planner', () => {
   const testName = () => expect.getState().currentTestName
 
-  test.skip('when a task definition changes, it will run even if its source code has not changed', async () => {
-    const t = {
-      taskKind: TaskKind('build'),
-      outputs: [],
-      shadowing: false,
-    }
-
-    const protocol = new RepoProtocolTestkit({ a: [] }, { tasks: [t] })
-    const driver = new Driver(testName(), { repoProtocol: protocol.create() })
-    const recipe = { 'a/somefile': '' }
-
-    const fork = await driver.repo(recipe).fork()
-
-    const run1 = await fork.run('OK')
-    expect(protocol.invokedAt(run1)).toEqual(['a:build'])
-
-    const run2 = await fork.run('OK')
-    expect(protocol.invokedAt(run2)).toEqual([])
-
-    // Make some change in the definition of the task
-    t.shadowing = true
-
-    protocol.changeCatalog({ tasks: [t] })
-    const run3 = await fork.run('OK')
-    expect(protocol.invokedAt(run3)).toEqual(['a:build'])
-  })
   test.todo('inputs in deps should not include the outputs of the defininig task')
   // TODO(imaman): imporve the test.
   test('when a task definition changes, the task will run', async () => {

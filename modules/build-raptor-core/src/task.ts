@@ -83,7 +83,7 @@ export class Task {
 
   assignVerdict(
     verdict: 'OK' | 'FAIL' | 'CRASH',
-    executionType: 'EXECUTED' | 'CACHED' | 'CANNOT_START' | 'SHADOWED',
+    executionType: 'EXECUTED' | 'CACHED' | 'CANNOT_START',
     rootCause?: TaskName,
   ) {
     this.executionRecord.verdict = verdict
