@@ -33,7 +33,7 @@ export class EngineBootstrapper {
     const taskOutputDir = (await Tmp.dir()).path
     this.logger.info(`rootDir is ${this.rootDir}`)
     this.logger.info(`The console outputs (stdout/stderr) of tasks are stored under ${taskOutputDir}`)
-    options.repoConfig = this.readConfigFile()
+    options.config = this.readConfigFile()
 
     const taskStore = new TaskStore(this.storageClient, this.logger, this.eventPublisher)
 

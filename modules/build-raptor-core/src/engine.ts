@@ -9,6 +9,7 @@ import { RepoProtocol } from 'repo-protocol'
 import { TaskName } from 'task-name'
 import * as util from 'util'
 
+import { BuildRaptorConfig } from './build-raptor-config'
 import { EngineEventScheme } from './engine-event-scheme'
 import { ExecutionPlan } from './execution-plan'
 import { NopFingerprintLedger, PersistedFingerprintLedger } from './fingerprint-ledger'
@@ -30,7 +31,7 @@ export interface EngineOptions {
   testCaching?: boolean
   commitHash: string | undefined
   stepByStepProcessorModuleName?: string
-  repoConfig?: RepoConfig
+  config?: BuildRaptorConfig
 }
 
 export class Engine {
@@ -67,7 +68,7 @@ export class Engine {
       fingerprintLedger: options.fingerprintLedger ?? false,
       testCaching: options.testCaching ?? true,
       commitHash: options.commitHash,
-      repoConfig: options.repoConfig ?? {},
+      config: options.config ?? {},
     }
     const ledgerFile = path.join(this.options.buildRaptorDir, 'fingerprint-ledger.json')
     this.eventPublisher.on('taskStore', e => {
@@ -121,7 +122,7 @@ export class Engine {
   async run(buildRunId: BuildRunId) {
     this.steps.push({ step: 'BUILD_RUN_STARTED', buildRunId, commitHash: this.options.commitHash })
     await this.fingerprintLedger.updateRun(buildRunId)
-    await this.repoProtocol.initialize(this.rootDir, this.eventPublisher, this.options.repoConfig.repoProtocol)
+    await this.repoProtocol.initialize(this.rootDir, this.eventPublisher, this.options.config.repoProtocol)
     try {
       const model = await this.loadModel(buildRunId)
 
@@ -158,7 +159,7 @@ export class Engine {
       this.fingerprintLedger,
       this.purger,
       this.options.testCaching,
-      this.options.repoConfig.tasksToFineLog ?? [],
+      this.options.config.tasksToFineLog ?? [],
     )
 
     const batchScheduler = (batch: TaskName[]) => {
