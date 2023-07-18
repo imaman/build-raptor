@@ -332,13 +332,15 @@ export class YarnRepoProtocol implements RepoProtocol {
   ): Promise<ExitStatus> {
     const taskKind = TaskName().undo(taskName).taskKind
     if (taskKind === 'build') {
+      let buildStatus: ExitStatus
       if (this.state.config.uberBuild ?? true) {
-        return await this.runUberBuild(outputFile)
+        buildStatus = await this.runUberBuild(outputFile)
+      } else {
+        buildStatus = await this.run('npm', ['run', this.scriptNames.build], dir, outputFile)
       }
-      const ret = await this.run('npm', ['run', this.scriptNames.build], dir, outputFile)
-      return await switchOn(ret, {
-        CRASH: () => Promise.resolve(ret),
-        FAIL: () => Promise.resolve(ret),
+      return await switchOn(buildStatus, {
+        CRASH: () => Promise.resolve(buildStatus),
+        FAIL: () => Promise.resolve(buildStatus),
         OK: () => this.checkBuiltFiles(dir).then(() => 'OK'),
       })
     }
