@@ -571,36 +571,47 @@ describe('yarn-repo-protocol.e2e', () => {
     })
   })
   describe('uber building', () => {
-    test('foo', async () => {
+    test('the build output contains errors from all modules', async () => {
       const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
       const recipe = {
+        '.build-raptor.json': { repoProtocol: { uberBuild: true } },
         'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
         'modules/a/package.json': driver.packageJson('a', ['b']),
         'modules/a/src/a.ts': `
           import {b} from 'b'
           export function a(n: number) { return b(n)*10+1 }`,
-        'modules/a/tests/a.spec.ts': `
-          import {a} from '../src/a'
-          test('a', () => { expect(a(0)).toEqual(-321) })
-        `,
+        'modules/a/tests/a.spec.ts': `import {a} from '../src/a';  test('a', () => { expect(a(0)).toEqual(-321) })`,
         'modules/b/package.json': driver.packageJson('b', ['c']),
         'modules/b/src/index.ts': `
           import {c} from 'c'
           export function b(n: number) { return c(n)*10+2 }`,
         'modules/b/tests/b.spec.ts': `import {b} from '../src'; test('b', () => {expect(b(0)).toEqual(32)})`,
         'modules/c/package.json': driver.packageJson('c'),
-        'modules/c/src/index.ts': `
-          export function c(n: number) { return n+3 }`,
-        'modules/c/tests/c.spec.ts': `import {c} from '../src'; test('c', () => {expect(c(0)).toEqual(3)})`,
+        'modules/c/src/index.ts': `export function c(s: string) { return s.length }`,
+        'modules/c/tests/c.spec.ts': `import {c} from '../src'; test('xyz', () => {expect(c('a')).toEqual(3)})`,
       }
 
       const fork = await driver.repo(recipe).fork()
 
-      const run1 = await fork.run('FAIL', { taskKind: 'test' })
-      expect(await run1.outputOf('test', 'a')).toContain('    Received: 321')
-      expect(run1.executionTypeOf('a', 'test')).toEqual('EXECUTED')
-      expect(run1.executionTypeOf('b', 'test')).toEqual('EXECUTED')
-      expect(run1.executionTypeOf('c', 'test')).toEqual('EXECUTED')
+      const run1 = await fork.run('FAIL', { taskKind: 'build' })
+      expect(await run1.outputOf('build', 'c')).toEqual([
+        `modules/b/src/index.ts(3,51): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.`,
+      ]) //('    Received: 321')
+
+      await fork.file('modules/c/src/index.ts').write(`export function c(n: number) { return n+3 }`)
+      await fork
+        .file('modules/c/tests/c.spec.ts')
+        .write(`import {c} from '../src'; test('xyz', () => {expect(c(90)).toEqual(93)})`)
+      const run2 = await fork.run('OK', { taskKind: 'build' })
+      expect(await run2.outputOf('build', 'c')).toEqual([``])
+
+      const run3 = await fork.run('FAIL', { taskKind: 'test' })
+      expect(await run3.outputOf('test', 'a')).toContain('    Received: 321')
+
+      await fork
+        .file('modules/a/tests/a.spec.ts')
+        .write(`import {a} from '../src/a';  test('a', () => { expect(a(0)).toEqual(321) })`)
+      await fork.run('OK', { taskKind: 'test' })
     })
   })
 })
