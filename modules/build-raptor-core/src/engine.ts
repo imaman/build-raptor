@@ -31,6 +31,7 @@ export interface EngineOptions {
   testCaching?: boolean
   commitHash: string | undefined
   stepByStepProcessorModuleName?: string
+  buildRaptorConfigFile: string
   config?: BuildRaptorConfig
 }
 

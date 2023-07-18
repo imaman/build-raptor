@@ -32,7 +32,7 @@ export class EngineBootstrapper {
     const taskOutputDir = (await Tmp.dir()).path
     this.logger.info(`rootDir is ${this.rootDir}`)
     this.logger.info(`The console outputs (stdout/stderr) of tasks are stored under ${taskOutputDir}`)
-    options.config = this.readConfigFile()
+    options.config = this.readConfigFile(options.buildRaptorConfigFile)
 
     const taskStore = new TaskStore(this.storageClient, this.logger, this.eventPublisher)
 
@@ -57,8 +57,11 @@ export class EngineBootstrapper {
     return engine
   }
 
-  private readConfigFile() {
-    const p = path.join(this.rootDir, '.build-raptor.json')
+  private readConfigFile(pathToConfigFile: string) {
+    if (path.isAbsolute(pathToConfigFile)) {
+      throw new Error(`pathToConfigFile should be relative (got: ${pathToConfigFile})`)
+    }
+    const p = path.join(this.rootDir, pathToConfigFile ?? '.build-raptor.json')
     try {
       if (!fs.existsSync(p)) {
         return undefined
