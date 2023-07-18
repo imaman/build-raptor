@@ -80,7 +80,7 @@ class SingleTaskExecutor {
       return
     }
 
-    this.logger.print(message)
+    this.logger.print(`[${this.taskName}] ${message}`)
   }
 
   private get task() {
@@ -235,7 +235,7 @@ class SingleTaskExecutor {
 
     if (phase === 'POSSIBLY_RESTORE_OUTPUTS') {
       const earlierVerdict = await this.getVerdict()
-      this.diagnose(`earlierVerdict of ${this.taskName}: ${earlierVerdict}`)
+      this.diagnose(`earlierVerdict is ${earlierVerdict}`)
       if (earlierVerdict === 'UNKNOWN' || (this.isTest && !this.testCaching)) {
         await this.purgeOutputs(false)
         return 'RUN_IT'
