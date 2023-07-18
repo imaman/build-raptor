@@ -447,7 +447,11 @@ export class YarnRepoProtocol implements RepoProtocol {
       const parsed = JSON.parse(latest)
       reporterOutput = ReporterOutput.parse(parsed)
     } catch (e) {
-      throw new Error(`failed to parse ${reporterOutputFile} of ${taskName}: <${e}>. latest=<${latest}>`)
+      throw new Error(
+        `failed to parse ${reporterOutputFile} of ${taskName}: <${e}>. latest=<${latest}>, testsToRun=${JSON.stringify(
+          testsToRun,
+        )}`,
+      )
     }
 
     reporterOutput.cases.forEach(at => {
@@ -690,7 +694,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     return ret
   }
 
-  async computeTestsToRun(resolved: string): Promise<string[]> {
+  private async computeTestsToRun(resolved: string): Promise<string[]> {
     const exists = await fse.pathExists(resolved)
     if (!exists) {
       this.logger.info('jest-output.json does not exist. running everything!')
