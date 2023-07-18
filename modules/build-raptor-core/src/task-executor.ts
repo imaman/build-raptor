@@ -331,7 +331,7 @@ class SingleTaskExecutor {
     const tasks = taskNames.map(tn => this.tracker.getTask(tn))
 
     await promises(tasks).forEach(20, async task => {
-      await this.purger.purgeOutputsOfTask(task, this.model, isRestore)
+      await this.purger.purgeOutputsOfTask(task, this.model)
     })
   }
 }
