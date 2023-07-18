@@ -8,4 +8,4 @@ export const BuildRaptorConfig = z.object({
    */
   tasksToFineLog: z.string().array().optional(),
 })
-export type RepoConfig = z.infer<typeof BuildRaptorConfig>
+export type BuildRaptorConfig = z.infer<typeof BuildRaptorConfig>

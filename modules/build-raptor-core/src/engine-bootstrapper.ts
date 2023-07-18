@@ -33,7 +33,7 @@ export class EngineBootstrapper {
     const taskOutputDir = (await Tmp.dir()).path
     this.logger.info(`rootDir is ${this.rootDir}`)
     this.logger.info(`The console outputs (stdout/stderr) of tasks are stored under ${taskOutputDir}`)
-    options.repoConfig = this.readRepoConfigFile()
+    options.repoConfig = this.readConfigFile()
 
     const taskStore = new TaskStore(this.storageClient, this.logger, this.eventPublisher)
 
@@ -58,7 +58,7 @@ export class EngineBootstrapper {
     return engine
   }
 
-  private readRepoConfigFile() {
+  private readConfigFile() {
     const p = path.join(this.rootDir, '.build-raptor.json')
     try {
       if (!fs.existsSync(p)) {
