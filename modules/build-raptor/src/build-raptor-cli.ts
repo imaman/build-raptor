@@ -119,8 +119,18 @@ async function run(options: Options) {
     assigningGet(testOutput, arg.taskName, () => []).push(arg)
   })
 
+  let n = 0
   bootstrapper.subscribable.on('executionStarted', arg => {
-    logger.print(`=============================== ${arg} =================================`)
+    ++n
+    logger.print(`> ${arg} (${n})`)
+  })
+  bootstrapper.subscribable.on('executionEnded', arg => {
+    logger.print(
+      `=============================== ${arg.taskName} (${n}) in ${(arg.time / 1000).toFixed(
+        1,
+      )}s =================================`,
+    )
+    --n
   })
 
   const callRegisterAsset = options.callRegisterAsset ?? true
