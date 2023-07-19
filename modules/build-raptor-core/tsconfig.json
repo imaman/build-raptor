@@ -18,6 +18,9 @@
       "path": "../build-run-id"
     },
     {
+      "path": "../core-types"
+    },
+    {
       "path": "../logger"
     },
     {

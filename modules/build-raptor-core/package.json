@@ -19,6 +19,7 @@
     "build-raptor-api": "1.0.0",
     "build-raptor-dynamic-loader": "^0.62.0",
     "build-run-id": "1.0.0",
+    "core-types": "1.0.0",
     "fs-extra": "^9.0.0",
     "ignore": "^5.1.9",
     "logger": "1.0.0",
