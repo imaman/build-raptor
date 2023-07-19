@@ -637,7 +637,9 @@ describe('yarn-repo-protocol.e2e', () => {
 
       const fork = await driver.repo(recipe).fork()
       const run1 = await fork.run('FAIL', { taskKind: 'build' })
-      expect(await run1.outputOf('build', 'a')).toContain('foo/boo/non-existing-file: No such file or directory')
+      expect(await run1.outputOf('build', 'a')).toContainEqual(
+        expect.stringMatching('foo/boo/non-existing-file: No such file or directory'),
+      )
     })
   })
 })
