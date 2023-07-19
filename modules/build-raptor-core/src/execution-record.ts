@@ -1,5 +1,5 @@
 export type Verdict = 'UNKNOWN' | 'CRASH' | 'FAIL' | 'OK'
-export type ExecutionType = 'UNKNOWN' | 'EXECUTED' | 'CACHED' | 'CANNOT_START' | 'SHADOWED'
+export type ExecutionType = 'UNKNOWN' | 'EXECUTED' | 'CACHED' | 'CANNOT_START'
 import { TaskName } from 'task-name'
 
 import { Phase } from './phase'

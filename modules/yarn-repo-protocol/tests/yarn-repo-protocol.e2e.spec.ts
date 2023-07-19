@@ -9,7 +9,7 @@ describe('yarn-repo-protocol.e2e', () => {
   const logger = createNopLogger()
 
   function newYarnRepoProtocol() {
-    return new YarnRepoProtocol(logger, false, new NopAssetPublisher())
+    return new YarnRepoProtocol(logger, new NopAssetPublisher())
   }
   const testName = () => expect.getState().currentTestName
 
@@ -571,7 +571,6 @@ describe('yarn-repo-protocol.e2e', () => {
     test('the build output contains errors from all modules', async () => {
       const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
       const recipe = {
-        '.build-raptor.json': { repoProtocol: { uberBuild: true } },
         'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
         'modules/a/package.json': driver.packageJson('a', ['b']),
         'modules/a/src/a.ts': `
@@ -609,6 +608,38 @@ describe('yarn-repo-protocol.e2e', () => {
         .file('modules/a/tests/a.spec.ts')
         .write(`import {a} from '../src/a';  test('a', () => { expect(a(0)).toEqual(321) })`)
       await fork.run('OK', { taskKind: 'test' })
+    })
+    test('runs build:post after compilation', async () => {
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': driver.packageJson('a', [], {
+          'build:post': `cat dist/src/a.js && echo "brown fox"`,
+        }),
+        'modules/a/src/a.ts': `export const a = "the quick"`,
+        'modules/a/tests/a.spec.ts': ``,
+      }
+
+      const fork = await driver.repo(recipe).fork()
+      const run1 = await fork.run('OK', { taskKind: 'build' })
+      const output = await run1.outputOf('build', 'a')
+      expect(output.join('\n')).toContain('the quick')
+      expect(output[output.length - 1]).toMatch(/brown fox$/)
+    })
+    test('fails the task if build:post failed', async () => {
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': driver.packageJson('a', [], { 'build:post': `cat foo/boo/non-existing-file` }),
+        'modules/a/src/a.ts': `export const a = "the quick"`,
+        'modules/a/tests/a.spec.ts': ``,
+      }
+
+      const fork = await driver.repo(recipe).fork()
+      const run1 = await fork.run('FAIL', { taskKind: 'build' })
+      expect(await run1.outputOf('build', 'a')).toContainEqual(
+        expect.stringMatching('foo/boo/non-existing-file: No such file or directory'),
+      )
     })
   })
 })

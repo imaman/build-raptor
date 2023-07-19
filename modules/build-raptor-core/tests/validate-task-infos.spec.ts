@@ -11,7 +11,7 @@ function locs(arr: string[]): OutputLocation[] {
 }
 
 describe('validate-task-infos', () => {
-  const base = { deps: [], inputsInDeps: [], inputsInUnit: [], shadowing: false }
+  const base = { deps: [], inputsInDeps: [], inputsInUnit: [] }
   test('an empty list of task-info is always allowed', () => {
     const input: TaskInfo[] = []
     expect(validateTaskInfos(input)).toBeTruthy()

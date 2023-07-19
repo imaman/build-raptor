@@ -1,4 +1,4 @@
-import { assigningGet, Int, shouldNeverHappen, switchOn } from 'misc'
+import { Int, shouldNeverHappen, switchOn } from 'misc'
 import { ExitStatus } from 'repo-protocol'
 import { TaskName } from 'task-name'
 
@@ -12,33 +12,11 @@ export class TaskTracker {
   private readonly usedConcurrencyLevles: number[] = []
   private numExecuted = 0
   private counter: SlotIndex = SlotIndex(0)
-  private shadowed = new Set<TaskName>()
-  private readonly shadowedBy = new Map<TaskName, TaskName[]>()
-  private readonly shadowingByShadowed = new Map<TaskName, TaskName>()
 
   constructor(private readonly plan: ExecutionPlan) {}
 
   tasks() {
     return this.plan.tasks()
-  }
-
-  registerShadowing(shadowed: TaskName, shadowing: TaskName) {
-    assigningGet(this.shadowedBy, shadowing, () => []).push(shadowed)
-    this.shadowingByShadowed.set(shadowed, shadowing)
-    this.shadowed.add(shadowed)
-  }
-
-  getTasksShadowedBy(tn: TaskName): TaskName[] {
-    return this.shadowedBy.get(tn) || []
-  }
-
-  getShadowingTask(shadowedTask: TaskName): TaskName {
-    return this.shadowingByShadowed.get(shadowedTask) ?? shadowedTask
-  }
-
-  isShadowed(tn: TaskName): boolean {
-    const st = this.getShadowingTask(tn)
-    return st !== tn
   }
 
   getDependencyTasks(tn: TaskName): Task[] {
@@ -80,16 +58,6 @@ export class TaskTracker {
     }
 
     shouldNeverHappen(status)
-  }
-
-  registerShadowedVerdict(taskName: TaskName, status: 'OK' | 'FAIL') {
-    const task = this.getTask(taskName)
-    task.assignVerdict(status, 'SHADOWED')
-
-    switchOn(status, {
-      FAIL: () => this.propagateFailure(taskName),
-      OK: () => {},
-    })
   }
 
   registerCachedVerdict(taskName: TaskName, cachedVerdict: 'OK' | 'FLAKY' | 'FAIL') {

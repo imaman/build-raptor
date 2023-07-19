@@ -1,6 +1,7 @@
 import { BuildFailedError } from 'build-failed-error'
 import escapeStringRegexp from 'escape-string-regexp'
 import execa from 'execa'
+import * as fs from 'fs'
 import * as fse from 'fs-extra'
 import { Logger } from 'logger'
 import {
@@ -66,6 +67,7 @@ export class YarnRepoProtocol implements RepoProtocol {
   private readonly scriptNames = {
     build: 'build',
     validate: 'validate',
+    postBuild: 'build:post',
     prepareAssets: 'prepare-assets',
   }
 
@@ -74,7 +76,6 @@ export class YarnRepoProtocol implements RepoProtocol {
 
   constructor(
     private readonly logger: Logger,
-    private readonly shadowing: boolean = false,
     // TODO(imaman): deprecate it.
     private readonly assetPublisher: Publisher,
   ) {
@@ -286,7 +287,28 @@ export class YarnRepoProtocol implements RepoProtocol {
     return p.stdout
   }
 
-  private async checkBuiltFiles(dir: string) {
+  private async runAdditionalBuildActions(unitId: UnitId, dir: string, outputFile: string): Promise<ExitStatus> {
+    return switchOn(await this.runPostBuild(unitId, dir, outputFile), {
+      CRASH: () => Promise.resolve('CRASH'),
+      FAIL: () => Promise.resolve('FAIL'),
+      OK: () => this.checkBuiltFiles(dir).then(() => 'OK'),
+    })
+  }
+
+  private async runPostBuild(unitId: UnitId, dir: string, outputFile: string) {
+    if (!this.hasRunScript(unitId, this.scriptNames.postBuild)) {
+      return 'OK'
+    }
+
+    const tempFile = await getTempFile()
+    const ret = await this.run('npm', ['run', this.scriptNames.postBuild], dir, tempFile)
+
+    const toAppend = await fse.readFile(tempFile)
+    await fse.appendFile(outputFile, toAppend)
+    return ret
+  }
+
+  private async checkBuiltFiles(dir: string): Promise<void> {
     for (const codeDir of [this.src, this.tests]) {
       const inputFiles = new Set<string>(
         await DirectoryScanner.listPaths(path.join(dir, codeDir), { startingPointMustExist: false }),
@@ -341,7 +363,7 @@ export class YarnRepoProtocol implements RepoProtocol {
       return await switchOn(buildStatus, {
         CRASH: () => Promise.resolve(buildStatus),
         FAIL: () => Promise.resolve(buildStatus),
-        OK: () => this.checkBuiltFiles(dir).then(() => 'OK'),
+        OK: () => this.runAdditionalBuildActions(u.id, dir, outputFile),
       })
     }
 
@@ -448,7 +470,17 @@ export class YarnRepoProtocol implements RepoProtocol {
       const parsed = JSON.parse(latest)
       reporterOutput = ReporterOutput.parse(parsed)
     } catch (e) {
-      throw new Error(`failed to parse ${reporterOutputFile} <${e}>`)
+      const output = fs.readFileSync(outputFile, 'utf-8')
+      const limit = 512
+      this.logger.error(
+        `crashing due to jest output file parsing error: ${JSON.stringify({
+          latest,
+          testsToRun,
+          outputFile,
+        })}. First ${limit} chars of the output file: ${output.slice(0, limit)}`,
+        e,
+      )
+      throw new Error(`failed to parse ${reporterOutputFile} of ${taskName}: <${e}>`)
     }
 
     reporterOutput.cases.forEach(at => {
@@ -664,7 +696,6 @@ export class YarnRepoProtocol implements RepoProtocol {
         {
           taskKind: build,
           outputs: [this.dist()],
-          shadowing: this.shadowing,
           inputsInDeps: [this.dist('s')],
           inputsInUnit: [this.src, this.tests, 'package.json'],
         },
@@ -692,7 +723,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     return ret
   }
 
-  async computeTestsToRun(resolved: string): Promise<string[]> {
+  private async computeTestsToRun(resolved: string): Promise<string[]> {
     const exists = await fse.pathExists(resolved)
     if (!exists) {
       this.logger.info('jest-output.json does not exist. running everything!')

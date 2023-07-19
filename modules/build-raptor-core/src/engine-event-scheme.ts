@@ -8,7 +8,6 @@ import { TaskStoreEvent } from './task-store-event'
 export type EngineEventScheme = TaskStoreEvent &
   RepoProtocolEvent & {
     executionSkipped: TaskName
-    executionShadowed: TaskName
     executionStarted: TaskName
     executionEnded: { taskName: TaskName; status: ExitStatus; outputFile: string; pathInRepo: string; time: number }
     taskPhaseEnded: { taskName: TaskName; phase: Phase }

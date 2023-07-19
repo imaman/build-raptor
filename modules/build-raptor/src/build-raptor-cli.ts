@@ -104,7 +104,7 @@ async function run(options: Options) {
   const { storageClient, lambdaClient } = await storageClientFactory(logger)
   logger.info(`(typeof lambdaClient)=${typeof lambdaClient}`)
   const assetPublisher = new DefaultAssetPublisher(storageClient, logger)
-  const repoProtocol = new YarnRepoProtocol(logger, false, assetPublisher)
+  const repoProtocol = new YarnRepoProtocol(logger, assetPublisher)
   const bootstrapper = await EngineBootstrapper.create(rootDir, storageClient, repoProtocol, t0, '', logger)
 
   const testOutput = new Map<TaskName, TestEndedEvent[]>()
@@ -177,11 +177,6 @@ async function run(options: Options) {
   bootstrapper.subscribable.on('executionSkipped', tn => {
     if (!options.compact) {
       logger.print(`Task ${tn} succeeded earlier. Skipping.\n`)
-    }
-  })
-  bootstrapper.subscribable.on('executionShadowed', tn => {
-    if (!options.compact) {
-      logger.print(`OVERSHADOWED: task ${tn}.\n`)
     }
   })
 
