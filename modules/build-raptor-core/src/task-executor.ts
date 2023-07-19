@@ -92,6 +92,11 @@ class SingleTaskExecutor {
   }
 
   private async postProcess(status: ExitStatus, outputFile: string, time: number) {
+    // Since outputFile's content can be big, read it only if this task is "diagnosed".
+    if (this.shouldDiagnose) {
+      const content = fse.readFileSync(outputFile, 'utf-8')
+      this.diagnose(`content of ${outputFile} is ${content}`)
+    }
     // TODO(imaman): cover (await is dropped)
     await this.eventPublisher.publish('executionEnded', {
       taskName: this.taskName,
