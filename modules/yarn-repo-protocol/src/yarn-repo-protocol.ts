@@ -345,14 +345,16 @@ export class YarnRepoProtocol implements RepoProtocol {
   }
 
   async execute(
-    u: UnitMetadata,
-    dir: string,
+    _u: UnitMetadata,
+    _dir: string,
     taskName: TaskName,
     outputFile: string,
     _buildRunId: string,
     fingerprint: string,
   ): Promise<ExitStatus> {
-    const taskKind = TaskName().undo(taskName).taskKind
+    const { taskKind, unitId } = TaskName().undo(taskName)
+    const u = this.state.units.find(at => at.id === unitId) ?? failMe(`unit ID not found: ${unitId}`)
+    const dir = path.join(this.state.rootDir, u.pathInRepo)
     if (taskKind === 'build') {
       let buildStatus: ExitStatus
       if (this.state.config.uberBuild ?? true) {
