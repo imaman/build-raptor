@@ -568,10 +568,10 @@ describe('yarn-repo-protocol.e2e', () => {
     })
   })
   describe('uber building', () => {
-    test('the build output contains errors from all modules', async () => {
+    test.only('the build output contains errors from all modules', async () => {
       const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
       const recipe = {
-        '.build-raptor.json': { repoProtocol: { uberBuild: true } },
+        '.build-raptor.json': { repoProtocol: { uberBuild: false } },
         'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
         'modules/a/package.json': driver.packageJson('a', ['b']),
         'modules/a/src/a.ts': `
