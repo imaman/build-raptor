@@ -304,12 +304,12 @@ export class Driver {
     if (!blobId) {
       throw new Error(`bad blobId: <${blobId}>`)
     }
-    const taskStore = new TaskStore(this.storageClient, createNopLogger())
-
     const tempDir = await folderify({})
-    const outputDir = path.join(tempDir, blobId)
-    await fse.mkdirp(outputDir)
-    await taskStore.restoreBlob(BlobId(blobId), outputDir)
-    return await slurpDir(outputDir)
+    const taskStore = new TaskStore(tempDir, this.storageClient, createNopLogger())
+
+    // const outputDir = path.join(tempDir, blobId)
+    // await fse.mkdirp(outputDir)
+    await taskStore.restoreBlob(BlobId(blobId))
+    return await slurpDir(tempDir)
   }
 }

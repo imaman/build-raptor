@@ -1,3 +1,4 @@
+import { PathInRepo } from 'core-types'
 import { TaskName } from 'task-name'
 
 import { OutputLocation, TaskInfo } from '../src/task-info'
@@ -5,7 +6,7 @@ import { validateTaskInfos } from '../src/validate-task-infos'
 
 function locs(arr: string[]): OutputLocation[] {
   return arr.map(at => ({
-    pathInUnit: at,
+    pathInRepo: PathInRepo(at),
     purge: 'NEVER',
   }))
 }

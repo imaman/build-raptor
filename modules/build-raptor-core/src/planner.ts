@@ -1,4 +1,5 @@
 import { BuildFailedError } from 'build-failed-error'
+import { PathInRepo } from 'core-types'
 import { Logger } from 'logger'
 import { Graph, recordToPairs, uniqueBy } from 'misc'
 import * as path from 'path'
@@ -93,14 +94,15 @@ export class Planner {
 
     const outputLocations: OutputLocation[] = (definition?.outputs ?? []).map(at => {
       if (typeof at === 'string') {
-        return { pathInUnit: at, purge: 'NEVER' }
+        return { pathInRepo: PathInRepo(path.join(unit.pathInRepo, at)), purge: 'NEVER' }
       }
 
       return {
-        pathInUnit: at.pathInUnit,
+        pathInRepo: PathInRepo(path.join(unit.pathInRepo, at.pathInUnit)),
         purge: at.purge,
       }
     })
+
     const ret: TaskInfo = {
       taskName,
       deps,

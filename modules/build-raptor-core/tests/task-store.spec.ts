@@ -1,15 +1,18 @@
+import { PathInRepo } from 'core-types'
 import * as fse from 'fs-extra'
-import { createNopLogger } from 'logger'
-import { chaoticDeterministicString, folderify, InMemoryStorageClient, Int, slurpDir } from 'misc'
+import { createNopLogger, Logger } from 'logger'
+import { chaoticDeterministicString, folderify, InMemoryStorageClient, Int, slurpDir, StorageClient } from 'misc'
 import * as path from 'path'
 import { TaskKind, TaskName } from 'task-name'
-import * as Tmp from 'tmp-promise'
+import * as TmpSync from 'tmp'
 import { UnitId } from 'unit-metadata'
 
 import { Fingerprint } from '../src/fingerprint'
 import { TaskStore } from '../src/task-store'
 
 describe('task-store', () => {
+  const newTaskStore = (sc: StorageClient, logger: Logger, dir?: string) =>
+    new TaskStore(dir ?? TmpSync.dirSync().name, sc, logger)
   const logger = createNopLogger()
   async function recordVerdict(
     store: TaskStore,
@@ -17,8 +20,7 @@ describe('task-store', () => {
     fingerprint: string,
     verdict: 'OK' | 'FAIL',
   ): Promise<void> {
-    const tmpDir = await Tmp.dir()
-    return store.recordTask(taskName, Fingerprint(fingerprint), tmpDir.path, [], verdict)
+    return store.recordTask(taskName, Fingerprint(fingerprint), [], verdict)
   }
 
   const taskNameFoo = TaskName(UnitId('a'), TaskKind('foo'))
@@ -28,20 +30,19 @@ describe('task-store', () => {
   const taskNameC = TaskName(UnitId('u'), TaskKind('C'))
 
   async function getVerdict(store: TaskStore, taskName: TaskName, fingerprint: string): Promise<string> {
-    const tmpDir = await Tmp.dir()
-    return store.restoreTask(taskName, Fingerprint(fingerprint), tmpDir.path)
+    return store.restoreTask(taskName, Fingerprint(fingerprint))
   }
   describe('recordVerdict()/getVerdict()', () => {
     test('presists a verdict for a task', async () => {
       const sc = new InMemoryStorageClient()
-      const store = new TaskStore(sc, logger)
+      const store = newTaskStore(sc, logger)
 
       await recordVerdict(store, taskNameFoo, Fingerprint('fp-1'), 'OK')
       expect(await getVerdict(store, taskNameFoo, Fingerprint('fp-1'))).toEqual('OK')
     })
     test('does not mix tasks', async () => {
       const sc = new InMemoryStorageClient()
-      const store = new TaskStore(sc, logger)
+      const store = newTaskStore(sc, logger)
 
       await recordVerdict(store, taskNameA, Fingerprint('fp-1'), 'FAIL')
       await recordVerdict(store, taskNameB, Fingerprint('fp-1'), 'OK')
@@ -50,7 +51,7 @@ describe('task-store', () => {
     })
     test('does not mix fingerprints', async () => {
       const sc = new InMemoryStorageClient()
-      const store = new TaskStore(sc, logger)
+      const store = newTaskStore(sc, logger)
 
       await recordVerdict(store, taskNameFoo, Fingerprint('FP-1'), 'OK')
       await recordVerdict(store, taskNameFoo, Fingerprint('FP-2'), 'FAIL')
@@ -60,8 +61,8 @@ describe('task-store', () => {
     test('data is persisted across different instances of TaskStore', async () => {
       const sc = new InMemoryStorageClient()
 
-      const storeA = new TaskStore(sc, logger)
-      const storeB = new TaskStore(sc, logger)
+      const storeA = newTaskStore(sc, logger)
+      const storeB = newTaskStore(sc, logger)
 
       await recordVerdict(storeA, taskNameFoo, Fingerprint('fp-1'), 'OK')
       await recordVerdict(storeA, taskNameBar, Fingerprint('fp-2'), 'FAIL')
@@ -82,60 +83,73 @@ describe('task-store', () => {
   describe('recording/restoration of output locations', () => {
     test('it can store an entire directory and the restore it at a given destination', async () => {
       const sc = new InMemoryStorageClient()
-      const store = new TaskStore(sc, logger)
+      const store = newTaskStore(
+        sc,
+        logger,
+        await folderify({
+          'qux/f1.txt': 'four scores',
+          'qux/f2.txt': 'and seven years ago',
+        }),
+      )
+      await store.recordTask(taskNameFoo, Fingerprint('bar'), [PathInRepo('qux')], 'OK')
 
-      const dir = await folderify({
-        'qux/f1.txt': 'four scores',
-        'qux/f2.txt': 'and seven years ago',
-      })
-      await store.recordTask(taskNameFoo, Fingerprint('bar'), dir, ['qux'], 'OK')
+      const destination = newTaskStore(sc, logger)
+      await destination.restoreTask(taskNameFoo, Fingerprint('bar'))
 
-      const destination = (await Tmp.dir()).path
-      await store.restoreTask(taskNameFoo, Fingerprint('bar'), destination)
-
-      expect(await slurpDir(destination)).toEqual({
+      expect(await slurpDir(destination.repoRootDir)).toEqual({
         'qux/f1.txt': 'four scores',
         'qux/f2.txt': 'and seven years ago',
       })
     })
     test('after restore, the destination is identical to the original directory that was recorded', async () => {
       const sc = new InMemoryStorageClient()
-      const store = new TaskStore(sc, logger)
+      const store = newTaskStore(
+        sc,
+        logger,
+        await folderify({
+          'qux/f1.txt': 'four scores',
+          'qux/f2.txt': 'and seven years ago',
+        }),
+      )
+      await store.recordTask(taskNameFoo, Fingerprint('bar'), [PathInRepo('qux')], 'OK')
 
-      const dir = await folderify({
-        'qux/f1.txt': 'four scores',
-        'qux/f2.txt': 'and seven years ago',
-      })
-      await store.recordTask(taskNameFoo, Fingerprint('bar'), dir, ['qux'], 'OK')
+      const destination = newTaskStore(
+        sc,
+        logger,
+        await folderify({
+          'qux/f1.txt': 'We choose to go to the Moon',
+          'qux/f3.txt': 'in this decade',
+        }),
+      )
+      await destination.restoreTask(taskNameFoo, Fingerprint('bar'))
 
-      const destination = await folderify({
-        'qux/f1.txt': 'We choose to go to the Moon',
-        'qux/f3.txt': 'in this decade',
-      })
-      await store.restoreTask(taskNameFoo, Fingerprint('bar'), destination)
-
-      expect(await slurpDir(destination)).toEqual({
+      expect(await slurpDir(destination.repoRootDir)).toEqual({
         'qux/f1.txt': 'four scores',
         'qux/f2.txt': 'and seven years ago',
       })
     })
     test('files outside of the output directories are not changed', async () => {
       const sc = new InMemoryStorageClient()
-      const store = new TaskStore(sc, logger)
+      const store = newTaskStore(
+        sc,
+        logger,
+        await folderify({
+          'qux/f1.txt': 'four scores',
+          'qux/f2.txt': 'and seven years ago',
+        }),
+      )
+      await store.recordTask(taskNameFoo, Fingerprint('bar'), [PathInRepo('qux')], 'OK')
 
-      const dir = await folderify({
-        'qux/f1.txt': 'four scores',
-        'qux/f2.txt': 'and seven years ago',
-      })
-      await store.recordTask(taskNameFoo, Fingerprint('bar'), dir, ['qux'], 'OK')
-
-      const destination = await folderify({
-        readme: 'very important things',
-        'foo/goo/f1.txt': 'We choose to go to the Moon',
-      })
-      await store.restoreTask(taskNameFoo, Fingerprint('bar'), destination)
-
-      expect(await slurpDir(destination)).toEqual({
+      const destination = newTaskStore(
+        sc,
+        logger,
+        await folderify({
+          readme: 'very important things',
+          'foo/goo/f1.txt': 'We choose to go to the Moon',
+        }),
+      )
+      await destination.restoreTask(taskNameFoo, Fingerprint('bar'))
+      expect(await slurpDir(destination.repoRootDir)).toEqual({
         'qux/f1.txt': 'four scores',
         'qux/f2.txt': 'and seven years ago',
         'foo/goo/f1.txt': 'We choose to go to the Moon',
@@ -144,27 +158,32 @@ describe('task-store', () => {
     })
     test('stores only files from the given output directories', async () => {
       const sc = new InMemoryStorageClient()
-      const store = new TaskStore(sc, logger)
+      const store = newTaskStore(
+        sc,
+        logger,
+        await folderify({
+          'bourne/i': 'The Bourne Identity',
+          'bourne/ii': 'The Bourne Supremacy',
+          'bourne/iii': 'The Bourne Ultimatum',
+          'starwars/i': 'The Phantom Menace',
+          'starwars/ii': 'Attack of the Clones',
+          'starwars/iii': 'Revenge of the Sith',
+        }),
+      )
+      await store.recordTask(taskNameFoo, Fingerprint('bar'), [PathInRepo('bourne')], 'OK')
 
-      const dir = await folderify({
-        'bourne/i': 'The Bourne Identity',
-        'bourne/ii': 'The Bourne Supremacy',
-        'bourne/iii': 'The Bourne Ultimatum',
-        'starwars/i': 'The Phantom Menace',
-        'starwars/ii': 'Attack of the Clones',
-        'starwars/iii': 'Revenge of the Sith',
-      })
-      await store.recordTask(taskNameFoo, Fingerprint('bar'), dir, ['bourne'], 'OK')
+      const destination = newTaskStore(
+        sc,
+        logger,
+        await folderify({
+          'thegodfather/i': 'The Godfather',
+          'thegodfather/ii': 'The Godfather Part II',
+          'thegodfather/iii': 'The Godfather Part III',
+        }),
+      )
 
-      const destination = await folderify({
-        'thegodfather/i': 'The Godfather',
-        'thegodfather/ii': 'The Godfather Part II',
-        'thegodfather/iii': 'The Godfather Part III',
-      })
-
-      await store.restoreTask(taskNameFoo, Fingerprint('bar'), destination)
-
-      expect(await slurpDir(destination)).toEqual({
+      await destination.restoreTask(taskNameFoo, Fingerprint('bar'))
+      expect(await slurpDir(destination.repoRootDir)).toEqual({
         'bourne/i': 'The Bourne Identity',
         'bourne/ii': 'The Bourne Supremacy',
         'bourne/iii': 'The Bourne Ultimatum',
@@ -175,32 +194,34 @@ describe('task-store', () => {
     })
     test('does not mix tasks', async () => {
       const sc = new InMemoryStorageClient()
-      const store = new TaskStore(sc, logger)
+      const store = newTaskStore(
+        sc,
+        logger,
+        await folderify({
+          'bourne/actors': 'Matt Damon',
+          'starwars/actors': 'Mark Hamill',
+          'thegodfather/i': 'Al Pacino',
+        }),
+      )
+      await store.recordTask(taskNameA, Fingerprint('fp-1'), [PathInRepo('bourne')], 'OK')
+      await store.recordTask(taskNameB, Fingerprint('fp-1'), [PathInRepo('starwars')], 'OK')
+      await store.recordTask(taskNameC, Fingerprint('fp-1'), [PathInRepo('thegodfather')], 'OK')
 
-      const dir = await folderify({
+      const destination = newTaskStore(sc, logger)
+
+      await destination.restoreTask(taskNameA, Fingerprint('fp-1'))
+      expect(await slurpDir(destination.repoRootDir)).toEqual({
+        'bourne/actors': 'Matt Damon',
+      })
+
+      await destination.restoreTask(taskNameB, Fingerprint('fp-1'))
+      expect(await slurpDir(destination.repoRootDir)).toEqual({
         'bourne/actors': 'Matt Damon',
         'starwars/actors': 'Mark Hamill',
-        'thegodfather/i': 'Al Pacino',
-      })
-      await store.recordTask(taskNameA, Fingerprint('fp-1'), dir, ['bourne'], 'OK')
-      await store.recordTask(taskNameB, Fingerprint('fp-1'), dir, ['starwars'], 'OK')
-      await store.recordTask(taskNameC, Fingerprint('fp-1'), dir, ['thegodfather'], 'OK')
-
-      const destination = await folderify({})
-
-      await store.restoreTask(taskNameA, Fingerprint('fp-1'), destination)
-      expect(await slurpDir(destination)).toEqual({
-        'bourne/actors': 'Matt Damon',
       })
 
-      await store.restoreTask(taskNameB, Fingerprint('fp-1'), destination)
-      expect(await slurpDir(destination)).toEqual({
-        'bourne/actors': 'Matt Damon',
-        'starwars/actors': 'Mark Hamill',
-      })
-
-      await store.restoreTask(taskNameC, Fingerprint('fp-1'), destination)
-      expect(await slurpDir(destination)).toEqual({
+      await destination.restoreTask(taskNameC, Fingerprint('fp-1'))
+      expect(await slurpDir(destination.repoRootDir)).toEqual({
         'bourne/actors': 'Matt Damon',
         'starwars/actors': 'Mark Hamill',
         'thegodfather/i': 'Al Pacino',
@@ -208,69 +229,56 @@ describe('task-store', () => {
     })
     test('does not mix fingerprints', async () => {
       const sc = new InMemoryStorageClient()
-      const store = new TaskStore(sc, logger)
+      const store1 = newTaskStore(sc, logger, await folderify({ 'year/starwars': '1977' }))
+      const store2 = newTaskStore(sc, logger, await folderify({ 'year/heat': '1995' }))
+      const store3 = newTaskStore(sc, logger, await folderify({ 'year/prestige': '2006' }))
 
-      await store.recordTask(
-        taskNameA,
-        Fingerprint('FP-1'),
-        await folderify({ 'year/starwars': '1977' }),
-        ['year'],
-        'OK',
-      )
-      await store.recordTask(taskNameA, Fingerprint('FP-2'), await folderify({ 'year/heat': '1995' }), ['year'], 'OK')
-      await store.recordTask(
-        taskNameA,
-        Fingerprint('FP-3'),
-        await folderify({ 'year/prestige': '2006' }),
-        ['year'],
-        'OK',
-      )
+      await store1.recordTask(taskNameA, Fingerprint('FP-1'), [PathInRepo('year')], 'OK')
+      await store2.recordTask(taskNameA, Fingerprint('FP-2'), [PathInRepo('year')], 'OK')
+      await store3.recordTask(taskNameA, Fingerprint('FP-3'), [PathInRepo('year')], 'OK')
 
-      const dest1 = await folderify({})
-      await store.restoreTask(taskNameA, Fingerprint('FP-2'), dest1)
-      expect(await slurpDir(dest1)).toEqual({
-        'year/heat': '1995',
-      })
-      const dest2 = await folderify({})
-      await store.restoreTask(taskNameA, Fingerprint('FP-2'), dest2)
-      expect(await slurpDir(dest1)).toEqual({
-        'year/heat': '1995',
-      })
-      const dest3 = await folderify({})
-      await store.restoreTask(taskNameA, Fingerprint('FP-2'), dest3)
-      expect(await slurpDir(dest1)).toEqual({
-        'year/heat': '1995',
-      })
+      const dest1 = newTaskStore(sc, logger)
+      await dest1.restoreTask(taskNameA, Fingerprint('FP-2'))
+      expect(await slurpDir(dest1.repoRootDir)).toEqual({ 'year/heat': '1995' })
+
+      const dest2 = newTaskStore(sc, logger)
+      await dest2.restoreTask(taskNameA, Fingerprint('FP-2'))
+      expect(await slurpDir(dest2.repoRootDir)).toEqual({ 'year/heat': '1995' })
+      const dest3 = newTaskStore(sc, logger)
+      await dest3.restoreTask(taskNameA, Fingerprint('FP-2'))
+      expect(await slurpDir(dest3.repoRootDir)).toEqual({ 'year/heat': '1995' })
     })
     test('outputs can be files and not just folders', async () => {
       const sc = new InMemoryStorageClient()
-      const store = new TaskStore(sc, logger)
+      const store = newTaskStore(sc, logger, await folderify({ 'a.txt': 'foo' }))
+      await store.recordTask(taskNameA, Fingerprint('fp'), [PathInRepo('a.txt')], 'OK')
 
-      const dir = await folderify({ 'a.txt': 'foo' })
-      await store.recordTask(taskNameA, Fingerprint('fp'), dir, ['a.txt'], 'OK')
-
-      const dest = await folderify({})
-      await store.restoreTask(taskNameA, Fingerprint('fp'), dest)
-      expect(await slurpDir(dest)).toEqual({
-        'a.txt': 'foo',
-      })
+      const destination = newTaskStore(sc, logger)
+      await destination.restoreTask(taskNameA, Fingerprint('fp'))
+      expect(await slurpDir(destination.repoRootDir)).toEqual({ 'a.txt': 'foo' })
     })
     test('outputs can be deeply nested under sub-dirs', async () => {
       const sc = new InMemoryStorageClient()
-      const store = new TaskStore(sc, logger)
+      const store = newTaskStore(
+        sc,
+        logger,
+        await folderify({
+          'a/b/c/d/index.js': 'foo',
+          'a/b/c/f/index.js': Fingerprint('bar'),
+          'a/b/index.js': 'goo',
+        }),
+      )
+      await store.recordTask(taskNameA, Fingerprint('fp'), [PathInRepo('a/b/c')], 'OK')
 
-      const dir = await folderify({
-        'a/b/c/d/index.js': 'foo',
-        'a/b/c/f/index.js': Fingerprint('bar'),
-        'a/b/index.js': 'goo',
-      })
-      await store.recordTask(taskNameA, Fingerprint('fp'), dir, ['a/b/c'], 'OK')
-
-      const dest = await folderify({
-        'a/b/index.js': 'moo',
-      })
-      await store.restoreTask(taskNameA, Fingerprint('fp'), dest)
-      expect(await slurpDir(dest)).toEqual({
+      const destination = newTaskStore(
+        sc,
+        logger,
+        await folderify({
+          'a/b/index.js': 'moo',
+        }),
+      )
+      await destination.restoreTask(taskNameA, Fingerprint('fp'))
+      expect(await slurpDir(destination.repoRootDir)).toEqual({
         'a/b/c/d/index.js': 'foo',
         'a/b/c/f/index.js': Fingerprint('bar'),
         'a/b/index.js': 'moo',
@@ -278,70 +286,79 @@ describe('task-store', () => {
     })
     test('does not include files that happen to be a prefix of the requested output path', async () => {
       const sc = new InMemoryStorageClient()
-      const store = new TaskStore(sc, logger)
+      const store = newTaskStore(
+        sc,
+        logger,
+        await folderify({
+          'a/b/index.js': 'let me in',
+          'a/bb/index.js': "don't let me in",
+          'a/bbc': 'me neither',
+        }),
+      )
+      await store.recordTask(taskNameA, Fingerprint('fp'), [PathInRepo('a/b')], 'OK')
 
-      const dir = await folderify({
-        'a/b/index.js': 'let me in',
-        'a/bb/index.js': "don't let me in",
-        'a/bbc': 'me neither',
-      })
-      await store.recordTask(taskNameA, Fingerprint('fp'), dir, ['a/b'], 'OK')
-
-      const dest = await folderify({})
-      await store.restoreTask(taskNameA, Fingerprint('fp'), dest)
-      expect(await slurpDir(dest)).toEqual({
-        'a/b/index.js': 'let me in',
-      })
+      const destination = newTaskStore(sc, logger)
+      await destination.restoreTask(taskNameA, Fingerprint('fp'))
+      expect(await slurpDir(destination.repoRootDir)).toEqual({ 'a/b/index.js': 'let me in' })
     })
     test('restore retains the mtime and mode values of the files', async () => {
       const sc = new InMemoryStorageClient()
-      const store = new TaskStore(sc, logger)
+      const store = newTaskStore(
+        sc,
+        logger,
+        await folderify({
+          'a/f1': 'c1',
+          'a/f2': 'c1',
+          'a/f3': 'c1',
+        }),
+      )
 
-      const dir = await folderify({
-        'a/f1': 'c1',
-        'a/f2': 'c1',
-        'a/f3': 'c1',
-      })
-
+      const dir = store.repoRootDir
       await fse.chmod(path.join(dir, 'a/f1'), 0o755)
       await fse.chmod(path.join(dir, 'a/f2'), 0o640)
       await fse.utimes(path.join(dir, 'a/f2'), new Date(0), new Date(2000))
       await fse.utimes(path.join(dir, 'a/f3'), new Date(0), new Date(3000))
 
-      await store.recordTask(taskNameA, Fingerprint('fp'), dir, ['a'], 'OK')
+      await store.recordTask(taskNameA, Fingerprint('fp'), [PathInRepo('a')], 'OK')
 
-      const dest = await folderify({})
-      await store.restoreTask(taskNameA, Fingerprint('fp'), dest)
+      const destination = newTaskStore(sc, logger)
+      await destination.restoreTask(taskNameA, Fingerprint('fp'))
 
-      const stat1 = await fse.stat(path.join(dest, 'a/f1'))
+      const stat1 = await fse.stat(path.join(destination.repoRootDir, 'a/f1'))
       expect(stat1.mode).toEqual(0o100755)
 
-      const stat2 = await fse.stat(path.join(dest, 'a/f2'))
+      const stat2 = await fse.stat(path.join(destination.repoRootDir, 'a/f2'))
       expect(stat2.mtime.getTime()).toEqual(2000)
       expect(stat2.mode).toEqual(0o100640)
 
-      const stat3 = await fse.stat(path.join(dest, 'a/f3'))
+      const stat3 = await fse.stat(path.join(destination.repoRootDir, 'a/f3'))
       expect(stat3.mtime.getTime()).toEqual(3000)
     })
     test('handles multiple output locations', async () => {
       const sc = new InMemoryStorageClient()
-      const store = new TaskStore(sc, logger)
-
-      const dir = await folderify({
-        'a/b/q/x1.txt': 'this is q/x1',
-        'a/b/q/x2.txt': 'this is q/x2',
-        'a/b/r/x1.txt': 'this is r/x1',
-        'a/b/r/x2.txt': 'this is r/x2',
-        'a/b/s/x1.txt': 'this is s/x1',
-        'a/b/s/x2.txt': 'this is s/x2',
-      })
-      await store.recordTask(taskNameA, Fingerprint('fp'), dir, ['a/b/q', 'a/b/r'], 'OK')
-      const dest = await folderify({
-        'a/b/s/x1.txt': '1',
-        'a/b/s/x2.txt': '2',
-      })
-      await store.restoreTask(taskNameA, Fingerprint('fp'), dest)
-      expect(await slurpDir(dest)).toEqual({
+      const store = newTaskStore(
+        sc,
+        logger,
+        await folderify({
+          'a/b/q/x1.txt': 'this is q/x1',
+          'a/b/q/x2.txt': 'this is q/x2',
+          'a/b/r/x1.txt': 'this is r/x1',
+          'a/b/r/x2.txt': 'this is r/x2',
+          'a/b/s/x1.txt': 'this is s/x1',
+          'a/b/s/x2.txt': 'this is s/x2',
+        }),
+      )
+      await store.recordTask(taskNameA, Fingerprint('fp'), [PathInRepo('a/b/q'), PathInRepo('a/b/r')], 'OK')
+      const destination = newTaskStore(
+        sc,
+        logger,
+        await folderify({
+          'a/b/s/x1.txt': '1',
+          'a/b/s/x2.txt': '2',
+        }),
+      )
+      await destination.restoreTask(taskNameA, Fingerprint('fp'))
+      expect(await slurpDir(destination.repoRootDir)).toEqual({
         'a/b/q/x1.txt': 'this is q/x1',
         'a/b/q/x2.txt': 'this is q/x2',
         'a/b/r/x1.txt': 'this is r/x1',
@@ -352,26 +369,27 @@ describe('task-store', () => {
     })
     test('record() yells if output location do not exist on the file system', async () => {
       const sc = new InMemoryStorageClient()
-      const store = new TaskStore(sc, logger)
+      const store = newTaskStore(sc, logger)
 
-      const dir = await folderify({})
-      await expect(store.recordTask(taskNameA, Fingerprint('fp'), dir, ['a'], 'OK')).rejects.toThrow(
+      await expect(store.recordTask(taskNameA, Fingerprint('fp'), [PathInRepo('a')], 'OK')).rejects.toThrow(
         'Output location <a> does not exist (under',
       )
     })
     test('recreates the chain of directories to the designated location of the output', async () => {
       const sc = new InMemoryStorageClient()
-      const store = new TaskStore(sc, logger)
+      const store = newTaskStore(
+        sc,
+        logger,
+        await folderify({
+          'a/b/c/d/e/f/x1.txt': 'this is x1',
+          'a/b/c/d/e/f/x2.txt': 'this is x2',
+        }),
+      )
+      await store.recordTask(taskNameA, Fingerprint('fp'), [PathInRepo('a/b/c/d')], 'OK')
 
-      const dir = await folderify({
-        'a/b/c/d/e/f/x1.txt': 'this is x1',
-        'a/b/c/d/e/f/x2.txt': 'this is x2',
-      })
-      await store.recordTask(taskNameA, Fingerprint('fp'), dir, ['a/b/c/d'], 'OK')
-
-      const dest = await folderify({})
-      await store.restoreTask(taskNameA, Fingerprint('fp'), dest)
-      expect(await slurpDir(dest)).toEqual({
+      const destination = newTaskStore(sc, logger)
+      await destination.restoreTask(taskNameA, Fingerprint('fp'))
+      expect(await slurpDir(destination.repoRootDir)).toEqual({
         'a/b/c/d/e/f/x1.txt': 'this is x1',
         'a/b/c/d/e/f/x2.txt': 'this is x2',
       })
@@ -380,17 +398,19 @@ describe('task-store', () => {
       // it is hard to prove that we content hash is definitely used, but we can at least show that the amount of
       // additional storage that is needed when the same content is recorded twice is negligible.
       const sc = new InMemoryStorageClient(Int(20000))
-      const store = new TaskStore(sc, logger)
-
-      const dir1 = await folderify({
-        x: chaoticDeterministicString(20000, 'a'),
-      })
+      const store = newTaskStore(
+        sc,
+        logger,
+        await folderify({
+          x: chaoticDeterministicString(20000, 'a'),
+        }),
+      )
 
       expect(sc.byteCount).toEqual(0)
-      await store.recordTask(taskNameA, Fingerprint('fp-1'), dir1, ['x'], 'OK')
+      await store.recordTask(taskNameA, Fingerprint('fp-1'), [PathInRepo('x')], 'OK')
       const c0 = sc.byteCount
       expect(c0).toBeGreaterThanOrEqual(10000)
-      await store.recordTask(taskNameA, Fingerprint('fp-2'), dir1, ['x'], 'OK')
+      await store.recordTask(taskNameA, Fingerprint('fp-2'), [PathInRepo('x')], 'OK')
       const c1 = sc.byteCount
       expect(c1 - c0).toBeLessThan(500)
     })
@@ -398,33 +418,35 @@ describe('task-store', () => {
       // it is hard to prove that compression is definitely used, but we can at least show that the total storage space
       // is significantly smaller than the data that we wanted to store, when this data is highly repeatetive.
       const sc = new InMemoryStorageClient(Int(21000))
-      const store = new TaskStore(sc, logger)
-
-      const dir1 = await folderify({
-        x: new Array(20000).fill('a').join(''),
-      })
+      const store = newTaskStore(
+        sc,
+        logger,
+        await folderify({
+          x: new Array(20000).fill('a').join(''),
+        }),
+      )
 
       expect(sc.byteCount).toEqual(0)
-      await store.recordTask(taskNameA, Fingerprint('fp-1'), dir1, ['x'], 'OK')
+      await store.recordTask(taskNameA, Fingerprint('fp-1'), [PathInRepo('x')], 'OK')
       expect(sc.byteCount).toBeLessThan(500)
     })
     test('yells when output location is "a/b" but "a" is file', async () => {
       const sc = new InMemoryStorageClient()
-      const store = new TaskStore(sc, logger)
-
-      const dir = await folderify({ a: 'this is a' })
-      await expect(store.recordTask(taskNameA, Fingerprint('fp'), dir, ['a/b'], 'OK')).rejects.toThrow(
+      const store = newTaskStore(sc, logger, await folderify({ a: 'this is a' }))
+      await expect(store.recordTask(taskNameA, Fingerprint('fp'), [PathInRepo('a/b')], 'OK')).rejects.toThrow(
         'Output location <a/b> does not exist',
       )
     })
     test('preserves modification time', async () => {
       const sc = new InMemoryStorageClient()
-      const store = new TaskStore(sc, logger)
-
-      const dir = await folderify({
-        'a/b/x1.txt': 'this is x1',
-        'a/b/x2.txt': 'this is x2',
-      })
+      const store = newTaskStore(
+        sc,
+        logger,
+        await folderify({
+          'a/b/x1.txt': 'this is x1',
+          'a/b/x2.txt': 'this is x2',
+        }),
+      )
 
       async function takeSanpshot(d: string) {
         const x1 = await fse.stat(path.join(d, 'a/b/x1.txt'))
@@ -432,12 +454,12 @@ describe('task-store', () => {
         return { x1: { mtime: x1.mtimeMs }, x2: { mtime: x2.mtimeMs } }
       }
 
-      const before = await takeSanpshot(dir)
-      await store.recordTask(taskNameA, Fingerprint('fp'), dir, ['a'], 'OK')
+      const before = await takeSanpshot(store.repoRootDir)
+      await store.recordTask(taskNameA, Fingerprint('fp'), [PathInRepo('a')], 'OK')
 
-      const dest = await folderify({})
-      await store.restoreTask(taskNameA, Fingerprint('fp'), dest)
-      const after = await takeSanpshot(dest)
+      const dest = newTaskStore(sc, logger)
+      await dest.restoreTask(taskNameA, Fingerprint('fp'))
+      const after = await takeSanpshot(dest.repoRootDir)
 
       expect(after.x1).toEqual(before.x1)
       expect(after.x2).toEqual(before.x2)

@@ -32,35 +32,29 @@ function checkNameCollision(infos: TaskInfo[]) {
 
 function checkOutputCollisions(infos: TaskInfo[], reg: TaskOutputRegistryImpl) {
   const taskNameByOutput = new Map<string, TaskName>(
-    infos.flatMap(x => x.outputLocations.map(o => [norm(o.pathInUnit), x.taskName])),
+    infos.flatMap(x => x.outputLocations.map(o => [norm(o.pathInRepo), x.taskName])),
   )
-  const allLocations = infos.flatMap(x => x.outputLocations).map(x => norm(x.pathInUnit))
+  const allLocations = infos.flatMap(x => x.outputLocations).map(x => norm(x.pathInRepo))
 
-  const upperByPath = new Map<string, string>()
   for (const a of allLocations) {
-    let upper = a
     for (const b of allLocations) {
       if (a === b) {
         continue
       }
 
-      if (upper.startsWith(b)) {
-        upper = b
+      if (a.startsWith(b)) {
+        const ta = hardGet(taskNameByOutput, a)
+        const tb = hardGet(taskNameByOutput, b)
+        throw new BuildFailedError(
+          `Output collison: tasks ${ta}, ${tb} have colliding outputs: ${a}, ${b} (respectively)`,
+        )
       }
     }
-
-    upperByPath.set(a, upper)
   }
 
   for (const i of infos) {
     for (const loc of i.outputLocations) {
-      const normed = norm(loc.pathInUnit)
-      const upper = hardGet(upperByPath, normed)
-      const other = hardGet(taskNameByOutput, upper)
-      if (other !== i.taskName) {
-        throw new BuildFailedError(`Output collison: tasks ${i.taskName}, ${other} both declare output '${upper}'`)
-      }
-
+      const normed = norm(loc.pathInRepo)
       reg.add(i.taskName, normed)
     }
   }

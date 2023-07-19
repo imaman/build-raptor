@@ -34,7 +34,7 @@ export class EngineBootstrapper {
     this.logger.info(`The console outputs (stdout/stderr) of tasks are stored under ${taskOutputDir}`)
     options.config = this.readConfigFile(configFile ?? '.build-raptor.json')
 
-    const taskStore = new TaskStore(this.storageClient, this.logger, this.eventPublisher)
+    const taskStore = new TaskStore(this.rootDir, this.storageClient, this.logger, this.eventPublisher)
 
     const stepByStepFile = path.join(options.buildRaptorDir, 'step-by-step.json')
     const transmitter = await StepByStepTransmitter.create(
