@@ -1,14 +1,7 @@
 import { Brand } from 'brand'
 
-export type BuildRunId = Brand<string, 'BuildRunId'>
+export type PathInRepo = Brand<string, 'PathInRepo'>
 
-function validate(input: string): asserts input is BuildRunId {
-  if (input.length === 0) {
-    throw new Error(`Bad BuildRunId: <${input}>`)
-  }
-}
-
-export function BuildRunId(input: string): BuildRunId {
-  validate(input)
-  return input
+export function PathInRepo(input: string): PathInRepo {
+  return input as PathInRepo // eslint-disable-line @typescript-eslint/consistent-type-assertions
 }
