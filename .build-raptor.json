@@ -1,0 +1,3 @@
+{
+  "verbosePrintTasks": ["brand:test", "brand:build"]
+}
