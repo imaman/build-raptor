@@ -609,5 +609,35 @@ describe('yarn-repo-protocol.e2e', () => {
         .write(`import {a} from '../src/a';  test('a', () => { expect(a(0)).toEqual(321) })`)
       await fork.run('OK', { taskKind: 'test' })
     })
+    test('runs build:post after compilation', async () => {
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': driver.packageJson('a', [], {
+          'build:post': `cat dist/src/a.js && echo "brown fox"`,
+        }),
+        'modules/a/src/a.ts': `export const a = "the quick"`,
+        'modules/a/tests/a.spec.ts': ``,
+      }
+
+      const fork = await driver.repo(recipe).fork()
+      const run1 = await fork.run('OK', { taskKind: 'build' })
+      const output = await run1.outputOf('build', 'a')
+      expect(output.join('\n')).toContain('the quick')
+      expect(output[output.length - 1]).toMatch(/brown fox$/)
+    })
+    test('fails the task if build:post failed', async () => {
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': driver.packageJson('a', [], { 'build:post': `cat foo/boo/non-existing-file` }),
+        'modules/a/src/a.ts': `export const a = "the quick"`,
+        'modules/a/tests/a.spec.ts': ``,
+      }
+
+      const fork = await driver.repo(recipe).fork()
+      const run1 = await fork.run('FAIL', { taskKind: 'build' })
+      expect(await run1.outputOf('build', 'a')).toContain('npm ERR! Lifecycle script `build:post` failed with error')
+    })
   })
 })
