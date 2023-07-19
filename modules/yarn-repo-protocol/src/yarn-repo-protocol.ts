@@ -287,8 +287,15 @@ export class YarnRepoProtocol implements RepoProtocol {
     return p.stdout
   }
 
-  private async postBuild(unitId: UnitId, dir: string, outputFile: string) {
-    await this.checkBuiltFiles(dir).then(() => 'OK')
+  private async runAdditionalBuildActions(unitId: UnitId, dir: string, outputFile: string): Promise<ExitStatus> {
+    return switchOn(await this.runPostBuild(unitId, dir, outputFile), {
+      CRASH: () => Promise.resolve('CRASH'),
+      FAIL: () => Promise.resolve('FAIL'),
+      OK: () => this.checkBuiltFiles(dir).then(() => 'OK'),
+    })
+  }
+
+  private async runPostBuild(unitId: UnitId, dir: string, outputFile: string) {
     if (!this.hasRunScript(unitId, this.scriptNames.postBuild)) {
       return 'OK'
     }
@@ -300,6 +307,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     await fse.appendFile(outputFile, toAppend)
     return ret
   }
+
   private async checkBuiltFiles(dir: string): Promise<void> {
     for (const codeDir of [this.src, this.tests]) {
       const inputFiles = new Set<string>(
@@ -355,7 +363,7 @@ export class YarnRepoProtocol implements RepoProtocol {
       return await switchOn(buildStatus, {
         CRASH: () => Promise.resolve(buildStatus),
         FAIL: () => Promise.resolve(buildStatus),
-        OK: () => this.postBuild(u.id, dir, outputFile),
+        OK: () => this.runAdditionalBuildActions(u.id, dir, outputFile),
       })
     }
 
