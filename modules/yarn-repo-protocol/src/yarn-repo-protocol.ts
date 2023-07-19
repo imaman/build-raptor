@@ -470,12 +470,17 @@ export class YarnRepoProtocol implements RepoProtocol {
       const parsed = JSON.parse(latest)
       reporterOutput = ReporterOutput.parse(parsed)
     } catch (e) {
-      const of = fs.readFileSync(outputFile, 'utf-8')
-      throw new Error(
-        `failed to parse ${reporterOutputFile} of ${taskName}: <${e}>. latest=<${latest}>, testsToRun=${JSON.stringify(
+      const output = fs.readFileSync(outputFile, 'utf-8')
+      const limit = 512
+      this.logger.error(
+        `crashing due to jest output file parsing error: ${JSON.stringify({
+          latest,
           testsToRun,
-        )} outputFile=${of}`,
+          outputFile,
+        })}. First ${limit} chars of the output file: ${output.slice(0, limit)}`,
+        e,
       )
+      throw new Error(`failed to parse ${reporterOutputFile} of ${taskName}: <${e}>`)
     }
 
     reporterOutput.cases.forEach(at => {
