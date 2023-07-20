@@ -19,7 +19,14 @@ import {
   uniqueBy,
 } from 'misc'
 import * as path from 'path'
-import { ExitStatus, Publisher, RepoProtocol, RepoProtocolEvent, RepoProtocolEventVerdict } from 'repo-protocol'
+import {
+  ExitStatus,
+  Publisher,
+  RepoProtocol,
+  RepoProtocolEvent,
+  RepoProtocolEventVerdict,
+  TaskInfo,
+} from 'repo-protocol'
 import { CatalogOfTasks } from 'repo-protocol'
 import { ReporterOutput } from 'reporter-output'
 import { TaskKind, TaskName } from 'task-name'
@@ -681,6 +688,10 @@ export class YarnRepoProtocol implements RepoProtocol {
     return this.state.units
   }
 
+  private unitOf(uid: UnitId) {
+    return this.state.units.find(at => at.id === uid) ?? failMe(`Unit not found (unit ID: ${uid})`)
+  }
+
   async getTasks(): Promise<CatalogOfTasks> {
     const build = TaskKind('build')
     const pack = TaskKind('pack')
@@ -723,9 +734,69 @@ export class YarnRepoProtocol implements RepoProtocol {
           inputsInUnit: [this.dist('s')],
         },
       ],
+      taskList: unitIds
+        .map(at => this.unitOf(at))
+        .flatMap(u => [this.buildTask(u), this.testTask(u), this.packTask(u), this.publishTask(u)])
+        .flatMap(x => (x ? [x] : [])),
     }
 
     return ret
+  }
+
+  private buildTask(u: UnitMetadata): TaskInfo | undefined {
+    const dir = u.pathInRepo
+    const deps = this.state.graph.neighborsOf(u.id).map(at => this.unitOf(at).pathInRepo)
+    return {
+      taskName: TaskName(u.id, TaskKind('build')),
+      outputLocations: [{ pathInRepo: dir.expand(this.dist()), purge: 'NEVER' }],
+      inputs: [
+        dir.expand(this.src),
+        dir.expand(this.tests),
+        dir.expand('package.json'),
+        ...deps.map(d => d.expand(this.dist())),
+      ],
+      deps: [],
+      inputsInDeps: [],
+      inputsInUnit: [],
+    }
+  }
+  private testTask(u: UnitMetadata): TaskInfo | undefined {
+    const dir = u.pathInRepo
+    const deps = this.state.graph.neighborsOf(u.id).map(at => this.unitOf(at).pathInRepo)
+    return {
+      taskName: TaskName(u.id, TaskKind('test')),
+      outputLocations: [{ pathInRepo: dir.expand(JEST_OUTPUT_FILE), purge: 'ALWAYS' }],
+      inputs: [dir.expand(this.dist('s')), dir.expand(this.dist('t')), ...deps.map(d => d.expand(this.dist('s')))],
+      deps: [],
+      inputsInDeps: [],
+      inputsInUnit: [],
+    }
+  }
+  private packTask(u: UnitMetadata): TaskInfo | undefined {
+    const dir = u.pathInRepo
+    const deps = this.state.graph.neighborsOf(u.id).map(at => this.unitOf(at).pathInRepo)
+    return {
+      taskName: TaskName(u.id, TaskKind('pack')),
+      outputLocations: [{ pathInRepo: dir.expand(PACK_DIR), purge: 'NEVER' }],
+      inputs: [dir.expand(this.dist('s')), ...deps.map(d => d.expand(this.dist('s')))],
+      deps: [],
+      inputsInDeps: [],
+      inputsInUnit: [],
+    }
+  }
+  private publishTask(u: UnitMetadata): TaskInfo | undefined {
+    if (!this.hasRunScript(u.id, this.scriptNames.prepareAssets)) {
+      return undefined
+    }
+    const dir = u.pathInRepo
+    return {
+      taskName: TaskName(u.id, TaskKind('publish-assets')),
+      outputLocations: [{ pathInRepo: dir.expand(PREPARED_ASSETS_DIR), purge: 'NEVER' }],
+      inputs: [dir.expand(this.dist('s'))],
+      deps: [],
+      inputsInDeps: [],
+      inputsInUnit: [],
+    }
   }
 
   private async computeTestsToRun(resolved: string): Promise<string[]> {
