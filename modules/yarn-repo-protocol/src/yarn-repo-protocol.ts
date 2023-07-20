@@ -743,20 +743,6 @@ export class YarnRepoProtocol implements RepoProtocol {
     return ret
   }
 
-  private publishTask(u: UnitMetadata): TaskInfo | undefined {
-    if (!this.hasRunScript(u.id, this.scriptNames.prepareAssets)) {
-      return undefined
-    }
-    const dir = u.pathInRepo
-    return {
-      taskName: TaskName(u.id, TaskKind('publish-assets')),
-      outputLocations: [{ pathInRepo: dir.expand(PREPARED_ASSETS_DIR), purge: 'NEVER' }],
-      inputs: [dir.expand(this.dist('s'))],
-      deps: [],
-      inputsInDeps: [],
-      inputsInUnit: [],
-    }
-  }
   private buildTask(u: UnitMetadata): TaskInfo | undefined {
     const dir = u.pathInRepo
     const deps = this.state.graph.neighborsOf(u.id).map(at => this.unitOf(at).pathInRepo)
@@ -793,6 +779,20 @@ export class YarnRepoProtocol implements RepoProtocol {
       taskName: TaskName(u.id, TaskKind('pack')),
       outputLocations: [{ pathInRepo: dir.expand(PACK_DIR), purge: 'NEVER' }],
       inputs: [dir.expand(this.dist('s')), ...deps.map(d => d.expand(this.dist('s')))],
+      deps: [],
+      inputsInDeps: [],
+      inputsInUnit: [],
+    }
+  }
+  private publishTask(u: UnitMetadata): TaskInfo | undefined {
+    if (!this.hasRunScript(u.id, this.scriptNames.prepareAssets)) {
+      return undefined
+    }
+    const dir = u.pathInRepo
+    return {
+      taskName: TaskName(u.id, TaskKind('publish-assets')),
+      outputLocations: [{ pathInRepo: dir.expand(PREPARED_ASSETS_DIR), purge: 'NEVER' }],
+      inputs: [dir.expand(this.dist('s'))],
       deps: [],
       inputsInDeps: [],
       inputsInUnit: [],
