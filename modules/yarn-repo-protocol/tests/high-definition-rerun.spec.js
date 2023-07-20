@@ -5,7 +5,7 @@ import { createNopLogger } from 'logger'
 import { YarnRepoProtocol } from '../src/yarn-repo-protocol'
 
 jest.setTimeout(90000)
-describe('high definition rerun of tests', () => {
+describe('high-definition-rerun', () => {
   const logger = createNopLogger()
 
   function newYarnRepoProtocol() {
