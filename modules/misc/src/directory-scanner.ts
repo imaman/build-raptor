@@ -32,6 +32,7 @@ type ListPathsCallback = (relativePath: string) => void
 
 type RelativePath = string
 
+// TODO(imaman): use RepoRoot, PathInRepo
 export class DirectoryScanner {
   private readonly options: Options
   constructor(readonly rootDir: string, options?: ConstructorOptions) {
