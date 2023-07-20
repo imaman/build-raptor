@@ -1,4 +1,5 @@
-import { computeObjectHash, failMe, shouldNeverHappen } from 'misc'
+import { PathInRepo } from 'core-types'
+import { computeObjectHash, failMe, Jsonable, shouldNeverHappen } from 'misc'
 import { TaskKind, TaskName } from 'task-name'
 import { Mutable } from 'type-fest'
 import { UnitId } from 'unit-metadata'
@@ -8,7 +9,6 @@ import { Fingerprint } from './fingerprint'
 import { Phase } from './phase'
 import { SlotIndex } from './slot-index'
 import { OutputLocation, TaskInfo } from './task-info'
-type PathInRepo = string
 
 export class Task {
   readonly name: TaskName
@@ -55,7 +55,7 @@ export class Task {
 
     const fp = computeObjectHash({
       fingerprintsOfInputs,
-      info: this.taskInfo,
+      info: this.taskInfo as unknown as Jsonable, // eslint-disable-line @typescript-eslint/consistent-type-assertions
     })
     this.fingerprint = Fingerprint(fp)
   }
