@@ -189,7 +189,7 @@ export class Planner {
     this.taskGraph.vertex(taskName)
 
     for (const inputLoc of info.inputsInUnit) {
-      const other = reg.lookup(unitId, inputLoc)
+      const other = reg.lookup(unitId, path.join(u.pathInRepo, inputLoc))
       if (other) {
         this.taskGraph.edge(taskName, other)
       }
