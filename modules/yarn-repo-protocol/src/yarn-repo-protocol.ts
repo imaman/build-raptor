@@ -1,4 +1,5 @@
 import { BuildFailedError } from 'build-failed-error'
+import { PathInRepo, RepoRoot } from 'core-types'
 import escapeStringRegexp from 'escape-string-regexp'
 import execa from 'execa'
 import * as fs from 'fs'
@@ -45,7 +46,7 @@ type YarnWorkspacesInfo = z.infer<typeof yarnWorkspacesInfoSchema>
 interface State {
   readonly yarnInfo: YarnWorkspacesInfo
   readonly graph: Graph<UnitId>
-  readonly rootDir: string
+  readonly rootDir: RepoRoot
   readonly units: UnitMetadata[]
   readonly packageByUnitId: Map<UnitId, PackageJson>
   readonly versionByPackageId: Map<string, string>
@@ -84,7 +85,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
   }
 
-  private readonly tsconfigBaseName: string = 'tsconfig-base.json'
+  private readonly tsconfigBaseName = 'tsconfig-base.json'
   private state_: State | undefined
 
   private dist(which?: 't' | 's') {
@@ -120,10 +121,11 @@ export class YarnRepoProtocol implements RepoProtocol {
   }
 
   async initialize(
-    rootDir: string,
+    rootDirAsString: string,
     publisher: TypedPublisher<RepoProtocolEvent>,
     repoProtocolConfig?: unknown,
   ): Promise<void> {
+    const rootDir = RepoRoot(rootDirAsString)
     const yarnInfo = await this.getYarnInfo(rootDir)
 
     const config = this.parseConfig(repoProtocolConfig)
@@ -165,23 +167,25 @@ export class YarnRepoProtocol implements RepoProtocol {
     this.state_ = { yarnInfo, graph, rootDir, units, packageByUnitId, versionByPackageId, publisher, config }
   }
 
-  private async generateSymlinksToPackages(rootDir: string, units: UnitMetadata[]) {
-    const nodeModules = path.join(rootDir, 'node_modules')
-    await fse.mkdirp(nodeModules)
+  private async generateSymlinksToPackages(rootDir: RepoRoot, units: UnitMetadata[]) {
+    const nodeModules = PathInRepo('node_modules')
+    const nodeModulesLoc = rootDir.resolve(nodeModules)
+    await fse.mkdirp(rootDir.resolve(nodeModules))
     for (const u of units) {
-      const link = path.join(nodeModules, u.id)
-      const exists = await fse.pathExists(link)
+      const link = nodeModules.expand(u.id)
+      const linkLoc = rootDir.resolve(link)
+      const exists = await fse.pathExists(linkLoc)
       if (exists) {
         continue
       }
-      const packagePath = path.join(rootDir, u.pathInRepo)
-      const packagePathRelative = path.relative(nodeModules, packagePath)
-      await fse.symlink(packagePathRelative, link)
+      const packageLoc = rootDir.resolve(u.pathInRepo)
+      const packageFromNodeModules = path.relative(nodeModulesLoc, packageLoc)
+      await fse.symlink(packageFromNodeModules, linkLoc)
     }
   }
 
-  private async generateTsConfigFiles(rootDir: string, units: UnitMetadata[], graph: Graph<UnitId>) {
-    const rootBaseExists = await fse.pathExists(path.join(rootDir, this.tsconfigBaseName))
+  private async generateTsConfigFiles(rootDir: RepoRoot, units: UnitMetadata[], graph: Graph<UnitId>) {
+    const rootBaseExists = await fse.pathExists(rootDir.resolve(PathInRepo(this.tsconfigBaseName)))
 
     const defaultOptions: TsConfigJson.CompilerOptions = {
       module: 'CommonJS',
@@ -201,13 +205,13 @@ export class YarnRepoProtocol implements RepoProtocol {
     for (const u of units) {
       const deps = graph.neighborsOf(u.id)
 
-      const localBaseExists = await fse.pathExists(path.join(rootDir, u.pathInRepo, this.tsconfigBaseName))
+      const localBaseExists = await fse.pathExists(rootDir.resolve(u.pathInRepo.expand(this.tsconfigBaseName)))
 
       const tsconf: TsConfigJson = {
         ...(localBaseExists
           ? { extends: `./${this.tsconfigBaseName}` }
           : rootBaseExists
-          ? { extends: path.relative(u.pathInRepo, this.tsconfigBaseName) }
+          ? { extends: path.relative(u.pathInRepo.val, this.tsconfigBaseName) }
           : {}),
         compilerOptions: {
           ...(localBaseExists || rootBaseExists ? {} : defaultOptions),
@@ -218,7 +222,7 @@ export class YarnRepoProtocol implements RepoProtocol {
           const dp =
             units.find(at => at.id === d) ?? failMe(`Unit not found: ${d} (when generating tsconfig.json for ${u.id})`)
           return {
-            path: path.relative(u.pathInRepo, dp.pathInRepo),
+            path: path.relative(u.pathInRepo.val, dp.pathInRepo.val),
           }
         }),
         include: [`${this.src}/**/*`, `${this.src}/**/*.json`, `${this.tests}/**/*`, `${this.tests}/**/*.json`],
@@ -229,7 +233,7 @@ export class YarnRepoProtocol implements RepoProtocol {
       }
 
       const content = JSON.stringify(tsconf, null, 2)
-      const p = path.join(rootDir, u.pathInRepo, 'tsconfig.json')
+      const p = rootDir.resolve(u.pathInRepo.expand('tsconfig.json'))
       if (await fse.pathExists(p)) {
         const existing = JSON.stringify(await fse.readJSON(p, 'utf-8'), null, 2)
         if (existing.trim() === content.trim()) {
@@ -354,7 +358,7 @@ export class YarnRepoProtocol implements RepoProtocol {
   ): Promise<ExitStatus> {
     const { taskKind, unitId } = TaskName().undo(taskName)
     const u = this.state.units.find(at => at.id === unitId) ?? failMe(`unit ID not found: ${unitId}`)
-    const dir = path.join(this.state.rootDir, u.pathInRepo)
+    const dir = this.state.rootDir.resolve(u.pathInRepo)
     if (taskKind === 'build') {
       let buildStatus: ExitStatus
       if (this.state.config.uberBuild ?? true) {
@@ -439,8 +443,8 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
 
     this.logger.info(`logging uberbuild in ${outputFile}`)
-    const dirs = this.state.units.map(at => at.pathInRepo)
-    const p = this.run('tsc', ['--build', ...dirs], this.state.rootDir, outputFile)
+    const dirs = this.state.units.map(at => at.pathInRepo.val)
+    const p = this.run('tsc', ['--build', ...dirs], this.state.rootDir.resolve(), outputFile)
     this.state.uberBuildPromise = p
 
     const ret = await this.state.uberBuildPromise
@@ -486,7 +490,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
 
     reporterOutput.cases.forEach(at => {
-      const fileName = path.relative(this.state.rootDir, at.fileName)
+      const fileName = this.state.rootDir.unresolve(at.fileName)
       const verdict: RepoProtocolEventVerdict | undefined = switchOn(at.status, {
         disabled: () => undefined,
         failed: () => 'TEST_FAILED',
@@ -499,7 +503,7 @@ export class YarnRepoProtocol implements RepoProtocol {
         const testPath = [...at.ancestorTitles, at.title]
         this.state.publisher.publish('testEnded', {
           verdict,
-          fileName,
+          fileName: fileName.val,
           testPath,
           taskName,
           durationMillis: at.duration,
@@ -655,12 +659,11 @@ export class YarnRepoProtocol implements RepoProtocol {
     return ret
   }
 
-  private async getYarnInfo(rootDir: string): Promise<YarnWorkspacesInfo> {
-    if (!path.isAbsolute(rootDir)) {
-      throw new Error(`rootDir must be absolute`)
-    }
-
-    const p = await execa('yarn', ['--silent', 'workspaces', 'info', '--json'], { cwd: rootDir, reject: false })
+  private async getYarnInfo(rootDir: RepoRoot): Promise<YarnWorkspacesInfo> {
+    const p = await execa('yarn', ['--silent', 'workspaces', 'info', '--json'], {
+      cwd: rootDir.resolve(),
+      reject: false,
+    })
     if (p.exitCode === 0) {
       const parsed = JSON.parse(p.stdout)
       return yarnWorkspacesInfoSchema.parse(parsed)
@@ -783,10 +786,10 @@ function computeUnits(yarnInfo: YarnWorkspacesInfo): UnitMetadata[] {
   return ret
 }
 
-async function readPackages(rootDir: string, units: UnitMetadata[]) {
+async function readPackages(rootDir: RepoRoot, units: UnitMetadata[]) {
   const ret = new Map<UnitId, PackageJson>()
   await promises(units).forEach(20, async um => {
-    const p = path.join(rootDir, um.pathInRepo, 'package.json')
+    const p = rootDir.resolve(um.pathInRepo.expand('package.json'))
     const content = await fse.readJSON(p)
     // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     ret.set(um.id, content as PackageJson)
