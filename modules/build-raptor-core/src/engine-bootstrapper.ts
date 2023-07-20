@@ -1,5 +1,6 @@
 import { BuildFailedError } from 'build-failed-error'
 import { BuildRunId } from 'build-run-id'
+import { PathInRepo, RepoRoot } from 'core-types'
 import * as fs from 'fs'
 import { createDefaultLogger, Logger } from 'logger'
 import { errorLike, StorageClient, Subscribable, TypedPublisher } from 'misc'
@@ -20,19 +21,22 @@ import { TaskSummary } from './task-summary'
 
 export class EngineBootstrapper {
   private readonly eventPublisher = new TypedPublisher<EngineEventScheme>()
+  readonly rootDir
   private constructor(
-    readonly rootDir: string,
+    rootDir: string,
     readonly t0: number,
     readonly logger: Logger,
     readonly storageClient: StorageClient,
     readonly repoProtocol: RepoProtocol,
-  ) {}
+  ) {
+    this.rootDir = RepoRoot(rootDir)
+  }
 
   private async makeEngine(command: string, units: string[], configFile: string | undefined, options: EngineOptions) {
     const taskOutputDir = (await Tmp.dir()).path
     this.logger.info(`rootDir is ${this.rootDir}`)
     this.logger.info(`The console outputs (stdout/stderr) of tasks are stored under ${taskOutputDir}`)
-    options.config = this.readConfigFile(configFile ?? '.build-raptor.json')
+    options.config = this.readConfigFile(PathInRepo(configFile ?? '.build-raptor.json'))
 
     const taskStore = new TaskStore(this.rootDir, this.storageClient, this.logger, this.eventPublisher)
 
@@ -57,11 +61,8 @@ export class EngineBootstrapper {
     return engine
   }
 
-  private readConfigFile(pathToConfigFile: string) {
-    if (path.isAbsolute(pathToConfigFile)) {
-      throw new Error(`pathToConfigFile should be relative (got: ${pathToConfigFile})`)
-    }
-    const p = path.join(this.rootDir, pathToConfigFile)
+  private readConfigFile(pathToConfigFile: PathInRepo) {
+    const p = this.rootDir.resolve(pathToConfigFile)
     try {
       if (!fs.existsSync(p)) {
         return undefined
@@ -109,18 +110,26 @@ export class EngineBootstrapper {
             successful ? 'OK' : 'FAIL',
             buildRunId,
             tracker.tasks().map(t => summarizeTask(t)),
-            this.rootDir,
+            this.rootDir.resolve(),
             tracker.getPerformanceReport(),
           )
         } catch (err) {
           if (err instanceof BuildFailedError) {
             // TODO(imaman): cover this print
             this.logger.print(`build-raptor detected the following problem: ${err.message}`)
-            return new Breakdown('FAIL', buildRunId, [], this.rootDir, undefined, undefined, errorLike(err).message)
+            return new Breakdown(
+              'FAIL',
+              buildRunId,
+              [],
+              this.rootDir.resolve(),
+              undefined,
+              undefined,
+              errorLike(err).message,
+            )
           }
           this.logger.error(`this build-raptor run has crashed due to an unexpected error`, err)
           this.logger.print(`this build-raptor run has crashed due to an unexpected error ${util.inspect(err)}`)
-          return new Breakdown('CRASH', buildRunId, [], this.rootDir, undefined, err)
+          return new Breakdown('CRASH', buildRunId, [], this.rootDir.resolve(), undefined, err)
         }
       }
     } catch (err) {
