@@ -1,6 +1,6 @@
 import { Brand } from 'brand'
 import * as child_process from 'child_process'
-import { PathInRepo } from 'core-types'
+import { PathInRepo, RepoRoot } from 'core-types'
 import * as fs from 'fs'
 import { createWriteStream } from 'fs'
 import * as fse from 'fs-extra'
@@ -38,7 +38,7 @@ export const BlobId: (s: string) => BlobId = (s: string) => {
 
 export class TaskStore {
   constructor(
-    readonly repoRootDir: string,
+    readonly repoRootDir: RepoRoot,
     private readonly client: StorageClient,
     private readonly logger: Logger,
     private readonly publisher?: TypedPublisher<TaskStoreEvent>,
@@ -131,7 +131,7 @@ export class TaskStore {
 
     this.trace?.push(`bundling ${JSON.stringify(outputs)}`)
 
-    const m: Metadata = { outputs }
+    const m: Metadata = { outputs: outputs.map(o => o.val) }
     const metadata = JSON.stringify(metadataSchema.parse(m))
 
     const metadataBuf = Buffer.from(metadata, 'utf-8')
@@ -145,14 +145,14 @@ export class TaskStore {
     const tempFile = await Tmp.file()
 
     const pack = TarStream.pack()
-    const scanner = new DirectoryScanner(this.repoRootDir)
+    const scanner = new DirectoryScanner(this.repoRootDir.resolve())
     for (const o of outputs) {
-      const exists = await fse.pathExists(path.join(this.repoRootDir, o))
+      const exists = await fse.pathExists(this.repoRootDir.resolve(o))
       if (!exists) {
         // TODO(imaman): turn this into a user-build-error? move it out of this file?
         throw new Error(`Output location <${o}> does not exist (under <${this.repoRootDir}>)`)
       }
-      await scanner.scanTree(o, (p, content, stat) => {
+      await scanner.scanTree(o.val, (p, content, stat) => {
         if (stat.isDirectory()) {
           return
         }
@@ -165,7 +165,7 @@ export class TaskStore {
           throw new Error(`Cannot handle non-files in output: ${p} (under ${this.repoRootDir})`)
         }
 
-        const resolved = path.join(this.repoRootDir, p)
+        const resolved = this.repoRootDir.resolve(PathInRepo(p))
         const { atimeNs, ctimeNs, mtimeNs } = fs.statSync(resolved, { bigint: true })
         this.trace?.push(`adding an entry: ${stat.mode.toString(8)} ${p} ${mtimeNs}`)
         pack.entry({ path: p, mode: stat.mode, mtime: mtimeNs, ctime: ctimeNs, atime: atimeNs }, content)
@@ -197,8 +197,8 @@ export class TaskStore {
     const metadata: Metadata = metadataSchema.parse(unparsed)
     const outputs = metadata.outputs.map(at => PathInRepo(at))
 
-    const removeOutputDir = async (o: string) =>
-      await fse.rm(path.join(this.repoRootDir, o), { recursive: true, force: true })
+    const removeOutputDir = async (o: PathInRepo) =>
+      await fse.rm(this.repoRootDir.resolve(o), { recursive: true, force: true })
     await promises(outputs)
       .map(async o => await removeOutputDir(o))
       .reify(20)
@@ -206,7 +206,7 @@ export class TaskStore {
     const source = buf.slice(LEN_BUF_SIZE + metadataLen)
     const unzipped = await unzip(source)
     try {
-      await TarStream.extract(unzipped, this.repoRootDir)
+      await TarStream.extract(unzipped, this.repoRootDir.resolve())
     } catch (e) {
       throw new Error(`unbundling a buffer (${buf.length} bytes) has failed: ${e}`)
     }
@@ -221,7 +221,13 @@ export class TaskStore {
   ): Promise<void> {
     const blobId = await this.recordBlob(taskName, outputs)
     this.putVerdict(taskName, fingerprint, verdict, blobId)
-    this.publisher?.publish('taskStore', { opcode: 'RECORDED', taskName, blobId, fingerprint, files: [...outputs] })
+    this.publisher?.publish('taskStore', {
+      opcode: 'RECORDED',
+      taskName,
+      blobId,
+      fingerprint,
+      files: [...outputs.map(o => o.val)],
+    })
   }
 
   private async recordBlob(taskName: TaskName, outputs: PathInRepo[]) {
@@ -233,7 +239,13 @@ export class TaskStore {
   async restoreTask(taskName: TaskName, fingerprint: Fingerprint): Promise<'FAIL' | 'OK' | 'FLAKY' | 'UNKNOWN'> {
     const [verdict, blobId] = await this.getVerdict(taskName, fingerprint)
     const files = await this.restoreBlob(blobId)
-    this.publisher?.publish('taskStore', { opcode: 'RESTORED', taskName, blobId, fingerprint, files })
+    this.publisher?.publish('taskStore', {
+      opcode: 'RESTORED',
+      taskName,
+      blobId,
+      fingerprint,
+      files: files.map(o => o.val),
+    })
     return verdict
   }
 
