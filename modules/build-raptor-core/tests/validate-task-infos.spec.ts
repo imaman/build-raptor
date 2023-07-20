@@ -1,7 +1,7 @@
 import { PathInRepo } from 'core-types'
+import { OutputLocation, TaskInfo } from 'repo-protocol'
 import { TaskName } from 'task-name'
 
-import { OutputLocation, TaskInfo } from '../src/task-info'
 import { validateTaskInfos } from '../src/validate-task-infos'
 
 function locs(arr: string[]): OutputLocation[] {

@@ -2,10 +2,9 @@ import { BuildFailedError } from 'build-failed-error'
 import { PathInRepo } from 'core-types'
 import { failMe, findDups, groupBy, hardGet, recordToPairs, sortBy } from 'misc'
 import * as path from 'path'
+import { TaskInfo } from 'repo-protocol'
 import { TaskName } from 'task-name'
 import { UnitId } from 'unit-metadata'
-
-import { TaskInfo } from './task-info'
 
 export function validateTaskInfos(infos: TaskInfo[]): TaskOutputRegistry {
   checkNameCollision(infos)

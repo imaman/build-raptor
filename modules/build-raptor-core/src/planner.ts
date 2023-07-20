@@ -3,13 +3,13 @@ import { PathInRepo } from 'core-types'
 import { Logger } from 'logger'
 import { Graph, recordToPairs, uniqueBy } from 'misc'
 import { CatalogOfTasks, TaskDefinition } from 'repo-protocol'
+import { OutputLocation, TaskInfo } from 'repo-protocol'
 import { TaskKind, TaskName } from 'task-name'
 import { UnitMetadata } from 'unit-metadata'
 
 import { ExecutionPlan } from './execution-plan'
 import { Model } from './model'
 import { Task } from './task'
-import { OutputLocation, TaskInfo } from './task-info'
 import { TaskOutputRegistry, validateTaskInfos } from './validate-task-infos'
 
 export class Planner {

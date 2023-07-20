@@ -1,6 +1,8 @@
 import { TaskKind, TaskName } from 'task-name'
 import { UnitId } from 'unit-metadata'
 
+import { TaskInfo } from './task-info'
+
 type OutputDefinition = string | { pathInUnit: string; purge: 'ALWAYS' | 'NEVER' }
 
 export type TaskDefinition = {
@@ -22,4 +24,5 @@ export interface CatalogOfTasks {
   readonly tasks?: readonly TaskDefinition[]
   readonly depList?: readonly [TaskName, TaskName][]
   readonly complete?: boolean
+  taskList?: TaskInfo[]
 }
