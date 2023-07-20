@@ -19,7 +19,14 @@ import {
   uniqueBy,
 } from 'misc'
 import * as path from 'path'
-import { ExitStatus, Publisher, RepoProtocol, RepoProtocolEvent, RepoProtocolEventVerdict } from 'repo-protocol'
+import {
+  ExitStatus,
+  Publisher,
+  RepoProtocol,
+  RepoProtocolEvent,
+  RepoProtocolEventVerdict,
+  TaskInfo,
+} from 'repo-protocol'
 import { CatalogOfTasks } from 'repo-protocol'
 import { ReporterOutput } from 'reporter-output'
 import { TaskKind, TaskName } from 'task-name'
@@ -723,9 +730,25 @@ export class YarnRepoProtocol implements RepoProtocol {
           inputsInUnit: [this.dist('s')],
         },
       ],
+      taskList: unitIds
+        .flatMap(u => [this.buildTask(u), this.testTask(u), this.packTask(u), this.publishTask(u)])
+        .flatMap(x => (x ? [x] : [])),
     }
 
     return ret
+  }
+
+  private buildTask(_u: UnitId): TaskInfo | undefined {
+    return undefined
+  }
+  private testTask(_u: UnitId): TaskInfo | undefined {
+    return undefined
+  }
+  private packTask(_u: UnitId): TaskInfo | undefined {
+    return undefined
+  }
+  private publishTask(_u: UnitId): TaskInfo | undefined {
+    return undefined
   }
 
   private async computeTestsToRun(resolved: string): Promise<string[]> {
