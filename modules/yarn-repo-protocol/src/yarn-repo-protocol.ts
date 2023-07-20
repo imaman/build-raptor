@@ -744,17 +744,14 @@ export class YarnRepoProtocol implements RepoProtocol {
   }
 
   private publishTask(u: UnitMetadata): TaskInfo | undefined {
+    if (!this.hasRunScript(u.id, this.scriptNames.prepareAssets)) {
+      return undefined
+    }
     const dir = u.pathInRepo
-    const deps = this.state.graph.neighborsOf(u.id).map(at => this.unitOf(at).pathInRepo)
     return {
       taskName: TaskName(u.id, TaskKind('publish-assets')),
-      outputLocations: [{ pathInRepo: dir.expand(this.dist()), purge: 'NEVER' }],
-      inputs: [
-        dir.expand(this.src),
-        dir.expand(this.tests),
-        dir.expand('package.json'),
-        ...deps.map(d => d.expand(this.dist())),
-      ],
+      outputLocations: [{ pathInRepo: dir.expand(PREPARED_ASSETS_DIR), purge: 'NEVER' }],
+      inputs: [dir.expand(this.dist('s'))],
       deps: [],
       inputsInDeps: [],
       inputsInUnit: [],
