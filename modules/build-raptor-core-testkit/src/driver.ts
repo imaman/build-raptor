@@ -1,5 +1,6 @@
 import { Step, StepByName, StepByStep, StepName } from 'build-raptor-api'
 import { BlobId, Breakdown, EngineBootstrapper, TaskStore } from 'build-raptor-core'
+import { RepoRoot } from 'core-types'
 import * as fse from 'fs-extra'
 import { createNopLogger } from 'logger'
 import {
@@ -305,7 +306,7 @@ export class Driver {
       throw new Error(`bad blobId: <${blobId}>`)
     }
     const tempDir = await folderify({})
-    const taskStore = new TaskStore(tempDir, this.storageClient, createNopLogger())
+    const taskStore = new TaskStore(RepoRoot(tempDir), this.storageClient, createNopLogger())
 
     await taskStore.restoreBlob(BlobId(blobId))
     return await slurpDir(tempDir)
