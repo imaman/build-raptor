@@ -252,7 +252,7 @@ class RepoProtocolImpl implements RepoProtocol {
   async close() {}
 
   async execute(
-    u: UnitMetadata,
+    _u: UnitMetadata,
     dir: string,
     tn: TaskName,
     outputFile: string,

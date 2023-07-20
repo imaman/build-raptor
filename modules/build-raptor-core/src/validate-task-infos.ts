@@ -45,7 +45,7 @@ function checkOutputCollisions(infos: TaskInfo[], reg: TaskOutputRegistryImpl) {
         const ta = hardGet(taskNameByOutput, a)
         const tb = hardGet(taskNameByOutput, b)
         throw new BuildFailedError(
-          `Output collison: tasks ${ta}, ${tb} have colliding outputs: ${a}, ${b} (respectively)`,
+          `Output collison in tasks ${ta}, ${tb}: ${a === b ? a : `${a}, ${b} (respectively)`}`,
         )
       }
     }
