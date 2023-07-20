@@ -29,14 +29,15 @@ function checkNameCollision(infos: TaskInfo[]) {
 }
 
 function checkOutputCollisions(infos: TaskInfo[], reg: TaskOutputRegistryImpl) {
+  const sorted = sortBy(infos, at => at.taskName)
   const taskNameByOutput = new Map<string, TaskName>()
-  for (const info of infos) {
+  for (const info of sorted) {
     for (const loc of info.outputLocations) {
       taskNameByOutput.set(loc.pathInRepo.val, info.taskName)
     }
   }
 
-  const allLocations = infos.flatMap(x => x.outputLocations.map(x => x.pathInRepo))
+  const allLocations = sorted.flatMap(x => x.outputLocations.map(x => x.pathInRepo))
   sortBy(allLocations, at => at.val)
 
   for (let ia = 0; ia < allLocations.length; ++ia) {
@@ -57,7 +58,7 @@ function checkOutputCollisions(infos: TaskInfo[], reg: TaskOutputRegistryImpl) {
     }
   }
 
-  for (const i of infos) {
+  for (const i of sorted) {
     for (const loc of i.outputLocations) {
       reg.add(i.taskName, loc.pathInRepo)
     }

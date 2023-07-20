@@ -61,7 +61,7 @@ describe('validate-task-infos', () => {
         { ...base, taskName: TaskName().parse('a:T_4'), outputLocations: locs(['bar']) },
       ]
       expect(() => validateTaskInfos(input)).toThrowError(
-        `Output collision in tasks a:T_2, a:T_4: bar, bar/too/zoo (respectively)`,
+        `Output collision in tasks a:T_4, a:T_2: bar, bar/too/zoo (respectively)`,
       )
     })
   })
