@@ -37,6 +37,7 @@ function checkOutputCollisions(infos: TaskInfo[], reg: TaskOutputRegistryImpl) {
   }
 
   const allLocations = infos.flatMap(x => x.outputLocations.map(x => x.pathInRepo))
+  sortBy(allLocations, at => at.val)
 
   for (let ia = 0; ia < allLocations.length; ++ia) {
     const a = allLocations[ia]
@@ -50,7 +51,7 @@ function checkOutputCollisions(infos: TaskInfo[], reg: TaskOutputRegistryImpl) {
         const ta = hardGet(taskNameByOutput, a.val)
         const tb = hardGet(taskNameByOutput, b.val)
         throw new BuildFailedError(
-          `Output collison in tasks ${ta}, ${tb}: ${a === b ? a : `${a}, ${b} (respectively)`}`,
+          `Output collision in tasks ${ta}, ${tb}: ${a === b ? a : `${a}, ${b} (respectively)`}`,
         )
       }
     }

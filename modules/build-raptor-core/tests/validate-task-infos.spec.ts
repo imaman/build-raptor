@@ -51,7 +51,7 @@ describe('validate-task-infos', () => {
         { ...base, taskName: TaskName().parse('a:T_2'), outputLocations: locs(['bar']) },
         { ...base, taskName: TaskName().parse('a:T_3'), outputLocations: locs(['foo']) },
       ]
-      expect(() => validateTaskInfos(input)).toThrowError(`Output collison in tasks a:T_3, a:T_3: foo`)
+      expect(() => validateTaskInfos(input)).toThrowError(`Output collision in tasks a:T_3, a:T_3: foo`)
     })
     test(`yells on two tasks in the same unit if one of them outputs to a sub-directory which is under the other's output directory`, () => {
       const input: TaskInfo[] = [
@@ -61,7 +61,7 @@ describe('validate-task-infos', () => {
         { ...base, taskName: TaskName().parse('a:T_4'), outputLocations: locs(['bar']) },
       ]
       expect(() => validateTaskInfos(input)).toThrowError(
-        `Output collison in tasks a:T_2, a:T_4: bar/too/zoo, bar (respectively)`,
+        `Output collision in tasks a:T_2, a:T_4: bar, bar/too/zoo (respectively)`,
       )
     })
   })
