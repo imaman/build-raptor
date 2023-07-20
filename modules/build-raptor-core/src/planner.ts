@@ -38,6 +38,9 @@ export class Planner {
   }
 
   private computeInfos(catalog: CatalogOfTasks, model: Model, kinds: TaskKind[]) {
+    if (catalog.taskList) {
+      return catalog.taskList
+    }
     const ret: TaskInfo[] = []
     const tasksFromDepList = catalog.complete ? new Set<TaskName>(catalog.depList?.flatMap(x => x) ?? []) : undefined
     for (const unit of model.units) {
