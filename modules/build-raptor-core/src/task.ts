@@ -1,5 +1,6 @@
 import { PathInRepo } from 'core-types'
 import { computeObjectHash, failMe, Jsonable, shouldNeverHappen } from 'misc'
+import { OutputLocation, TaskInfo } from 'repo-protocol'
 import { TaskKind, TaskName } from 'task-name'
 import { Mutable } from 'type-fest'
 import { UnitId } from 'unit-metadata'
@@ -8,7 +9,6 @@ import { ExecutionRecord } from './execution-record'
 import { Fingerprint } from './fingerprint'
 import { Phase } from './phase'
 import { SlotIndex } from './slot-index'
-import { OutputLocation, TaskInfo } from './task-info'
 
 export class Task {
   readonly name: TaskName
