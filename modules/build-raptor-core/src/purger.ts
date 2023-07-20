@@ -1,18 +1,17 @@
-import { PathInRepo } from 'core-types'
+import { PathInRepo, RepoRoot } from 'core-types'
 import * as fse from 'fs-extra'
 import { Logger } from 'logger'
 import { promises, switchOn } from 'misc'
-import * as path from 'path'
 
 import { Task } from './task'
 import { OutputLocation } from './task-info'
 
 export class Purger {
-  constructor(private readonly logger: Logger, private readonly repoRootDir: string) {}
+  constructor(private readonly logger: Logger, private readonly repoRootDir: RepoRoot) {}
 
   private async removeLocations(outputLocations: readonly PathInRepo[]) {
     await promises(outputLocations).forEach(20, async p => {
-      const resolved = path.join(this.repoRootDir, p)
+      const resolved = this.repoRootDir.resolve(p)
       this.logger.info(`purging ${resolved}`)
       await fse.rm(resolved, { recursive: true, force: true })
     })
