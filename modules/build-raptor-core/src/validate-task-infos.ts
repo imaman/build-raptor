@@ -1,5 +1,6 @@
 import { BuildFailedError } from 'build-failed-error'
-import { failMe, findDups, groupBy, hardGet, recordToPairs, sortBy, threeWaySplit } from 'misc'
+import { PathInRepo } from 'core-types'
+import { failMe, findDups, groupBy, hardGet, recordToPairs, sortBy } from 'misc'
 import * as path from 'path'
 import { TaskName } from 'task-name'
 import { UnitId } from 'unit-metadata'
@@ -28,10 +29,14 @@ function checkNameCollision(infos: TaskInfo[]) {
 }
 
 function checkOutputCollisions(infos: TaskInfo[], reg: TaskOutputRegistryImpl) {
-  const taskNameByOutput = new Map<string, TaskName>(
-    infos.flatMap(x => x.outputLocations.map(o => [norm(o.pathInRepo), x.taskName])),
-  )
-  const allLocations = infos.flatMap(x => x.outputLocations).map(x => norm(x.pathInRepo))
+  const taskNameByOutput = new Map<string, TaskName>()
+  for (const info of infos) {
+    for (const loc of info.outputLocations) {
+      taskNameByOutput.set(loc.pathInRepo.val, info.taskName)
+    }
+  }
+
+  const allLocations = infos.flatMap(x => x.outputLocations.map(x => x.pathInRepo))
 
   for (let ia = 0; ia < allLocations.length; ++ia) {
     const a = allLocations[ia]
@@ -41,9 +46,9 @@ function checkOutputCollisions(infos: TaskInfo[], reg: TaskOutputRegistryImpl) {
       }
       const b = allLocations[ib]
 
-      if (a.startsWith(b)) {
-        const ta = hardGet(taskNameByOutput, a)
-        const tb = hardGet(taskNameByOutput, b)
+      if (a.isPrefixOf(b)) {
+        const ta = hardGet(taskNameByOutput, a.val)
+        const tb = hardGet(taskNameByOutput, b.val)
         throw new BuildFailedError(
           `Output collison in tasks ${ta}, ${tb}: ${a === b ? a : `${a}, ${b} (respectively)`}`,
         )
@@ -53,29 +58,27 @@ function checkOutputCollisions(infos: TaskInfo[], reg: TaskOutputRegistryImpl) {
 
   for (const i of infos) {
     for (const loc of i.outputLocations) {
-      const normed = norm(loc.pathInRepo)
-      reg.add(i.taskName, normed)
+      reg.add(i.taskName, loc.pathInRepo)
     }
   }
 }
 
 export interface TaskOutputRegistry {
-  lookup(unitId: UnitId, outputLoc: string): TaskName | undefined
+  lookup(unitId: UnitId, outputLoc: PathInRepo): TaskName | undefined
 }
 
 class TaskOutputRegistryImpl implements TaskOutputRegistry {
   private readonly map = new Map<string, TaskName>()
   constructor() {}
 
-  add(taskName: TaskName, outputLoc: string) {
+  add(taskName: TaskName, outputLoc: PathInRepo) {
     const { unitId } = TaskName().undo(taskName)
-    const key = JSON.stringify([unitId, norm(outputLoc)])
+    const key = JSON.stringify([unitId, outputLoc.val])
     this.map.set(key, taskName)
   }
 
-  lookup(unitId: UnitId, outputLoc: string): TaskName | undefined {
-    let normed = norm(outputLoc)
-
+  lookup(unitId: UnitId, outputLoc: PathInRepo): TaskName | undefined {
+    let normed = outputLoc.val
     while (true) {
       if (normed === '.') {
         return undefined
@@ -89,10 +92,3 @@ class TaskOutputRegistryImpl implements TaskOutputRegistry {
     }
   }
 }
-
-const norm = (s: string) =>
-  threeWaySplit(
-    path.normalize(s),
-    () => false,
-    c => c === '/',
-  ).mid
