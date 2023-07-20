@@ -1,8 +1,7 @@
-import { PathInRepo } from 'core-types'
+import { PathInRepo, RepoRoot } from 'core-types'
 import * as fse from 'fs-extra'
 import { createNopLogger, Logger } from 'logger'
 import { chaoticDeterministicString, folderify, InMemoryStorageClient, Int, slurpDir, StorageClient } from 'misc'
-import * as path from 'path'
 import { TaskKind, TaskName } from 'task-name'
 import * as TmpSync from 'tmp'
 import { UnitId } from 'unit-metadata'
@@ -10,9 +9,13 @@ import { UnitId } from 'unit-metadata'
 import { Fingerprint } from '../src/fingerprint'
 import { TaskStore } from '../src/task-store'
 
+async function slurp(d: RepoRoot) {
+  return await slurpDir(d.resolve())
+}
+
 describe('task-store', () => {
   const newTaskStore = (sc: StorageClient, logger: Logger, dir?: string) =>
-    new TaskStore(dir ?? TmpSync.dirSync().name, sc, logger)
+    new TaskStore(RepoRoot(dir ?? TmpSync.dirSync().name), sc, logger)
   const logger = createNopLogger()
   async function recordVerdict(
     store: TaskStore,
@@ -96,7 +99,7 @@ describe('task-store', () => {
       const destination = newTaskStore(sc, logger)
       await destination.restoreTask(taskNameFoo, Fingerprint('bar'))
 
-      expect(await slurpDir(destination.repoRootDir)).toEqual({
+      expect(await slurp(destination.repoRootDir)).toEqual({
         'qux/f1.txt': 'four scores',
         'qux/f2.txt': 'and seven years ago',
       })
@@ -123,7 +126,7 @@ describe('task-store', () => {
       )
       await destination.restoreTask(taskNameFoo, Fingerprint('bar'))
 
-      expect(await slurpDir(destination.repoRootDir)).toEqual({
+      expect(await slurp(destination.repoRootDir)).toEqual({
         'qux/f1.txt': 'four scores',
         'qux/f2.txt': 'and seven years ago',
       })
@@ -149,7 +152,7 @@ describe('task-store', () => {
         }),
       )
       await destination.restoreTask(taskNameFoo, Fingerprint('bar'))
-      expect(await slurpDir(destination.repoRootDir)).toEqual({
+      expect(await slurp(destination.repoRootDir)).toEqual({
         'qux/f1.txt': 'four scores',
         'qux/f2.txt': 'and seven years ago',
         'foo/goo/f1.txt': 'We choose to go to the Moon',
@@ -183,7 +186,7 @@ describe('task-store', () => {
       )
 
       await destination.restoreTask(taskNameFoo, Fingerprint('bar'))
-      expect(await slurpDir(destination.repoRootDir)).toEqual({
+      expect(await slurp(destination.repoRootDir)).toEqual({
         'bourne/i': 'The Bourne Identity',
         'bourne/ii': 'The Bourne Supremacy',
         'bourne/iii': 'The Bourne Ultimatum',
@@ -210,18 +213,18 @@ describe('task-store', () => {
       const destination = newTaskStore(sc, logger)
 
       await destination.restoreTask(taskNameA, Fingerprint('fp-1'))
-      expect(await slurpDir(destination.repoRootDir)).toEqual({
+      expect(await slurp(destination.repoRootDir)).toEqual({
         'bourne/actors': 'Matt Damon',
       })
 
       await destination.restoreTask(taskNameB, Fingerprint('fp-1'))
-      expect(await slurpDir(destination.repoRootDir)).toEqual({
+      expect(await slurp(destination.repoRootDir)).toEqual({
         'bourne/actors': 'Matt Damon',
         'starwars/actors': 'Mark Hamill',
       })
 
       await destination.restoreTask(taskNameC, Fingerprint('fp-1'))
-      expect(await slurpDir(destination.repoRootDir)).toEqual({
+      expect(await slurp(destination.repoRootDir)).toEqual({
         'bourne/actors': 'Matt Damon',
         'starwars/actors': 'Mark Hamill',
         'thegodfather/i': 'Al Pacino',
@@ -239,14 +242,14 @@ describe('task-store', () => {
 
       const dest1 = newTaskStore(sc, logger)
       await dest1.restoreTask(taskNameA, Fingerprint('FP-2'))
-      expect(await slurpDir(dest1.repoRootDir)).toEqual({ 'year/heat': '1995' })
+      expect(await slurp(dest1.repoRootDir)).toEqual({ 'year/heat': '1995' })
 
       const dest2 = newTaskStore(sc, logger)
       await dest2.restoreTask(taskNameA, Fingerprint('FP-2'))
-      expect(await slurpDir(dest2.repoRootDir)).toEqual({ 'year/heat': '1995' })
+      expect(await slurp(dest2.repoRootDir)).toEqual({ 'year/heat': '1995' })
       const dest3 = newTaskStore(sc, logger)
       await dest3.restoreTask(taskNameA, Fingerprint('FP-2'))
-      expect(await slurpDir(dest3.repoRootDir)).toEqual({ 'year/heat': '1995' })
+      expect(await slurp(dest3.repoRootDir)).toEqual({ 'year/heat': '1995' })
     })
     test('outputs can be files and not just folders', async () => {
       const sc = new InMemoryStorageClient()
@@ -255,7 +258,7 @@ describe('task-store', () => {
 
       const destination = newTaskStore(sc, logger)
       await destination.restoreTask(taskNameA, Fingerprint('fp'))
-      expect(await slurpDir(destination.repoRootDir)).toEqual({ 'a.txt': 'foo' })
+      expect(await slurp(destination.repoRootDir)).toEqual({ 'a.txt': 'foo' })
     })
     test('outputs can be deeply nested under sub-dirs', async () => {
       const sc = new InMemoryStorageClient()
@@ -278,7 +281,7 @@ describe('task-store', () => {
         }),
       )
       await destination.restoreTask(taskNameA, Fingerprint('fp'))
-      expect(await slurpDir(destination.repoRootDir)).toEqual({
+      expect(await slurp(destination.repoRootDir)).toEqual({
         'a/b/c/d/index.js': 'foo',
         'a/b/c/f/index.js': Fingerprint('bar'),
         'a/b/index.js': 'moo',
@@ -299,7 +302,7 @@ describe('task-store', () => {
 
       const destination = newTaskStore(sc, logger)
       await destination.restoreTask(taskNameA, Fingerprint('fp'))
-      expect(await slurpDir(destination.repoRootDir)).toEqual({ 'a/b/index.js': 'let me in' })
+      expect(await slurp(destination.repoRootDir)).toEqual({ 'a/b/index.js': 'let me in' })
     })
     test('restore retains the mtime and mode values of the files', async () => {
       const sc = new InMemoryStorageClient()
@@ -314,24 +317,24 @@ describe('task-store', () => {
       )
 
       const dir = store.repoRootDir
-      await fse.chmod(path.join(dir, 'a/f1'), 0o755)
-      await fse.chmod(path.join(dir, 'a/f2'), 0o640)
-      await fse.utimes(path.join(dir, 'a/f2'), new Date(0), new Date(2000))
-      await fse.utimes(path.join(dir, 'a/f3'), new Date(0), new Date(3000))
+      await fse.chmod(dir.resolve(PathInRepo('a/f1')), 0o755)
+      await fse.chmod(dir.resolve(PathInRepo('a/f2')), 0o640)
+      await fse.utimes(dir.resolve(PathInRepo('a/f2')), new Date(0), new Date(2000))
+      await fse.utimes(dir.resolve(PathInRepo('a/f3')), new Date(0), new Date(3000))
 
       await store.recordTask(taskNameA, Fingerprint('fp'), [PathInRepo('a')], 'OK')
 
       const destination = newTaskStore(sc, logger)
       await destination.restoreTask(taskNameA, Fingerprint('fp'))
 
-      const stat1 = await fse.stat(path.join(destination.repoRootDir, 'a/f1'))
+      const stat1 = await fse.stat(destination.repoRootDir.resolve(PathInRepo('a/f1')))
       expect(stat1.mode).toEqual(0o100755)
 
-      const stat2 = await fse.stat(path.join(destination.repoRootDir, 'a/f2'))
+      const stat2 = await fse.stat(destination.repoRootDir.resolve(PathInRepo('a/f2')))
       expect(stat2.mtime.getTime()).toEqual(2000)
       expect(stat2.mode).toEqual(0o100640)
 
-      const stat3 = await fse.stat(path.join(destination.repoRootDir, 'a/f3'))
+      const stat3 = await fse.stat(destination.repoRootDir.resolve(PathInRepo('a/f3')))
       expect(stat3.mtime.getTime()).toEqual(3000)
     })
     test('handles multiple output locations', async () => {
@@ -358,7 +361,7 @@ describe('task-store', () => {
         }),
       )
       await destination.restoreTask(taskNameA, Fingerprint('fp'))
-      expect(await slurpDir(destination.repoRootDir)).toEqual({
+      expect(await slurp(destination.repoRootDir)).toEqual({
         'a/b/q/x1.txt': 'this is q/x1',
         'a/b/q/x2.txt': 'this is q/x2',
         'a/b/r/x1.txt': 'this is r/x1',
@@ -389,7 +392,7 @@ describe('task-store', () => {
 
       const destination = newTaskStore(sc, logger)
       await destination.restoreTask(taskNameA, Fingerprint('fp'))
-      expect(await slurpDir(destination.repoRootDir)).toEqual({
+      expect(await slurp(destination.repoRootDir)).toEqual({
         'a/b/c/d/e/f/x1.txt': 'this is x1',
         'a/b/c/d/e/f/x2.txt': 'this is x2',
       })
@@ -448,9 +451,9 @@ describe('task-store', () => {
         }),
       )
 
-      async function takeSanpshot(d: string) {
-        const x1 = await fse.stat(path.join(d, 'a/b/x1.txt'))
-        const x2 = await fse.stat(path.join(d, 'a/b/x2.txt'))
+      async function takeSanpshot(root: RepoRoot) {
+        const x1 = await fse.stat(root.resolve(PathInRepo('a/b/x1.txt')))
+        const x2 = await fse.stat(root.resolve(PathInRepo('a/b/x2.txt')))
         return { x1: { mtime: x1.mtimeMs }, x2: { mtime: x2.mtimeMs } }
       }
 
