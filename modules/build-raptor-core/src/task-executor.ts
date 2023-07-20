@@ -103,7 +103,7 @@ class SingleTaskExecutor {
       status,
       outputFile,
       time,
-      pathInRepo: this.unit.pathInRepo,
+      pathInRepo: this.unit.pathInRepo.val,
     })
   }
 
@@ -121,11 +121,11 @@ class SingleTaskExecutor {
     }
     const parts: Record<string, Fingerprint> = {}
 
-    const sortedInputs = sortBy(t.inputs, t => t)
+    const sortedInputs = sortBy(t.inputs, t => t.val)
     for (const loc of sortedInputs) {
       const fingerprint = await this.model.fingerprintOfDir(loc)
       fps.push(fingerprint)
-      parts[loc] = fingerprint
+      parts[loc.val] = fingerprint
     }
 
     t.computeFingerprint(fps)
@@ -139,7 +139,7 @@ class SingleTaskExecutor {
     const t = this.task
     const missing = await promises(t.outputLocations)
       .filter(async loc => {
-        const resolved = path.join(this.model.rootDir, loc.pathInRepo)
+        const resolved = this.model.rootDir.resolve(loc.pathInRepo)
         const exists = await fse.pathExists(resolved)
         return !exists
       })
@@ -172,7 +172,7 @@ class SingleTaskExecutor {
   }
 
   private get dir() {
-    return path.join(this.model.rootDir, this.unit.pathInRepo)
+    return this.model.rootDir.resolve(this.unit.pathInRepo)
   }
 
   private fp_?: Fingerprint
