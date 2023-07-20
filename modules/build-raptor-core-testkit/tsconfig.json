@@ -12,6 +12,9 @@
       "path": "../build-raptor-core"
     },
     {
+      "path": "../core-types"
+    },
+    {
       "path": "../logger"
     },
     {

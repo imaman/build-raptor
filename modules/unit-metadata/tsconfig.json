@@ -7,6 +7,9 @@
   "references": [
     {
       "path": "../brand"
+    },
+    {
+      "path": "../core-types"
     }
   ],
   "include": ["src/**/*", "src/**/*.json", "tests/**/*", "tests/**/*.json"]
