@@ -18,6 +18,7 @@
   "dependencies": {
     "build-failed-error": "1.0.0",
     "build-raptor-jest-reporter": "1.0.0",
+    "core-types": "1.0.0",
     "escape-string-regexp": "^4.0.0",
     "execa": "^5.0.0",
     "fs-extra": "^9.0.0",

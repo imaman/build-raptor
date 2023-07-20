@@ -18,6 +18,7 @@
   "dependencies": {
     "build-raptor-api": "1.0.0",
     "build-raptor-core": "1.0.0",
+    "core-types": "1.0.0",
     "fs-extra": "^9.0.0",
     "logger": "1.0.0",
     "misc": "1.0.0",
