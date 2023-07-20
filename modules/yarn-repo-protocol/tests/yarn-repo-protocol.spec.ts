@@ -1,4 +1,5 @@
 import { NopAssetPublisher } from 'build-raptor-core'
+import { PathInRepo } from 'core-types'
 import * as fse from 'fs-extra'
 import { createNopLogger } from 'logger'
 import { DirectoryScanner, folderify, slurpDir, TypedPublisher } from 'misc'
@@ -9,6 +10,7 @@ import { UnitId } from 'unit-metadata'
 
 import { YarnRepoProtocol } from '../src/yarn-repo-protocol'
 
+jest.setTimeout(60000)
 describe('yarn-repo-protocol', () => {
   const logger = createNopLogger()
   const p = new TypedPublisher<RepoProtocolEvent>()
@@ -406,7 +408,7 @@ describe('yarn-repo-protocol', () => {
       const yrp = newYarnRepoProtocol()
       await yrp.initialize(d, p)
       const buildResult = await yrp.execute(
-        { id: UnitId('a'), pathInRepo: 'modules/a' },
+        { id: UnitId('a'), pathInRepo: PathInRepo('modules/a') },
         path.join(d, 'modules/a'),
         TaskName(UnitId('a'), TaskKind('build')),
         '/dev/null',

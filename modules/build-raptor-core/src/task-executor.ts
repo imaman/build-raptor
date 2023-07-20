@@ -103,7 +103,7 @@ class SingleTaskExecutor {
       status,
       outputFile,
       time,
-      pathInRepo: this.unit.pathInRepo,
+      pathInRepo: this.unit.pathInRepo.val,
     })
   }
 
@@ -121,11 +121,11 @@ class SingleTaskExecutor {
     }
     const parts: Record<string, Fingerprint> = {}
 
-    const sortedInputs = sortBy(t.inputs, t => t)
+    const sortedInputs = sortBy(t.inputs, t => t.val)
     for (const loc of sortedInputs) {
       const fingerprint = await this.model.fingerprintOfDir(loc)
       fps.push(fingerprint)
-      parts[loc] = fingerprint
+      parts[loc.val] = fingerprint
     }
 
     t.computeFingerprint(fps)
@@ -137,10 +137,9 @@ class SingleTaskExecutor {
 
   private async validateOutputs() {
     const t = this.task
-    const unit = this.unit
     const missing = await promises(t.outputLocations)
       .filter(async loc => {
-        const resolved = path.join(this.model.rootDir, unit.pathInRepo, loc.pathInUnit)
+        const resolved = this.model.rootDir.resolve(loc.pathInRepo)
         const exists = await fse.pathExists(resolved)
         return !exists
       })
@@ -150,7 +149,7 @@ class SingleTaskExecutor {
       return
     }
 
-    const formatted = missing.map(at => `  - ${at.pathInUnit}`).join('\n')
+    const formatted = missing.map(at => `  - ${at.pathInRepo}`).join('\n')
     this.logger.info(`missing outputs for task ${t.name}: ${JSON.stringify(missing)}`)
     throw new BuildFailedError(`Task ${this.taskName} failed to produce the following outputs:\n${formatted}`)
   }
@@ -173,7 +172,7 @@ class SingleTaskExecutor {
   }
 
   private get dir() {
-    return path.join(this.model.rootDir, this.unit.pathInRepo)
+    return this.model.rootDir.resolve(this.unit.pathInRepo)
   }
 
   private fp_?: Fingerprint
@@ -281,7 +280,7 @@ class SingleTaskExecutor {
   private async restoreOutputs() {
     this.diagnose(`restoring outputs`)
     const t = this.task
-    await this.taskStore.restoreTask(t.name, this.fp, this.dir)
+    await this.taskStore.restoreTask(t.name, this.fp)
     this.diagnose(`task restored`)
   }
 
@@ -309,18 +308,18 @@ class SingleTaskExecutor {
       throw new Error(`Task ${JSON.stringify(t.name)} crashed`)
     }
 
-    const locations = t.outputLocations.map(at => at.pathInUnit)
+    const locations = t.outputLocations.map(at => at.pathInRepo)
     if (status === 'OK') {
       await this.validateOutputs()
       this.tracker.registerVerdict(t.name, status, outputFile)
-      await this.taskStore.recordTask(t.name, this.fp, this.dir, locations, 'OK')
+      await this.taskStore.recordTask(t.name, this.fp, locations, 'OK')
       return
     }
 
     if (status === 'FAIL') {
       this.tracker.registerVerdict(t.name, status, outputFile)
       // TODO(imaman): should not record outputs if task has failed.
-      await this.taskStore.recordTask(t.name, this.fp, this.dir, locations, status)
+      await this.taskStore.recordTask(t.name, this.fp, locations, status)
       return
     }
 
@@ -336,7 +335,7 @@ class SingleTaskExecutor {
     const tasks = taskNames.map(tn => this.tracker.getTask(tn))
 
     await promises(tasks).forEach(20, async task => {
-      await this.purger.purgeOutputsOfTask(task, this.model)
+      await this.purger.purgeOutputsOfTask(task)
     })
   }
 }

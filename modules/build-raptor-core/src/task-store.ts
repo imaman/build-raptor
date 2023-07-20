@@ -1,5 +1,6 @@
 import { Brand } from 'brand'
 import * as child_process from 'child_process'
+import { PathInRepo, RepoRoot } from 'core-types'
 import * as fs from 'fs'
 import { createWriteStream } from 'fs'
 import * as fse from 'fs-extra'
@@ -37,6 +38,7 @@ export const BlobId: (s: string) => BlobId = (s: string) => {
 
 export class TaskStore {
   constructor(
+    readonly repoRootDir: RepoRoot,
     private readonly client: StorageClient,
     private readonly logger: Logger,
     private readonly publisher?: TypedPublisher<TaskStoreEvent>,
@@ -122,14 +124,15 @@ export class TaskStore {
     return ['UNKNOWN', blobIdOf(emptyBuffer())]
   }
 
-  private async bundle(dir: string, outputs: readonly string[]) {
+  private async bundle(outputs: PathInRepo[]) {
     if (!outputs.length) {
       return emptyBuffer()
     }
 
-    this.trace?.push(`bundling ${dir}, outputs=${JSON.stringify(outputs)}`)
+    this.trace?.push(`bundling ${JSON.stringify(outputs)}`)
 
-    const metadata = JSON.stringify(metadataSchema.parse({ outputs }))
+    const m: Metadata = { outputs: outputs.map(o => o.val) }
+    const metadata = JSON.stringify(metadataSchema.parse(m))
 
     const metadataBuf = Buffer.from(metadata, 'utf-8')
     if (metadataBuf.length > 100000) {
@@ -142,27 +145,27 @@ export class TaskStore {
     const tempFile = await Tmp.file()
 
     const pack = TarStream.pack()
-    const scanner = new DirectoryScanner(dir)
+    const scanner = new DirectoryScanner(this.repoRootDir.resolve())
     for (const o of outputs) {
-      const exists = await fse.pathExists(path.join(dir, o))
+      const exists = await fse.pathExists(this.repoRootDir.resolve(o))
       if (!exists) {
         // TODO(imaman): turn this into a user-build-error? move it out of this file?
-        throw new Error(`Output location <${o}> does not exist (under <${dir}>)`)
+        throw new Error(`Output location <${o}> does not exist (under <${this.repoRootDir}>)`)
       }
-      await scanner.scanTree(o, (p, content, stat) => {
+      await scanner.scanTree(o.val, (p, content, stat) => {
         if (stat.isDirectory()) {
           return
         }
 
         if (stat.isSymbolicLink()) {
-          throw new Error(`Cannot handle symlinks in output: ${p} (under ${dir})`)
+          throw new Error(`Cannot handle symlinks in output: ${p} (under ${this.repoRootDir})`)
         }
 
         if (!stat.isFile()) {
-          throw new Error(`Cannot handle non-files in output: ${p} (under ${dir})`)
+          throw new Error(`Cannot handle non-files in output: ${p} (under ${this.repoRootDir})`)
         }
 
-        const resolved = path.join(dir, p)
+        const resolved = this.repoRootDir.resolve(PathInRepo(p))
         const { atimeNs, ctimeNs, mtimeNs } = fs.statSync(resolved, { bigint: true })
         this.trace?.push(`adding an entry: ${stat.mode.toString(8)} ${p} ${mtimeNs}`)
         pack.entry({ path: p, mode: stat.mode, mtime: mtimeNs, ctime: ctimeNs, atime: atimeNs }, content)
@@ -170,21 +173,21 @@ export class TaskStore {
     }
 
     const b = pack.toBuffer()
-    this.trace?.push(`bundling of ${dir} -- digest of b is ${computeObjectHash({ data: b.toString('hex') })}`)
+    this.trace?.push(`digest of b is ${computeObjectHash({ data: b.toString('hex') })}`)
     const source = stream.Readable.from(b)
     const gzip = zlib.createGzip()
     const destination = createWriteStream(tempFile.path)
     await pipeline(source, gzip, destination)
 
     const gzipped = await fse.readFile(tempFile.path)
-    this.trace?.push(`gzipped of ${dir} is ${gzipped.length} long`)
+    this.trace?.push(`gzipped is ${gzipped.length} long`)
 
     const ret = Buffer.concat([lenBuf, metadataBuf, gzipped])
-    this.trace?.push(`bundling of ${dir} -- digest of ret is ${computeObjectHash({ data: ret.toString('hex') })}`)
+    this.trace?.push(`bundling digest of ret is ${computeObjectHash({ data: ret.toString('hex') })}`)
     return ret
   }
 
-  private async unbundle(buf: Buffer, dir: string) {
+  private async unbundle(buf: Buffer) {
     if (buf.length === 0) {
       return []
     }
@@ -192,54 +195,63 @@ export class TaskStore {
 
     const unparsed = JSON.parse(buf.slice(LEN_BUF_SIZE, LEN_BUF_SIZE + metadataLen).toString('utf-8'))
     const metadata: Metadata = metadataSchema.parse(unparsed)
+    const outputs = metadata.outputs.map(at => PathInRepo(at))
 
-    const removeOutputDir = async (o: string) => await fse.rm(path.join(dir, o), { recursive: true, force: true })
-    await promises(metadata.outputs)
+    const removeOutputDir = async (o: PathInRepo) =>
+      await fse.rm(this.repoRootDir.resolve(o), { recursive: true, force: true })
+    await promises(outputs)
       .map(async o => await removeOutputDir(o))
       .reify(20)
 
     const source = buf.slice(LEN_BUF_SIZE + metadataLen)
     const unzipped = await unzip(source)
     try {
-      await TarStream.extract(unzipped, dir)
+      await TarStream.extract(unzipped, this.repoRootDir.resolve())
     } catch (e) {
-      throw new Error(`unbundling a buffer (${buf.length} bytes) into ${dir} has failed: ${e}`)
+      throw new Error(`unbundling a buffer (${buf.length} bytes) has failed: ${e}`)
     }
-    return metadata.outputs
+    return outputs
   }
 
   async recordTask(
     taskName: TaskName,
     fingerprint: Fingerprint,
-    dir: string,
-    outputs: readonly string[],
+    outputs: PathInRepo[],
     verdict: 'OK' | 'FAIL',
   ): Promise<void> {
-    const blobId = await this.recordBlob(taskName, dir, outputs)
+    const blobId = await this.recordBlob(taskName, outputs)
     this.putVerdict(taskName, fingerprint, verdict, blobId)
-    this.publisher?.publish('taskStore', { opcode: 'RECORDED', taskName, blobId, fingerprint, files: [...outputs] })
+    this.publisher?.publish('taskStore', {
+      opcode: 'RECORDED',
+      taskName,
+      blobId,
+      fingerprint,
+      files: [...outputs.map(o => o.val)],
+    })
   }
 
-  private async recordBlob(taskName: TaskName, dir: string, outputs: readonly string[]) {
-    const buf = await this.bundle(dir, outputs)
+  private async recordBlob(taskName: TaskName, outputs: PathInRepo[]) {
+    const buf = await this.bundle(outputs)
     const blobId = await this.putBlob(buf, taskName)
     return blobId
   }
 
-  async restoreTask(
-    taskName: TaskName,
-    fingerprint: Fingerprint,
-    dir: string,
-  ): Promise<'FAIL' | 'OK' | 'FLAKY' | 'UNKNOWN'> {
+  async restoreTask(taskName: TaskName, fingerprint: Fingerprint): Promise<'FAIL' | 'OK' | 'FLAKY' | 'UNKNOWN'> {
     const [verdict, blobId] = await this.getVerdict(taskName, fingerprint)
-    const files = await this.restoreBlob(blobId, dir)
-    this.publisher?.publish('taskStore', { opcode: 'RESTORED', taskName, blobId, fingerprint, files })
+    const files = await this.restoreBlob(blobId)
+    this.publisher?.publish('taskStore', {
+      opcode: 'RESTORED',
+      taskName,
+      blobId,
+      fingerprint,
+      files: files.map(o => o.val),
+    })
     return verdict
   }
 
-  async restoreBlob(blobId: BlobId, dir: string) {
+  async restoreBlob(blobId: BlobId) {
     const buf = await this.getBlob(blobId)
-    const files = await this.unbundle(buf, dir)
+    const files = await this.unbundle(buf)
     return files
   }
 

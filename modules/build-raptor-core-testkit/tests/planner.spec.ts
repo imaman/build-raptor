@@ -96,7 +96,7 @@ describe('planner', () => {
     const fork = await driver.repo(recipe).fork()
 
     const r1 = await fork.run('FAIL')
-    expect(r1.message).toMatch(`Output collison: tasks a:T_1, a:T_3 both declare output 'foo'`)
+    expect(r1.message).toMatch(`Output collision in tasks a:T_3, a:T_3: a/foo`)
   })
   describe('depList', () => {
     test('allows the protocol to sepcify tasks other than "build" or "test" and their execution order', async () => {

@@ -1,31 +1,26 @@
 import { BuildRunId } from 'build-run-id'
+import { PathInRepo, RepoRoot } from 'core-types'
 import { findDups, Graph, uniqueBy } from 'misc'
-import * as path from 'path'
 import { UnitId, UnitMetadata } from 'unit-metadata'
 
 import { Fingerprinter } from './fingerprinter'
 
 export class Model {
   constructor(
-    readonly rootDir: string,
+    readonly rootDir: RepoRoot,
     readonly graph: Graph<UnitId>,
     readonly units: UnitMetadata[],
     readonly buildRunId: BuildRunId,
     private readonly fingerprinter: Fingerprinter,
   ) {
-    if (!path.isAbsolute(rootDir)) {
-      throw new Error(`Root dir must be absolute path (got: ${rootDir})`)
-    }
-
     const dupUnitIds = findDups(units, u => u.id).map(u => u.id)
     if (dupUnitIds.length) {
       throw new Error(`Unit ID collision detected: ${JSON.stringify(uniqueBy(dupUnitIds, x => x))}`)
     }
-    this.rootDir = path.resolve(rootDir)
   }
 
-  async fingerprintOfDir(pathInRepo: string) {
-    return await this.fingerprinter.computeFingerprint(pathInRepo)
+  async fingerprintOfDir(pathInRepo: PathInRepo) {
+    return await this.fingerprinter.computeFingerprint(pathInRepo.val)
   }
 
   getUnit(id: UnitId): UnitMetadata {

@@ -3,7 +3,7 @@ import * as fse from 'fs-extra'
 import jsonStringify from 'safe-stable-stringify'
 import * as util from 'util'
 
-type Jsonable = string | number | boolean | null | readonly Jsonable[] | { readonly [key: string]: Jsonable }
+export type Jsonable = string | number | boolean | null | readonly Jsonable[] | { readonly [key: string]: Jsonable }
 
 export function computeObjectHash(input: Record<string, Jsonable>): string {
   // TODO(imaman): add a test where a nested (sub) object of the input is not sorted.

@@ -1,5 +1,5 @@
 import { Brand } from 'brand'
-
+import { PathInRepo } from 'core-types'
 export type UnitId = Brand<string, 'UnitId'>
 
 function validate(input: string): asserts input is UnitId {
@@ -20,10 +20,13 @@ export const UnitId: (input: string) => UnitId = (input: string) => {
 }
 
 export class UnitMetadata {
+  readonly pathInRepo
   /**
    *
    * @param pathInRepo path (relative to the repo's root dir) to a directory which is the root directory of the unit.
    * @param id
    */
-  constructor(readonly pathInRepo: string, readonly id: UnitId) {}
+  constructor(pathInRepo: string, readonly id: UnitId) {
+    this.pathInRepo = PathInRepo(pathInRepo)
+  }
 }

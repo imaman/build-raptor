@@ -9,7 +9,7 @@
       "path": "../brand"
     },
     {
-      "path": "../core-types"
+      "path": "../misc"
     }
   ],
   "include": ["src/**/*", "src/**/*.json", "tests/**/*", "tests/**/*.json"]

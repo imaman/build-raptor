@@ -1,5 +1,6 @@
 import { BuildFailedError } from 'build-failed-error'
 import { BuildRunId } from 'build-run-id'
+import { PathInRepo, RepoRoot } from 'core-types'
 import * as fse from 'fs-extra'
 import ignore from 'ignore'
 import { Logger } from 'logger'
@@ -49,7 +50,7 @@ export class Engine {
    */
   constructor(
     private readonly logger: Logger,
-    private readonly rootDir: string,
+    private readonly rootDir: RepoRoot,
     private readonly repoProtocol: RepoProtocol,
     private readonly taskStore: TaskStore,
     private readonly taskOutputDir: string,
@@ -114,13 +115,13 @@ export class Engine {
       ? new PersistedFingerprintLedger(logger, ledgerFile)
       : new NopFingerprintLedger()
 
-    this.purger = new Purger(this.logger)
+    this.purger = new Purger(this.logger, this.rootDir)
   }
 
   async run(buildRunId: BuildRunId) {
     this.steps.push({ step: 'BUILD_RUN_STARTED', buildRunId, commitHash: this.options.commitHash })
     await this.fingerprintLedger.updateRun(buildRunId)
-    await this.repoProtocol.initialize(this.rootDir, this.eventPublisher, this.options.config.repoProtocol)
+    await this.repoProtocol.initialize(this.rootDir.resolve(), this.eventPublisher, this.options.config.repoProtocol)
     try {
       const model = await this.loadModel(buildRunId)
 
@@ -177,7 +178,7 @@ export class Engine {
   }
 
   async loadModel(buildRunId: BuildRunId) {
-    const gitIgnorePath = path.join(this.rootDir, '.gitignore')
+    const gitIgnorePath = this.rootDir.resolve(PathInRepo('.gitignore'))
     const ig = ignore()
     if (await fse.pathExists(gitIgnorePath)) {
       const gitIgnoreContent = await fse.readFile(gitIgnorePath, 'utf8')
@@ -200,7 +201,7 @@ export class Engine {
     }
 
     this.logger.info(`unit graph=\n${graph}`)
-    const scanner = new DirectoryScanner(this.rootDir, { predicate: ig.createFilter() })
+    const scanner = new DirectoryScanner(this.rootDir.resolve(), { predicate: ig.createFilter() })
     const fingerprinter = new Fingerprinter(scanner, this.logger, async (h, c) => {
       if (c) {
         this.fingerprintLedger.updateFile(h, c)
@@ -208,6 +209,6 @@ export class Engine {
         this.fingerprintLedger.updateDirectory(h)
       }
     })
-    return new Model(path.resolve(this.rootDir), graph, units, buildRunId, fingerprinter)
+    return new Model(this.rootDir, graph, units, buildRunId, fingerprinter)
   }
 }

@@ -1,5 +1,6 @@
 import { Brand } from 'brand'
 import { BuildRunId } from 'build-run-id'
+import { RepoRoot } from 'core-types'
 import * as fse from 'fs-extra'
 import {
   FolderifyRecipe,
@@ -13,7 +14,6 @@ import {
   slurpDir,
   writeRecipe,
 } from 'misc'
-import * as path from 'path'
 import { CatalogOfTasks, ExitStatus, RepoProtocol, TaskDefinition } from 'repo-protocol'
 import { TaskKind, TaskName } from 'task-name'
 import { UnitId, UnitMetadata } from 'unit-metadata'
@@ -241,18 +241,18 @@ const DEFAULT_CATALOG_SPEC = {
 }
 
 class RepoProtocolImpl implements RepoProtocol {
-  private rootDir = ''
+  private rootDir = RepoRoot('/')
 
   constructor(private readonly units: readonly UnitMetadata[], private readonly state: State) {}
 
   async initialize(rootDir: string): Promise<void> {
-    this.rootDir = rootDir
+    this.rootDir = RepoRoot(rootDir)
   }
 
   async close() {}
 
   async execute(
-    u: UnitMetadata,
+    _u: UnitMetadata,
     dir: string,
     tn: TaskName,
     outputFile: string,
@@ -274,7 +274,7 @@ class RepoProtocolImpl implements RepoProtocol {
     const ret: UnitMetadata[] = [...this.units]
     const arr = await Promise.all(
       ret.map(async u => {
-        const exist = await fse.pathExists(path.join(this.rootDir, u.pathInRepo))
+        const exist = await fse.pathExists(this.rootDir.resolve(u.pathInRepo))
         if (exist) {
           return undefined
         }

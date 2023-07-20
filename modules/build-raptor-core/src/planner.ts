@@ -1,7 +1,7 @@
 import { BuildFailedError } from 'build-failed-error'
+import { PathInRepo } from 'core-types'
 import { Logger } from 'logger'
 import { Graph, recordToPairs, uniqueBy } from 'misc'
-import * as path from 'path'
 import { CatalogOfTasks, TaskDefinition } from 'repo-protocol'
 import { TaskKind, TaskName } from 'task-name'
 import { UnitMetadata } from 'unit-metadata'
@@ -93,14 +93,15 @@ export class Planner {
 
     const outputLocations: OutputLocation[] = (definition?.outputs ?? []).map(at => {
       if (typeof at === 'string') {
-        return { pathInUnit: at, purge: 'NEVER' }
+        return { pathInRepo: unit.pathInRepo.expand(at), purge: 'NEVER' }
       }
 
       return {
-        pathInUnit: at.pathInUnit,
+        pathInRepo: unit.pathInRepo.expand(at.pathInUnit),
         purge: at.purge,
       }
     })
+
     const ret: TaskInfo = {
       taskName,
       deps,
@@ -161,17 +162,17 @@ export class Planner {
 
     const u = model.getUnit(unitId)
 
-    const inputs = info.inputsInUnit.map(i => path.join(u.pathInRepo, i))
+    const inputs: PathInRepo[] = info.inputsInUnit.map(i => u.pathInRepo.expand(i))
 
     for (const d of model.unitDependenciesOf(unitId)) {
       if (d.id === unitId) {
         continue
       }
       for (const i of info.inputsInDeps) {
-        const p = path.join(d.pathInRepo, i)
+        const p = d.pathInRepo.expand(i)
         inputs.push(p)
 
-        const other = reg.lookup(d.id, i)
+        const other = reg.lookup(d.id, p)
         if (!other) {
           continue
           // TODO(imaman): this should be a build error
@@ -187,7 +188,7 @@ export class Planner {
     this.taskGraph.vertex(taskName)
 
     for (const inputLoc of info.inputsInUnit) {
-      const other = reg.lookup(unitId, inputLoc)
+      const other = reg.lookup(unitId, u.pathInRepo.expand(inputLoc))
       if (other) {
         this.taskGraph.edge(taskName, other)
       }

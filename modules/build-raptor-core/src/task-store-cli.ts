@@ -1,3 +1,4 @@
+import { RepoRoot } from 'core-types'
 import * as fs from 'fs'
 import { createNopLogger } from 'logger'
 import { FilesystemStorageClient } from 'misc'
@@ -18,13 +19,13 @@ async function main(args: string[]) {
   }
 
   const sc = await FilesystemStorageClient.create(path.join(os.homedir(), '.build-raptor/storage'))
-  const taskStore = new TaskStore(sc, createNopLogger())
 
   const blobId = BlobId(args[2].trim())
 
   const outputDir = path.join(process.cwd(), blobId)
+  const taskStore = new TaskStore(RepoRoot(outputDir), sc, createNopLogger())
   fs.mkdirSync(outputDir)
-  await taskStore.restoreBlob(blobId, outputDir)
+  await taskStore.restoreBlob(blobId)
   print(`Blob restored to ${outputDir}`)
 }
 
