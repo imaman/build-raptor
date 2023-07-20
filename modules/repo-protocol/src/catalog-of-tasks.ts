@@ -23,6 +23,10 @@ export interface CatalogOfTasks {
 
   readonly tasks?: readonly TaskDefinition[]
   readonly depList?: readonly [TaskName, TaskName][]
+  // TODO(imaman): document
   readonly complete?: boolean
+  /**
+   * Not used yet.
+   */
   taskList?: TaskInfo[]
 }
