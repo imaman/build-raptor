@@ -173,7 +173,7 @@ export class Planner {
         const p = path.join(d.pathInRepo, i)
         inputs.push(p)
 
-        const other = reg.lookup(d.id, i)
+        const other = reg.lookup(d.id, p)
         if (!other) {
           continue
           // TODO(imaman): this should be a build error

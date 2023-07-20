@@ -4,6 +4,7 @@ import { createNopLogger } from 'logger'
 
 import { YarnRepoProtocol } from '../src/yarn-repo-protocol'
 
+jest.setTimeout(90000)
 describe('asset-publishing', () => {
   const logger = createNopLogger()
 
@@ -59,7 +60,7 @@ describe('asset-publishing', () => {
     await fork.run('OK', { taskKind: 'publish-assets' })
     const putSteps = await fork.getSteps('TASK_STORE_PUT')
     const blobId = putSteps.find(at => at.taskName === 'a:publish-assets')?.blobId
-    expect(await driver.slurpBlob(blobId)).toEqual({ 'prepared-assets/x': 'a\n' })
+    expect(await driver.slurpBlob(blobId)).toEqual({ 'modules/a/prepared-assets/x': 'a\n' })
 
     const assetSteps = await fork.getSteps('ASSET_PUBLISHED')
     expect(assetSteps.find(at => at.taskName === 'a:publish-assets')?.fingerprint).toHaveLength(56)
@@ -78,7 +79,7 @@ describe('asset-publishing', () => {
 
     const readBlob = async (taskName: string) => {
       const steps = await fork.readStepByStepFile()
-      const blobId = steps
+      const blobId: string | undefined = steps
         .filter(at => at.step !== 'BUILD_RUN_STARTED' && at.step !== 'BUILD_RUN_ENDED' && at.taskName === taskName)
         .flatMap(at => (at.step === 'TASK_STORE_GET' || at.step === 'TASK_STORE_PUT' ? [at] : []))
         .find(Boolean)?.blobId
@@ -86,12 +87,12 @@ describe('asset-publishing', () => {
     }
 
     await fork.run('OK', { taskKind: 'publish-assets' })
-    expect(Object.keys(await readBlob('a:publish-assets'))).toEqual(['prepared-assets/x1'])
+    expect(Object.keys(await readBlob('a:publish-assets'))).toEqual(['modules/a/prepared-assets/x1'])
 
     await fork
       .file('modules/a/package.json')
       .write(driver.packageJson('a', [], { 'prepare-assets': 'echo "a" > prepared-assets/x2' }))
     await fork.run('OK', { taskKind: 'publish-assets' })
-    expect(Object.keys(await readBlob('a:publish-assets'))).toEqual(['prepared-assets/x2'])
+    expect(Object.keys(await readBlob('a:publish-assets'))).toEqual(['modules/a/prepared-assets/x2'])
   })
 })
