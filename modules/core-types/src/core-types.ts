@@ -2,13 +2,19 @@ import { Brand } from 'brand'
 import { threeWaySplit } from 'misc'
 import * as path from 'path'
 
-export type RepoRoot = Brand<string, 'RepoRoot'>
-
 export function RepoRoot(input: string) {
+  input = path.normalize(input)
+  if (!path.isAbsolute(input)) {
+    throw new Error(`Repo root must be absolute (got: ${input})`)
+  }
   return {
-    resolve: (pathInRepo: PathInRepo) => path.join(input, pathInRepo.val),
+    resolve: (pathInRepo?: PathInRepo) => (pathInRepo ? path.join(input, pathInRepo.val) : input),
+    unresolve: (absolutePath: string) => PathInRepo(path.relative(input, absolutePath)),
+    toString: () => input,
+    toJSON: () => input,
   }
 }
+export type RepoRoot = ReturnType<typeof RepoRoot>
 
 type Mark = Brand<string, 'PathInRepo'>
 
