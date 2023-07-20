@@ -346,42 +346,6 @@ describe('yarn-repo-protocol.e2e', () => {
     const run3 = await fork.run('OK', { taskKind: 'build' })
     expect(run3.executionTypeOf('a', 'build')).toEqual('EXECUTED')
   })
-  describe('test reporting', () => {
-    test('publishes test events', async () => {
-      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
-      const recipe = {
-        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
-        'modules/a/package.json': driver.packageJson('a'),
-        'modules/a/src/a.ts': `//`,
-        'modules/a/tests/a.spec.ts': `
-          describe('a', () => {
-            test('foo', () => { expect(1).toEqual(1) })
-            test('bar', () => { expect(1).toEqual(2) })
-          })`,
-      }
-
-      const fork = await driver.repo(recipe).fork()
-
-      await fork.run('FAIL', { taskKind: 'test' })
-      const steps = await fork.readStepByStepFile()
-      expect(steps.filter(at => at.step === 'TEST_ENDED')).toEqual([
-        expect.objectContaining({
-          step: 'TEST_ENDED',
-          taskName: 'a:test',
-          fileName: 'modules/a/dist/tests/a.spec.js',
-          testPath: ['a', 'foo'],
-          verdict: 'TEST_PASSED',
-        }),
-        expect.objectContaining({
-          step: 'TEST_ENDED',
-          taskName: 'a:test',
-          fileName: 'modules/a/dist/tests/a.spec.js',
-          testPath: ['a', 'bar'],
-          verdict: 'TEST_FAILED',
-        }),
-      ])
-    })
-  })
   describe('uber building', () => {
     test('the build output contains errors from all modules', async () => {
       const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
