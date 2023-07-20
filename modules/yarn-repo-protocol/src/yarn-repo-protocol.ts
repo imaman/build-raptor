@@ -688,6 +688,10 @@ export class YarnRepoProtocol implements RepoProtocol {
     return this.state.units
   }
 
+  private unitOf(uid: UnitId) {
+    this.state.units.find(at => at.id === uid) ?? failMe(`Unit not found (unit ID: ${uid})`)
+  }
+
   async getTasks(): Promise<CatalogOfTasks> {
     const build = TaskKind('build')
     const pack = TaskKind('pack')
@@ -731,6 +735,7 @@ export class YarnRepoProtocol implements RepoProtocol {
         },
       ],
       taskList: unitIds
+        .map(at => this.unitOf(at))
         .flatMap(u => [this.buildTask(u), this.testTask(u), this.packTask(u), this.publishTask(u)])
         .flatMap(x => (x ? [x] : [])),
     }
@@ -738,16 +743,20 @@ export class YarnRepoProtocol implements RepoProtocol {
     return ret
   }
 
-  private buildTask(_u: UnitId): TaskInfo | undefined {
-    return {}
+  private buildTask(u: UnitMetadata): TaskInfo | undefined {
+    return {
+      taskName: TaskName(u.id, TaskKind('build')),
+      outputLocations: [{ pathInRepo: u.pathInRepo.expand(this.dist()), purge: 'NEVER' }],
+      inputs: [],
+    }
   }
-  private testTask(_u: UnitId): TaskInfo | undefined {
+  private testTask(_u: UnitMetadata): TaskInfo | undefined {
     return undefined
   }
-  private packTask(_u: UnitId): TaskInfo | undefined {
+  private packTask(_u: UnitMetadata): TaskInfo | undefined {
     return undefined
   }
-  private publishTask(_u: UnitId): TaskInfo | undefined {
+  private publishTask(_u: UnitMetadata): TaskInfo | undefined {
     return undefined
   }
 
