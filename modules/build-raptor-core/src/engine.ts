@@ -114,7 +114,7 @@ export class Engine {
       ? new PersistedFingerprintLedger(logger, ledgerFile)
       : new NopFingerprintLedger()
 
-    this.purger = new Purger(this.logger)
+    this.purger = new Purger(this.logger, this.rootDir)
   }
 
   async run(buildRunId: BuildRunId) {
