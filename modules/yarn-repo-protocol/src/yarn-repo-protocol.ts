@@ -689,7 +689,7 @@ export class YarnRepoProtocol implements RepoProtocol {
   }
 
   private unitOf(uid: UnitId) {
-    this.state.units.find(at => at.id === uid) ?? failMe(`Unit not found (unit ID: ${uid})`)
+    return this.state.units.find(at => at.id === uid) ?? failMe(`Unit not found (unit ID: ${uid})`)
   }
 
   async getTasks(): Promise<CatalogOfTasks> {
@@ -744,10 +744,20 @@ export class YarnRepoProtocol implements RepoProtocol {
   }
 
   private buildTask(u: UnitMetadata): TaskInfo | undefined {
+    const dir = u.pathInRepo
+    const deps = this.state.graph.neighborsOf(u.id).map(at => this.unitOf(at).pathInRepo)
     return {
       taskName: TaskName(u.id, TaskKind('build')),
-      outputLocations: [{ pathInRepo: u.pathInRepo.expand(this.dist()), purge: 'NEVER' }],
-      inputs: [],
+      outputLocations: [{ pathInRepo: dir.expand(this.dist()), purge: 'NEVER' }],
+      inputs: [
+        dir.expand(this.src),
+        dir.expand(this.tests),
+        dir.expand('package.json'),
+        ...deps.map(d => d.expand(this.dist())),
+      ],
+      deps: [],
+      inputsInDeps: [],
+      inputsInUnit: [],
     }
   }
   private testTask(_u: UnitMetadata): TaskInfo | undefined {
