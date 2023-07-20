@@ -739,7 +739,7 @@ export class YarnRepoProtocol implements RepoProtocol {
   }
 
   private buildTask(_u: UnitId): TaskInfo | undefined {
-    return undefined
+    return {}
   }
   private testTask(_u: UnitId): TaskInfo | undefined {
     return undefined
