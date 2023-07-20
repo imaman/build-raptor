@@ -1,4 +1,5 @@
 import { BuildRunId } from 'build-run-id'
+import { RepoRoot } from 'core-types'
 import { createNopLogger } from 'logger'
 import { DirectoryScanner, Graph } from 'misc'
 import * as Tmp from 'tmp-promise'
@@ -19,7 +20,7 @@ describe('model', () => {
     const ds = new DirectoryScanner((await Tmp.dir()).path)
     const fingerprinter = new Fingerprinter(ds, createNopLogger())
 
-    expect(() => new Model('/d', g, units, BuildRunId('a'), fingerprinter)).toThrowError(
+    expect(() => new Model(RepoRoot('/d'), g, units, BuildRunId('a'), fingerprinter)).toThrowError(
       'Unit ID collision detected: ["a"]',
     )
   })
