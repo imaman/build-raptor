@@ -1,3 +1,4 @@
+import { RepoRoot } from 'core-types'
 import * as fs from 'fs'
 import { createNopLogger } from 'logger'
 import { FilesystemStorageClient } from 'misc'
@@ -22,7 +23,7 @@ async function main(args: string[]) {
   const blobId = BlobId(args[2].trim())
 
   const outputDir = path.join(process.cwd(), blobId)
-  const taskStore = new TaskStore(outputDir, sc, createNopLogger())
+  const taskStore = new TaskStore(RepoRoot(outputDir), sc, createNopLogger())
   fs.mkdirSync(outputDir)
   await taskStore.restoreBlob(blobId)
   print(`Blob restored to ${outputDir}`)
