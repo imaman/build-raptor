@@ -8,12 +8,9 @@ import { TaskInfo } from './task-info'
 
 export function validateTaskInfos(infos: TaskInfo[]): TaskOutputRegistry {
   checkNameCollision(infos)
-  const byUnits = groupBy(infos, x => TaskName().undo(x.taskName).unitId)
 
   const ret = new TaskOutputRegistryImpl()
-  for (const [_, infosOfUnit] of recordToPairs(byUnits)) {
-    checkOutputCollisions(infosOfUnit, ret)
-  }
+  checkOutputCollisions(infos, ret)
   return ret
 }
 
@@ -36,11 +33,13 @@ function checkOutputCollisions(infos: TaskInfo[], reg: TaskOutputRegistryImpl) {
   )
   const allLocations = infos.flatMap(x => x.outputLocations).map(x => norm(x.pathInRepo))
 
-  for (const a of allLocations) {
-    for (const b of allLocations) {
-      if (a === b) {
+  for (let ia = 0; ia < allLocations.length; ++ia) {
+    const a = allLocations[ia]
+    for (let ib = 0; ib < allLocations.length; ++ib) {
+      if (ia === ib) {
         continue
       }
+      const b = allLocations[ib]
 
       if (a.startsWith(b)) {
         const ta = hardGet(taskNameByOutput, a)
