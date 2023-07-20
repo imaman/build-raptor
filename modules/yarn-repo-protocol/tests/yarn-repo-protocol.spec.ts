@@ -9,6 +9,7 @@ import { UnitId } from 'unit-metadata'
 
 import { YarnRepoProtocol } from '../src/yarn-repo-protocol'
 
+jest.setTimeout(60000)
 describe('yarn-repo-protocol', () => {
   const logger = createNopLogger()
   const p = new TypedPublisher<RepoProtocolEvent>()

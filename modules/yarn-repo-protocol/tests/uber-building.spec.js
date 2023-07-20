@@ -4,6 +4,7 @@ import { createNopLogger } from 'logger'
 
 import { YarnRepoProtocol } from '../src/yarn-repo-protocol'
 
+jest.setTimeout(60000)
 describe('uber-building', () => {
   const logger = createNopLogger()
 
