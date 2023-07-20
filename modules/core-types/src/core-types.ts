@@ -15,15 +15,28 @@ type Mark = Brand<string, 'PathInRepo'>
 export type PathInRepo = {
   readonly mark: Mark
   val: string
-  toJSON: () => string
+  isPrefixOf(other: PathInRepo): boolean
+  expand(relativePath: string): PathInRepo
+  toJSON(): string
+  toString(): string
 }
 
 export function PathInRepo(input: string): PathInRepo {
   const val = norm(input)
+  const isPrefixOf = (other: PathInRepo) => other.val.startsWith(val)
   return {
     mark: '' as Mark, // eslint-disable-line @typescript-eslint/consistent-type-assertions
     val,
+    isPrefixOf,
+    expand: (relativePath: string) => {
+      const ret = PathInRepo(path.join(val, relativePath))
+      if (!isPrefixOf(ret)) {
+        throw new Error(`Cannot expand (${val}) with a ${relativePath}`)
+      }
+      return ret
+    },
     toJSON: () => val,
+    toString: () => val,
   }
 }
 
