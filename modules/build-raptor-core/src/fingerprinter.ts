@@ -8,6 +8,7 @@ import { Hasher } from './hasher'
 
 export type OnHasherClose = (h: Hasher, content?: string) => Promise<void>
 
+// TODO(imaman): use PathInRepo
 export class Fingerprinter {
   constructor(
     private readonly dirScanner: DirectoryScanner,
