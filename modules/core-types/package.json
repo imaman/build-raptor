@@ -16,6 +16,7 @@
     "preset": "../../jest.preset.js"
   },
   "dependencies": {
-    "brand": "1.0.0"
+    "brand": "1.0.0",
+    "misc": "1.0.0"
   }
 }
