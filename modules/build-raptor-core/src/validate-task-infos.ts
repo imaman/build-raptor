@@ -23,7 +23,7 @@ function checkNameCollision(infos: TaskInfo[]) {
   const sorted = sortBy(pairs, ([_, infos]) => -infos.length)
   const highest = sorted[0] || failMe(`list of sorted task infos is unexplainably empty`)
 
-  throw new BuildFailedError(`Task name collison: ${highest[0]} (${highest[1].length} occurences)`)
+  throw new BuildFailedError(`Task name collison: ${highest[0]} (${highest[1].length} occurrences)`)
 }
 
 function checkOutputCollisions(infos: TaskInfo[], reg: TaskOutputRegistryImpl) {
