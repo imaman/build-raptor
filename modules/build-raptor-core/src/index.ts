@@ -1,6 +1,7 @@
 export * from './breakdown'
 export * from './default-asset-publisher'
 export * from './engine-bootstrapper'
+export * from './model'
 export * from './nop-asset-publisher'
 export * from './task-store'
 export * from './task-summary'

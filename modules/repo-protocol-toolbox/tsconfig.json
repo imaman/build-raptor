@@ -1,0 +1,28 @@
+{
+  "extends": "../../tsconfig-base.json",
+  "compilerOptions": {
+    "composite": true,
+    "outDir": "dist"
+  },
+  "references": [
+    {
+      "path": "../build-raptor-core"
+    },
+    {
+      "path": "../logger"
+    },
+    {
+      "path": "../misc"
+    },
+    {
+      "path": "../repo-protocol"
+    },
+    {
+      "path": "../task-name"
+    },
+    {
+      "path": "../unit-metadata"
+    }
+  ],
+  "include": ["src/**/*", "src/**/*.json", "tests/**/*", "tests/**/*.json"]
+}

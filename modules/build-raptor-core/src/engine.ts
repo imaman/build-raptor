@@ -127,7 +127,7 @@ export class Engine {
 
       const catalog = await this.repoProtocol.getTasks()
       this.logger.info(`catalog=\n${JSON.stringify(catalog, null, 2)}`)
-      const plan = await new Planner(this.logger).computePlan(model, catalog)
+      const plan = await new Planner(this.logger).computePlan(catalog.taskList ?? [], model)
       const startingPoints = plan.apply(this.command, this.units)
       if (startingPoints.length === 0) {
         throw new BuildFailedError(
