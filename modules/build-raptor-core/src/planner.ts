@@ -19,9 +19,7 @@ export class Planner {
   constructor(private readonly logger: Logger) {}
 
   async computePlan(model: Model, catalog: CatalogOfTasks): Promise<ExecutionPlan> {
-    const kinds = this.collectKinds(catalog)
-
-    const infos: TaskInfo[] = this.computeInfos(catalog, model, kinds)
+    const infos: TaskInfo[] = this.computeInfos(catalog, model)
     const reg = validateTaskInfos(infos)
 
     for (const info of infos) {
@@ -37,10 +35,12 @@ export class Planner {
     return new ExecutionPlan(this.taskGraph, this.tasks, this.logger)
   }
 
-  private computeInfos(catalog: CatalogOfTasks, model: Model, kinds: TaskKind[]) {
+  private computeInfos(catalog: CatalogOfTasks, model: Model) {
     if (catalog.taskList) {
       return catalog.taskList
     }
+
+    const kinds = this.collectKinds(catalog)
     const ret: TaskInfo[] = []
     const tasksFromDepList = catalog.complete ? new Set<TaskName>(catalog.depList?.flatMap(x => x) ?? []) : undefined
     for (const unit of model.units) {

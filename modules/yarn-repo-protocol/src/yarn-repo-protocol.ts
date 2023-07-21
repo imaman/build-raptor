@@ -693,46 +693,39 @@ export class YarnRepoProtocol implements RepoProtocol {
   }
 
   async getTasks(): Promise<CatalogOfTasks> {
-    const build = TaskKind('build')
-    const pack = TaskKind('pack')
-    const test = TaskKind('test')
-    const publish = TaskKind('publish-assets')
-
     const unitIds = this.state.units.map(u => u.id)
-
-    const unitsWith = (s: string) => unitIds.filter(at => this.hasRunScript(at, s))
 
     const ret: CatalogOfTasks = {
       inUnit: {
-        [test]: [build],
-        [pack]: [build],
+        // [test]: [build],
+        // [pack]: [build],
       },
       onDeps: {},
       tasks: [
-        {
-          taskKind: build,
-          outputs: [this.dist()],
-          inputsInDeps: [this.dist('s')],
-          inputsInUnit: [this.src, this.tests, 'package.json'],
-        },
-        {
-          taskKind: test,
-          outputs: [{ pathInUnit: JEST_OUTPUT_FILE, purge: 'ALWAYS' }],
-          inputsInUnit: [this.dist('s'), this.dist('t')],
-          inputsInDeps: [this.dist('s')],
-        },
-        {
-          taskKind: pack,
-          outputs: [PACK_DIR],
-          inputsInUnit: [this.dist('s')],
-          inputsInDeps: [this.dist('s')],
-        },
-        {
-          taskKind: publish,
-          unitIds: unitsWith(this.scriptNames.prepareAssets),
-          outputs: [PREPARED_ASSETS_DIR],
-          inputsInUnit: [this.dist('s')],
-        },
+        // {
+        //   taskKind: build,
+        //   outputs: [this.dist()],
+        //   inputsInDeps: [this.dist('s')],
+        //   inputsInUnit: [this.src, this.tests, 'package.json'],
+        // },
+        // {
+        //   taskKind: test,
+        //   outputs: [{ pathInUnit: JEST_OUTPUT_FILE, purge: 'ALWAYS' }],
+        //   inputsInUnit: [this.dist('s'), this.dist('t')],
+        //   inputsInDeps: [this.dist('s')],
+        // },
+        // {
+        //   taskKind: pack,
+        //   outputs: [PACK_DIR],
+        //   inputsInUnit: [this.dist('s')],
+        //   inputsInDeps: [this.dist('s')],
+        // },
+        // {
+        //   taskKind: publish,
+        //   unitIds: unitsWith(this.scriptNames.prepareAssets),
+        //   outputs: [PREPARED_ASSETS_DIR],
+        //   inputsInUnit: [this.dist('s')],
+        // },
       ],
       taskList: unitIds
         .map(at => this.unitOf(at))
