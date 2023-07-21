@@ -730,7 +730,10 @@ export class YarnRepoProtocol implements RepoProtocol {
   }
   private testTask(u: UnitMetadata): TaskInfo | undefined {
     const dir = u.pathInRepo
-    const deps = this.state.graph.neighborsOf(u.id).map(at => this.unitOf(at).pathInRepo)
+    const deps = this.state.graph
+      .traverseFrom(u.id)
+      .filter(at => at !== u.id)
+      .map(at => this.unitOf(at).pathInRepo)
     return {
       taskName: TaskName(u.id, TaskKind('test')),
       outputLocations: [{ pathInRepo: dir.expand(JEST_OUTPUT_FILE), purge: 'ALWAYS' }],
@@ -747,7 +750,10 @@ export class YarnRepoProtocol implements RepoProtocol {
   }
   private packTask(u: UnitMetadata): TaskInfo | undefined {
     const dir = u.pathInRepo
-    const deps = this.state.graph.neighborsOf(u.id).map(at => this.unitOf(at).pathInRepo)
+    const deps = this.state.graph
+      .traverseFrom(u.id)
+      .filter(at => at !== u.id)
+      .map(at => this.unitOf(at).pathInRepo)
     return {
       taskName: TaskName(u.id, TaskKind('pack')),
       outputLocations: [{ pathInRepo: dir.expand(PACK_DIR), purge: 'NEVER' }],
