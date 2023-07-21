@@ -1,5 +1,5 @@
 import { PathInRepo } from 'core-types'
-import { computeObjectHash, failMe, Jsonable, shouldNeverHappen } from 'misc'
+import { computeObjectHash, failMe, Jsonable, shouldNeverHappen, sortBy, uniqueBy } from 'misc'
 import { OutputLocation, TaskInfo } from 'repo-protocol'
 import { TaskKind, TaskName } from 'task-name'
 import { Mutable } from 'type-fest'
@@ -15,14 +15,19 @@ export class Task {
   readonly id: string
   private fingerprint: Fingerprint | undefined
   private readonly executionRecord: Mutable<ExecutionRecord>
+  readonly inputs: readonly PathInRepo[]
 
   constructor(
     private readonly buildRunId: string,
     readonly kind: TaskKind,
     readonly unitId: UnitId,
     readonly taskInfo: TaskInfo,
-    readonly inputs: readonly PathInRepo[],
+    inputs: PathInRepo[],
   ) {
+    this.inputs = uniqueBy(
+      sortBy(inputs, t => t.val),
+      t => t.val,
+    )
     this.name = TaskName(unitId, kind)
     this.id = computeObjectHash({ buildRunId: this.buildRunId, name: this.name })
     this.executionRecord = {
