@@ -1,4 +1,4 @@
-import { TaskKind, TaskName } from 'task-name'
+import { TaskKind } from 'task-name'
 import { UnitId } from 'unit-metadata'
 
 import { TaskInfo } from './task-info'
@@ -18,15 +18,12 @@ export type TaskDefinition = {
 
 // TODO(imaman): document this.
 export interface CatalogOfTasks {
-  readonly inUnit: Record<TaskKind, readonly TaskKind[]>
-  readonly onDeps: Record<TaskKind, readonly TaskKind[]>
+  // readonly inUnit: Record<TaskKind, readonly TaskKind[]>
+  // readonly onDeps: Record<TaskKind, readonly TaskKind[]>
 
-  readonly tasks?: readonly TaskDefinition[]
-  readonly depList?: readonly [TaskName, TaskName][]
-  // TODO(imaman): document
-  readonly complete?: boolean
-  /**
-   * Not used yet.
-   */
+  // readonly tasks?: readonly TaskDefinition[]
+  // readonly depList?: readonly [TaskName, TaskName][]
+  // // TODO(imaman): document
+  // readonly complete?: boolean
   taskList?: TaskInfo[]
 }
