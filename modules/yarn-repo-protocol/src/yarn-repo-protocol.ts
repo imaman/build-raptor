@@ -743,7 +743,6 @@ export class YarnRepoProtocol implements RepoProtocol {
     return ret
   }
 
-  // 3
   private buildTask(u: UnitMetadata): TaskInfo | undefined {
     const dir = u.pathInRepo
     const deps = this.state.graph
