@@ -1,27 +1,21 @@
-import { Model } from 'build-raptor-core'
-import { Logger } from 'logger'
-import { recordToPairs, uniqueBy } from 'misc'
-import { CatalogOfTasks, TaskDefinition } from 'repo-protocol'
-import { OutputLocation, TaskInfo } from 'repo-protocol'
+import { Graph, recordToPairs, uniqueBy } from 'misc'
+import { CatalogOfTasks, OutputLocation, TaskDefinition, TaskInfo } from 'repo-protocol'
 import { TaskKind, TaskName } from 'task-name'
-import { UnitMetadata } from 'unit-metadata'
+import { UnitId, UnitMetadata } from 'unit-metadata'
 
 export class TaskInfoGenerator {
-  constructor(private readonly logger: Logger) {}
-
-  computeInfos(catalog: CatalogOfTasks, model: Model) {
+  computeInfos(catalog: CatalogOfTasks, units: UnitMetadata[], graph: Graph<UnitId>) {
     const kinds = this.collectKinds(catalog)
     const ret: TaskInfo[] = []
     const tasksFromDepList = catalog.complete ? new Set<TaskName>(catalog.depList?.flatMap(x => x) ?? []) : undefined
-    for (const unit of model.units) {
+    for (const unit of units) {
       for (const k of kinds) {
-        const info = this.generateInfo(unit, k, model, catalog, tasksFromDepList)
+        const info = this.generateInfo(unit, k, graph, catalog, tasksFromDepList)
         if (info) {
           ret.push(info)
         }
       }
     }
-    this.logger.info(`infos=${JSON.stringify(ret)}`)
     return ret
   }
 
@@ -36,7 +30,7 @@ export class TaskInfoGenerator {
   private generateInfo(
     unit: UnitMetadata,
     t: TaskKind,
-    model: Model,
+    graph: Graph<UnitId>,
     catalog: CatalogOfTasks,
     allowed: Set<TaskName> | undefined,
   ): TaskInfo | undefined {
@@ -52,7 +46,7 @@ export class TaskInfoGenerator {
       return undefined
     }
 
-    const deps = this.computeTaskDeps(taskName, model, catalog)
+    const deps = this.computeTaskDeps(taskName, graph, catalog)
     if (definition === 'DEFAULT') {
       const ret: TaskInfo = {
         taskName,
@@ -111,11 +105,11 @@ export class TaskInfoGenerator {
     return filtered[filtered.length - 1]
   }
 
-  private computeTaskDeps(taskName: TaskName, model: Model, catalog: CatalogOfTasks): TaskName[] {
+  private computeTaskDeps(taskName: TaskName, graph: Graph<UnitId>, catalog: CatalogOfTasks): TaskName[] {
     const { taskKind, unitId } = TaskName().undo(taskName)
     const inUnit = catalog.inUnit[taskKind] ?? []
     const onDeps = catalog.onDeps[taskKind] ?? []
-    const unitDeps = model.graph.neighborsOf(unitId)
+    const unitDeps = graph.neighborsOf(unitId)
 
     const ret = (catalog.depList ?? []).filter(([f, _t]) => f === taskName).map(([_f, t]) => t)
     for (const at of inUnit) {

@@ -23,6 +23,7 @@
     "logger": "1.0.0",
     "misc": "1.0.0",
     "repo-protocol": "1.0.0",
+    "repo-protocol-toolbox": "1.0.0",
     "task-name": "1.0.0",
     "unit-metadata": "1.0.0"
   }

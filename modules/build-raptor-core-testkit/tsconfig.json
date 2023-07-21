@@ -24,6 +24,9 @@
       "path": "../repo-protocol"
     },
     {
+      "path": "../repo-protocol-toolbox"
+    },
+    {
       "path": "../task-name"
     },
     {

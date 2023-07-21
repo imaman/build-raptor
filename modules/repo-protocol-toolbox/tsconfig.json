@@ -9,9 +9,6 @@
       "path": "../build-raptor-core"
     },
     {
-      "path": "../logger"
-    },
-    {
       "path": "../misc"
     },
     {
