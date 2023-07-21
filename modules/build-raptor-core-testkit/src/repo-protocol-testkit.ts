@@ -14,7 +14,7 @@ import {
   slurpDir,
   writeRecipe,
 } from 'misc'
-import { CatalogOfTasks, ExitStatus, RepoProtocol, TaskDefinition } from 'repo-protocol'
+import { CatalogOfTasks, ExitStatus, RepoProtocol, TaskDefinition, TaskInfo } from 'repo-protocol'
 import { TaskInfoGenerator } from 'repo-protocol-toolbox'
 import { TaskKind, TaskName } from 'task-name'
 import { UnitId, UnitMetadata } from 'unit-metadata'
@@ -290,13 +290,8 @@ class RepoProtocolImpl implements RepoProtocol {
     return ret
   }
 
-  async getTasks(): Promise<CatalogOfTasks> {
+  async getTasks(): Promise<TaskInfo[]> {
     const c = computeCatalog(this.state.getCatalogSpec() ?? DEFAULT_CATALOG_SPEC)
-    const taskList = new TaskInfoGenerator().computeInfos(c, this.units, this.state.getGraph())
-    return {
-      inUnit: {},
-      onDeps: {},
-      taskList,
-    }
+    return new TaskInfoGenerator().computeInfos(c, this.units, this.state.getGraph())
   }
 }

@@ -1,5 +1,5 @@
 import { aTimeoutOf, Graph, Key, StorageClient } from 'misc'
-import { CatalogOfTasks, ExitStatus, RepoProtocol } from 'repo-protocol'
+import { ExitStatus, RepoProtocol, TaskInfo } from 'repo-protocol'
 import { TaskKind, TaskName } from 'task-name'
 import { UnitId, UnitMetadata } from 'unit-metadata'
 
@@ -75,11 +75,9 @@ describe('engine', () => {
       getUnits(): Promise<UnitMetadata[]> {
         return Promise.resolve(units)
       },
-      getTasks(): Promise<CatalogOfTasks> {
-        return Promise.resolve({
-          inUnit: {},
-          onDeps: {},
-          taskList: g.vertices().map(g => ({
+      getTasks(): Promise<TaskInfo[]> {
+        return Promise.resolve(
+          g.vertices().map(g => ({
             taskName: TaskName(g, TaskKind('build')),
             inputs: [],
             deps: [],
@@ -87,7 +85,7 @@ describe('engine', () => {
             inputsInUnit: [],
             inputsInDeps: [],
           })),
-        })
+        )
       },
       close(): Promise<void> {
         n = -1

@@ -3,7 +3,7 @@ import execa from 'execa'
 import * as fse from 'fs-extra'
 import { Graph, promises } from 'misc'
 import * as path from 'path'
-import { CatalogOfTasks, ExitStatus, RepoProtocol } from 'repo-protocol'
+import { CatalogOfTasks, ExitStatus, RepoProtocol, TaskInfo } from 'repo-protocol'
 import { TaskInfoGenerator } from 'repo-protocol-toolbox'
 import { TaskKind, TaskName } from 'task-name'
 import { UnitId, UnitMetadata } from 'unit-metadata'
@@ -101,14 +101,9 @@ export class SimpleNodeRepoProtocol implements RepoProtocol {
     return this.units
   }
 
-  async getTasks(): Promise<CatalogOfTasks> {
+  async getTasks(): Promise<TaskInfo[]> {
     const c = this.getCatalog()
-    const taskList = new TaskInfoGenerator().computeInfos(c, this.units, this.graph)
-    return {
-      inUnit: {},
-      onDeps: {},
-      taskList,
-    }
+    return new TaskInfoGenerator().computeInfos(c, this.units, this.graph)
   }
 
   private getCatalog() {

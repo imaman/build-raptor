@@ -27,7 +27,6 @@ import {
   RepoProtocolEventVerdict,
   TaskInfo,
 } from 'repo-protocol'
-import { CatalogOfTasks } from 'repo-protocol'
 import { ReporterOutput } from 'reporter-output'
 import { TaskKind, TaskName } from 'task-name'
 import * as Tmp from 'tmp-promise'
@@ -692,18 +691,13 @@ export class YarnRepoProtocol implements RepoProtocol {
     return this.state.units.find(at => at.id === uid) ?? failMe(`Unit not found (unit ID: ${uid})`)
   }
 
-  async getTasks(): Promise<CatalogOfTasks> {
+  async getTasks(): Promise<TaskInfo[]> {
     const unitIds = this.state.units.map(u => u.id)
 
-    const ret: CatalogOfTasks = {
-      inUnit: {},
-      onDeps: {},
-      tasks: [],
-      taskList: unitIds
-        .map(at => this.unitOf(at))
-        .flatMap(u => [this.buildTask(u), this.testTask(u), this.packTask(u), this.publishTask(u)])
-        .flatMap(x => (x ? [x] : [])),
-    }
+    const ret = unitIds
+      .map(at => this.unitOf(at))
+      .flatMap(u => [this.buildTask(u), this.testTask(u), this.packTask(u), this.publishTask(u)])
+      .flatMap(x => (x ? [x] : []))
 
     return ret
   }
