@@ -195,7 +195,11 @@ describe('yarn-repo-protocol.e2e', () => {
     const run2 = await fork.run('OK', { taskKind: 'build' })
     expect(run2.executionTypeOf('a', 'build')).toEqual('CACHED')
 
-    fork.file('modules/a/package.json').write(driver.packageJson('a', [], { foo: '# nothing' }))
+    await fork.file('modules/a/src/b.ts').write('export function goo() {}')
+    const run25 = await fork.run('OK', { taskKind: 'build' })
+    expect(run25.executionTypeOf('a', 'build')).toEqual('EXECUTED')
+
+    await fork.file('modules/a/package.json').write(driver.packageJson('a', [], { foo: '# nothing' }))
     const run3 = await fork.run('OK', { taskKind: 'build' })
     expect(run3.executionTypeOf('a', 'build')).toEqual('EXECUTED')
   })
