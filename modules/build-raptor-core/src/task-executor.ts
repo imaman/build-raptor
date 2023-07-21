@@ -122,6 +122,7 @@ class SingleTaskExecutor {
     const parts: Record<string, Fingerprint> = {}
 
     const sortedInputs = sortBy(t.inputs, t => t.val)
+    this.diagnose(`inputs are: ${sortedInputs}`)
     for (const loc of sortedInputs) {
       const fingerprint = await this.model.fingerprintOfDir(loc)
       fps.push(fingerprint)
@@ -234,6 +235,7 @@ class SingleTaskExecutor {
 
     if (phase === 'COMPUTE_FINGERPRINT') {
       this.fp_ = await this.computeFingerprint()
+      this.diagnose(`fingerprint is ${this.fp_}`)
       return 'POSSIBLY_RESTORE_OUTPUTS'
     }
 
