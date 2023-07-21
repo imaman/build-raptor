@@ -696,37 +696,9 @@ export class YarnRepoProtocol implements RepoProtocol {
     const unitIds = this.state.units.map(u => u.id)
 
     const ret: CatalogOfTasks = {
-      inUnit: {
-        // [test]: [build],
-        // [pack]: [build],
-      },
+      inUnit: {},
       onDeps: {},
-      tasks: [
-        // {
-        //   taskKind: build,
-        //   outputs: [this.dist()],
-        //   inputsInDeps: [this.dist('s')],
-        //   inputsInUnit: [this.src, this.tests, 'package.json'],
-        // },
-        // {
-        //   taskKind: test,
-        //   outputs: [{ pathInUnit: JEST_OUTPUT_FILE, purge: 'ALWAYS' }],
-        //   inputsInUnit: [this.dist('s'), this.dist('t')],
-        //   inputsInDeps: [this.dist('s')],
-        // },
-        // {
-        //   taskKind: pack,
-        //   outputs: [PACK_DIR],
-        //   inputsInUnit: [this.dist('s')],
-        //   inputsInDeps: [this.dist('s')],
-        // },
-        // {
-        //   taskKind: publish,
-        //   unitIds: unitsWith(this.scriptNames.prepareAssets),
-        //   outputs: [PREPARED_ASSETS_DIR],
-        //   inputsInUnit: [this.dist('s')],
-        // },
-      ],
+      tasks: [],
       taskList: unitIds
         .map(at => this.unitOf(at))
         .flatMap(u => [this.buildTask(u), this.testTask(u), this.packTask(u), this.publishTask(u)])
