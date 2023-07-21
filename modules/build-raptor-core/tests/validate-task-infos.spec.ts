@@ -25,7 +25,7 @@ describe('validate-task-infos', () => {
         { ...base, taskName: TaskName().parse('u:j'), outputLocations: locs(['too']) },
         { ...base, taskName: TaskName().parse('u:k'), outputLocations: locs(['goo']) },
       ]
-      expect(() => validateTaskInfos(input)).toThrowError(`Task name collison: u:k (3 occurences)`)
+      expect(() => validateTaskInfos(input)).toThrowError(`Task name collison: u:k (3 occurrences)`)
     })
     test('does allow tasks with different kinds in the same unit', () => {
       const input: TaskInfo[] = [

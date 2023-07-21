@@ -19,9 +19,7 @@ export class Planner {
   constructor(private readonly logger: Logger) {}
 
   async computePlan(model: Model, catalog: CatalogOfTasks): Promise<ExecutionPlan> {
-    const kinds = this.collectKinds(catalog)
-
-    const infos: TaskInfo[] = this.computeInfos(catalog, model, kinds)
+    const infos: TaskInfo[] = this.computeInfos(catalog, model)
     const reg = validateTaskInfos(infos)
 
     for (const info of infos) {
@@ -37,7 +35,12 @@ export class Planner {
     return new ExecutionPlan(this.taskGraph, this.tasks, this.logger)
   }
 
-  private computeInfos(catalog: CatalogOfTasks, model: Model, kinds: TaskKind[]) {
+  private computeInfos(catalog: CatalogOfTasks, model: Model) {
+    if (catalog.taskList) {
+      return catalog.taskList
+    }
+
+    const kinds = this.collectKinds(catalog)
     const ret: TaskInfo[] = []
     const tasksFromDepList = catalog.complete ? new Set<TaskName>(catalog.depList?.flatMap(x => x) ?? []) : undefined
     for (const unit of model.units) {
@@ -162,7 +165,7 @@ export class Planner {
 
     const u = model.getUnit(unitId)
 
-    const inputs: PathInRepo[] = info.inputsInUnit.map(i => u.pathInRepo.expand(i))
+    let inputs: PathInRepo[] = info.inputsInUnit.map(i => u.pathInRepo.expand(i))
 
     for (const d of model.unitDependenciesOf(unitId)) {
       if (d.id === unitId) {
@@ -172,7 +175,7 @@ export class Planner {
         const p = d.pathInRepo.expand(i)
         inputs.push(p)
 
-        const other = reg.lookup(d.id, p)
+        const other = reg.lookup(p)
         if (!other) {
           continue
           // TODO(imaman): this should be a build error
@@ -183,12 +186,21 @@ export class Planner {
       }
     }
 
+    if (info.inputs) {
+      inputs = info.inputs
+    }
     const task = new Task(model.buildRunId, taskKind, unitId, info, inputs)
     this.tasks.push(task)
     this.taskGraph.vertex(taskName)
 
     for (const inputLoc of info.inputsInUnit) {
-      const other = reg.lookup(unitId, u.pathInRepo.expand(inputLoc))
+      const other = reg.lookup(u.pathInRepo.expand(inputLoc))
+      if (other) {
+        this.taskGraph.edge(taskName, other)
+      }
+    }
+    for (const input of info.inputs ?? []) {
+      const other = reg.lookup(input)
       if (other) {
         this.taskGraph.edge(taskName, other)
       }

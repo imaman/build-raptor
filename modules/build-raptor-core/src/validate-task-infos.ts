@@ -4,7 +4,6 @@ import { failMe, findDups, groupBy, hardGet, recordToPairs, sortBy } from 'misc'
 import * as path from 'path'
 import { TaskInfo } from 'repo-protocol'
 import { TaskName } from 'task-name'
-import { UnitId } from 'unit-metadata'
 
 export function validateTaskInfos(infos: TaskInfo[]): TaskOutputRegistry {
   checkNameCollision(infos)
@@ -24,7 +23,7 @@ function checkNameCollision(infos: TaskInfo[]) {
   const sorted = sortBy(pairs, ([_, infos]) => -infos.length)
   const highest = sorted[0] || failMe(`list of sorted task infos is unexplainably empty`)
 
-  throw new BuildFailedError(`Task name collison: ${highest[0]} (${highest[1].length} occurences)`)
+  throw new BuildFailedError(`Task name collison: ${highest[0]} (${highest[1].length} occurrences)`)
 }
 
 function checkOutputCollisions(infos: TaskInfo[], reg: TaskOutputRegistryImpl) {
@@ -65,7 +64,7 @@ function checkOutputCollisions(infos: TaskInfo[], reg: TaskOutputRegistryImpl) {
 }
 
 export interface TaskOutputRegistry {
-  lookup(unitId: UnitId, outputLoc: PathInRepo): TaskName | undefined
+  lookup(outputLoc: PathInRepo): TaskName | undefined
 }
 
 class TaskOutputRegistryImpl implements TaskOutputRegistry {
@@ -73,19 +72,16 @@ class TaskOutputRegistryImpl implements TaskOutputRegistry {
   constructor() {}
 
   add(taskName: TaskName, outputLoc: PathInRepo) {
-    const { unitId } = TaskName().undo(taskName)
-    const key = JSON.stringify([unitId, outputLoc.val])
-    this.map.set(key, taskName)
+    this.map.set(outputLoc.val, taskName)
   }
 
-  lookup(unitId: UnitId, outputLoc: PathInRepo): TaskName | undefined {
+  lookup(outputLoc: PathInRepo): TaskName | undefined {
     let normed = outputLoc.val
     while (true) {
       if (normed === '.') {
         return undefined
       }
-      const key = JSON.stringify([unitId, normed])
-      const tn = this.map.get(key)
+      const tn = this.map.get(normed)
       if (tn) {
         return tn
       }

@@ -1,7 +1,7 @@
 import { BuildFailedError } from 'build-failed-error'
 import * as fse from 'fs-extra'
 import { Logger } from 'logger'
-import { failMe, promises, shouldNeverHappen, sortBy, TypedPublisher } from 'misc'
+import { failMe, promises, shouldNeverHappen, TypedPublisher } from 'misc'
 import * as path from 'path'
 import { ExitStatus, RepoProtocol } from 'repo-protocol'
 import { TaskName } from 'task-name'
@@ -121,8 +121,8 @@ class SingleTaskExecutor {
     }
     const parts: Record<string, Fingerprint> = {}
 
-    const sortedInputs = sortBy(t.inputs, t => t.val)
-    for (const loc of sortedInputs) {
+    this.diagnose(`inputs are: ${t.inputs}`)
+    for (const loc of t.inputs) {
       const fingerprint = await this.model.fingerprintOfDir(loc)
       fps.push(fingerprint)
       parts[loc.val] = fingerprint
@@ -234,6 +234,7 @@ class SingleTaskExecutor {
 
     if (phase === 'COMPUTE_FINGERPRINT') {
       this.fp_ = await this.computeFingerprint()
+      this.diagnose(`fingerprint is ${this.fp_}`)
       return 'POSSIBLY_RESTORE_OUTPUTS'
     }
 
