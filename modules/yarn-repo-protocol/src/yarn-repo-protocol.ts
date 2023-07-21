@@ -743,9 +743,13 @@ export class YarnRepoProtocol implements RepoProtocol {
     return ret
   }
 
+  // 3
   private buildTask(u: UnitMetadata): TaskInfo | undefined {
     const dir = u.pathInRepo
-    const deps = this.state.graph.neighborsOf(u.id).map(at => this.unitOf(at).pathInRepo)
+    const deps = this.state.graph
+      .traverseFrom(u.id)
+      .filter(at => at !== u.id)
+      .map(at => this.unitOf(at).pathInRepo)
     return {
       taskName: TaskName(u.id, TaskKind('build')),
       outputLocations: [{ pathInRepo: dir.expand(this.dist()), purge: 'NEVER' }],
@@ -753,7 +757,7 @@ export class YarnRepoProtocol implements RepoProtocol {
         dir.expand(this.src),
         dir.expand(this.tests),
         dir.expand('package.json'),
-        ...deps.map(d => d.expand(this.dist())),
+        ...deps.map(d => d.expand(this.dist('s'))),
       ],
       deps: [],
       inputsInDeps: [],
@@ -766,7 +770,12 @@ export class YarnRepoProtocol implements RepoProtocol {
     return {
       taskName: TaskName(u.id, TaskKind('test')),
       outputLocations: [{ pathInRepo: dir.expand(JEST_OUTPUT_FILE), purge: 'ALWAYS' }],
-      inputs: [dir.expand(this.dist('s')), dir.expand(this.dist('t')), ...deps.map(d => d.expand(this.dist('s')))],
+      inputs: [
+        dir.expand(this.dist('s')),
+        dir.expand(this.dist('t')),
+        dir.expand('package.json'),
+        ...deps.map(d => d.expand(this.dist('s'))),
+      ],
       deps: [],
       inputsInDeps: [],
       inputsInUnit: [],
