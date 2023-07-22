@@ -14,8 +14,8 @@ import {
   slurpDir,
   writeRecipe,
 } from 'misc'
-import { CatalogOfTasks, ExitStatus, RepoProtocol, TaskDefinition, TaskInfo } from 'repo-protocol'
-import { TaskInfoGenerator } from 'repo-protocol-toolbox'
+import { ExitStatus, RepoProtocol, TaskInfo } from 'repo-protocol'
+import { CatalogOfTasks, TaskDefinition, TaskInfoGenerator } from 'repo-protocol-toolbox'
 import { TaskKind, TaskName } from 'task-name'
 import { UnitId, UnitMetadata } from 'unit-metadata'
 
