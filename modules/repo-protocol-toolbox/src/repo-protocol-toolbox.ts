@@ -1,8 +1,9 @@
 import { Graph, recordToPairs, uniqueBy } from 'misc'
-import { CatalogOfTasks, OutputLocation, TaskDefinition, TaskInfo } from 'repo-protocol'
+import { OutputLocation, TaskInfo } from 'repo-protocol'
 import { TaskKind, TaskName } from 'task-name'
 import { UnitId, UnitMetadata } from 'unit-metadata'
 
+import { CatalogOfTasks, TaskDefinition } from './catalog'
 export class TaskInfoGenerator {
   computeInfos(catalog: CatalogOfTasks, units: UnitMetadata[], graph: Graph<UnitId>) {
     const kinds = this.collectKinds(catalog)

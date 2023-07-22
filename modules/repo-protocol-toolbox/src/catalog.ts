@@ -1,7 +1,6 @@
+import { TaskInfo } from 'repo-protocol'
 import { TaskKind, TaskName } from 'task-name'
 import { UnitId } from 'unit-metadata'
-
-import { TaskInfo } from './task-info'
 
 type OutputDefinition = string | { pathInUnit: string; purge: 'ALWAYS' | 'NEVER' }
 
