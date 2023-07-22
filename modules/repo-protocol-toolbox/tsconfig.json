@@ -6,25 +6,13 @@
   },
   "references": [
     {
-      "path": "../build-raptor-api"
-    },
-    {
       "path": "../build-raptor-core"
-    },
-    {
-      "path": "../core-types"
-    },
-    {
-      "path": "../logger"
     },
     {
       "path": "../misc"
     },
     {
       "path": "../repo-protocol"
-    },
-    {
-      "path": "../repo-protocol-toolbox"
     },
     {
       "path": "../task-name"

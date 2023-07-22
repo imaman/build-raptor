@@ -1,5 +1,5 @@
 {
-  "name": "build-raptor-core-testkit",
+  "name": "repo-protocol-toolbox",
   "version": "1.0.0",
   "description": "",
   "keywords": [],
@@ -16,14 +16,9 @@
     "preset": "../../jest.preset.js"
   },
   "dependencies": {
-    "build-raptor-api": "1.0.0",
     "build-raptor-core": "1.0.0",
-    "core-types": "1.0.0",
-    "fs-extra": "^9.0.0",
-    "logger": "1.0.0",
     "misc": "1.0.0",
     "repo-protocol": "1.0.0",
-    "repo-protocol-toolbox": "1.0.0",
     "task-name": "1.0.0",
     "unit-metadata": "1.0.0"
   }

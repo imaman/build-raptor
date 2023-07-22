@@ -1,6 +1,6 @@
 import { aTimeoutOf, Graph, Key, StorageClient } from 'misc'
-import { CatalogOfTasks, ExitStatus, RepoProtocol } from 'repo-protocol'
-import { TaskKind } from 'task-name'
+import { ExitStatus, RepoProtocol, TaskInfo } from 'repo-protocol'
+import { TaskKind, TaskName } from 'task-name'
 import { UnitId, UnitMetadata } from 'unit-metadata'
 
 import { Driver } from '../src/driver'
@@ -75,11 +75,17 @@ describe('engine', () => {
       getUnits(): Promise<UnitMetadata[]> {
         return Promise.resolve(units)
       },
-      getTasks(): Promise<CatalogOfTasks> {
-        return Promise.resolve({
-          inUnit: {},
-          onDeps: { x: 'x' },
-        })
+      getTasks(): Promise<TaskInfo[]> {
+        return Promise.resolve(
+          g.vertices().map(g => ({
+            taskName: TaskName(g, TaskKind('build')),
+            inputs: [],
+            deps: [],
+            outputLocations: [],
+            inputsInUnit: [],
+            inputsInDeps: [],
+          })),
+        )
       },
       close(): Promise<void> {
         n = -1

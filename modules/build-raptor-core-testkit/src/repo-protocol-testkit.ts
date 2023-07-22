@@ -14,7 +14,8 @@ import {
   slurpDir,
   writeRecipe,
 } from 'misc'
-import { CatalogOfTasks, ExitStatus, RepoProtocol, TaskDefinition } from 'repo-protocol'
+import { CatalogOfTasks, ExitStatus, RepoProtocol, TaskDefinition, TaskInfo } from 'repo-protocol'
+import { TaskInfoGenerator } from 'repo-protocol-toolbox'
 import { TaskKind, TaskName } from 'task-name'
 import { UnitId, UnitMetadata } from 'unit-metadata'
 
@@ -89,7 +90,7 @@ export class RepoProtocolTestkit {
   private map = new Map<TaskName, TaskCallback>()
   private countByTask = new Map<TaskName, number>()
   private countByTaskInRun = new Map<TaskInRun, number>()
-  private readonly units: readonly UnitMetadata[]
+  private readonly units: UnitMetadata[]
 
   constructor(private readonly graphJson: Record<string, string[]>, private spec?: CatalogSpec) {
     this.units = Object.keys(graphJson).map(u => new UnitMetadata(u, UnitId(u)))
@@ -243,7 +244,7 @@ const DEFAULT_CATALOG_SPEC = {
 class RepoProtocolImpl implements RepoProtocol {
   private rootDir = RepoRoot('/')
 
-  constructor(private readonly units: readonly UnitMetadata[], private readonly state: State) {}
+  constructor(private readonly units: UnitMetadata[], private readonly state: State) {}
 
   async initialize(rootDir: string): Promise<void> {
     this.rootDir = RepoRoot(rootDir)
@@ -289,7 +290,8 @@ class RepoProtocolImpl implements RepoProtocol {
     return ret
   }
 
-  async getTasks(): Promise<CatalogOfTasks> {
-    return computeCatalog(this.state.getCatalogSpec() ?? DEFAULT_CATALOG_SPEC)
+  async getTasks(): Promise<TaskInfo[]> {
+    const c = computeCatalog(this.state.getCatalogSpec() ?? DEFAULT_CATALOG_SPEC)
+    return new TaskInfoGenerator().computeInfos(c, this.units, this.state.getGraph())
   }
 }

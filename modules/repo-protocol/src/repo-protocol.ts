@@ -3,7 +3,7 @@ import { Graph, TypedPublisher } from 'misc'
 import { TaskName } from 'task-name'
 import { UnitId, UnitMetadata } from 'unit-metadata'
 
-import { CatalogOfTasks } from './catalog-of-tasks'
+import { TaskInfo } from './task-info'
 
 export type ExitStatus = 'OK' | 'FAIL' | 'CRASH'
 
@@ -36,7 +36,7 @@ export interface RepoProtocol {
   ): Promise<ExitStatus>
   getGraph(): Promise<Graph<UnitId>>
   getUnits(): Promise<UnitMetadata[]>
-  getTasks(): Promise<CatalogOfTasks>
+  getTasks(): Promise<TaskInfo[]>
   close(): Promise<void>
 }
 
