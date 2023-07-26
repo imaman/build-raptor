@@ -18,7 +18,7 @@ export class SimpleNodeRepoProtocol implements RepoProtocol {
 
   private units: UnitMetadata[] = []
   private graph: Graph<UnitId> = new Graph<UnitId>(x => x)
-  private rootDir: RepoRoot = RepoRoot('')
+  private rootDir: RepoRoot = RepoRoot('/tmp')
 
   async initialize(rootDir: RepoRoot): Promise<void> {
     this.rootDir = rootDir
