@@ -201,12 +201,12 @@ export class Engine {
       }
     }
 
-    const [graph, units] = await Promise.all([this.repoProtocol.getGraph(), this.repoProtocol.getUnits()])
-    if (graph.isCyclic()) {
-      throw new BuildFailedError(`Cyclic dependency detected in ${graph}`)
+    const [graph_, units] = await Promise.all([this.repoProtocol.getGraph(), this.repoProtocol.getUnits()])
+    if (graph_.isCyclic()) {
+      throw new BuildFailedError(`Cyclic dependency detected in ${graph_}`)
     }
 
-    this.logger.info(`unit graph=\n${graph}`)
+    this.logger.info(`unit graph=\n${graph_}`)
     const scanner = new DirectoryScanner(this.rootDir.resolve(), { predicate: ig.createFilter() })
     const fingerprinter = new Fingerprinter(scanner, this.logger, async (h, c) => {
       if (c) {
@@ -215,6 +215,6 @@ export class Engine {
         this.fingerprintLedger.updateDirectory(h)
       }
     })
-    return new Model(this.rootDir, graph, units, buildRunId, fingerprinter)
+    return new Model(this.rootDir, graph_, units, buildRunId, fingerprinter)
   }
 }
