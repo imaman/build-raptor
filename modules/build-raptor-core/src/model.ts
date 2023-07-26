@@ -8,7 +8,7 @@ import { Fingerprinter } from './fingerprinter'
 export class Model {
   constructor(
     readonly rootDir: RepoRoot,
-    private readonly graph_: Graph<UnitId>,
+    readonly graph: Graph<UnitId>,
     readonly units: UnitMetadata[],
     readonly buildRunId: BuildRunId,
     private readonly fingerprinter: Fingerprinter,
@@ -40,7 +40,7 @@ export class Model {
     return UnitId(id)
   }
 
-  // unitDependenciesOf(unitId: UnitId): UnitMetadata[] {
-  //   return this.graph.neighborsOf(unitId).map(at => this.getUnit(at))
-  // }
+  unitDependenciesOf(unitId: UnitId): UnitMetadata[] {
+    return this.graph.neighborsOf(unitId).map(at => this.getUnit(at))
+  }
 }
