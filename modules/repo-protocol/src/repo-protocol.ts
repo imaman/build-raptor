@@ -1,4 +1,5 @@
 import { BuildRunId } from 'build-run-id'
+import { RepoRoot } from 'core-types'
 import { Graph, TypedPublisher } from 'misc'
 import { TaskName } from 'task-name'
 import { UnitId, UnitMetadata } from 'unit-metadata'
@@ -19,21 +20,17 @@ export interface RepoProtocolEvent {
   assetPublished: {
     taskName: TaskName
     casAddress: string
-    fingerprint: string
     file: string
   }
 }
 
 export interface RepoProtocol {
-  initialize(rootDir: string, publisher: TypedPublisher<RepoProtocolEvent>, repoProtocolConfig?: unknown): Promise<void>
-  execute(
-    u: UnitMetadata,
-    dir: string,
-    taskName: TaskName,
-    outputFile: string,
-    buildRunId: BuildRunId,
-    fingerprint: string,
-  ): Promise<ExitStatus>
+  initialize(
+    rootDir: RepoRoot,
+    publisher: TypedPublisher<RepoProtocolEvent>,
+    repoProtocolConfig?: unknown,
+  ): Promise<void>
+  execute(taskName: TaskName, outputFile: string, buildRunId: BuildRunId): Promise<ExitStatus>
   getGraph(): Promise<Graph<UnitId>>
   getUnits(): Promise<UnitMetadata[]>
   getTasks(): Promise<TaskInfo[]>

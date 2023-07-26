@@ -296,14 +296,7 @@ class SingleTaskExecutor {
     const t0 = Date.now()
     await this.eventPublisher.publish('executionStarted', t.name)
     const outputFile = path.join(this.taskOutputDir, `${t.id}.stdout`)
-    const status = await this.repoProtocol.execute(
-      this.unit,
-      this.dir,
-      t.name,
-      outputFile,
-      this.model.buildRunId,
-      t.getFingerprint(),
-    )
+    const status = await this.repoProtocol.execute(t.name, outputFile, this.model.buildRunId)
     await this.postProcess(status, outputFile, Date.now() - t0)
     if (status === 'CRASH') {
       throw new Error(`Task ${JSON.stringify(t.name)} crashed`)

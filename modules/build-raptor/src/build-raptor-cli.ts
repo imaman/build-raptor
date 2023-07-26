@@ -23,7 +23,6 @@ import { hideBin } from 'yargs/helpers'
 import { YarnRepoProtocol } from 'yarn-repo-protocol'
 
 import { getPrForCommit } from './get-pr-for-commit'
-import { RegisterAssetRequest } from './register-asset-request'
 
 type TestReporting = 'just-failing' | 'tree' | 'tree-just-failing'
 
@@ -62,6 +61,9 @@ async function createStorageClient() {
 }
 
 async function run(options: Options) {
+  if (options.callRegisterAsset) {
+    throw new Error(`callRegisterAsset has been retired and can no longer accept a truthy value`)
+  }
   process.env.AWS_SDK_JS_SUPPRESS_MAINTENANCE_MODE_MESSAGE = '1' // eslint-disable-line no-process-env
   const t0 = Date.now()
 
@@ -114,32 +116,6 @@ async function run(options: Options) {
 
   bootstrapper.subscribable.on('executionStarted', arg => {
     logger.print(`=============================== ${arg} =================================`)
-  })
-
-  const callRegisterAsset = options.callRegisterAsset ?? true
-  bootstrapper.subscribable.on('assetPublished', async arg => {
-    if (!callRegisterAsset) {
-      logger.info(`NOT calling register-asset endpoint as the command line option is off`)
-      return
-    }
-    if (!lambdaClient || !isCi) {
-      return
-    }
-
-    const req: RegisterAssetRequest = {
-      packageName: TaskName().undo(arg.taskName).unitId,
-      commitHash: commitHash ?? 'N/A',
-      prNumber: pullRequest,
-      casReference: arg.casAddress,
-    }
-
-    const payload = {
-      endpointName: 'registerAsset',
-      endpointRequest: RegisterAssetRequest.parse(req),
-    }
-
-    logger.info(`sending lambda payload: ${JSON.stringify(payload)}`)
-    await lambdaClient.invoke('d-prod-buildTrackerService', payload)
   })
 
   bootstrapper.subscribable.on('executionEnded', async arg => {
@@ -406,7 +382,7 @@ yargs(hideBin(process.argv))
       withBuildOptions(yargs).option('register-assets', {
         describe: 'whether to invoke the register-asset-endpoint with the details of each published asset',
         type: 'boolean',
-        default: true,
+        default: false,
       }),
     async argv => {
       await run({

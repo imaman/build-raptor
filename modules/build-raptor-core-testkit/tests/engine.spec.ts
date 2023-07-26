@@ -1,3 +1,4 @@
+import { PathInRepo } from 'core-types'
 import { aTimeoutOf, Graph, Key, StorageClient } from 'misc'
 import { ExitStatus, RepoProtocol, TaskInfo } from 'repo-protocol'
 import { TaskKind, TaskName } from 'task-name'
@@ -187,7 +188,7 @@ describe('engine', () => {
     expect(r1.happened('a', 'test', 'b', 'build')).toEqual('AFTER')
   })
   test('generates a step-by-step file', async () => {
-    const driver = new Driver(testName(), { repoProtocol: new SimpleNodeRepoProtocol('modules', ['dist']) })
+    const driver = new Driver(testName(), { repoProtocol: new SimpleNodeRepoProtocol(PathInRepo('modules'), ['dist']) })
     const recipe = {
       'package.json': { private: true, workspaces: ['modules/*'] },
       'modules/a/package.json': {
@@ -313,7 +314,7 @@ describe('engine', () => {
     expect(r1.message).toMatch(/^No tasks to run in this build/)
   })
   test('build output recording', async () => {
-    const driver = new Driver(testName(), { repoProtocol: new SimpleNodeRepoProtocol('modules', ['dist']) })
+    const driver = new Driver(testName(), { repoProtocol: new SimpleNodeRepoProtocol(PathInRepo('modules'), ['dist']) })
     const recipe = {
       '.gitignore': 'dist',
       'modules/a/package.json': {
@@ -377,7 +378,7 @@ describe('engine', () => {
   })
   test('keeps output location before running a task (so that incremental compilation can work)', async () => {
     const driver = new Driver(testName(), {
-      repoProtocol: new SimpleNodeRepoProtocol('modules', ['build-out', 'bin']),
+      repoProtocol: new SimpleNodeRepoProtocol(PathInRepo('modules'), ['build-out', 'bin']),
     })
     const recipe = {
       '.gitignore': 'build-out\nbin',
@@ -415,7 +416,7 @@ describe('engine', () => {
     expect(r1.message).toMatch(/^Cyclic dependency detected/)
   })
   test('the build fails if the .build-raptor directory is not ignored (controlled by a flag)', async () => {
-    const driver = new Driver(testName(), { repoProtocol: new SimpleNodeRepoProtocol('modules') })
+    const driver = new Driver(testName(), { repoProtocol: new SimpleNodeRepoProtocol(PathInRepo('modules')) })
     const recipe = {
       'package.json': { private: true, workspaces: ['modules/*'] },
       'modules/a/package.json': { name: 'a', version: '1.0.0', scripts: { build: 'exit 0', test: 'exit 0' } },
@@ -526,7 +527,7 @@ describe('engine', () => {
     test.skip('should not run tests in dependent when only the tests of a dependency have changed', async () => {
       const build = TaskKind('build')
       const test = TaskKind('test')
-      const repoProtocol = new SimpleNodeRepoProtocol('code', undefined, {
+      const repoProtocol = new SimpleNodeRepoProtocol(PathInRepo('code'), undefined, {
         inUnit: {
           [test]: [build],
         },

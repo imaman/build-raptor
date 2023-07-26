@@ -4,7 +4,7 @@ import { PathInRepo, RepoRoot } from 'core-types'
 import * as fse from 'fs-extra'
 import ignore from 'ignore'
 import { Logger } from 'logger'
-import { DirectoryScanner, Int, shouldNeverHappen, TypedPublisher } from 'misc'
+import { DirectoryScanner, failMe, Int, shouldNeverHappen, TypedPublisher } from 'misc'
 import * as path from 'path'
 import { RepoProtocol } from 'repo-protocol'
 import { TaskName } from 'task-name'
@@ -37,6 +37,7 @@ export class Engine {
   private readonly options: Required<Omit<EngineOptions, 'stepByStepProcessorModuleName'>>
   private readonly fingerprintLedger
   private readonly purger
+  private tracker?: TaskTracker
   /**
    *
    * @param logger
@@ -99,13 +100,17 @@ export class Engine {
       })
     })
     this.eventPublisher.on('assetPublished', e => {
+      if (!this.tracker) {
+        throw new Error(`tracker is not set`)
+      }
+      const task = this.tracker?.getTask(e.taskName) ?? failMe(`Task not found (task name=${e.taskName})`)
       const { taskKind, unitId } = TaskName().undo(e.taskName)
       this.steps.push({
         step: 'ASSET_PUBLISHED',
         taskName: e.taskName,
         taskKind,
         unitId,
-        fingerprint: e.fingerprint,
+        fingerprint: task.getFingerprint(),
         casAddress: e.casAddress,
         file: e.file,
       })
@@ -121,7 +126,7 @@ export class Engine {
   async run(buildRunId: BuildRunId) {
     this.steps.push({ step: 'BUILD_RUN_STARTED', buildRunId, commitHash: this.options.commitHash })
     await this.fingerprintLedger.updateRun(buildRunId)
-    await this.repoProtocol.initialize(this.rootDir.resolve(), this.eventPublisher, this.options.config.repoProtocol)
+    await this.repoProtocol.initialize(this.rootDir, this.eventPublisher, this.options.config.repoProtocol)
     try {
       const model = await this.loadModel(buildRunId)
 
@@ -135,10 +140,10 @@ export class Engine {
         )
       }
 
-      const tracker = await this.execute(plan, model)
+      const ret = await this.execute(plan, model)
       this.steps.push({ step: 'BUILD_RUN_ENDED' })
       await Promise.all([this.fingerprintLedger.close(), this.steps.close()])
-      return tracker
+      return ret
     } finally {
       await this.repoProtocol.close()
     }
@@ -147,6 +152,7 @@ export class Engine {
   async execute(plan: ExecutionPlan, model: Model) {
     this.logger.info(`plan.taskGraph=${plan.taskGraph}`)
     const taskTracker = new TaskTracker(plan)
+    this.tracker = taskTracker
     const taskExecutor = new TaskExecutor(
       model,
       taskTracker,

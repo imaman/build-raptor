@@ -6,9 +6,6 @@
   },
   "references": [
     {
-      "path": "../build-raptor-core"
-    },
-    {
       "path": "../misc"
     },
     {
