@@ -382,7 +382,7 @@ yargs(hideBin(process.argv))
       withBuildOptions(yargs).option('register-assets', {
         describe: 'whether to invoke the register-asset-endpoint with the details of each published asset',
         type: 'boolean',
-        default: true,
+        default: false,
       }),
     async argv => {
       await run({
