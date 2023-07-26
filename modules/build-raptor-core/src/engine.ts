@@ -100,6 +100,9 @@ export class Engine {
       })
     })
     this.eventPublisher.on('assetPublished', e => {
+      if (!this.tracker) {
+        throw new Error(`tracker is not set`)
+      }
       const task = this.tracker?.getTask(e.taskName) ?? failMe(`Task not found (task name=${e.taskName})`)
       const { taskKind, unitId } = TaskName().undo(e.taskName)
       this.steps.push({
@@ -137,10 +140,10 @@ export class Engine {
         )
       }
 
-      this.tracker = await this.execute(plan, model)
+      const ret = await this.execute(plan, model)
       this.steps.push({ step: 'BUILD_RUN_ENDED' })
       await Promise.all([this.fingerprintLedger.close(), this.steps.close()])
-      return this.tracker
+      return ret
     } finally {
       await this.repoProtocol.close()
     }
@@ -149,6 +152,7 @@ export class Engine {
   async execute(plan: ExecutionPlan, model: Model) {
     this.logger.info(`plan.taskGraph=${plan.taskGraph}`)
     const taskTracker = new TaskTracker(plan)
+    this.tracker = taskTracker
     const taskExecutor = new TaskExecutor(
       model,
       taskTracker,
