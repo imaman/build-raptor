@@ -3,6 +3,7 @@ import { BuildRunId } from 'build-run-id'
 import { RepoRoot } from 'core-types'
 import * as fse from 'fs-extra'
 import {
+  failMe,
   FolderifyRecipe,
   Graph,
   mapIncrement,
@@ -246,22 +247,19 @@ class RepoProtocolImpl implements RepoProtocol {
 
   constructor(private readonly units: UnitMetadata[], private readonly state: State) {}
 
-  async initialize(rootDir: string): Promise<void> {
-    this.rootDir = RepoRoot(rootDir)
+  async initialize(rootDir: RepoRoot): Promise<void> {
+    this.rootDir = rootDir
   }
 
   async close() {}
 
-  async execute(
-    _u: UnitMetadata,
-    dir: string,
-    tn: TaskName,
-    outputFile: string,
-    buildRunId: BuildRunId,
-  ): Promise<ExitStatus> {
+  async execute(tn: TaskName, outputFile: string, buildRunId: BuildRunId): Promise<ExitStatus> {
     mapIncrement(this.state.countByTask, tn, 1)
     mapIncrement(this.state.countByTaskInRun, TaskInRun(tn, buildRunId), 1)
     const taskCb = this.state.map.get(tn) ?? (() => 'OK')
+    const { unitId } = TaskName().undo(tn)
+    const u = this.units.find(u => u.id === unitId) ?? failMe(`Unit not found (unit ID=${unitId})`)
+    const dir = this.rootDir.resolve(u.pathInRepo)
     const v = await taskCb(dir)
     await fse.writeFile(outputFile, `task ${tn} result is ${v}`)
     return v

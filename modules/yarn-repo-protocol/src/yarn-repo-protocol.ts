@@ -127,11 +127,10 @@ export class YarnRepoProtocol implements RepoProtocol {
   }
 
   async initialize(
-    rootDirAsString: string,
+    rootDir: RepoRoot,
     publisher: TypedPublisher<RepoProtocolEvent>,
     repoProtocolConfig?: unknown,
   ): Promise<void> {
-    const rootDir = RepoRoot(rootDirAsString)
     const yarnInfo = await this.getYarnInfo(rootDir)
 
     const config = this.parseConfig(repoProtocolConfig)
@@ -354,14 +353,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
   }
 
-  async execute(
-    _u: UnitMetadata,
-    _dir: string,
-    taskName: TaskName,
-    outputFile: string,
-    _buildRunId: string,
-    fingerprint: string,
-  ): Promise<ExitStatus> {
+  async execute(taskName: TaskName, outputFile: string, _buildRunId: string): Promise<ExitStatus> {
     const { taskKind, unitId } = TaskName().undo(taskName)
     const u = this.state.units.find(at => at.id === unitId) ?? failMe(`unit ID not found: ${unitId}`)
     const dir = this.state.rootDir.resolve(u.pathInRepo)
@@ -428,7 +420,6 @@ export class YarnRepoProtocol implements RepoProtocol {
           this.logger.info(`unit ${u.id}: asset ${f} published to cas ${casAddress}`)
           this.state.publisher.publish('assetPublished', {
             taskName,
-            fingerprint,
             casAddress,
             file: f,
           })

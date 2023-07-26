@@ -1,8 +1,8 @@
 import { BuildRunId } from 'build-run-id'
+import { PathInRepo, RepoRoot } from 'core-types'
 import execa from 'execa'
 import * as fse from 'fs-extra'
-import { Graph, promises } from 'misc'
-import * as path from 'path'
+import { failMe, Graph, promises } from 'misc'
 import { ExitStatus, RepoProtocol, TaskInfo } from 'repo-protocol'
 import { CatalogOfTasks, TaskInfoGenerator } from 'repo-protocol-toolbox'
 import { TaskKind, TaskName } from 'task-name'
@@ -11,17 +11,19 @@ import * as util from 'util'
 
 export class SimpleNodeRepoProtocol implements RepoProtocol {
   constructor(
-    private readonly pathToModulesDir: string = 'modules',
+    private readonly pathToModulesDir = PathInRepo('modules'),
     private readonly buildOutputLocations: string[] = [],
     private readonly catalog?: CatalogOfTasks,
   ) {}
 
   private units: UnitMetadata[] = []
   private graph: Graph<UnitId> = new Graph<UnitId>(x => x)
+  private rootDir: RepoRoot = RepoRoot('')
 
-  async initialize(rootDir: string): Promise<void> {
-    const list = await this.read(rootDir)
-    this.units = list.map(at => new UnitMetadata(at.pathInRepo, at.id))
+  async initialize(rootDir: RepoRoot): Promise<void> {
+    this.rootDir = rootDir
+    const list = await this.read()
+    this.units = list.map(at => new UnitMetadata(at.pathInRepo.val, at.id))
     const ids = new Set<string>(this.units.map(at => at.id))
     for (const at of list) {
       this.graph.vertex(at.id)
@@ -39,8 +41,8 @@ export class SimpleNodeRepoProtocol implements RepoProtocol {
     this.graph = new Graph<UnitId>(x => x)
   }
 
-  private async readPackageJsonAt(dir: string) {
-    const resolved = path.join(dir, 'package.json')
+  private async readPackageJsonAt(pir: PathInRepo) {
+    const resolved = this.rootDir.resolve(pir.expand('package.json'))
     try {
       const content = await fse.readFile(resolved, 'utf-8')
       return JSON.parse(content)
@@ -49,15 +51,11 @@ export class SimpleNodeRepoProtocol implements RepoProtocol {
     }
   }
 
-  async execute(
-    _u: UnitMetadata,
-    dir: string,
-    taskName: TaskName,
-    outputFile: string,
-    _buildRunId: BuildRunId,
-  ): Promise<ExitStatus> {
-    const taskKind = TaskName().undo(taskName).taskKind
-    const packageJson = await this.readPackageJsonAt(dir)
+  async execute(taskName: TaskName, outputFile: string, _buildRunId: BuildRunId): Promise<ExitStatus> {
+    const { taskKind, unitId } = TaskName().undo(taskName)
+    const unit = this.units.find(u => u.id === unitId) ?? failMe(`unit not found (unit ID=${unitId})`)
+    const dir = this.rootDir.resolve(unit.pathInRepo)
+    const packageJson = await this.readPackageJsonAt(unit.pathInRepo)
     const script = packageJson?.scripts[taskKind]
     if (script === undefined) {
       throw new Error(`Missing script for ${taskName}`)
@@ -81,15 +79,14 @@ export class SimpleNodeRepoProtocol implements RepoProtocol {
     return this.graph
   }
 
-  private async read(rootDir: string) {
-    const resolvedModulesDir = path.join(rootDir, this.pathToModulesDir)
-    const list = await fse.readdir(resolvedModulesDir)
+  private async read() {
+    const list = await fse.readdir(this.rootDir.resolve(this.pathToModulesDir))
     return await promises(
       list.map(async name => {
-        const resolved = path.join(resolvedModulesDir, name)
-        const parsed = await this.readPackageJsonAt(resolved)
+        const pir = this.pathToModulesDir.expand(name)
+        const parsed = await this.readPackageJsonAt(pir)
         return {
-          pathInRepo: path.relative(rootDir, resolved),
+          pathInRepo: pir,
           id: UnitId(parsed.name),
           packageJson: parsed,
         }

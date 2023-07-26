@@ -26,6 +26,7 @@ export class UnitMetadata {
    * @param pathInRepo path (relative to the repo's root dir) to a directory which is the root directory of the unit.
    * @param id
    */
+  // TODO(imama): make it PathInRepo
   constructor(pathInRepo: string, readonly id: UnitId) {
     this.pathInRepo = PathInRepo(pathInRepo)
   }

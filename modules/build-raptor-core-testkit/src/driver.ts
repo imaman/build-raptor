@@ -1,6 +1,6 @@
 import { Step, StepByName, StepByStep, StepName } from 'build-raptor-api'
 import { BlobId, Breakdown, EngineBootstrapper, TaskStore } from 'build-raptor-core'
-import { RepoRoot } from 'core-types'
+import { PathInRepo, RepoRoot } from 'core-types'
 import * as fse from 'fs-extra'
 import { createNopLogger } from 'logger'
 import {
@@ -275,7 +275,7 @@ export class Driver {
 
   constructor(readonly testName?: string, options: DriverOptions = {}) {
     this.storageClient = options.storageClient ?? new InMemoryStorageClient()
-    this.repoProtocol = options.repoProtocol ?? new SimpleNodeRepoProtocol('modules')
+    this.repoProtocol = options.repoProtocol ?? new SimpleNodeRepoProtocol(PathInRepo('modules'))
   }
 
   repo(recipe: FolderifyRecipe) {
