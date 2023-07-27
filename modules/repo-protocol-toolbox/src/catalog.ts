@@ -1,4 +1,3 @@
-import { TaskInfo } from 'repo-protocol'
 import { TaskKind } from 'task-name'
 import { UnitId } from 'unit-metadata'
 
@@ -13,8 +12,4 @@ export type TaskDefinition = {
 
   readonly inputsInUnit?: readonly string[]
   readonly inputsInDeps?: readonly string[]
-}
-
-export interface CatalogOfTasks {
-  taskList?: TaskInfo[]
 }
