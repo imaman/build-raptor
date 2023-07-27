@@ -45,8 +45,6 @@ export class TaskInfoGenerator {
         taskName,
         deps: [],
         outputLocations: [],
-        inputsInDeps: [],
-        inputsInUnit: [],
       }
 
       return ret
@@ -89,8 +87,6 @@ export class TaskInfoGenerator {
       outputLocations,
       inputs,
       deps: [],
-      inputsInUnit: [],
-      inputsInDeps: [],
     }
 
     return ret
