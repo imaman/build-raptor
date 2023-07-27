@@ -233,15 +233,6 @@ function computeCatalog(spec: CatalogSpec): CatalogOfTasks {
   throw new Error(`Unsupported CatalogSpec value: ${JSON.stringify(spec)}`)
 }
 
-const DEFAULT_CATALOG_SPEC = {
-  inUnit: {
-    test: ['build'],
-  },
-  onDeps: {
-    build: ['build'],
-  },
-}
-
 class RepoProtocolImpl implements RepoProtocol {
   private rootDir = RepoRoot('/')
 
@@ -295,12 +286,11 @@ class RepoProtocolImpl implements RepoProtocol {
       return new TaskInfoGenerator().computeInfos(c, this.units, this.state.getGraph())
     }
 
-    const unitOf = (uid: UnitId) => this.units.find(at => at.id === uid) ?? failMe(`unit not found (${uid})`)
-    
     return this.units.flatMap(u => {
-      const deps = this.state.getGraph()
-      .traverseFrom(u.id)
-      .filter(at => at !== u.id)
+      const deps = this.state
+        .getGraph()
+        .traverseFrom(u.id)
+        .filter(at => at !== u.id)
 
       const build: TaskInfo = {
         taskName: TaskName(u.id, TaskKind('build')),
