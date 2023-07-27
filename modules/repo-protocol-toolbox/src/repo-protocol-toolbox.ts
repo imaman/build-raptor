@@ -1,4 +1,5 @@
-import { Graph, uniqueBy } from 'misc'
+import { PathInRepo } from 'core-types'
+import { failMe, Graph, uniqueBy } from 'misc'
 import { OutputLocation, TaskInfo } from 'repo-protocol'
 import { TaskKind, TaskName } from 'task-name'
 import { UnitId, UnitMetadata } from 'unit-metadata'
@@ -11,7 +12,7 @@ export class TaskInfoGenerator {
     const ret: TaskInfo[] = []
     for (const unit of units) {
       for (const k of kinds) {
-        const info = this.generateInfo(unit, k, graph, defs)
+        const info = this.generateInfo(unit, k, units, graph, defs)
         if (info) {
           ret.push(info)
         }
@@ -28,6 +29,7 @@ export class TaskInfoGenerator {
   private generateInfo(
     unit: UnitMetadata,
     t: TaskKind,
+    units: UnitMetadata[],
     graph: Graph<UnitId>,
     defs?: readonly TaskDefinition[],
   ): TaskInfo | undefined {
@@ -38,11 +40,10 @@ export class TaskInfoGenerator {
       return undefined
     }
 
-    const deps: TaskName[] = []
     if (definition === 'DEFAULT') {
       const ret: TaskInfo = {
         taskName,
-        deps,
+        deps: [],
         outputLocations: [],
         inputsInDeps: [],
         inputsInUnit: [],
@@ -62,12 +63,34 @@ export class TaskInfoGenerator {
       }
     })
 
+    const inputs: PathInRepo[] = []
+    for (const at of definition.inputsInUnit ?? []) {
+      inputs.push(unit.pathInRepo.expand(at))
+    }
+
+    const unitOf = (id: UnitId) => units.find(at => at.id === id) ?? failMe(`unit not found (unit ID=${id})`)
+
+    const ds = graph
+      .traverseFrom(unit.id)
+      .filter(at => at !== unit.id)
+      .map(at => unitOf(at))
+    for (const at of definition.inputsInUnit ?? []) {
+      inputs.push(unit.pathInRepo.expand(at))
+    }
+
+    for (const d of ds) {
+      for (const at of definition.inputsInDeps ?? []) {
+        inputs.push(d.pathInRepo.expand(at))
+      }
+    }
+
     const ret: TaskInfo = {
       taskName,
-      deps,
       outputLocations,
-      inputsInDeps: definition.inputsInDeps ?? [],
-      inputsInUnit: definition.inputsInUnit ?? [],
+      inputs,
+      deps: [],
+      inputsInUnit: [],
+      inputsInDeps: [],
     }
 
     return ret
