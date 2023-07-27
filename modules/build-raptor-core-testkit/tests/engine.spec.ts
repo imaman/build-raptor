@@ -81,10 +81,7 @@ describe('engine', () => {
           g.vertices().map(g => ({
             taskName: TaskName(g, TaskKind('build')),
             inputs: [],
-            deps: [],
             outputLocations: [],
-            inputsInUnit: [],
-            inputsInDeps: [],
           })),
         )
       },
@@ -320,13 +317,11 @@ describe('engine', () => {
           taskName: TaskName(UnitId('a'), TaskKind('build')),
           inputs: [PathInRepo('modules/a')],
           outputLocations: [{ pathInRepo: PathInRepo('modules/a/dist'), purge: 'ALWAYS' }],
-          deps: [],
         },
         {
           taskName: TaskName(UnitId('a'), TaskKind('test')),
           inputs: [PathInRepo('modules/a/dist/out')],
           outputLocations: [],
-          deps: [],
         },
       ],
     })
@@ -547,25 +542,21 @@ describe('engine', () => {
             taskName: TaskName().parse('a:build'),
             inputs: [PathInRepo('code/a'), PathInRepo('code/b/dist/src')],
             outputLocations: [{ pathInRepo: PathInRepo('code/a/dist'), purge: 'ALWAYS' }],
-            deps: [],
           },
           {
             taskName: TaskName().parse('a:test'),
             inputs: [PathInRepo('code/a/dist/tests'), PathInRepo('code/a/dist/src'), PathInRepo('code/b/dist/src')],
             outputLocations: [{ pathInRepo: PathInRepo('code/a/dist/words'), purge: 'ALWAYS' }],
-            deps: [],
           },
           {
             taskName: TaskName().parse('b:build'),
             inputs: [PathInRepo('code/b')],
             outputLocations: [{ pathInRepo: PathInRepo('code/b/dist'), purge: 'ALWAYS' }],
-            deps: [],
           },
           {
             taskName: TaskName().parse('b:test'),
             inputs: [PathInRepo('code/b/dist/tests'), PathInRepo('code/b/dist/src')],
             outputLocations: [{ pathInRepo: PathInRepo('code/b/dist/words'), purge: 'ALWAYS' }],
-            deps: [],
           },
         ],
       })

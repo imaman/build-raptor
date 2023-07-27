@@ -47,7 +47,7 @@ export class Planner {
       }
     }
 
-    for (const d of info.deps) {
+    for (const d of info.deps ?? []) {
       this.taskGraph.edge(taskName, d)
     }
   }

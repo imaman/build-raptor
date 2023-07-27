@@ -708,7 +708,6 @@ export class YarnRepoProtocol implements RepoProtocol {
         dir.expand('package.json'),
         ...deps.map(d => d.expand(this.dist('s'))),
       ],
-      deps: [],
     }
   }
   private testTask(u: UnitMetadata): TaskInfo | undefined {
@@ -726,7 +725,6 @@ export class YarnRepoProtocol implements RepoProtocol {
         dir.expand('package.json'),
         ...deps.map(d => d.expand(this.dist('s'))),
       ],
-      deps: [],
     }
   }
   private packTask(u: UnitMetadata): TaskInfo | undefined {
@@ -739,7 +737,6 @@ export class YarnRepoProtocol implements RepoProtocol {
       taskName: TaskName(u.id, TaskKind('pack')),
       outputLocations: [{ pathInRepo: dir.expand(PACK_DIR), purge: 'NEVER' }],
       inputs: [dir.expand(this.dist('s')), ...deps.map(d => d.expand(this.dist('s')))],
-      deps: [],
     }
   }
   private publishTask(u: UnitMetadata): TaskInfo | undefined {
@@ -751,7 +748,6 @@ export class YarnRepoProtocol implements RepoProtocol {
       taskName: TaskName(u.id, TaskKind('publish-assets')),
       outputLocations: [{ pathInRepo: dir.expand(PREPARED_ASSETS_DIR), purge: 'NEVER' }],
       inputs: [dir.expand(this.dist('s'))],
-      deps: [],
     }
   }
 
