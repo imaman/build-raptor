@@ -8,7 +8,7 @@ export class TaskInfoGenerator {
   computeInfos(catalog: CatalogOfTasks, units: UnitMetadata[], graph: Graph<UnitId>) {
     const kinds = this.collectKinds(catalog)
     const ret: TaskInfo[] = []
-    const tasksFromDepList = new Set<TaskName>(catalog.depList?.flatMap(x => x) ?? [])
+    const tasksFromDepList = catalog.complete ? new Set<TaskName>(catalog.depList?.flatMap(x => x) ?? []) : undefined
     for (const unit of units) {
       for (const k of kinds) {
         const info = this.generateInfo(unit, k, graph, catalog, tasksFromDepList)
