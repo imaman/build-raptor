@@ -260,14 +260,14 @@ class RepoProtocolImpl implements RepoProtocol {
   }
 
   async getTasks(): Promise<TaskInfo[]> {
-    const catalogSepc = this.state.getCatalogSpec()
-    if (catalogSepc && typeof catalogSepc !== 'function') {
-      const c = computeCatalog(catalogSepc)
+    const catalogSpec = this.state.getCatalogSpec()
+    if (catalogSpec && typeof catalogSpec !== 'function') {
+      const c = computeCatalog(catalogSpec)
       return new TaskInfoGenerator().computeInfos(c, this.units, this.state.getGraph())
     }
 
     // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-    const depFunc = typeof catalogSepc === 'function' ? (catalogSepc as (t: TaskName) => TaskName[]) : () => []
+    const depFunc = typeof catalogSpec === 'function' ? (catalogSpec as (t: TaskName) => TaskName[]) : () => []
 
     return this.units.flatMap(u => {
       const deps = this.state
