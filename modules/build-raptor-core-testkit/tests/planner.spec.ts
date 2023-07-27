@@ -4,6 +4,10 @@ import { UnitId } from 'unit-metadata'
 import { Driver } from '../src/driver'
 import { RepoProtocolTestkit } from '../src/repo-protocol-testkit'
 
+function depFunc(input: readonly [string, string][]) {
+  return (tn: string) => input.flatMap(([a, b]) => (a === tn ? [b] : []))
+}
+
 jest.setTimeout(30000)
 describe('planner', () => {
   const testName = () => expect.getState().currentTestName
@@ -106,16 +110,14 @@ describe('planner', () => {
           b: ['c'],
           c: [],
         },
-        {
-          depList: [
-            ['c:test', 'c:build'],
-            ['b:build', 'c:build'],
-            ['b:test', 'b:build'],
-            ['b:scrutiny', 'b:lint'],
-            ['b:scrutiny', 'b:test'],
-            ['a:dockerPush', 'b:test'],
-          ],
-        },
+        depFunc([
+          ['c:test', 'c:build'],
+          ['b:build', 'c:build'],
+          ['b:test', 'b:build'],
+          ['b:scrutiny', 'b:lint'],
+          ['b:scrutiny', 'b:test'],
+          ['a:dockerPush', 'b:test'],
+        ]),
       )
 
       const driver = new Driver(testName(), { repoProtocol: protocol.create() })
@@ -131,14 +133,12 @@ describe('planner', () => {
     test('an error in a dependency task (as specified in depList) short-circuts its dependents', async () => {
       const protocol = new RepoProtocolTestkit(
         { a: [], b: ['c'], c: [] },
-        {
-          depList: [
-            ['a:q', 'a:r'],
-            ['a:r', 'b:r'],
-            ['a:r', 'b:s'],
-            ['b:r', 'c:t'],
-          ],
-        },
+        depFunc([
+          ['a:q', 'a:r'],
+          ['a:r', 'b:r'],
+          ['a:r', 'b:s'],
+          ['b:r', 'c:t'],
+        ]),
       )
 
       const driver = new Driver(testName(), { repoProtocol: protocol.create() })
@@ -157,15 +157,13 @@ describe('planner', () => {
           b: ['c'],
           c: [],
         },
-        {
-          depList: [
-            ['a:q', 'a:r'],
-            ['a:r', 'b:r'],
-            ['b:r', 'b:s'],
-            ['b:s', 'c:t'],
-            ['b:s', 'a:r'],
-          ],
-        },
+        depFunc([
+          ['a:q', 'a:r'],
+          ['a:r', 'b:r'],
+          ['b:r', 'b:s'],
+          ['b:s', 'c:t'],
+          ['b:s', 'a:r'],
+        ]),
       )
 
       const driver = new Driver(testName(), { repoProtocol: protocol.create() })
