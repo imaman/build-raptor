@@ -39,8 +39,8 @@ export class TaskInfoGenerator {
         taskName,
         deps,
         outputLocations: [],
-        inputsInDeps: [''],
-        inputsInUnit: [''],
+        inputsInDeps: [],
+        inputsInUnit: [],
       }
 
       return ret
