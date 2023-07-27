@@ -18,6 +18,6 @@ export type TaskDefinition = {
 // TODO(imaman): document this.
 export interface CatalogOfTasks {
   readonly tasks?: readonly TaskDefinition[]
-  readonly depList?: readonly [TaskName, TaskName][]
+  readonly depList_?: readonly [TaskName, TaskName][]
   taskList?: TaskInfo[]
 }
