@@ -4,7 +4,7 @@ import execa from 'execa'
 import * as fse from 'fs-extra'
 import { failMe, Graph, promises } from 'misc'
 import { ExitStatus, RepoProtocol, TaskInfo } from 'repo-protocol'
-import { CatalogOfTasks, TaskInfoGenerator } from 'repo-protocol-toolbox'
+import { TaskInfoGenerator } from 'repo-protocol-toolbox'
 import { TaskKind, TaskName } from 'task-name'
 import { UnitId, UnitMetadata } from 'unit-metadata'
 import * as util from 'util'
@@ -13,7 +13,7 @@ export class SimpleNodeRepoProtocol implements RepoProtocol {
   constructor(
     private readonly pathToModulesDir = PathInRepo('modules'),
     private readonly buildOutputLocations: string[] = [],
-    private readonly catalog?: CatalogOfTasks,
+    private readonly catalog?: { taskList?: TaskInfo[] },
   ) {}
 
   private units: UnitMetadata[] = []
