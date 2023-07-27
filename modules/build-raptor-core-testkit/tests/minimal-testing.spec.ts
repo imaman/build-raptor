@@ -200,15 +200,7 @@ describe('minimal testing', () => {
         a: [],
         b: ['a'],
       },
-      {
-        inUnit: {
-          test: ['build'],
-        },
-        onDeps: {
-          build: ['build'],
-          test: ['test'],
-        },
-      },
+      t => (t === 'b:test' ? ['a:test'] : []),
     )
     const driver = new Driver(testName(), { repoProtocol: protocol.create() })
     const recipe = {

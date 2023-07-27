@@ -7,7 +7,6 @@ import {
   FolderifyRecipe,
   Graph,
   mapIncrement,
-  mapRecord,
   pair,
   pairsToRecord,
   recordToPairs,
@@ -61,7 +60,7 @@ interface State {
   countByTask: Map<TaskName, number>
   countByTaskInRun: Map<TaskInRun, number>
   getGraph: () => Graph<UnitId>
-  readonly getCatalogSpec: () => CatalogSpec | undefined
+  readonly getCatalogSpec: () => CatalogSpec | DepFunc | undefined
 }
 
 // A TaskName written in a "unit-id:task-kind" notation. It used only in tests (it improves conciseness) - it is not
@@ -72,14 +71,7 @@ function labelToTaskName(label: TaskLabel): TaskName {
   return TaskName().parse(label)
 }
 
-type CatalogSpec = CatalogSpecA | CatalogSpecB
-
-type CatalogSpecA = {
-  readonly inUnit?: Record<string, readonly string[]>
-  readonly onDeps?: Record<string, readonly string[]>
-}
-
-type CatalogSpecB = {
+type CatalogSpec = {
   readonly tasks?: readonly TaskDefinition[]
   readonly depList?: readonly [string, string][]
   readonly complete?: boolean
@@ -87,13 +79,18 @@ type CatalogSpecB = {
 
 type TaskCallback = ((dir: string) => Promise<ExitStatus>) | ((dir: string) => ExitStatus)
 
+/**
+ * Returns an array of task names which are the dependencies of the given input (also a task name).
+ */
+type DepFunc = (taskName: string) => string[]
+
 export class RepoProtocolTestkit {
   private map = new Map<TaskName, TaskCallback>()
   private countByTask = new Map<TaskName, number>()
   private countByTaskInRun = new Map<TaskInRun, number>()
   private readonly units: UnitMetadata[]
 
-  constructor(private readonly graphJson: Record<string, string[]>, private spec?: CatalogSpec) {
+  constructor(private readonly graphJson: Record<string, string[]>, private spec?: CatalogSpec | DepFunc) {
     this.units = Object.keys(graphJson).map(u => new UnitMetadata(u, UnitId(u)))
   }
 
@@ -210,36 +207,13 @@ export class RepoProtocolTestkit {
 }
 
 function computeCatalog(spec: CatalogSpec): CatalogOfTasks {
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-  const a = spec as CatalogSpecA
-  if (a.inUnit || a.onDeps) {
-    return {
-      inUnit: mapRecord(a.inUnit ?? {}, ([x, ys]) => [TaskKind(x), ys.map(y => TaskKind(y))]),
-      onDeps: mapRecord(a.onDeps ?? {}, ([x, ys]) => [TaskKind(x), ys.map(y => TaskKind(y))]),
-    }
+  return {
+    inUnit: {},
+    onDeps: {},
+    depList: spec.depList?.map(([a, b]) => [labelToTaskName(a), labelToTaskName(b)]),
+    tasks: spec.tasks,
+    complete: spec.complete ?? false,
   }
-
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-  const b = spec as CatalogSpecB
-  if (b.tasks || b.depList) {
-    return {
-      inUnit: {},
-      onDeps: {},
-      depList: b.depList?.map(([a, b]) => [labelToTaskName(a), labelToTaskName(b)]),
-      tasks: b.tasks,
-      complete: b.complete ?? false,
-    }
-  }
-  throw new Error(`Unsupported CatalogSpec value: ${JSON.stringify(spec)}`)
-}
-
-const DEFAULT_CATALOG_SPEC = {
-  inUnit: {
-    test: ['build'],
-  },
-  onDeps: {
-    build: ['build'],
-  },
 }
 
 class RepoProtocolImpl implements RepoProtocol {
@@ -289,7 +263,44 @@ class RepoProtocolImpl implements RepoProtocol {
   }
 
   async getTasks(): Promise<TaskInfo[]> {
-    const c = computeCatalog(this.state.getCatalogSpec() ?? DEFAULT_CATALOG_SPEC)
-    return new TaskInfoGenerator().computeInfos(c, this.units, this.state.getGraph())
+    const catalogSpec = this.state.getCatalogSpec()
+    if (catalogSpec && typeof catalogSpec !== 'function') {
+      const c = computeCatalog(catalogSpec)
+      return new TaskInfoGenerator().computeInfos(c, this.units, this.state.getGraph())
+    }
+
+    const depFunc =
+      typeof catalogSpec === 'function'
+        ? (catalogSpec as unknown as (t: TaskName) => TaskName[]) // eslint-disable-line @typescript-eslint/consistent-type-assertions
+        : () => []
+
+    return this.units.flatMap(u => {
+      const deps = this.state
+        .getGraph()
+        .traverseFrom(u.id)
+        .filter(at => at !== u.id)
+
+      const buildTaskName = TaskName(u.id, TaskKind('build'))
+
+      const build: TaskInfo = {
+        taskName: buildTaskName,
+        inputs: [u.pathInRepo],
+        outputLocations: [],
+        deps: [...deps.map(d => TaskName(d, TaskKind('build'))), ...depFunc(buildTaskName)],
+        inputsInDeps: [],
+        inputsInUnit: [],
+      }
+
+      const testTaskName = TaskName(u.id, TaskKind('test'))
+      const test: TaskInfo = {
+        taskName: testTaskName,
+        inputs: [u.pathInRepo],
+        outputLocations: [],
+        deps: [build.taskName, ...depFunc(testTaskName)],
+        inputsInDeps: [],
+        inputsInUnit: [],
+      }
+      return [build, test]
+    })
   }
 }
