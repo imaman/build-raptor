@@ -7,7 +7,7 @@ export type TaskInfo = {
   readonly taskName: TaskName
   readonly deps: readonly TaskName[]
   readonly outputLocations: readonly OutputLocation[]
-  readonly inputsInUnit: readonly unknown[]
+  readonly inputsInUnit: readonly string[]
   readonly inputsInDeps: readonly string[]
   inputs?: PathInRepo[]
 }

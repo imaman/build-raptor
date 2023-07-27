@@ -36,7 +36,9 @@ export class Planner {
     const taskName = info.taskName
     const { unitId, taskKind } = TaskName().undo(taskName)
 
-    let inputs: PathInRepo[] = [] //info.inputsInUnit.map(i => u.pathInRepo.expand(i))
+    const u = model.getUnit(unitId)
+
+    let inputs: PathInRepo[] = info.inputsInUnit.map(i => u.pathInRepo.expand(i))
 
     for (const d of model.unitDependenciesOf(unitId)) {
       if (d.id === unitId) {
@@ -64,6 +66,12 @@ export class Planner {
     this.tasks.push(task)
     this.taskGraph.vertex(taskName)
 
+    for (const inputLoc of info.inputsInUnit) {
+      const other = reg.lookup(u.pathInRepo.expand(inputLoc))
+      if (other) {
+        this.taskGraph.edge(taskName, other)
+      }
+    }
     for (const input of info.inputs ?? []) {
       const other = reg.lookup(input)
       if (other) {
