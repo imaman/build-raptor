@@ -454,7 +454,7 @@ describe('engine', () => {
         const protocol = new RepoProtocolTestkit(
           { a: [] },
           {
-            tasks: [
+            taskDefs: [
               { taskKind: TaskKind('x'), inputsInUnit: ['out/oy'], outputs: ['out/ox'] },
               { taskKind: TaskKind('y'), inputsInUnit: [''], outputs: ['out/oy'] },
             ],
@@ -478,7 +478,7 @@ describe('engine', () => {
         const protocol = new RepoProtocolTestkit(
           { a: [] },
           {
-            tasks: [
+            taskDefs: [
               { taskKind: TaskKind('x'), inputsInUnit: ['out/oy/foo'], outputs: ['out/ox'] },
               { taskKind: TaskKind('y'), inputsInUnit: [''], outputs: ['out/oy'] },
             ],
@@ -502,7 +502,7 @@ describe('engine', () => {
         const protocol = new RepoProtocolTestkit(
           { a: ['b'], b: [] },
           {
-            tasks: [
+            taskDefs: [
               { taskKind: TaskKind('x'), inputsInDeps: ['out/f'], outputs: ['out/f'], unitIds: [UnitId('a')] },
               { taskKind: TaskKind('y'), outputs: ['out/f'], unitIds: [UnitId('b')] },
             ],
@@ -530,7 +530,7 @@ describe('engine', () => {
       const protocol = new RepoProtocolTestkit(
         { a: ['b'], b: [] },
         {
-          tasks: [
+          taskDefs: [
             { taskKind: TaskKind('x'), inputsInDeps: [''], outputs: ['out/f'], unitIds: [UnitId('a')] },
             { taskKind: TaskKind('y'), outputs: ['out/f'], unitIds: [UnitId('b')] },
           ],
