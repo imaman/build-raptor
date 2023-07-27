@@ -268,33 +268,34 @@ class RepoProtocolImpl implements RepoProtocol {
         ? (catalogSpec as unknown as (t: TaskName) => TaskName[]) // eslint-disable-line @typescript-eslint/consistent-type-assertions
         : () => []
 
-    return this.units.flatMap(u => {
-      const deps = this.state
-        .getGraph()
-        .traverseFrom(u.id)
-        .filter(at => at !== u.id)
-
-      const buildTaskName = TaskName(u.id, TaskKind('build'))
-
-      const build: TaskInfo = {
-        taskName: buildTaskName,
-        inputs: [u.pathInRepo],
-        outputLocations: [],
-        deps: [...deps.map(d => TaskName(d, TaskKind('build'))), ...depFunc(buildTaskName)],
-        inputsInDeps: [],
-        inputsInUnit: [],
-      }
-
-      const testTaskName = TaskName(u.id, TaskKind('test'))
-      const test: TaskInfo = {
-        taskName: testTaskName,
-        inputs: [u.pathInRepo],
-        outputLocations: [],
-        deps: [build.taskName, ...depFunc(testTaskName)],
-        inputsInDeps: [],
-        inputsInUnit: [],
-      }
-      return [build, test]
-    })
+    return generateTaskInfos(this.units, this.state.getGraph(), depFunc)
   }
+}
+
+export function generateTaskInfos(units: UnitMetadata[], graph: Graph<UnitId>, depFunc: (t: TaskName) => TaskName[]) {
+  return units.flatMap(u => {
+    const deps = graph.traverseFrom(u.id).filter(at => at !== u.id)
+
+    const buildTaskName = TaskName(u.id, TaskKind('build'))
+
+    const build: TaskInfo = {
+      taskName: buildTaskName,
+      inputs: [u.pathInRepo],
+      outputLocations: [],
+      deps: [...deps.map(d => TaskName(d, TaskKind('build'))), ...depFunc(buildTaskName)],
+      inputsInDeps: [],
+      inputsInUnit: [],
+    }
+
+    const testTaskName = TaskName(u.id, TaskKind('test'))
+    const test: TaskInfo = {
+      taskName: testTaskName,
+      inputs: [u.pathInRepo],
+      outputLocations: [],
+      deps: [build.taskName, ...depFunc(testTaskName)],
+      inputsInDeps: [],
+      inputsInUnit: [],
+    }
+    return [build, test]
+  })
 }
