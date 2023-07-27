@@ -253,7 +253,7 @@ class RepoProtocolImpl implements RepoProtocol {
   async getTasks(): Promise<TaskInfo[]> {
     const catalogSpec = this.state.getCatalogSpec()
     if (catalogSpec && typeof catalogSpec !== 'function') {
-      return new TaskInfoGenerator().computeInfos(catalogSpec.taskDefs, this.units, this.state.getGraph())
+      return new TaskInfoGenerator().computeInfos(catalogSpec.taskDefs, this.units)
     }
 
     const depFunc =

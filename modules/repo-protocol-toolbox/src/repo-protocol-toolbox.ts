@@ -1,17 +1,17 @@
-import { Graph, uniqueBy } from 'misc'
+import { uniqueBy } from 'misc'
 import { OutputLocation, TaskInfo } from 'repo-protocol'
 import { TaskKind, TaskName } from 'task-name'
-import { UnitId, UnitMetadata } from 'unit-metadata'
+import { UnitMetadata } from 'unit-metadata'
 
 import { TaskDefinition } from './task-definition'
 
 export class TaskInfoGenerator {
-  computeInfos(defs: readonly TaskDefinition[] | undefined, units: UnitMetadata[], graph: Graph<UnitId>) {
+  computeInfos(defs: readonly TaskDefinition[] | undefined, units: UnitMetadata[]) {
     const kinds = this.collectKinds(defs)
     const ret: TaskInfo[] = []
     for (const unit of units) {
       for (const k of kinds) {
-        const info = this.generateInfo(unit, k, graph, defs)
+        const info = this.generateInfo(unit, k, defs)
         if (info) {
           ret.push(info)
         }
@@ -25,12 +25,7 @@ export class TaskInfoGenerator {
     return uniqueBy(kinds, x => x)
   }
 
-  private generateInfo(
-    unit: UnitMetadata,
-    t: TaskKind,
-    graph: Graph<UnitId>,
-    defs?: readonly TaskDefinition[],
-  ): TaskInfo | undefined {
+  private generateInfo(unit: UnitMetadata, t: TaskKind, defs?: readonly TaskDefinition[]): TaskInfo | undefined {
     const taskName = TaskName(unit.id, t)
     const definition = this.findDefinition(taskName, defs)
 
