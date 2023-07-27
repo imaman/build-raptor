@@ -73,7 +73,7 @@ function labelToTaskName(label: TaskLabel): TaskName {
 
 type CatalogSpec = {
   readonly tasks?: readonly TaskDefinition[]
-  readonly depList?: readonly [string, string][]
+  readonly depList_?: readonly [string, string][]
 }
 
 type TaskCallback = ((dir: string) => Promise<ExitStatus>) | ((dir: string) => ExitStatus)
@@ -207,7 +207,7 @@ export class RepoProtocolTestkit {
 
 function computeCatalog(spec: CatalogSpec): CatalogOfTasks {
   return {
-    depList: spec.depList?.map(([a, b]) => [labelToTaskName(a), labelToTaskName(b)]),
+    depList: spec.depList_?.map(([a, b]) => [labelToTaskName(a), labelToTaskName(b)]),
     tasks: spec.tasks,
   }
 }
