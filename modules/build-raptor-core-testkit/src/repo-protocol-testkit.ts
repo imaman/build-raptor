@@ -15,7 +15,7 @@ import {
   writeRecipe,
 } from 'misc'
 import { ExitStatus, RepoProtocol, TaskInfo } from 'repo-protocol'
-import { CatalogOfTasks, TaskDefinition, TaskInfoGenerator } from 'repo-protocol-toolbox'
+import { TaskDefinition, TaskInfoGenerator } from 'repo-protocol-toolbox'
 import { TaskKind, TaskName } from 'task-name'
 import { UnitId, UnitMetadata } from 'unit-metadata'
 
@@ -204,12 +204,6 @@ export class RepoProtocolTestkit {
   }
 }
 
-function computeCatalog(spec: CatalogSpec): CatalogOfTasks {
-  return {
-    tasks: spec.taskDefs,
-  }
-}
-
 class RepoProtocolImpl implements RepoProtocol {
   private rootDir = RepoRoot('/')
 
@@ -259,8 +253,7 @@ class RepoProtocolImpl implements RepoProtocol {
   async getTasks(): Promise<TaskInfo[]> {
     const catalogSpec = this.state.getCatalogSpec()
     if (catalogSpec && typeof catalogSpec !== 'function') {
-      const c = computeCatalog(catalogSpec)
-      return new TaskInfoGenerator().computeInfos(c, this.units, this.state.getGraph())
+      return new TaskInfoGenerator().computeInfos(catalogSpec.taskDefs, this.units, this.state.getGraph())
     }
 
     const depFunc =

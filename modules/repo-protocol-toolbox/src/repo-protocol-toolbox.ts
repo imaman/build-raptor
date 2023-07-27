@@ -3,14 +3,14 @@ import { OutputLocation, TaskInfo } from 'repo-protocol'
 import { TaskKind, TaskName } from 'task-name'
 import { UnitId, UnitMetadata } from 'unit-metadata'
 
-import { CatalogOfTasks, TaskDefinition } from './catalog'
+import { TaskDefinition } from './catalog'
 export class TaskInfoGenerator {
-  computeInfos(catalog: CatalogOfTasks, units: UnitMetadata[], graph: Graph<UnitId>) {
-    const kinds = this.collectKinds(catalog)
+  computeInfos(defs: readonly TaskDefinition[] | undefined, units: UnitMetadata[], graph: Graph<UnitId>) {
+    const kinds = this.collectKinds(defs)
     const ret: TaskInfo[] = []
     for (const unit of units) {
       for (const k of kinds) {
-        const info = this.generateInfo(unit, k, graph, catalog)
+        const info = this.generateInfo(unit, k, graph, defs)
         if (info) {
           ret.push(info)
         }
@@ -19,8 +19,8 @@ export class TaskInfoGenerator {
     return ret
   }
 
-  private collectKinds(catalog: CatalogOfTasks) {
-    const kinds = (catalog.tasks ?? []).map(td => td.taskKind)
+  private collectKinds(defs?: readonly TaskDefinition[]) {
+    const kinds = (defs ?? []).map(td => td.taskKind)
     return uniqueBy(kinds, x => x)
   }
 
@@ -28,10 +28,10 @@ export class TaskInfoGenerator {
     unit: UnitMetadata,
     t: TaskKind,
     graph: Graph<UnitId>,
-    catalog: CatalogOfTasks,
+    defs?: readonly TaskDefinition[],
   ): TaskInfo | undefined {
     const taskName = TaskName(unit.id, t)
-    const definition = this.findDefinition(taskName, catalog)
+    const definition = this.findDefinition(taskName, defs)
 
     if (definition === 'NONE') {
       return undefined
@@ -72,13 +72,13 @@ export class TaskInfoGenerator {
     return ret
   }
 
-  private findDefinition(taskName: TaskName, catalog: CatalogOfTasks): 'DEFAULT' | 'NONE' | TaskDefinition {
+  private findDefinition(taskName: TaskName, defs?: readonly TaskDefinition[]): 'DEFAULT' | 'NONE' | TaskDefinition {
     const { unitId, taskKind } = TaskName().undo(taskName)
-    if (!catalog.tasks) {
+    if (!defs) {
       return 'DEFAULT'
     }
 
-    const filtered = (catalog.tasks ?? []).filter(at => {
+    const filtered = (defs ?? []).filter(at => {
       if (at.taskKind !== taskKind) {
         return false
       }
