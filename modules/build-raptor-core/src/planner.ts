@@ -1,5 +1,4 @@
 import { BuildFailedError } from 'build-failed-error'
-import { PathInRepo } from 'core-types'
 import { Logger } from 'logger'
 import { Graph } from 'misc'
 import { TaskInfo } from 'repo-protocol'
@@ -36,30 +35,8 @@ export class Planner {
     const taskName = info.taskName
     const { unitId, taskKind } = TaskName().undo(taskName)
 
-    let inputs: PathInRepo[] = [] //info.inputsInUnit.map(i => u.pathInRepo.expand(i))
+    const inputs = info.inputs ?? []
 
-    for (const d of model.unitDependenciesOf(unitId)) {
-      if (d.id === unitId) {
-        continue
-      }
-      for (const i of info.inputsInDeps) {
-        const p = d.pathInRepo.expand(i)
-        inputs.push(p)
-
-        const other = reg.lookup(p)
-        if (!other) {
-          continue
-          // TODO(imaman): this should be a build error
-          // throw new BuildFailedError(`a task (${taskName}) cannot declare as its input the source code of another untit (${d.id})`)
-        }
-
-        this.taskGraph.edge(taskName, other)
-      }
-    }
-
-    if (info.inputs) {
-      inputs = info.inputs
-    }
     const task = new Task(model.buildRunId, taskKind, unitId, info, inputs)
     this.tasks.push(task)
     this.taskGraph.vertex(taskName)
