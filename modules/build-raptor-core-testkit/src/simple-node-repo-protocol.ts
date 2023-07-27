@@ -99,6 +99,9 @@ export class SimpleNodeRepoProtocol implements RepoProtocol {
   }
 
   async getTasks(): Promise<TaskInfo[]> {
+    if (this.catalog?.taskList) {
+      return this.catalog.taskList
+    }
     const c = this.getCatalog()
     return new TaskInfoGenerator().computeInfos(c, this.units, this.graph)
   }

@@ -314,7 +314,27 @@ describe('engine', () => {
     expect(r1.message).toMatch(/^No tasks to run in this build/)
   })
   test('build output recording', async () => {
-    const driver = new Driver(testName(), { repoProtocol: new SimpleNodeRepoProtocol(PathInRepo('modules'), ['dist']) })
+    const repoProtocol = new SimpleNodeRepoProtocol(PathInRepo('modules'), ['dist'], {
+      taskList: [
+        {
+          taskName: TaskName(UnitId('a'), TaskKind('build')),
+          inputs: [PathInRepo('modules/a')],
+          outputLocations: [{ pathInRepo: PathInRepo('modules/a/dist'), purge: 'ALWAYS' }],
+          deps: [],
+          inputsInDeps: [],
+          inputsInUnit: [],
+        },
+        {
+          taskName: TaskName(UnitId('a'), TaskKind('test')),
+          inputs: [PathInRepo('modules/a/dist/out')],
+          outputLocations: [],
+          deps: [],
+          inputsInDeps: [],
+          inputsInUnit: [],
+        },
+      ],
+    })
+    const driver = new Driver(testName(), { repoProtocol })
     const recipe = {
       '.gitignore': 'dist',
       'modules/a/package.json': {
