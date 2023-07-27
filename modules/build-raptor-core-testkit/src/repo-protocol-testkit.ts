@@ -208,8 +208,6 @@ export class RepoProtocolTestkit {
 
 function computeCatalog(spec: CatalogSpec): CatalogOfTasks {
   return {
-    inUnit: {},
-    onDeps: {},
     depList: spec.depList?.map(([a, b]) => [labelToTaskName(a), labelToTaskName(b)]),
     tasks: spec.tasks,
     complete: spec.complete ?? false,

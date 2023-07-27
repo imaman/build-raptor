@@ -1,4 +1,4 @@
-import { Graph, recordToPairs, uniqueBy } from 'misc'
+import { Graph, uniqueBy } from 'misc'
 import { OutputLocation, TaskInfo } from 'repo-protocol'
 import { TaskKind, TaskName } from 'task-name'
 import { UnitId, UnitMetadata } from 'unit-metadata'
@@ -21,11 +21,9 @@ export class TaskInfoGenerator {
   }
 
   private collectKinds(catalog: CatalogOfTasks) {
-    const kindsA = recordToPairs(catalog.inUnit).flatMap(([k, v]) => [k, ...v])
-    const kindsB = recordToPairs(catalog.onDeps).flatMap(([k, v]) => [k, ...v])
     const kindsC = (catalog.depList ?? []).flat().map(tn => TaskName().undo(tn).taskKind)
     const kindsD = (catalog.tasks ?? []).map(td => td.taskKind)
-    return uniqueBy([...kindsA, ...kindsB, ...kindsC, ...kindsD], x => x)
+    return uniqueBy([...kindsC, ...kindsD], x => x)
   }
 
   private generateInfo(
@@ -107,21 +105,7 @@ export class TaskInfoGenerator {
   }
 
   private computeTaskDeps(taskName: TaskName, graph: Graph<UnitId>, catalog: CatalogOfTasks): TaskName[] {
-    const { taskKind, unitId } = TaskName().undo(taskName)
-    const inUnit = catalog.inUnit[taskKind] ?? []
-    const onDeps = catalog.onDeps[taskKind] ?? []
-    const unitDeps = graph.neighborsOf(unitId)
-
     const ret = (catalog.depList ?? []).filter(([f, _t]) => f === taskName).map(([_f, t]) => t)
-    for (const at of inUnit) {
-      ret.push(TaskName(unitId, at))
-    }
-
-    for (const at of onDeps) {
-      for (const depUnitId of unitDeps) {
-        ret.push(TaskName(depUnitId, at))
-      }
-    }
     return ret
   }
 }

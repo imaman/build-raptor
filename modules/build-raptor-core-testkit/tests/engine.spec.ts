@@ -526,8 +526,6 @@ describe('engine', () => {
     })
     test.skip('should not run tests in dependent when only the tests of a dependency have changed', async () => {
       const repoProtocol = new SimpleNodeRepoProtocol(PathInRepo('code'), undefined, {
-        inUnit: {},
-        onDeps: {},
         tasks: [],
         taskList: [
           {

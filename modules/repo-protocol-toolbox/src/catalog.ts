@@ -17,9 +17,6 @@ export type TaskDefinition = {
 
 // TODO(imaman): document this.
 export interface CatalogOfTasks {
-  readonly inUnit: Record<TaskKind, readonly TaskKind[]>
-  readonly onDeps: Record<TaskKind, readonly TaskKind[]>
-
   readonly tasks?: readonly TaskDefinition[]
   readonly depList?: readonly [TaskName, TaskName][]
   // TODO(imaman): document
