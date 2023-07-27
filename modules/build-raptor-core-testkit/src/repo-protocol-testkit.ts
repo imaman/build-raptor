@@ -79,7 +79,10 @@ type CatalogSpec = {
 
 type TaskCallback = ((dir: string) => Promise<ExitStatus>) | ((dir: string) => ExitStatus)
 
-type DepFunc = (s: TaskName) => string[]
+/**
+ * Returns an array of task names which are the dependencies of the given input (also a task name).
+ */
+type DepFunc = (taskName: string) => string[]
 
 export class RepoProtocolTestkit {
   private map = new Map<TaskName, TaskCallback>()
