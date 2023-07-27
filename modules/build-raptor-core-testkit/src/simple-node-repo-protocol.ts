@@ -4,10 +4,11 @@ import execa from 'execa'
 import * as fse from 'fs-extra'
 import { failMe, Graph, promises } from 'misc'
 import { ExitStatus, RepoProtocol, TaskInfo } from 'repo-protocol'
-import { TaskInfoGenerator } from 'repo-protocol-toolbox'
-import { TaskKind, TaskName } from 'task-name'
+import { TaskName } from 'task-name'
 import { UnitId, UnitMetadata } from 'unit-metadata'
 import * as util from 'util'
+
+import { generateTaskInfos } from './repo-protocol-testkit'
 
 export class SimpleNodeRepoProtocol implements RepoProtocol {
   constructor(
@@ -102,30 +103,7 @@ export class SimpleNodeRepoProtocol implements RepoProtocol {
     if (this.catalog) {
       return this.catalog.taskList
     }
-    const c = this.getCatalog()
-    return new TaskInfoGenerator().computeInfos(c, this.units, this.graph)
-  }
 
-  private getCatalog() {
-    const b = TaskKind('build')
-    const t = TaskKind('test')
-    return {
-      inUnit: {
-        [t]: [b],
-      },
-      onDeps: {
-        [b]: [b],
-      },
-      tasks: [
-        {
-          taskKind: b,
-          outputs: this.buildOutputLocations,
-        },
-        {
-          taskKind: t,
-          outputs: [],
-        },
-      ],
-    }
+    return generateTaskInfos(this.units, this.graph, () => [], this.buildOutputLocations)
   }
 }

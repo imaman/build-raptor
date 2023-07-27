@@ -268,11 +268,16 @@ class RepoProtocolImpl implements RepoProtocol {
         ? (catalogSpec as unknown as (t: TaskName) => TaskName[]) // eslint-disable-line @typescript-eslint/consistent-type-assertions
         : () => []
 
-    return generateTaskInfos(this.units, this.state.getGraph(), depFunc)
+    return generateTaskInfos(this.units, this.state.getGraph(), depFunc, [])
   }
 }
 
-export function generateTaskInfos(units: UnitMetadata[], graph: Graph<UnitId>, depFunc: (t: TaskName) => TaskName[]) {
+export function generateTaskInfos(
+  units: UnitMetadata[],
+  graph: Graph<UnitId>,
+  depFunc: (t: TaskName) => TaskName[],
+  buildOutputLocations: string[],
+) {
   return units.flatMap(u => {
     const deps = graph.traverseFrom(u.id).filter(at => at !== u.id)
 
@@ -281,7 +286,7 @@ export function generateTaskInfos(units: UnitMetadata[], graph: Graph<UnitId>, d
     const build: TaskInfo = {
       taskName: buildTaskName,
       inputs: [u.pathInRepo],
-      outputLocations: [],
+      outputLocations: buildOutputLocations.map(at => ({ pathInRepo: u.pathInRepo.expand(at), purge: 'NEVER' })),
       deps: [...deps.map(d => TaskName(d, TaskKind('build'))), ...depFunc(buildTaskName)],
       inputsInDeps: [],
       inputsInUnit: [],
