@@ -304,7 +304,7 @@ class RepoProtocolImpl implements RepoProtocol {
 
       const build: TaskInfo = {
         taskName: TaskName(u.id, TaskKind('build')),
-        inputs: [],
+        inputs: [u.pathInRepo],
         outputLocations: [],
         deps: deps.map(d => TaskName(d, TaskKind('build'))),
         inputsInDeps: [],
@@ -313,7 +313,7 @@ class RepoProtocolImpl implements RepoProtocol {
 
       const test: TaskInfo = {
         taskName: TaskName(u.id, TaskKind('test')),
-        inputs: [],
+        inputs: [u.pathInRepo],
         outputLocations: [],
         deps: [build.taskName],
         inputsInDeps: [],
