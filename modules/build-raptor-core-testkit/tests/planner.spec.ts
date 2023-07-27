@@ -16,7 +16,7 @@ describe('planner', () => {
     const t3 = { taskKind: TaskKind('t3'), outputs: ['R'], inputsInDeps: [], unitIds: [UnitId('b')] }
     const t4 = { taskKind: TaskKind('t4'), outputs: ['S'], inputsInDeps: [], unitIds: [UnitId('b')] }
 
-    const protocol = new RepoProtocolTestkit({ a: ['b'], b: [] }, { tasks: [t1, t2, t3, t4] })
+    const protocol = new RepoProtocolTestkit({ a: ['b'], b: [] }, { taskDefs: [t1, t2, t3, t4] })
     const driver = new Driver(testName(), { repoProtocol: protocol.create() })
     const recipe = { '.gitignore': 'R\nS', 'a/somefile': '', 'b/somefile': '' }
 
@@ -37,7 +37,7 @@ describe('planner', () => {
     t1.inputsInDeps.push('S')
 
     protocol.changeCatalog({
-      tasks: [t1, t2, t3, t4],
+      taskDefs: [t1, t2, t3, t4],
     })
 
     const run3 = await fork.run('OK')
@@ -45,7 +45,7 @@ describe('planner', () => {
   })
 
   test('tasks can be defined even if mentioned only in the list of tasks in the catalog', async () => {
-    const protocol = new RepoProtocolTestkit({ a: ['b'], b: ['c'], c: [] }, { tasks: [{ taskKind: TaskKind('s') }] })
+    const protocol = new RepoProtocolTestkit({ a: ['b'], b: ['c'], c: [] }, { taskDefs: [{ taskKind: TaskKind('s') }] })
 
     const driver = new Driver(testName(), { repoProtocol: protocol.create() })
     const recipe = { 'a/f': '', 'b/f': '', 'c/f': '' }
@@ -58,7 +58,7 @@ describe('planner', () => {
     const protocol = new RepoProtocolTestkit(
       { a: [], b: [], c: [] },
       {
-        tasks: [
+        taskDefs: [
           {
             taskKind: TaskKind('T_1'),
             unitIds: [UnitId('a'), UnitId('c')],
@@ -82,7 +82,7 @@ describe('planner', () => {
     const protocol = new RepoProtocolTestkit(
       { a: [] },
       {
-        tasks: [
+        taskDefs: [
           { taskKind: TaskKind('T_1'), outputs: ['foo'] },
           { taskKind: TaskKind('T_2'), outputs: ['bar'] },
           { taskKind: TaskKind('T_3'), outputs: ['foo'] },
@@ -97,86 +97,6 @@ describe('planner', () => {
 
     const r1 = await fork.run('FAIL')
     expect(r1.message).toMatch(`Output collision in tasks a:T_3, a:T_3: a/foo`)
-  })
-  describe('depList', () => {
-    test('allows the protocol to sepcify tasks other than "build" or "test" and their execution order', async () => {
-      const protocol = new RepoProtocolTestkit(
-        {
-          a: [],
-          b: ['c'],
-          c: [],
-        },
-        {
-          depList: [
-            ['c:test', 'c:build'],
-            ['b:build', 'c:build'],
-            ['b:test', 'b:build'],
-            ['b:scrutiny', 'b:lint'],
-            ['b:scrutiny', 'b:test'],
-            ['a:dockerPush', 'b:test'],
-          ],
-        },
-      )
-
-      const driver = new Driver(testName(), { repoProtocol: protocol.create() })
-      const recipe = { 'a/f': '', 'b/f': '', 'c/f': '' }
-
-      const fork = await driver.repo(recipe).fork()
-      const r1 = await fork.run('OK')
-      expect(r1.happened('a', 'dockerPush', 'b', 'test')).toEqual('AFTER')
-      expect(r1.happened('b', 'lint', 'c', 'build')).toEqual('CONCURRENTLY')
-      expect(r1.happened('b', 'scrutiny', 'b', 'test')).toEqual('AFTER')
-      expect(r1.happened('b', 'scrutiny', 'b', 'lint')).toEqual('AFTER')
-    })
-    test('an error in a dependency task (as specified in depList) short-circuts its dependents', async () => {
-      const protocol = new RepoProtocolTestkit(
-        { a: [], b: ['c'], c: [] },
-        {
-          depList: [
-            ['a:q', 'a:r'],
-            ['a:r', 'b:r'],
-            ['a:r', 'b:s'],
-            ['b:r', 'c:t'],
-          ],
-          complete: true,
-        },
-      )
-
-      const driver = new Driver(testName(), { repoProtocol: protocol.create() })
-      const recipe = { 'a/f': '', 'b/f': '', 'c/f': '' }
-
-      const fork = await driver.repo(recipe).fork()
-
-      protocol.setTaskResult('c:t', 'FAIL')
-      const r1 = await fork.run('FAIL')
-      expect(protocol.invokedAt(r1)).toEqual(['b:s', 'c:t'])
-    })
-    test('the build fails if there is a cyclic dependency in a custom task graph', async () => {
-      const protocol = new RepoProtocolTestkit(
-        {
-          a: [],
-          b: ['c'],
-          c: [],
-        },
-        {
-          depList: [
-            ['a:q', 'a:r'],
-            ['a:r', 'b:r'],
-            ['b:r', 'b:s'],
-            ['b:s', 'c:t'],
-            ['b:s', 'a:r'],
-          ],
-        },
-      )
-
-      const driver = new Driver(testName(), { repoProtocol: protocol.create() })
-      const recipe = { 'a/f': '', 'b/f': '', 'c/f': '' }
-
-      const fork = await driver.repo(recipe).fork()
-
-      const r1 = await fork.run('FAIL')
-      expect(r1.message).toMatch(/^Cyclic task dependency detected/)
-    })
   })
   test.todo('outputs need to be .gitignored')
 })

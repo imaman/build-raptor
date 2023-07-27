@@ -15,7 +15,7 @@ import {
   writeRecipe,
 } from 'misc'
 import { ExitStatus, RepoProtocol, TaskInfo } from 'repo-protocol'
-import { CatalogOfTasks, TaskDefinition, TaskInfoGenerator } from 'repo-protocol-toolbox'
+import { generateTaskInfos, TaskDefinition, TaskInfoGenerator } from 'repo-protocol-toolbox'
 import { TaskKind, TaskName } from 'task-name'
 import { UnitId, UnitMetadata } from 'unit-metadata'
 
@@ -72,9 +72,7 @@ function labelToTaskName(label: TaskLabel): TaskName {
 }
 
 type CatalogSpec = {
-  readonly tasks?: readonly TaskDefinition[]
-  readonly depList?: readonly [string, string][]
-  readonly complete?: boolean
+  readonly taskDefs?: readonly TaskDefinition[]
 }
 
 type TaskCallback = ((dir: string) => Promise<ExitStatus>) | ((dir: string) => ExitStatus)
@@ -206,16 +204,6 @@ export class RepoProtocolTestkit {
   }
 }
 
-function computeCatalog(spec: CatalogSpec): CatalogOfTasks {
-  return {
-    inUnit: {},
-    onDeps: {},
-    depList: spec.depList?.map(([a, b]) => [labelToTaskName(a), labelToTaskName(b)]),
-    tasks: spec.tasks,
-    complete: spec.complete ?? false,
-  }
-}
-
 class RepoProtocolImpl implements RepoProtocol {
   private rootDir = RepoRoot('/')
 
@@ -265,8 +253,7 @@ class RepoProtocolImpl implements RepoProtocol {
   async getTasks(): Promise<TaskInfo[]> {
     const catalogSpec = this.state.getCatalogSpec()
     if (catalogSpec && typeof catalogSpec !== 'function') {
-      const c = computeCatalog(catalogSpec)
-      return new TaskInfoGenerator().computeInfos(c, this.units, this.state.getGraph())
+      return new TaskInfoGenerator().computeInfos(catalogSpec.taskDefs, this.units, this.state.getGraph())
     }
 
     const depFunc =
@@ -274,33 +261,6 @@ class RepoProtocolImpl implements RepoProtocol {
         ? (catalogSpec as unknown as (t: TaskName) => TaskName[]) // eslint-disable-line @typescript-eslint/consistent-type-assertions
         : () => []
 
-    return this.units.flatMap(u => {
-      const deps = this.state
-        .getGraph()
-        .traverseFrom(u.id)
-        .filter(at => at !== u.id)
-
-      const buildTaskName = TaskName(u.id, TaskKind('build'))
-
-      const build: TaskInfo = {
-        taskName: buildTaskName,
-        inputs: [u.pathInRepo],
-        outputLocations: [],
-        deps: [...deps.map(d => TaskName(d, TaskKind('build'))), ...depFunc(buildTaskName)],
-        inputsInDeps: [],
-        inputsInUnit: [],
-      }
-
-      const testTaskName = TaskName(u.id, TaskKind('test'))
-      const test: TaskInfo = {
-        taskName: testTaskName,
-        inputs: [u.pathInRepo],
-        outputLocations: [],
-        deps: [build.taskName, ...depFunc(testTaskName)],
-        inputsInDeps: [],
-        inputsInUnit: [],
-      }
-      return [build, test]
-    })
+    return generateTaskInfos(this.units, this.state.getGraph(), depFunc, [])
   }
 }

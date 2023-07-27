@@ -1,5 +1,4 @@
-import { TaskInfo } from 'repo-protocol'
-import { TaskKind, TaskName } from 'task-name'
+import { TaskKind } from 'task-name'
 import { UnitId } from 'unit-metadata'
 
 type OutputDefinition = string | { pathInUnit: string; purge: 'ALWAYS' | 'NEVER' }
@@ -13,16 +12,4 @@ export type TaskDefinition = {
 
   readonly inputsInUnit?: readonly string[]
   readonly inputsInDeps?: readonly string[]
-}
-
-// TODO(imaman): document this.
-export interface CatalogOfTasks {
-  readonly inUnit: Record<TaskKind, readonly TaskKind[]>
-  readonly onDeps: Record<TaskKind, readonly TaskKind[]>
-
-  readonly tasks?: readonly TaskDefinition[]
-  readonly depList?: readonly [TaskName, TaskName][]
-  // TODO(imaman): document
-  readonly complete?: boolean
-  taskList?: TaskInfo[]
 }

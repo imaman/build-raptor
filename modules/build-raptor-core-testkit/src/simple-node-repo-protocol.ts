@@ -4,8 +4,8 @@ import execa from 'execa'
 import * as fse from 'fs-extra'
 import { failMe, Graph, promises } from 'misc'
 import { ExitStatus, RepoProtocol, TaskInfo } from 'repo-protocol'
-import { CatalogOfTasks, TaskInfoGenerator } from 'repo-protocol-toolbox'
-import { TaskKind, TaskName } from 'task-name'
+import { generateTaskInfos } from 'repo-protocol-toolbox'
+import { TaskName } from 'task-name'
 import { UnitId, UnitMetadata } from 'unit-metadata'
 import * as util from 'util'
 
@@ -13,7 +13,7 @@ export class SimpleNodeRepoProtocol implements RepoProtocol {
   constructor(
     private readonly pathToModulesDir = PathInRepo('modules'),
     private readonly buildOutputLocations: string[] = [],
-    private readonly catalog?: CatalogOfTasks,
+    private readonly catalog?: { tasks: TaskInfo[] },
   ) {}
 
   private units: UnitMetadata[] = []
@@ -99,33 +99,10 @@ export class SimpleNodeRepoProtocol implements RepoProtocol {
   }
 
   async getTasks(): Promise<TaskInfo[]> {
-    const c = this.getCatalog()
-    return new TaskInfoGenerator().computeInfos(c, this.units, this.graph)
-  }
-
-  private getCatalog() {
     if (this.catalog) {
-      return this.catalog
+      return this.catalog.tasks
     }
-    const b = TaskKind('build')
-    const t = TaskKind('test')
-    return {
-      inUnit: {
-        [t]: [b],
-      },
-      onDeps: {
-        [b]: [b],
-      },
-      tasks: [
-        {
-          taskKind: b,
-          outputs: this.buildOutputLocations,
-        },
-        {
-          taskKind: t,
-          outputs: [],
-        },
-      ],
-    }
+
+    return generateTaskInfos(this.units, this.graph, () => [], this.buildOutputLocations)
   }
 }

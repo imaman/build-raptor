@@ -81,10 +81,7 @@ describe('engine', () => {
           g.vertices().map(g => ({
             taskName: TaskName(g, TaskKind('build')),
             inputs: [],
-            deps: [],
             outputLocations: [],
-            inputsInUnit: [],
-            inputsInDeps: [],
           })),
         )
       },
@@ -314,7 +311,20 @@ describe('engine', () => {
     expect(r1.message).toMatch(/^No tasks to run in this build/)
   })
   test('build output recording', async () => {
-    const driver = new Driver(testName(), { repoProtocol: new SimpleNodeRepoProtocol(PathInRepo('modules'), ['dist']) })
+    const repoProtocol = new SimpleNodeRepoProtocol(PathInRepo('modules'), ['dist'], {
+      tasks: [
+        {
+          taskName: TaskName(UnitId('a'), TaskKind('build')),
+          inputs: [PathInRepo('modules/a')],
+          outputLocations: [{ pathInRepo: PathInRepo('modules/a/dist'), purge: 'ALWAYS' }],
+        },
+        {
+          taskName: TaskName(UnitId('a'), TaskKind('test')),
+          inputs: [PathInRepo('modules/a/dist/out')],
+        },
+      ],
+    })
+    const driver = new Driver(testName(), { repoProtocol })
     const recipe = {
       '.gitignore': 'dist',
       'modules/a/package.json': {
@@ -434,7 +444,7 @@ describe('engine', () => {
         const protocol = new RepoProtocolTestkit(
           { a: [] },
           {
-            tasks: [
+            taskDefs: [
               { taskKind: TaskKind('x'), inputsInUnit: ['out/oy'], outputs: ['out/ox'] },
               { taskKind: TaskKind('y'), inputsInUnit: [''], outputs: ['out/oy'] },
             ],
@@ -458,7 +468,7 @@ describe('engine', () => {
         const protocol = new RepoProtocolTestkit(
           { a: [] },
           {
-            tasks: [
+            taskDefs: [
               { taskKind: TaskKind('x'), inputsInUnit: ['out/oy/foo'], outputs: ['out/ox'] },
               { taskKind: TaskKind('y'), inputsInUnit: [''], outputs: ['out/oy'] },
             ],
@@ -482,7 +492,7 @@ describe('engine', () => {
         const protocol = new RepoProtocolTestkit(
           { a: ['b'], b: [] },
           {
-            tasks: [
+            taskDefs: [
               { taskKind: TaskKind('x'), inputsInDeps: ['out/f'], outputs: ['out/f'], unitIds: [UnitId('a')] },
               { taskKind: TaskKind('y'), outputs: ['out/f'], unitIds: [UnitId('b')] },
             ],
@@ -510,7 +520,7 @@ describe('engine', () => {
       const protocol = new RepoProtocolTestkit(
         { a: ['b'], b: [] },
         {
-          tasks: [
+          taskDefs: [
             { taskKind: TaskKind('x'), inputsInDeps: [''], outputs: ['out/f'], unitIds: [UnitId('a')] },
             { taskKind: TaskKind('y'), outputs: ['out/f'], unitIds: [UnitId('b')] },
           ],
@@ -525,25 +535,27 @@ describe('engine', () => {
       expect(r.message).toEqual(`a task (a:x) cannot declare as its input the source code of another untit (b)`)
     })
     test.skip('should not run tests in dependent when only the tests of a dependency have changed', async () => {
-      const build = TaskKind('build')
-      const test = TaskKind('test')
       const repoProtocol = new SimpleNodeRepoProtocol(PathInRepo('code'), undefined, {
-        inUnit: {
-          [test]: [build],
-        },
-        onDeps: { [build]: [build] },
         tasks: [
           {
-            taskKind: build,
-            outputs: ['dist'],
-            inputsInUnit: [''],
-            inputsInDeps: ['dist/src'],
+            taskName: TaskName().parse('a:build'),
+            inputs: [PathInRepo('code/a'), PathInRepo('code/b/dist/src')],
+            outputLocations: [{ pathInRepo: PathInRepo('code/a/dist'), purge: 'ALWAYS' }],
           },
           {
-            taskKind: test,
-            outputs: ['dist/words'],
-            inputsInUnit: ['dist/tests', 'dist/src'],
-            inputsInDeps: ['dist/src'],
+            taskName: TaskName().parse('a:test'),
+            inputs: [PathInRepo('code/a/dist/tests'), PathInRepo('code/a/dist/src'), PathInRepo('code/b/dist/src')],
+            outputLocations: [{ pathInRepo: PathInRepo('code/a/dist/words'), purge: 'ALWAYS' }],
+          },
+          {
+            taskName: TaskName().parse('b:build'),
+            inputs: [PathInRepo('code/b')],
+            outputLocations: [{ pathInRepo: PathInRepo('code/b/dist'), purge: 'ALWAYS' }],
+          },
+          {
+            taskName: TaskName().parse('b:test'),
+            inputs: [PathInRepo('code/b/dist/tests'), PathInRepo('code/b/dist/src')],
+            outputLocations: [{ pathInRepo: PathInRepo('code/b/dist/words'), purge: 'ALWAYS' }],
           },
         ],
       })
