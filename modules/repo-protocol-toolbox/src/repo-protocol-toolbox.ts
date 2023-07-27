@@ -8,10 +8,9 @@ export class TaskInfoGenerator {
   computeInfos(catalog: CatalogOfTasks, units: UnitMetadata[], graph: Graph<UnitId>) {
     const kinds = this.collectKinds(catalog)
     const ret: TaskInfo[] = []
-    const tasksFromDepList = undefined
     for (const unit of units) {
       for (const k of kinds) {
-        const info = this.generateInfo(unit, k, graph, catalog, tasksFromDepList)
+        const info = this.generateInfo(unit, k, graph, catalog)
         if (info) {
           ret.push(info)
         }
@@ -31,14 +30,8 @@ export class TaskInfoGenerator {
     t: TaskKind,
     graph: Graph<UnitId>,
     catalog: CatalogOfTasks,
-    allowed: Set<TaskName> | undefined,
   ): TaskInfo | undefined {
     const taskName = TaskName(unit.id, t)
-    if (allowed) {
-      if (!allowed.has(taskName)) {
-        return undefined
-      }
-    }
     const definition = this.findDefinition(taskName, catalog)
 
     if (definition === 'NONE') {
