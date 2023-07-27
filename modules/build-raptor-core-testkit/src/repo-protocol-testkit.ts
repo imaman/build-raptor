@@ -15,7 +15,7 @@ import {
   writeRecipe,
 } from 'misc'
 import { ExitStatus, RepoProtocol, TaskInfo } from 'repo-protocol'
-import { TaskDefinition, TaskInfoGenerator } from 'repo-protocol-toolbox'
+import { generateTaskInfos, TaskDefinition, TaskInfoGenerator } from 'repo-protocol-toolbox'
 import { TaskKind, TaskName } from 'task-name'
 import { UnitId, UnitMetadata } from 'unit-metadata'
 

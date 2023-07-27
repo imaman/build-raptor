@@ -4,11 +4,10 @@ import execa from 'execa'
 import * as fse from 'fs-extra'
 import { failMe, Graph, promises } from 'misc'
 import { ExitStatus, RepoProtocol, TaskInfo } from 'repo-protocol'
+import { generateTaskInfos } from 'repo-protocol-toolbox'
 import { TaskName } from 'task-name'
 import { UnitId, UnitMetadata } from 'unit-metadata'
 import * as util from 'util'
-
-import { generateTaskInfos } from './repo-protocol-testkit'
 
 export class SimpleNodeRepoProtocol implements RepoProtocol {
   constructor(
