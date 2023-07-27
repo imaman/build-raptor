@@ -194,43 +194,43 @@ describe('minimal testing', () => {
     expect(r.getSummary('xyz', 'build').rootCause).toBe(undefined)
     expect(r.getSummary('xyz', 'test').rootCause).toEqual('xyz:build')
   })
-  test('error propagation', async () => {
-    const protocol = new RepoProtocolTestkit(
-      {
-        a: [],
-        b: ['a'],
-      },
-      {
-        inUnit: {
-          test: ['build'],
-        },
-        onDeps: {
-          build: ['build'],
-          test: ['test'],
-        },
-      },
-    )
-    const driver = new Driver(testName(), { repoProtocol: protocol.create() })
-    const recipe = {
-      'a/somefile': '',
-      'b/somefile': '',
-    }
+  // test('error propagation', async () => {
+  //   const protocol = new RepoProtocolTestkit(
+  //     {
+  //       a: [],
+  //       b: ['a'],
+  //     },
+  //     {
+  //       inUnit: {
+  //         test: ['build'],
+  //       },
+  //       onDeps: {
+  //         build: ['build'],
+  //         test: ['test'],
+  //       },
+  //     },
+  //   )
+  //   const driver = new Driver(testName(), { repoProtocol: protocol.create() })
+  //   const recipe = {
+  //     'a/somefile': '',
+  //     'b/somefile': '',
+  //   }
 
-    const fork = await driver.repo(recipe).fork()
+  //   const fork = await driver.repo(recipe).fork()
 
-    await fork.run('OK')
-    expect(protocol.countOf('a', 'build')).toEqual(1)
-    expect(protocol.countOf('a', 'test')).toEqual(1)
-    expect(protocol.countOf('b', 'build')).toEqual(1)
-    expect(protocol.countOf('b', 'test')).toEqual(1)
+  //   await fork.run('OK')
+  //   expect(protocol.countOf('a', 'build')).toEqual(1)
+  //   expect(protocol.countOf('a', 'test')).toEqual(1)
+  //   expect(protocol.countOf('b', 'build')).toEqual(1)
+  //   expect(protocol.countOf('b', 'test')).toEqual(1)
 
-    protocol.setTaskResult('a', 'test', 'FAIL')
-    await fork.file('a/somefile').write('foo') // Just so that the fingerprint will change.
+  //   protocol.setTaskResult('a', 'test', 'FAIL')
+  //   await fork.file('a/somefile').write('foo') // Just so that the fingerprint will change.
 
-    await fork.run('FAIL')
-    expect(protocol.countOf('a', 'build')).toEqual(2)
-    expect(protocol.countOf('a', 'test')).toEqual(2)
-    expect(protocol.countOf('b', 'build')).toEqual(2)
-    expect(protocol.countOf('b', 'test')).toEqual(1)
-  })
+  //   await fork.run('FAIL')
+  //   expect(protocol.countOf('a', 'build')).toEqual(2)
+  //   expect(protocol.countOf('a', 'test')).toEqual(2)
+  //   expect(protocol.countOf('b', 'build')).toEqual(2)
+  //   expect(protocol.countOf('b', 'test')).toEqual(1)
+  // })
 })

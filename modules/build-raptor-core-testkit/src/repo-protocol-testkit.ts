@@ -72,7 +72,7 @@ function labelToTaskName(label: TaskLabel): TaskName {
   return TaskName().parse(label)
 }
 
-type CatalogSpec = CatalogSpecA | CatalogSpecB
+type CatalogSpec = CatalogSpecB //| CatalogSpecA
 
 type CatalogSpecA = {
   readonly inUnit?: Record<string, readonly string[]>
@@ -289,7 +289,38 @@ class RepoProtocolImpl implements RepoProtocol {
   }
 
   async getTasks(): Promise<TaskInfo[]> {
-    const c = computeCatalog(this.state.getCatalogSpec() ?? DEFAULT_CATALOG_SPEC)
-    return new TaskInfoGenerator().computeInfos(c, this.units, this.state.getGraph())
+    const catalogSepc = this.state.getCatalogSpec()
+    if (catalogSepc) {
+      const c = computeCatalog(catalogSepc)
+      return new TaskInfoGenerator().computeInfos(c, this.units, this.state.getGraph())
+    }
+
+    const unitOf = (uid: UnitId) => this.units.find(at => at.id === uid) ?? failMe(`unit not found (${uid})`)
+    
+    return this.units.flatMap(u => {
+      const deps = this.state.getGraph()
+      .traverseFrom(u.id)
+      .filter(at => at !== u.id)
+      .map(at => unitOf(at).pathInRepo)
+
+      const build: TaskInfo = {
+        taskName: TaskName(u.id, TaskKind('build')),
+        inputs: [...deps.map(at => at.expand('dist')), u.pathInRepo.expand('src'), u.pathInRepo.expand('tests')],
+        outputLocations: [{ pathInRepo: u.pathInRepo.expand('dist'), purge: 'NEVER' }],
+        deps: [],
+        inputsInDeps: [],
+        inputsInUnit: [],
+      }
+
+      const test: TaskInfo = {
+        taskName: TaskName(u.id, TaskKind('test')),
+        inputs: [u.pathInRepo.expand('dist')],
+        outputLocations: [],
+        deps: [],
+        inputsInDeps: [],
+        inputsInUnit: [],
+      }
+      return [build, test]
+    })
   }
 }
