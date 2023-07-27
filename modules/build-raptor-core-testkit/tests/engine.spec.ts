@@ -312,7 +312,7 @@ describe('engine', () => {
   })
   test('build output recording', async () => {
     const repoProtocol = new SimpleNodeRepoProtocol(PathInRepo('modules'), ['dist'], {
-      taskList: [
+      tasks: [
         {
           taskName: TaskName(UnitId('a'), TaskKind('build')),
           inputs: [PathInRepo('modules/a')],
@@ -536,7 +536,7 @@ describe('engine', () => {
     })
     test.skip('should not run tests in dependent when only the tests of a dependency have changed', async () => {
       const repoProtocol = new SimpleNodeRepoProtocol(PathInRepo('code'), undefined, {
-        taskList: [
+        tasks: [
           {
             taskName: TaskName().parse('a:build'),
             inputs: [PathInRepo('code/a'), PathInRepo('code/b/dist/src')],

@@ -14,7 +14,7 @@ export class SimpleNodeRepoProtocol implements RepoProtocol {
   constructor(
     private readonly pathToModulesDir = PathInRepo('modules'),
     private readonly buildOutputLocations: string[] = [],
-    private readonly catalog?: { taskList: TaskInfo[] },
+    private readonly catalog?: { tasks: TaskInfo[] },
   ) {}
 
   private units: UnitMetadata[] = []
@@ -101,7 +101,7 @@ export class SimpleNodeRepoProtocol implements RepoProtocol {
 
   async getTasks(): Promise<TaskInfo[]> {
     if (this.catalog) {
-      return this.catalog.taskList
+      return this.catalog.tasks
     }
 
     return generateTaskInfos(this.units, this.graph, () => [], this.buildOutputLocations)
