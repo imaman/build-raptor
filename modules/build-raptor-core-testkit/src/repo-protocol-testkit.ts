@@ -74,7 +74,7 @@ function labelToTaskName(label: TaskLabel): TaskName {
 type CatalogSpec = {
   readonly tasks?: readonly TaskDefinition[]
   readonly depList?: readonly [string, string][]
-  readonly complete?: boolean
+  readonly complete?: true
 }
 
 type TaskCallback = ((dir: string) => Promise<ExitStatus>) | ((dir: string) => ExitStatus)
@@ -210,7 +210,7 @@ function computeCatalog(spec: CatalogSpec): CatalogOfTasks {
   return {
     depList: spec.depList?.map(([a, b]) => [labelToTaskName(a), labelToTaskName(b)]),
     tasks: spec.tasks,
-    complete: spec.complete ?? false,
+    complete: true,
   }
 }
 

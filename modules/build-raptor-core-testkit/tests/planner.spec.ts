@@ -138,7 +138,6 @@ describe('planner', () => {
             ['a:r', 'b:s'],
             ['b:r', 'c:t'],
           ],
-          complete: true,
         },
       )
 
