@@ -74,7 +74,7 @@ function labelToTaskName(label: TaskLabel): TaskName {
 type CatalogSpec = {
   readonly tasks?: readonly TaskDefinition[]
   readonly depList?: readonly [string, string][]
-  readonly complete?: boolean
+  readonly complete?: true
 }
 
 type TaskCallback = ((dir: string) => Promise<ExitStatus>) | ((dir: string) => ExitStatus)
