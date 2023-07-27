@@ -269,8 +269,10 @@ class RepoProtocolImpl implements RepoProtocol {
       return new TaskInfoGenerator().computeInfos(c, this.units, this.state.getGraph())
     }
 
-    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-    const depFunc = typeof catalogSpec === 'function' ? (catalogSpec as (t: TaskName) => TaskName[]) : () => []
+    const depFunc =
+      typeof catalogSpec === 'function'
+        ? (catalogSpec as unknown as (t: TaskName) => TaskName[]) // eslint-disable-line @typescript-eslint/consistent-type-assertions
+        : () => []
 
     return this.units.flatMap(u => {
       const deps = this.state
