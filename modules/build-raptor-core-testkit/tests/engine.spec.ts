@@ -525,25 +525,42 @@ describe('engine', () => {
       expect(r.message).toEqual(`a task (a:x) cannot declare as its input the source code of another untit (b)`)
     })
     test.skip('should not run tests in dependent when only the tests of a dependency have changed', async () => {
-      const build = TaskKind('build')
-      const test = TaskKind('test')
       const repoProtocol = new SimpleNodeRepoProtocol(PathInRepo('code'), undefined, {
-        inUnit: {
-          [test]: [build],
-        },
-        onDeps: { [build]: [build] },
-        tasks: [
+        inUnit: {},
+        onDeps: {},
+        tasks: [],
+        taskList: [
           {
-            taskKind: build,
-            outputs: ['dist'],
-            inputsInUnit: [''],
-            inputsInDeps: ['dist/src'],
+            taskName: TaskName().parse('a:build'),
+            inputs: [PathInRepo('code/a'), PathInRepo('code/b/dist/src')],
+            outputLocations: [{ pathInRepo: PathInRepo('code/a/dist'), purge: 'ALWAYS' }],
+            deps: [],
+            inputsInDeps: [],
+            inputsInUnit: [],
           },
           {
-            taskKind: test,
-            outputs: ['dist/words'],
-            inputsInUnit: ['dist/tests', 'dist/src'],
-            inputsInDeps: ['dist/src'],
+            taskName: TaskName().parse('a:test'),
+            inputs: [PathInRepo('code/a/dist/tests'), PathInRepo('code/a/dist/src'), PathInRepo('code/b/dist/src')],
+            outputLocations: [{ pathInRepo: PathInRepo('code/a/dist/words'), purge: 'ALWAYS' }],
+            deps: [],
+            inputsInDeps: [],
+            inputsInUnit: [],
+          },
+          {
+            taskName: TaskName().parse('b:build'),
+            inputs: [PathInRepo('code/b')],
+            outputLocations: [{ pathInRepo: PathInRepo('code/b/dist'), purge: 'ALWAYS' }],
+            deps: [],
+            inputsInDeps: [],
+            inputsInUnit: [],
+          },
+          {
+            taskName: TaskName().parse('b:test'),
+            inputs: [PathInRepo('code/b/dist/tests'), PathInRepo('code/b/dist/src')],
+            outputLocations: [{ pathInRepo: PathInRepo('code/b/dist/words'), purge: 'ALWAYS' }],
+            deps: [],
+            inputsInDeps: [],
+            inputsInUnit: [],
           },
         ],
       })
