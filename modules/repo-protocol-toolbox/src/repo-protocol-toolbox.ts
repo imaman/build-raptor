@@ -3,7 +3,7 @@ import { OutputLocation, TaskInfo } from 'repo-protocol'
 import { TaskKind, TaskName } from 'task-name'
 import { UnitId, UnitMetadata } from 'unit-metadata'
 
-import { TaskDefinition } from './catalog'
+import { TaskDefinition } from './task-definition'
 export class TaskInfoGenerator {
   computeInfos(defs: readonly TaskDefinition[] | undefined, units: UnitMetadata[], graph: Graph<UnitId>) {
     const kinds = this.collectKinds(defs)
