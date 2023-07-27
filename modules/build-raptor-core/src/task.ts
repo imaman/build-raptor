@@ -83,7 +83,7 @@ export class Task {
   }
 
   get outputLocations(): readonly OutputLocation[] {
-    return this.taskInfo.outputLocations
+    return this.taskInfo.outputLocations ?? []
   }
 
   assignVerdict(

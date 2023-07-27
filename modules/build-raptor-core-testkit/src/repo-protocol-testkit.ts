@@ -287,7 +287,6 @@ export function generateTaskInfos(
     const test: TaskInfo = {
       taskName: testTaskName,
       inputs: [u.pathInRepo],
-      outputLocations: [],
       deps: [build.taskName, ...depFunc(testTaskName)],
     }
     return [build, test]

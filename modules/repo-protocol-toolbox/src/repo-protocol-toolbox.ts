@@ -43,7 +43,6 @@ export class TaskInfoGenerator {
     if (definition === 'DEFAULT') {
       const ret: TaskInfo = {
         taskName,
-        outputLocations: [],
       }
 
       return ret

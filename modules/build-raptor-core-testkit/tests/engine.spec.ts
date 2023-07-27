@@ -321,7 +321,6 @@ describe('engine', () => {
         {
           taskName: TaskName(UnitId('a'), TaskKind('test')),
           inputs: [PathInRepo('modules/a/dist/out')],
-          outputLocations: [],
         },
       ],
     })
