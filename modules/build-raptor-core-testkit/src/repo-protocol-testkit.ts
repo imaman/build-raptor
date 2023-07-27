@@ -209,7 +209,6 @@ function computeCatalog(spec: CatalogSpec): CatalogOfTasks {
   return {
     depList: spec.depList?.map(([a, b]) => [labelToTaskName(a), labelToTaskName(b)]),
     tasks: spec.tasks,
-    complete: false,
   }
 }
 
