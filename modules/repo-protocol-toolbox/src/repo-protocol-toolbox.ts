@@ -20,9 +20,8 @@ export class TaskInfoGenerator {
   }
 
   private collectKinds(catalog: CatalogOfTasks) {
-    const kindsC = (catalog.depList_ ?? []).flat().map(tn => TaskName().undo(tn).taskKind)
-    const kindsD = (catalog.tasks ?? []).map(td => td.taskKind)
-    return uniqueBy([...kindsC, ...kindsD], x => x)
+    const kinds = (catalog.tasks ?? []).map(td => td.taskKind)
+    return uniqueBy(kinds, x => x)
   }
 
   private generateInfo(
@@ -38,7 +37,7 @@ export class TaskInfoGenerator {
       return undefined
     }
 
-    const deps = this.computeTaskDeps(taskName, graph, catalog)
+    const deps: TaskName[] = []
     if (definition === 'DEFAULT') {
       const ret: TaskInfo = {
         taskName,
@@ -95,10 +94,5 @@ export class TaskInfoGenerator {
     }
 
     return filtered[filtered.length - 1]
-  }
-
-  private computeTaskDeps(taskName: TaskName, graph: Graph<UnitId>, catalog: CatalogOfTasks): TaskName[] {
-    const ret = (catalog.depList_ ?? []).filter(([f, _t]) => f === taskName).map(([_f, t]) => t)
-    return ret
   }
 }

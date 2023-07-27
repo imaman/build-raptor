@@ -206,7 +206,6 @@ export class RepoProtocolTestkit {
 
 function computeCatalog(spec: CatalogSpec): CatalogOfTasks {
   return {
-    depList_: [],
     tasks: spec.tasks,
   }
 }
