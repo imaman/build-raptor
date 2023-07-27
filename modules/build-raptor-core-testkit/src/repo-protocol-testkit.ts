@@ -301,22 +301,21 @@ class RepoProtocolImpl implements RepoProtocol {
       const deps = this.state.getGraph()
       .traverseFrom(u.id)
       .filter(at => at !== u.id)
-      .map(at => unitOf(at).pathInRepo)
 
       const build: TaskInfo = {
         taskName: TaskName(u.id, TaskKind('build')),
-        inputs: [...deps.map(at => at.expand('dist')), u.pathInRepo.expand('src'), u.pathInRepo.expand('tests')],
-        outputLocations: [{ pathInRepo: u.pathInRepo.expand('dist'), purge: 'NEVER' }],
-        deps: [],
+        inputs: [],
+        outputLocations: [],
+        deps: deps.map(d => TaskName(d, TaskKind('build'))),
         inputsInDeps: [],
         inputsInUnit: [],
       }
 
       const test: TaskInfo = {
         taskName: TaskName(u.id, TaskKind('test')),
-        inputs: [u.pathInRepo.expand('dist')],
+        inputs: [],
         outputLocations: [],
-        deps: [],
+        deps: [build.taskName],
         inputsInDeps: [],
         inputsInUnit: [],
       }
