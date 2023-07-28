@@ -273,29 +273,6 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
   }
 
-  // TODO(imaman): cover
-  private async runCaptureStdout(cmd: string, args: string[], dir: string): Promise<string> {
-    const summary = `<${dir}$ ${cmd} ${args.join(' ')}>`
-    this.logger.info(`Dispatching ${summary}`)
-
-    let p
-    try {
-      p = await execa(cmd, args, { cwd: dir, reject: false })
-    } catch (e) {
-      this.logger.error(`execution of ${summary} failed`, e)
-      return 'CRASH'
-    }
-
-    this.logger.info(`exitCode of ${cmd} ${args.join(' ')} is ${p.exitCode}`)
-    if (p.exitCode !== 0) {
-      const e = new Error(`execution of ${summary} crashed with exit code ${p.exitCode}`)
-      this.logger.error(`Could not get stdout of a command`, e)
-      throw e
-    }
-
-    return p.stdout
-  }
-
   private async runAdditionalBuildActions(unitId: UnitId, dir: string, outputFile: string): Promise<ExitStatus> {
     return switchOn(await this.runPostBuild(unitId, dir, outputFile), {
       CRASH: () => Promise.resolve('CRASH'),
