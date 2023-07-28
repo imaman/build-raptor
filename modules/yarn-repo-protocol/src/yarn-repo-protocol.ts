@@ -679,7 +679,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     ret.push({
       taskName: installTaskName,
       inputs: [PathInRepo('yarn.lock')],
-      outputLocations: [{ pathInRepo: PathInRepo('node_modules'), purge: 'NEVER' }],
+      outputLocations: [{ pathInRepo: PathInRepo('node_modules'), purge: 'ALWAYS' }],
     })
 
     return ret
