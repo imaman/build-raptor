@@ -331,6 +331,15 @@ export class YarnRepoProtocol implements RepoProtocol {
   }
 
   async execute(taskName: TaskName, outputFile: string, _buildRunId: string): Promise<ExitStatus> {
+    if (taskName === installTaskName) {
+      if (!this.state.config.install) {
+        fs.writeFileSync(outputFile, '')
+        return 'OK'
+      }
+
+      return await this.run('yarn', ['--frozen-lockfile'], this.state.rootDir.resolve(), outputFile)
+    }
+
     const { taskKind, unitId } = TaskName().undo(taskName)
     const u = this.state.units.find(at => at.id === unitId) ?? failMe(`unit ID not found: ${unitId}`)
     const dir = this.state.rootDir.resolve(u.pathInRepo)
@@ -667,6 +676,11 @@ export class YarnRepoProtocol implements RepoProtocol {
       .flatMap(u => [this.buildTask(u), this.testTask(u), this.packTask(u), this.publishTask(u)])
       .flatMap(x => (x ? [x] : []))
 
+    ret.push({
+      taskName: installTaskName,
+      inputs: [PathInRepo('yarn.lock')],
+    })
+
     return ret
   }
 
@@ -685,6 +699,7 @@ export class YarnRepoProtocol implements RepoProtocol {
         dir.expand('package.json'),
         ...deps.map(d => d.expand(this.dist('s'))),
       ],
+      deps: [installTaskName],
     }
   }
   private testTask(u: UnitMetadata): TaskInfo | undefined {
@@ -702,6 +717,7 @@ export class YarnRepoProtocol implements RepoProtocol {
         dir.expand('package.json'),
         ...deps.map(d => d.expand(this.dist('s'))),
       ],
+      deps: [installTaskName],
     }
   }
   private packTask(u: UnitMetadata): TaskInfo | undefined {
@@ -825,3 +841,5 @@ function computeVersions(packages: PackageJson[]) {
 
 const JEST_OUTPUT_FILE = 'jest-output.json'
 const PREPARED_ASSETS_DIR = 'prepared-assets'
+
+const installTaskName = TaskName().parse('.:install')
