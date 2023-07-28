@@ -800,6 +800,8 @@ function computeUnits(yarnInfo: YarnWorkspacesInfo): UnitMetadata[] {
     const uid = UnitId(p)
     ret.push(new UnitMetadata(data.location, uid))
   }
+
+  ret.push(new UnitMetadata('', rootUnitId))
   return ret
 }
 
@@ -843,4 +845,5 @@ function computeVersions(packages: PackageJson[]) {
 const JEST_OUTPUT_FILE = 'jest-output.json'
 const PREPARED_ASSETS_DIR = 'prepared-assets'
 
-const installTaskName = TaskName().parse('.:install')
+const rootUnitId = UnitId('.')
+const installTaskName = TaskName(rootUnitId, TaskKind('install'))
