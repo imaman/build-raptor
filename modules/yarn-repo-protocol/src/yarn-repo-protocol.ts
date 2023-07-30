@@ -134,7 +134,8 @@ export class YarnRepoProtocol implements RepoProtocol {
     const yarnInfo = await this.getYarnInfo(rootDir)
 
     const config = this.parseConfig(repoProtocolConfig)
-    const units = computeUnits(yarnInfo)
+    const allUnits = computeUnits(yarnInfo)
+    const units = computeRealUnits(allUnits)
     const packageByUnitId = await readPackages(rootDir, units)
     const versionByPackageId = computeVersions([...packageByUnitId.values()])
 
@@ -167,9 +168,8 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
 
     await this.generateTsConfigFiles(rootDir, units, graph)
-
     await this.generateSymlinksToPackages(rootDir, units)
-    this.state_ = { yarnInfo, graph, rootDir, units, packageByUnitId, versionByPackageId, publisher, config }
+    this.state_ = { yarnInfo, graph, rootDir, units: allUnits, packageByUnitId, versionByPackageId, publisher, config }
   }
 
   private async generateSymlinksToPackages(rootDir: RepoRoot, units: UnitMetadata[]) {
@@ -669,7 +669,7 @@ export class YarnRepoProtocol implements RepoProtocol {
   }
 
   async getTasks(): Promise<TaskInfo[]> {
-    const unitIds = this.state.units.map(u => u.id)
+    const unitIds = computeRealUnits(this.state.units).map(at => at.id)
 
     const ret = unitIds
       .map(at => this.unitOf(at))
@@ -678,8 +678,14 @@ export class YarnRepoProtocol implements RepoProtocol {
 
     ret.push({
       taskName: installTaskName,
-      inputs: [PathInRepo('yarn.lock')],
-      outputLocations: [{ pathInRepo: PathInRepo('node_modules'), purge: 'ALWAYS' }],
+      inputs: [
+        PathInRepo('yarn.lock'),
+        PathInRepo('package.json'),
+        PathInRepo('.build-raptor.json'),
+        PathInRepo('.gitignore'),
+        PathInRepo('README.md'),
+      ],
+      outputLocations: [{ pathInRepo: PathInRepo('node_modules'), purge: 'NEVER' }],
     })
 
     return ret
@@ -840,6 +846,10 @@ function computeVersions(packages: PackageJson[]) {
   }
 
   return ret
+}
+
+function computeRealUnits(units: UnitMetadata[]) {
+  return units.filter(at => at.id !== rootUnitId)
 }
 
 const JEST_OUTPUT_FILE = 'jest-output.json'
