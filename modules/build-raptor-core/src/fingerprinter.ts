@@ -19,7 +19,9 @@ export class Fingerprinter {
   }
 
   async computeFingerprint(pathInRepo: string): Promise<Fingerprint> {
+    console.log(`starting fp of ${pathInRepo}`)
     const { hasher } = await this.scan(pathInRepo)
+    console.log(`ended fp of ${pathInRepo}`)
     return hasher.digest
   }
 
