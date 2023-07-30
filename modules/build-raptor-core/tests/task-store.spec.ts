@@ -441,31 +441,33 @@ describe('task-store', () => {
       )
     })
     test('preserves modification time in milliseconds granularity', async () => {
-      const sc = new InMemoryStorageClient()
-      const store = newTaskStore(
-        sc,
-        logger,
-        await folderify({
-          'a/b/x1.txt': 'this is x1',
-          'a/b/x2.txt': 'this is x2',
-        }),
-      )
+      for (let i = 0; i < 100; ++i) {
+        const sc = new InMemoryStorageClient()
+        const store = newTaskStore(
+          sc,
+          logger,
+          await folderify({
+            'a/b/x1.txt': 'this is x1',
+            'a/b/x2.txt': 'this is x2',
+          }),
+        )
 
-      async function takeSanpshot(root: RepoRoot) {
-        const x1 = await fse.stat(root.resolve(PathInRepo('a/b/x1.txt')))
-        const x2 = await fse.stat(root.resolve(PathInRepo('a/b/x2.txt')))
-        return { x1: { mtime: Math.trunc(x1.mtimeMs) }, x2: { mtime: Math.trunc(x2.mtimeMs) } }
+        async function takeSanpshot(root: RepoRoot) {
+          const x1 = await fse.stat(root.resolve(PathInRepo('a/b/x1.txt')))
+          const x2 = await fse.stat(root.resolve(PathInRepo('a/b/x2.txt')))
+          return { x1: { mtime: Math.trunc(x1.mtimeMs) }, x2: { mtime: Math.trunc(x2.mtimeMs) } }
+        }
+
+        const before = await takeSanpshot(store.repoRootDir)
+        await store.recordTask(taskNameA, Fingerprint('fp'), [PathInRepo('a')], 'OK')
+
+        const dest = newTaskStore(sc, logger)
+        await dest.restoreTask(taskNameA, Fingerprint('fp'))
+        const after = await takeSanpshot(dest.repoRootDir)
+
+        expect(after.x1).toEqual(before.x1)
+        expect(after.x2).toEqual(before.x2)
       }
-
-      const before = await takeSanpshot(store.repoRootDir)
-      await store.recordTask(taskNameA, Fingerprint('fp'), [PathInRepo('a')], 'OK')
-
-      const dest = newTaskStore(sc, logger)
-      await dest.restoreTask(taskNameA, Fingerprint('fp'))
-      const after = await takeSanpshot(dest.repoRootDir)
-
-      expect(after.x1).toEqual(before.x1)
-      expect(after.x2).toEqual(before.x2)
     })
   })
 })
