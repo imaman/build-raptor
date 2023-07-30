@@ -358,9 +358,19 @@ class TarStream {
       const d = new Date(Number(BigInt(parsedInfo.mtime) / RATIO))
       fs.utimesSync(resolved, d, d)
 
+      const m2 = fs.statSync(resolved).mtime
+      if (d.toISOString() !== new Date(m2).toISOString()){
+        console.log(`mismatch: ${d} vs. ${m2}`)
+      }
+
+      acc.push({m: parsedInfo.mtime, d})
+
       if (offset === atStart) {
         throw new Error(`Buffer seems to be corrupted: no offset change at the last pass ${offset}`)
       }
     }
   }
 }
+
+
+export const acc: unknown[] = []

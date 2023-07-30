@@ -7,7 +7,7 @@ import * as TmpSync from 'tmp'
 import { UnitId } from 'unit-metadata'
 
 import { Fingerprint } from '../src/fingerprint'
-import { TaskStore } from '../src/task-store'
+import { TaskStore, acc } from '../src/task-store'
 
 async function slurp(d: RepoRoot) {
   return await slurpDir(d.resolve())
@@ -444,7 +444,10 @@ describe('task-store', () => {
       let n = 0
       let ok = 0
       let fail = 0
+      let before: {x1: {mtime: number}, x2: {mtime: number}} = {x1: {mtime: 3}, x2: {mtime:3}}
+      let after: {x1: {mtime: number}, x2: {mtime: number}} = {x1: {mtime: 0}, x2: {mtime:0}}
       for (let i = 0; i < 100; ++i) {
+        acc.length = 0
         ++n
         try {
           const sc = new InMemoryStorageClient()
@@ -460,20 +463,21 @@ describe('task-store', () => {
           async function takeSanpshot(root: RepoRoot) {
             const x1 = await fse.stat(root.resolve(PathInRepo('a/b/x1.txt')))
             const x2 = await fse.stat(root.resolve(PathInRepo('a/b/x2.txt')))
-            return { x1: { mtime: Math.trunc(x1.mtimeMs) }, x2: { mtime: Math.trunc(x2.mtimeMs) } }
+            return { x1: { mtime: x1.mtime.getTime() }, x2: { mtime: x2.mtime.getTime() } }
           }
 
-          const before = await takeSanpshot(store.repoRootDir)
+          before = await takeSanpshot(store.repoRootDir)
           await store.recordTask(taskNameA, Fingerprint('fp'), [PathInRepo('a')], 'OK')
 
           const dest = newTaskStore(sc, logger)
           await dest.restoreTask(taskNameA, Fingerprint('fp'))
-          const after = await takeSanpshot(dest.repoRootDir)
+          after = await takeSanpshot(dest.repoRootDir)
 
           expect(after.x1).toEqual(before.x1)
           expect(after.x2).toEqual(before.x2)
           ++ok
         } catch (e) {
+          console.log(JSON.stringify({acc, before, after}))
           ++fail
         }
       }
@@ -481,3 +485,5 @@ describe('task-store', () => {
     })
   })
 })
+
+// 20
