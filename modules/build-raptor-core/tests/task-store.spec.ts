@@ -440,7 +440,7 @@ describe('task-store', () => {
         'Output location <a/b> does not exist',
       )
     })
-    test('preserves modification time', async () => {
+    test('preserves modification time in milliseconds granularity', async () => {
       const sc = new InMemoryStorageClient()
       const store = newTaskStore(
         sc,
@@ -454,7 +454,7 @@ describe('task-store', () => {
       async function takeSanpshot(root: RepoRoot) {
         const x1 = await fse.stat(root.resolve(PathInRepo('a/b/x1.txt')))
         const x2 = await fse.stat(root.resolve(PathInRepo('a/b/x2.txt')))
-        return { x1: { mtime: x1.mtimeMs }, x2: { mtime: x2.mtimeMs } }
+        return { x1: { mtime: Math.trunc(x1.mtimeMs) }, x2: { mtime: Math.trunc(x2.mtimeMs) } }
       }
 
       const before = await takeSanpshot(store.repoRootDir)
