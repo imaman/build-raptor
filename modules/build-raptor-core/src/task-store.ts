@@ -1,5 +1,4 @@
 import { Brand } from 'brand'
-import * as child_process from 'child_process'
 import { PathInRepo, RepoRoot } from 'core-types'
 import * as fs from 'fs'
 import { createWriteStream } from 'fs'
@@ -352,17 +351,12 @@ class TarStream {
       offset = contentEndOffset
 
       const resolved = resolve(parsedInfo.path)
-      await fse.mkdirp(path.dirname(resolved))
-      await fse.writeFile(resolved, contentBuf)
-      await fse.chmod(resolved, parsedInfo.mode)
-
-      const ns = BigInt(parsedInfo.mtime)
+      fs.mkdirSync(path.dirname(resolved), { recursive: true })
+      fs.writeFileSync(resolved, contentBuf, { mode: parsedInfo.mode })
 
       const RATIO = 1000000n
-      const ts = new Date(Number(ns / RATIO)).toISOString().slice(0, -1)
-      const decimal = String(ns % RATIO).padStart(6, '0')
-      const command = `touch -d "${ts}${decimal}Z" "${resolved}"`
-      child_process.execSync(command, { stdio: 'inherit' })
+      const d = new Date(Number(BigInt(parsedInfo.mtime) / RATIO))
+      fs.utimesSync(resolved, d, d)
 
       if (offset === atStart) {
         throw new Error(`Buffer seems to be corrupted: no offset change at the last pass ${offset}`)
@@ -370,5 +364,3 @@ class TarStream {
     }
   }
 }
-
-// 1
