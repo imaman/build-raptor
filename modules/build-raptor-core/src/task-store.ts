@@ -220,7 +220,6 @@ export class TaskStore {
     verdict: 'OK' | 'FAIL',
   ): Promise<void> {
     const blobId = await this.recordBlob(taskName, outputs)
-    this.logger.print(`recording ${taskName}. fp=${fingerprint} => blobId=${blobId} (outputs.length=${outputs.length})`)
     this.putVerdict(taskName, fingerprint, verdict, blobId)
     this.publisher?.publish('taskStore', {
       opcode: 'RECORDED',
@@ -238,11 +237,8 @@ export class TaskStore {
   }
 
   async restoreTask(taskName: TaskName, fingerprint: Fingerprint): Promise<'FAIL' | 'OK' | 'FLAKY' | 'UNKNOWN'> {
-    this.logger.print(`restoring ${taskName} with fingerprint ${fingerprint}`)
     const [verdict, blobId] = await this.getVerdict(taskName, fingerprint)
-    this.logger.print(`blob ID is ${blobId} for ${taskName}`)
     const files = await this.restoreBlob(blobId)
-    this.logger.print(`restoration of ${taskName} ended`)
     this.publisher?.publish('taskStore', {
       opcode: 'RESTORED',
       taskName,
@@ -255,7 +251,6 @@ export class TaskStore {
 
   async restoreBlob(blobId: BlobId) {
     const buf = await this.getBlob(blobId)
-    console.log(`buf.length of blob ID ${blobId} is ${buf.length}`)
     const files = await this.unbundle(buf)
     return files
   }
@@ -357,29 +352,17 @@ class TarStream {
       offset = contentEndOffset
 
       const resolved = resolve(parsedInfo.path)
-      fs.mkdirSync(path.dirname(resolved), {recursive: true})
-      fs.writeFileSync(resolved, contentBuf, {mode: parsedInfo.mode})
+      await fse.mkdirp(path.dirname(resolved))
+      await fse.writeFile(resolved, contentBuf)
+      await fse.chmod(resolved, parsedInfo.mode)
 
       const ns = BigInt(parsedInfo.mtime)
 
       const RATIO = 1000000n
       const ts = new Date(Number(ns / RATIO)).toISOString().slice(0, -1)
       const decimal = String(ns % RATIO).padStart(6, '0')
-
-      const d = new Date(Number(BigInt(parsedInfo.mtime)/RATIO))
-      fs.utimesSync(resolved, d, d)
-      // const command = `touch`
-      // const args = ['-d', `${ts}${decimal}Z`, resolved]
-      // await new Promise<void>((res, rej) => {
-      //   const cp = child_process.spawn(command, args, {})
-      //   cp.on('close', code => {
-      //     if (code === 0) {
-      //       res()
-      //     } else {
-      //       rej(`invocation of <${command} ${args.join(' ')}> exited with ${code}`)
-      //     }
-      //   })
-      // })
+      const command = `touch -d "${ts}${decimal}Z" "${resolved}"`
+      child_process.execSync(command, { stdio: 'inherit' })
 
       if (offset === atStart) {
         throw new Error(`Buffer seems to be corrupted: no offset change at the last pass ${offset}`)
@@ -387,7 +370,5 @@ class TarStream {
     }
   }
 }
-
-const spawn= util.promisify(child_process.spawn)
 
 // 1

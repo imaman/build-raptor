@@ -37,7 +37,6 @@ export function PathInRepo(input: string): PathInRepo {
     expand: (relativePath: string) => {
       const ret = PathInRepo(path.join(val, relativePath))
       if (!isPrefixOf(ret)) {
-        console.log(`val=${val}, relativePath=${relativePath}, joined=${path.join(val, relativePath)}`)
         throw new Error(`Cannot expand (${val}) with a ${relativePath}`)
       }
       return ret
