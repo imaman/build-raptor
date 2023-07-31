@@ -288,7 +288,7 @@ interface Entry {
 }
 
 // TOOD(imaman): move to its own file + rename
-export class TarStream {
+class TarStream {
   private readonly entires: Entry[] = []
   static pack() {
     return new TarStream()
