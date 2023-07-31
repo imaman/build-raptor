@@ -1,5 +1,5 @@
 import { Int } from '.'
-import { shouldNeverHappen } from './constructs'
+import { failMe, shouldNeverHappen } from './constructs'
 import { computeHash, computeObjectHash } from './misc'
 import { Key, StorageClient } from './storage-client'
 
@@ -56,5 +56,29 @@ export class InMemoryStorageClient implements StorageClient {
 
   private keyToString(key: Key): string {
     return `std/${computeObjectHash({ key })}`
+  }
+
+  toJSON() {
+    return [...this.store]
+  }
+
+  load(u: unknown) {
+    if (!Array.isArray(u)) {
+      throw new Error(`not an array`)
+    }
+
+    u.forEach((at, i) => {
+      if (!Array.isArray(at)) {
+        throw new Error(`entry ${i} is not a pair (got: ${typeof at})`)
+      }
+      if (at.length !== 2) {
+        throw new Error(`entry ${i} is not a pair (length: ${at.length})`)
+      }
+
+      const strings = at.map(x =>
+        typeof x === 'string' ? x : failMe(`expected a pair of strings but found a ${typeof x} at pair ${i}`),
+      )
+      this.putObjectImpl(strings[0], Buffer.from(strings[1], 'base64'))
+    })
   }
 }
