@@ -1,4 +1,5 @@
 import { PathInRepo, RepoRoot } from 'core-types'
+import * as fs from 'fs'
 import * as fse from 'fs-extra'
 import { createNopLogger, Logger } from 'logger'
 import { chaoticDeterministicString, folderify, InMemoryStorageClient, Int, slurpDir, StorageClient } from 'misc'
@@ -440,7 +441,7 @@ describe('task-store', () => {
         'Output location <a/b> does not exist',
       )
     })
-    test('preserves modification time', async () => {
+    test('preserves modification time in milliseconds granularity', async () => {
       const sc = new InMemoryStorageClient()
       const store = newTaskStore(
         sc,
@@ -452,9 +453,9 @@ describe('task-store', () => {
       )
 
       async function takeSanpshot(root: RepoRoot) {
-        const x1 = await fse.stat(root.resolve(PathInRepo('a/b/x1.txt')))
-        const x2 = await fse.stat(root.resolve(PathInRepo('a/b/x2.txt')))
-        return { x1: { mtime: x1.mtimeMs }, x2: { mtime: x2.mtimeMs } }
+        const x1 = fs.statSync(root.resolve(PathInRepo('a/b/x1.txt')))
+        const x2 = fs.statSync(root.resolve(PathInRepo('a/b/x2.txt')))
+        return { x1: { mtime: x1.mtime.getTime() }, x2: { mtime: x2.mtime.getTime() } }
       }
 
       const before = await takeSanpshot(store.repoRootDir)
