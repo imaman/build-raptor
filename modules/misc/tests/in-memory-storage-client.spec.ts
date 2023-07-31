@@ -55,6 +55,31 @@ describe('in-memory-storage-client', () => {
       expect(await sc2.getObject('b')).toEqual('q')
       expect(await sc2.getObject('c')).toEqual('r')
     })
+    test('overwrites pre-exsiting entries', async () => {
+      const sc1 = new InMemoryStorageClient()
+
+      await sc1.putObject('a', 'p')
+
+      const sc2 = new InMemoryStorageClient()
+      await sc2.putObject('a', 'alpha')
+      await sc2.putObject('b', 'beta')
+
+      sc2.load(sc1.toJSON())
+      expect(await sc2.getObject('a')).toEqual('p')
+      expect(await sc2.getObject('b')).toEqual('beta')
+    })
+    test('updates the byte count', async () => {
+      const sc1 = new InMemoryStorageClient()
+      await sc1.putObject('k1', 'the quick brown fox')
+      const bc1 = sc1.byteCount
+
+      const sc2 = new InMemoryStorageClient()
+      await sc2.putObject('k2', 'jumps over the lazy dog')
+      const bc2 = sc2.byteCount
+
+      sc2.load(sc1.toJSON())
+      expect(sc2.byteCount).toEqual(bc1 + bc2)
+    })
     test('load() adds to the preexisting entries', async () => {
       const sc1 = new InMemoryStorageClient(Int(14))
 
