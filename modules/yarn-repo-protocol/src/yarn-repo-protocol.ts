@@ -168,6 +168,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
 
     await this.generateTsConfigFiles(rootDir, units, graph)
+
     await this.generateSymlinksToPackages(rootDir, units)
     this.state_ = { yarnInfo, graph, rootDir, units: allUnits, packageByUnitId, versionByPackageId, publisher, config }
   }
