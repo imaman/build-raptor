@@ -8,6 +8,8 @@ const Info = z.object({
   mode: z.number(),
   mtime: z.string(),
   contentLen: z.number(),
+  // when true, content will be the (relative) path to the target
+  isSymlink: z.boolean().optional(),
 })
 type Info = z.infer<typeof Info>
 
@@ -23,7 +25,10 @@ export class TarStream {
     return new TarStream()
   }
 
-  entry(inf: { path: string; mode: number; mtime: Date; atime: Date; ctime: Date }, content: Buffer) {
+  entry(
+    inf: { path: string; mode: number; mtime: Date; atime: Date; ctime: Date; isSymlink?: boolean },
+    content: Buffer,
+  ) {
     const info: Info = {
       path: inf.path,
       contentLen: content.length,
@@ -31,6 +36,7 @@ export class TarStream {
       // Date.getTime() always returns an integer.
       mtime: String(Math.trunc(inf.mtime.getTime())),
       mode: inf.mode,
+      isSymlink: inf.isSymlink,
     }
     this.entires.push({ content, info })
   }
