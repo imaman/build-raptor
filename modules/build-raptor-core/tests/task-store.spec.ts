@@ -442,35 +442,12 @@ describe('task-store', () => {
       )
     })
     test.only('preserves modification time in milliseconds granularity', async () => {
-      let n = 0
-      let ok = 0
-      let fail = 0
-      let limit = 1000
-      let after: {x1: {mtime: number}, x2: {mtime: number}} = {x1: {mtime: 0}, x2: {mtime:0}}
-      let b = 0
-      let a = 0
-      // const sc1 = new InMemoryStorageClient()
-      // const store = newTaskStore(
-      //   sc1,
-      //   logger,
-      //   await folderify({
-      //     'a/b/x1.txt': 'this is x1',
-      //     // 'a/b/x2.txt': 'this is x2',
-      //   }),
-      // )
 
       async function takeSanpshot(root: RepoRoot) {
         const x1 = await fse.stat(root.resolve(PathInRepo('a/b/x1.txt')))
-        // const x2 = await fse.stat(root.resolve(PathInRepo('a/b/x2.txt')))
-        return { x1: { mtime: x1.mtime.getTime() }, x2: { mtime: x1.mtime.getTime() } }
+        return x1.mtime.getTime() 
       }
 
-      // before = await takeSanpshot(store.repoRootDir)
-      // b = before.x1.mtime
-      // await store.recordTask(taskNameA, Fingerprint('fp'), [PathInRepo('a')], 'OK')
-
-
-      b = 1690799705645
       const data = [
         [
           "std/94f34fca0a10acb05ea57742231ba70385fe73787f56ede4271bab39",
@@ -482,32 +459,12 @@ describe('task-store', () => {
         ]
       ]
 
-      for (let i = 0; i < limit; ++i) {
-        ++n
-        try {
-          // const sc2 = sc1
-          const sc2 = new InMemoryStorageClient()
-          sc2.load(data)
-          const dest = newTaskStore(sc2, logger)
-          await dest.restoreTask(taskNameA, Fingerprint('fp'))
-          after = await takeSanpshot(dest.repoRootDir)
-          a = after.x1.mtime
-
-          after.x1.mtime -= 0 * 2
-          expect(a).toEqual(b)
-          // expect(after.x1).toEqual(before.x1)
-          // expect(after.x2).toEqual(before.x2)
-          ++ok
-        } catch (e) {
-          console.log(JSON.stringify({b, a, 'a-b': a-b}))
-          ++fail
-        }
-      }
-
-      // if (fail > 0) {
-      //   fs.writeFileSync('/tmp/dump.json', JSON.stringify(sc1, null, 2))
-      // }
-      expect(`${ok}/${n}`).toEqual(`${limit}/${limit}`)
+      const sc2 = new InMemoryStorageClient()
+      sc2.load(data)
+      const dest = newTaskStore(sc2, logger)
+      await dest.restoreTask(taskNameA, Fingerprint('fp'))
+      const a = await takeSanpshot(dest.repoRootDir)
+      expect(a).toEqual(1690799705645)
     })
     test('wtf', async () => {
       const p0 = '/tmp/foo.0'
