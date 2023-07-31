@@ -26,7 +26,7 @@ describe('tar-stream', () => {
   test('can reconstruct a directory structure', async () => {
     const ts = TarStream.pack()
     const d = new Date('2023-04-05T11:00:00.000Z')
-    ts.entry({ path: 'x', mode: 0o400, atime: d, ctime: d, mtime: d }, Buffer.from('alpha'))
+    ts.entry({ path: 'x/y', mode: 0o400, atime: d, ctime: d, mtime: d }, Buffer.from('alpha'))
     ts.entry({ path: 'a/b/c/d/e', mode: 0o400, atime: d, ctime: d, mtime: d }, Buffer.from('beta'))
     ts.entry({ path: 'a/b/c/f', mode: 0o400, atime: d, ctime: d, mtime: d }, Buffer.from('gamma'))
     ts.entry({ path: 'a/b/c/g', mode: 0o400, atime: d, ctime: d, mtime: d }, Buffer.from('delta'))
@@ -38,11 +38,11 @@ describe('tar-stream', () => {
     await TarStream.extract(b, dir, createNopLogger())
 
     expect(await slurpDir(dir)).toEqual({
+      'x/y': 'alpha',
       'a/b/c/d/e': 'beta',
       'a/b/c/f': 'gamma',
       'a/b/c/g': 'delta',
       'a/h': 'epsilon',
-      x: 'alpha',
     })
   })
 })
