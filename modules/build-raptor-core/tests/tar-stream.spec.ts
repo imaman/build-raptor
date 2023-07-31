@@ -50,7 +50,7 @@ describe('tar-stream', () => {
     const ts = TarStream.pack()
     const d = new Date('2023-04-05T11:00:00.000Z')
     ts.entry({ path: 'a/b/h', mode: 0o400, atime: d, ctime: d, mtime: d }, Buffer.from('epsilon'))
-    ts.symlink({ from: 'a/b/c/d/e', to: '../../h', mtime: d })
+    ts.symlink({ from: 'a/b/c/d/e', to: 'a/b/h', mtime: d })
 
     const b = ts.toBuffer()
 
@@ -64,7 +64,7 @@ describe('tar-stream', () => {
   test('correctly reconstructs symlinks even when they are defined before their target', async () => {
     const ts = TarStream.pack()
     const d = new Date('2023-04-05T11:00:00.000Z')
-    ts.symlink({ from: 'a/b/c/d/e', mtime: d, to: '../../h' })
+    ts.symlink({ from: 'a/b/c/d/e', mtime: d, to: 'a/b/h' })
     ts.entry({ path: 'a/b/h', mode: 0o400, atime: d, ctime: d, mtime: d }, Buffer.from('epsilon'))
 
     const b = ts.toBuffer()
@@ -81,7 +81,7 @@ describe('tar-stream', () => {
     const d1 = new Date('2011-01-01T11:00:00.000Z')
     ts.entry({ path: 'myfile', mode: 0o400, atime: d1, ctime: d1, mtime: d1 }, Buffer.from('spot on'))
     const d2 = new Date('2022-02-02T22:00:00.000Z')
-    ts.symlink({ from: 'mylink', mtime: d2, to: './myfile' })
+    ts.symlink({ from: 'mylink', mtime: d2, to: 'myfile' })
 
     const b = ts.toBuffer()
 
@@ -95,23 +95,21 @@ describe('tar-stream', () => {
     const ts = TarStream.pack()
     const d = new Date('2023-04-05T11:00:00.000Z')
     ts.entry({ path: 'a0', mode: 0o400, atime: d, ctime: d, mtime: d }, Buffer.from('A'))
-    ts.symlink({ from: 'a1', to: './a0', mtime: d })
+    ts.symlink({ from: 'a1', to: 'a0', mtime: d })
     ts.entry({ path: 'b0', mode: 0o400, atime: d, ctime: d, mtime: d }, Buffer.from('B'))
-    ts.symlink({ from: 'b1', to: './b0', mtime: d })
+    ts.symlink({ from: 'b1', to: 'b0', mtime: d })
 
     const b = ts.toBuffer()
 
     const dir = tempDir()
     await TarStream.extract(b, dir, createNopLogger())
 
-    expect(fs.readlinkSync(path.join(dir, 'a1'))).toEqual('./a0')
-    expect(fs.readlinkSync(path.join(dir, 'b1'))).toEqual('./b0')
+    expect(fs.readlinkSync(path.join(dir, 'a1'))).toEqual('a0')
+    expect(fs.readlinkSync(path.join(dir, 'b1'))).toEqual('b0')
   })
-  test('a symlink cannot point outside of the bundle', () => {
+  test('a symlink cannot point to an absolute path', () => {
     const ts = TarStream.pack()
     const d = new Date('2023-04-05T11:00:00.000Z')
-    expect(() => ts.symlink({ from: 'a', mtime: d, to: '../../b' })).toThrowError(
-      'symlink (a) points outside of subtree (../../b)',
-    )
+    expect(() => ts.symlink({ from: 'a', mtime: d, to: '/x/y' })).toThrowError('path must be relative (got: /x/y)')
   })
 })

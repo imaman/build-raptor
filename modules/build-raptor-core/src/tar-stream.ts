@@ -32,23 +32,11 @@ export class TarStream {
     return new TarStream()
   }
 
-  private checkPaths(entryPath: string, to?: string) {
-    if (path.isAbsolute(entryPath)) {
-      throw new Error(`path must be relative (got: ${entryPath})`)
-    }
-
-    if (to === undefined) {
-      return
-    }
-
-    if (path.isAbsolute(to)) {
-      throw new Error(`symlink target path must be relative (got: ${to})`)
-    }
-
-    const fakeRoot = '/fake/'
-    const resolvedTarget = path.join(path.join(fakeRoot, entryPath), to)
-    if (!resolvedTarget.startsWith(fakeRoot)) {
-      throw new Error(`symlink (${entryPath}) points outside of subtree (${to})`)
+  private checkPaths(...paths: string[]) {
+    for (const at of paths) {
+      if (path.isAbsolute(at)) {
+        throw new Error(`path must be relative (got: ${at})`)
+      }
     }
   }
 
@@ -66,7 +54,7 @@ export class TarStream {
 
   symlink(inf: { from: string; to: string; mtime: Date }) {
     this.checkPaths(inf.from, inf.to)
-    const content = Buffer.from(inf.to)
+    const content = Buffer.from(path.normalize(path.relative(path.dirname(inf.from), inf.to)))
     const info: Info = {
       path: inf.from,
       contentLen: content.length,
