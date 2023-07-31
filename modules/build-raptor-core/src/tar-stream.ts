@@ -93,14 +93,19 @@ export class TarStream {
 
       const resolved = resolve(parsedInfo.path)
       fs.mkdirSync(path.dirname(resolved), { recursive: true })
-      fs.writeFileSync(resolved, contentBuf, { mode: parsedInfo.mode })
+
+      if (parsedInfo.isSymlink) {
+        fs.symlinkSync(contentBuf.toString('utf-8'), resolved)
+      } else {
+        fs.writeFileSync(resolved, contentBuf, { mode: parsedInfo.mode })
+      }
 
       const date = new Date(Number(parsedInfo.mtime))
       try {
         fs.utimesSync(resolved, date, date)
       } catch (e) {
         logger.error(`utimeSync failure: ${JSON.stringify({ resolved, date, parsedInfo })}`, e)
-        throw new Error(`could not update time of ${resolved} to ${date.toISOString()}`)
+        throw new Error(`could not update time of ${resolved} to ${date.toISOString()}: ${e}`)
       }
 
       if (offset === atStart) {
