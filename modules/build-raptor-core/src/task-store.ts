@@ -166,9 +166,9 @@ export class TaskStore {
         }
 
         const resolved = this.repoRootDir.resolve(PathInRepo(p))
-        const { atimeNs, ctimeNs, mtimeNs } = fs.statSync(resolved, { bigint: true })
-        this.trace?.push(`adding an entry: ${stat.mode.toString(8)} ${p} ${mtimeNs}`)
-        pack.entry({ path: p, mode: stat.mode, mtime: mtimeNs, ctime: ctimeNs, atime: atimeNs }, content)
+        const { atimeMs, ctimeMs, mtimeMs } = fs.statSync(resolved)
+        this.trace?.push(`adding an entry: ${stat.mode.toString(8)} ${p} ${mtimeMs}`)
+        pack.entry({ path: p, mode: stat.mode, mtime: BigInt(Math.trunc(mtimeMs)), ctime: BigInt(Math.trunc(ctimeMs)), atime: BigInt(Math.trunc(atimeMs)) }, content)
       })
     }
 
@@ -357,23 +357,15 @@ class TarStream {
       fs.mkdirSync(path.dirname(resolved), { recursive: true  })
       fs.writeFileSync(resolved, contentBuf, { mode: parsedInfo.mode })
 
-      const RATIO = 1000000n
-      const ns = BigInt(parsedInfo.mtime)
+      const ns = Number(parsedInfo.mtime)
       console.log(`parsedInfo=${JSON.stringify(parsedInfo)}`)
-      const d = new Date(Number(ns / RATIO))
-      if (useTouch) {
-        const ts = d.toISOString().slice(0, -1)
-        const decimal = String(ns % RATIO).padStart(6, '0')
-        const command = `touch -d "${ts}${decimal}Z" "${resolved}"`
-        child_process.execSync(command, { stdio: 'inherit' })
-      } else {
-        fs.utimesSync(resolved, d, d)
+      const d = new Date(Number(ns))
+      fs.utimesSync(resolved, d, d)
 
         // const m2 = fs.statSync(resolved).mtime
         // if (d.toISOString() !== new Date(m2).toISOString()){
         //   console.log(`mismatch: ${d} vs. ${m2}`)
         // }
-      }
 
       if (offset === atStart) {
         throw new Error(`Buffer seems to be corrupted: no offset change at the last pass ${offset}`)
@@ -398,5 +390,3 @@ export async function touch(p: string, mtime: string) {
   }
 }
 
-
-export const useTouch = false

@@ -442,16 +442,10 @@ describe('task-store', () => {
       )
     })
     test.only('preserves modification time in milliseconds granularity', async () => {
-      let n = 0
-      let ok = 0
-      let fail = 0
-      let limit = 1
       let before: {x1: {mtime: number}, x2: {mtime: number}} = {x1: {mtime: 3}, x2: {mtime:3}}
       let after: {x1: {mtime: number}, x2: {mtime: number}} = {x1: {mtime: 0}, x2: {mtime:0}}
       let b = 0
       let a = 0
-      for (let i = 0; i < limit; ++i) {
-        ++n
         try {
           const sc = new InMemoryStorageClient()
           const store = newTaskStore(
@@ -459,14 +453,14 @@ describe('task-store', () => {
             logger,
             await folderify({
               'a/b/x1.txt': 'this is x1',
-              // 'a/b/x2.txt': 'this is x2',
+              'a/b/x2.txt': 'this is x2',
             }),
           )
 
           async function takeSanpshot(root: RepoRoot) {
-            const x1 = await fse.stat(root.resolve(PathInRepo('a/b/x1.txt')))
-            // const x2 = await fse.stat(root.resolve(PathInRepo('a/b/x2.txt')))
-            return { x1: { mtime: x1.mtime.getTime() }, x2: { mtime: x1.mtime.getTime() } }
+            const x1 = fs.statSync(root.resolve(PathInRepo('a/b/x1.txt')))
+            const x2 = fs.statSync(root.resolve(PathInRepo('a/b/x2.txt')))
+            return { x1: { mtime: Math.trunc(x1.mtimeMs) }, x2: { mtime: Math.trunc(x2.mtimeMs) } }
           }
 
           before = await takeSanpshot(store.repoRootDir)
@@ -482,13 +476,10 @@ describe('task-store', () => {
           expect(a).toEqual(b)
           // expect(after.x1).toEqual(before.x1)
           // expect(after.x2).toEqual(before.x2)
-          ++ok
         } catch (e) {
           console.log(JSON.stringify({b, a, 'a-b': a-b}))
-          ++fail
+          throw e
         }
-      }
-      expect(`${ok}/${n}`).toEqual(`${limit}/${limit}`)
     })
     test('wtf', async () => {
       const p0 = '/tmp/foo.0'
