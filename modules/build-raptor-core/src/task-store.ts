@@ -1,12 +1,10 @@
 import { Brand } from 'brand'
-import * as child_process from 'child_process'
 import { PathInRepo, RepoRoot } from 'core-types'
 import * as fs from 'fs'
 import { createWriteStream } from 'fs'
 import * as fse from 'fs-extra'
 import { Logger } from 'logger'
 import { computeHash, computeObjectHash, DirectoryScanner, Key, promises, StorageClient, TypedPublisher } from 'misc'
-import * as path from 'path'
 import * as stream from 'stream'
 import { TaskName } from 'task-name'
 import * as Tmp from 'tmp-promise'
@@ -15,8 +13,8 @@ import * as zlib from 'zlib'
 import { z } from 'zod'
 
 import { Fingerprint } from './fingerprint'
-import { TaskStoreEvent } from './task-store-event'
 import { TarStream } from './tar-stream'
+import { TaskStoreEvent } from './task-store-event'
 
 const pipeline = util.promisify(stream.pipeline)
 const unzip = util.promisify(zlib.unzip)
@@ -196,7 +194,7 @@ export class TaskStore {
 
     const unparsed = JSON.parse(buf.slice(LEN_BUF_SIZE, LEN_BUF_SIZE + metadataLen).toString('utf-8'))
     const metadata: Metadata = metadataSchema.parse(unparsed)
-    console.log(`metadata=${JSON.stringify(metadata)}`)
+    print(`metadata=${JSON.stringify(metadata)}`)
     const outputs = metadata.outputs.map(at => PathInRepo(at))
 
     const removeOutputDir = async (o: PathInRepo) =>
@@ -240,7 +238,7 @@ export class TaskStore {
 
   async restoreTask(taskName: TaskName, fingerprint: Fingerprint): Promise<'FAIL' | 'OK' | 'FLAKY' | 'UNKNOWN'> {
     const [verdict, blobId] = await this.getVerdict(taskName, fingerprint)
-    console.log(`verdict of (${taskName}, ${fingerprint}) is ${verdict}, ${blobId}`)
+    print(`verdict of (${taskName}, ${fingerprint}) is ${verdict}, ${blobId}`)
     const files = await this.restoreBlob(blobId)
     this.publisher?.publish('taskStore', {
       opcode: 'RESTORED',
@@ -274,7 +272,6 @@ function blobIdOf(buf: Buffer) {
 
 const LEN_BUF_SIZE = 8
 
-
 export async function touch(p: string, mtime: string) {
   fs.writeFileSync(p, 'N/A')
 
@@ -286,9 +283,11 @@ export async function touch(p: string, mtime: string) {
   fs.utimesSync(p, d, d)
 
   const m2 = fs.statSync(p).mtime
-  if (d.toISOString() !== new Date(m2).toISOString()){
-    console.log(`mismatch: ${d} vs. ${m2}`)
+  if (d.toISOString() !== new Date(m2).toISOString()) {
+    print(`mismatch: ${d} vs. ${m2}`)
   }
 }
 
-
+function print(msg: string) {
+  console.log(msg) // eslint-disable-line no-console
+}
