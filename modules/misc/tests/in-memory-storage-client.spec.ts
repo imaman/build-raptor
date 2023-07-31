@@ -37,4 +37,23 @@ describe('in-memory-storage-client', () => {
     await sc.putObject('c', 'r')
     await expect(sc.putObject('d', 'stuvwxyz')).rejects.toThrowError('size limit (14 bytes) will be exceeded')
   })
+  describe('load()', () => {
+    test('updates the storage with the given data', async () => {
+      const sc1 = new InMemoryStorageClient(Int(14))
+
+      await sc1.putObject('a', 'p')
+      await sc1.putObject('b', 'q')
+      await sc1.putObject('c', 'r')
+
+      const sc2 = new InMemoryStorageClient(Int(14))
+      expect(sc2.byteCount).toEqual(0)
+
+      sc2.load(sc1.toJSON())
+      expect(sc2.byteCount).toEqual(sc1.byteCount)
+
+      expect(await sc2.getObject('a')).toEqual('p')
+      expect(await sc2.getObject('b')).toEqual('q')
+      expect(await sc2.getObject('c')).toEqual('r')
+    })
+  })
 })

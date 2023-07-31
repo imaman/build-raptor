@@ -47,7 +47,7 @@ export function shouldNeverHappen(n: never): never {
  *
  * @param hint an optional human-readable string to be placed in the message of the thrown error
  */
-export function failMe<R>(hint?: string): NonNullable<R> {
+export function failMe(hint?: string): never {
   if (!hint) {
     throw new Error(`This expression must never be evaluated`)
   }
