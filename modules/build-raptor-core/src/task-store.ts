@@ -5,7 +5,6 @@ import { createWriteStream } from 'fs'
 import * as fse from 'fs-extra'
 import { Logger } from 'logger'
 import { computeHash, computeObjectHash, DirectoryScanner, Key, promises, StorageClient, TypedPublisher } from 'misc'
-import * as path from 'path'
 import * as stream from 'stream'
 import { TaskName } from 'task-name'
 import * as Tmp from 'tmp-promise'
@@ -14,13 +13,14 @@ import * as zlib from 'zlib'
 import { z } from 'zod'
 
 import { Fingerprint } from './fingerprint'
+import { TarStream } from './tar-stream'
 import { TaskStoreEvent } from './task-store-event'
 
 const pipeline = util.promisify(stream.pipeline)
 const unzip = util.promisify(zlib.unzip)
 
-const metadataSchema = z.object({ outputs: z.string().array() })
-type Metadata = z.infer<typeof metadataSchema>
+const Metadata = z.object({ outputs: z.string().array() })
+type Metadata = z.infer<typeof Metadata>
 
 export type BlobId = Brand<string, 'BlobId'>
 
@@ -131,9 +131,7 @@ export class TaskStore {
     this.trace?.push(`bundling ${JSON.stringify(outputs)}`)
 
     const m: Metadata = { outputs: outputs.map(o => o.val) }
-    const metadata = JSON.stringify(metadataSchema.parse(m))
-
-    const metadataBuf = Buffer.from(metadata, 'utf-8')
+    const metadataBuf = Buffer.from(JSON.stringify(Metadata.parse(m)), 'utf-8')
     if (metadataBuf.length > 100000) {
       // Just for sanity.
       throw new Error('metadata is too big')
@@ -197,7 +195,7 @@ export class TaskStore {
     const metadataLen = buf.slice(0, LEN_BUF_SIZE).readInt32BE()
 
     const unparsed = JSON.parse(buf.slice(LEN_BUF_SIZE, LEN_BUF_SIZE + metadataLen).toString('utf-8'))
-    const metadata: Metadata = metadataSchema.parse(unparsed)
+    const metadata: Metadata = Metadata.parse(unparsed)
     const outputs = metadata.outputs.map(at => PathInRepo(at))
 
     const removeOutputDir = async (o: PathInRepo) =>
@@ -273,104 +271,3 @@ function blobIdOf(buf: Buffer) {
 }
 
 const LEN_BUF_SIZE = 8
-
-const Info = z.object({
-  path: z.string(),
-  mode: z.number(),
-  mtime: z.string(),
-  contentLen: z.number(),
-})
-type Info = z.infer<typeof Info>
-
-interface Entry {
-  content: Buffer
-  info: Info
-}
-
-// TOOD(imaman): move to its own file + rename
-class TarStream {
-  private readonly entires: Entry[] = []
-  static pack() {
-    return new TarStream()
-  }
-
-  entry(inf: { path: string; mode: number; mtime: Date; atime: Date; ctime: Date }, content: Buffer) {
-    const info: Info = {
-      path: inf.path,
-      contentLen: content.length,
-      // The Math.trunc() is probably not needed but I could not find a statement which explicitly says that
-      // Date.getTime() always returns an integer.
-      mtime: String(Math.trunc(inf.mtime.getTime())),
-      mode: inf.mode,
-    }
-    this.entires.push({ content, info })
-  }
-
-  toBuffer() {
-    let sum = 0
-    for (const entry of this.entires) {
-      const b = Buffer.from(JSON.stringify(Info.parse(entry.info)))
-      sum += 4 + b.length + entry.content.length
-    }
-
-    const ret = Buffer.alloc(sum)
-    let offset = 0
-
-    for (const entry of this.entires) {
-      const b = Buffer.from(JSON.stringify(Info.parse(entry.info)))
-      offset = ret.writeInt32BE(b.length, offset)
-      offset += b.copy(ret, offset)
-      offset += entry.content.copy(ret, offset)
-    }
-
-    if (sum !== offset) {
-      throw new Error(`Mismatch: sum=${sum}, offset=${offset}`)
-    }
-
-    return ret
-  }
-
-  static async extract(source: Buffer, dir: string, logger: Logger) {
-    const resolve = (p: string) => path.join(dir, p)
-    let offset = 0
-
-    while (offset < source.length) {
-      const atStart = offset
-
-      const infoLen = source.readInt32BE(offset)
-      offset += 4
-
-      const infoBuf = Buffer.alloc(infoLen)
-      const endOffset = offset + infoLen
-      source.copy(infoBuf, 0, offset, endOffset)
-      offset = endOffset
-
-      const untyped = JSON.parse(infoBuf.toString('utf-8'))
-      const parsedInfo = Info.parse(untyped)
-
-      const { contentLen } = parsedInfo
-
-      const contentBuf = Buffer.alloc(contentLen)
-
-      const contentEndOffset = offset + contentLen
-      source.copy(contentBuf, 0, offset, contentEndOffset)
-      offset = contentEndOffset
-
-      const resolved = resolve(parsedInfo.path)
-      fs.mkdirSync(path.dirname(resolved), { recursive: true })
-      fs.writeFileSync(resolved, contentBuf, { mode: parsedInfo.mode })
-
-      const date = new Date(Number(parsedInfo.mtime))
-      try {
-        fs.utimesSync(resolved, date, date)
-      } catch (e) {
-        logger.error(`utimeSync failure: ${JSON.stringify({ resolved, date, parsedInfo })}`, e)
-        throw new Error(`could not update time of ${resolved} to ${date.toISOString()}`)
-      }
-
-      if (offset === atStart) {
-        throw new Error(`Buffer seems to be corrupted: no offset change at the last pass ${offset}`)
-      }
-    }
-  }
-}
