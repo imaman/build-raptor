@@ -16,7 +16,7 @@ interface Entry {
   info: Info
 }
 
-// TOOD(imaman): move to its own file + rename
+// TOOD(imaman): rename
 export class TarStream {
   private readonly entires: Entry[] = []
   static pack() {
