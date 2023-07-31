@@ -455,8 +455,7 @@ describe('task-store', () => {
       async function takeSanpshot(root: RepoRoot) {
         const x1 = fs.statSync(root.resolve(PathInRepo('a/b/x1.txt')))
         const x2 = fs.statSync(root.resolve(PathInRepo('a/b/x2.txt')))
-        const ret = { x1: { mtime: x1.mtime.getTime() }, x2: { mtime: x2.mtime.getTime() } }
-        return ret
+        return { x1: { mtime: x1.mtime.getTime() }, x2: { mtime: x2.mtime.getTime() } }
       }
 
       const before = await takeSanpshot(store.repoRootDir)
