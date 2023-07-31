@@ -171,16 +171,7 @@ export class TaskStore {
         // atime, ctime.
         const { mtime, atime, ctime } = fs.statSync(resolved)
         this.trace?.push(`adding an entry: ${stat.mode.toString(8)} ${p} ${mtime.toISOString()}`)
-        pack.entry(
-          {
-            path: p,
-            mode: stat.mode,
-            mtime,
-            ctime,
-            atime,
-          },
-          content,
-        )
+        pack.entry({ path: p, mode: stat.mode, mtime, ctime, atime }, content)
       })
     }
 
