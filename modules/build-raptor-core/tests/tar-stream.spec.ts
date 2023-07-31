@@ -107,7 +107,6 @@ describe('tar-stream', () => {
     expect(fs.readlinkSync(path.join(dir, 'a1'))).toEqual('./a0')
     expect(fs.readlinkSync(path.join(dir, 'b1'))).toEqual('./b0')
   })
-  test.todo('symlink has a dedicated function')
   test('a symlink cannot point outside of the bundle', () => {
     const ts = TarStream.pack()
     const d = new Date('2023-04-05T11:00:00.000Z')
