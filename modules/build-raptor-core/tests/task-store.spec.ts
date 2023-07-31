@@ -445,35 +445,50 @@ describe('task-store', () => {
       let n = 0
       let ok = 0
       let fail = 0
-      let limit = 1
-      let before: {x1: {mtime: number}, x2: {mtime: number}} = {x1: {mtime: 3}, x2: {mtime:3}}
+      let limit = 1000
       let after: {x1: {mtime: number}, x2: {mtime: number}} = {x1: {mtime: 0}, x2: {mtime:0}}
       let b = 0
       let a = 0
+      // const sc1 = new InMemoryStorageClient()
+      // const store = newTaskStore(
+      //   sc1,
+      //   logger,
+      //   await folderify({
+      //     'a/b/x1.txt': 'this is x1',
+      //     // 'a/b/x2.txt': 'this is x2',
+      //   }),
+      // )
+
+      async function takeSanpshot(root: RepoRoot) {
+        const x1 = await fse.stat(root.resolve(PathInRepo('a/b/x1.txt')))
+        // const x2 = await fse.stat(root.resolve(PathInRepo('a/b/x2.txt')))
+        return { x1: { mtime: x1.mtime.getTime() }, x2: { mtime: x1.mtime.getTime() } }
+      }
+
+      // before = await takeSanpshot(store.repoRootDir)
+      // b = before.x1.mtime
+      // await store.recordTask(taskNameA, Fingerprint('fp'), [PathInRepo('a')], 'OK')
+
+
+      b = 1690799705645
+      const data = [
+        [
+          "std/94f34fca0a10acb05ea57742231ba70385fe73787f56ede4271bab39",
+          "AAAAEQAAAAB7Im91dHB1dHMiOlsiYSJdfR+LCAAAAAAAAAMNyk0KgCAQQGGPErOO1MYf9AwtuoKVoAs1aBZCdPeEt/ngMcb2F+5ACTwEfvAuF+oEM5R2RfCIq1ADlMsQSOOEdc4KbZQyiFrjWM9WKVbaYgUvxUcpP9Ooyx98EbQFXgAAAA=="
+        ],
+        [
+          "std/b05be627a71e78b8c958489c99173a653ccdc6719fb4734b2e9e1fde",
+          "eyJrZXkiOnsidHlwZSI6InZlcmRpY3QiLCJ0YXNrTmFtZSI6InU6QSIsImZpbmdlcnByaW50IjoiZnAiLCJ2ZXJkaWN0IjoiT0siLCJ2ZXJzaW9uIjoyfSwiYmxvYklkIjoiMmNjMTg0NzJmMmM2YjU4ZDU0ZjM1ZTQ3Mzg5YzExYmQxYzZiMjY1NmU4NjAzZTRjNDlmMjIzZjkifQ=="
+        ]
+      ]
+
       for (let i = 0; i < limit; ++i) {
         ++n
         try {
-          const sc = new InMemoryStorageClient()
-          const store = newTaskStore(
-            sc,
-            logger,
-            await folderify({
-              'a/b/x1.txt': 'this is x1',
-              // 'a/b/x2.txt': 'this is x2',
-            }),
-          )
-
-          async function takeSanpshot(root: RepoRoot) {
-            const x1 = await fse.stat(root.resolve(PathInRepo('a/b/x1.txt')))
-            // const x2 = await fse.stat(root.resolve(PathInRepo('a/b/x2.txt')))
-            return { x1: { mtime: x1.mtime.getTime() }, x2: { mtime: x1.mtime.getTime() } }
-          }
-
-          before = await takeSanpshot(store.repoRootDir)
-          b = before.x1.mtime
-          await store.recordTask(taskNameA, Fingerprint('fp'), [PathInRepo('a')], 'OK')
-
-          const dest = newTaskStore(sc, logger)
+          // const sc2 = sc1
+          const sc2 = new InMemoryStorageClient()
+          sc2.load(data)
+          const dest = newTaskStore(sc2, logger)
           await dest.restoreTask(taskNameA, Fingerprint('fp'))
           after = await takeSanpshot(dest.repoRootDir)
           a = after.x1.mtime
@@ -488,6 +503,10 @@ describe('task-store', () => {
           ++fail
         }
       }
+
+      // if (fail > 0) {
+      //   fs.writeFileSync('/tmp/dump.json', JSON.stringify(sc1, null, 2))
+      // }
       expect(`${ok}/${n}`).toEqual(`${limit}/${limit}`)
     })
     test('wtf', async () => {
