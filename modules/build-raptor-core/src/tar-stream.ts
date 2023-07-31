@@ -66,11 +66,27 @@ export class TarStream {
   }
 
   static async extract(source: Buffer, dir: string, logger: Logger) {
-    const resolve = (p: string) => path.join(dir, p)
-    let offset = 0
+    const resolve = (info: Info) => path.join(dir, info.path)
 
+    const updateStats = (parsedInfo: Info) => {
+      const resolved = resolve(parsedInfo)
+      const date = new Date(Number(parsedInfo.mtime))
+      try {
+        fs.utimesSync(resolved, date, date)
+      } catch (e) {
+        logger.error(`utimeSync failure: ${JSON.stringify({ resolved, date, parsedInfo })}`, e)
+        throw new Error(`could not update time of ${resolved} to ${date.toISOString()}: ${e}`)
+      }
+    }
+    const symlinks: { info: Info; content: Buffer }[] = []
+
+    let offset = 0
+    let prevOffset = -1
     while (offset < source.length) {
-      const atStart = offset
+      if (offset === prevOffset) {
+        throw new Error(`Buffer seems to be corrupted: no offset change at the last pass ${offset}`)
+      }
+      prevOffset = offset
 
       const infoLen = source.readInt32BE(offset)
       offset += 4
@@ -91,26 +107,22 @@ export class TarStream {
       source.copy(contentBuf, 0, offset, contentEndOffset)
       offset = contentEndOffset
 
-      const resolved = resolve(parsedInfo.path)
+      const resolved = resolve(parsedInfo)
       fs.mkdirSync(path.dirname(resolved), { recursive: true })
 
       if (parsedInfo.isSymlink) {
-        fs.symlinkSync(contentBuf.toString('utf-8'), resolved)
+        symlinks.push({ info: parsedInfo, content: contentBuf })
       } else {
         fs.writeFileSync(resolved, contentBuf, { mode: parsedInfo.mode })
+        updateStats(parsedInfo)
       }
+    }
 
-      const date = new Date(Number(parsedInfo.mtime))
-      try {
-        fs.utimesSync(resolved, date, date)
-      } catch (e) {
-        logger.error(`utimeSync failure: ${JSON.stringify({ resolved, date, parsedInfo })}`, e)
-        throw new Error(`could not update time of ${resolved} to ${date.toISOString()}: ${e}`)
-      }
-
-      if (offset === atStart) {
-        throw new Error(`Buffer seems to be corrupted: no offset change at the last pass ${offset}`)
-      }
+    for (const { info, content } of symlinks) {
+      const resolved = resolve(info)
+      fs.mkdirSync(path.dirname(resolved), { recursive: true })
+      fs.symlinkSync(content.toString('utf-8'), resolved)
+      updateStats(info)
     }
   }
 }
