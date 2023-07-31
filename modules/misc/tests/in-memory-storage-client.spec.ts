@@ -55,5 +55,27 @@ describe('in-memory-storage-client', () => {
       expect(await sc2.getObject('b')).toEqual('q')
       expect(await sc2.getObject('c')).toEqual('r')
     })
+    test('load() adds to the preexisting entries', async () => {
+      const sc1 = new InMemoryStorageClient(Int(14))
+
+      await sc1.putObject('a', 'p')
+
+      const sc2 = new InMemoryStorageClient(Int(14))
+      await sc2.putObject('b', 'q')
+
+      sc2.load(sc1.toJSON())
+
+      expect(await sc2.getObject('a')).toEqual('p')
+      expect(await sc2.getObject('b')).toEqual('q')
+    })
+    test('can load empty', async () => {
+      const sc1 = new InMemoryStorageClient(Int(14))
+
+      const sc2 = new InMemoryStorageClient(Int(14))
+
+      expect(sc2.byteCount).toEqual(0)
+      sc2.load(sc1.toJSON())
+      expect(sc2.byteCount).toEqual(0)
+    })
   })
 })
