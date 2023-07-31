@@ -165,9 +165,13 @@ export class TaskStore {
         }
 
         const resolved = this.repoRootDir.resolve(PathInRepo(p))
-        const { atimeNs, ctimeNs, mtimeNs } = fs.statSync(resolved, { bigint: true })
-        this.trace?.push(`adding an entry: ${stat.mode.toString(8)} ${p} ${mtimeNs}`)
-        pack.entry({ path: p, mode: stat.mode, mtime: mtimeNs, ctime: ctimeNs, atime: atimeNs }, content)
+
+        // the return value of fs.stat() and friends has counterintuitive behavior: .mtimeMs will undeterministically
+        // include fractions of ms (e.g., 1690808418692.3323). Thus we're sticking with .mtime.getTime(). Similarly for
+        // atime, ctime.
+        const { mtime, atime, ctime } = fs.statSync(resolved)
+        this.trace?.push(`adding an entry: ${stat.mode.toString(8)} ${p} ${mtime.toISOString()}`)
+        pack.entry({ path: p, mode: stat.mode, mtime, ctime, atime }, content)
       })
     }
 
@@ -205,7 +209,7 @@ export class TaskStore {
     const source = buf.slice(LEN_BUF_SIZE + metadataLen)
     const unzipped = await unzip(source)
     try {
-      await TarStream.extract(unzipped, this.repoRootDir.resolve())
+      await TarStream.extract(unzipped, this.repoRootDir.resolve(), this.logger)
     } catch (e) {
       throw new Error(`unbundling a buffer (${buf.length} bytes) has failed: ${e}`)
     }
@@ -290,11 +294,13 @@ class TarStream {
     return new TarStream()
   }
 
-  entry(inf: { path: string; mode: number; mtime: bigint; atime: bigint; ctime: bigint }, content: Buffer) {
+  entry(inf: { path: string; mode: number; mtime: Date; atime: Date; ctime: Date }, content: Buffer) {
     const info: Info = {
       path: inf.path,
       contentLen: content.length,
-      mtime: String(inf.mtime),
+      // The Math.trunc() is probably not needed but I could not find a statement which explicitly says that
+      // Date.getTime() always returns an integer.
+      mtime: String(Math.trunc(inf.mtime.getTime())),
       mode: inf.mode,
     }
     this.entires.push({ content, info })
@@ -324,7 +330,7 @@ class TarStream {
     return ret
   }
 
-  static async extract(source: Buffer, dir: string) {
+  static async extract(source: Buffer, dir: string, logger: Logger) {
     const resolve = (p: string) => path.join(dir, p)
     let offset = 0
 
@@ -354,9 +360,13 @@ class TarStream {
       fs.mkdirSync(path.dirname(resolved), { recursive: true })
       fs.writeFileSync(resolved, contentBuf, { mode: parsedInfo.mode })
 
-      const RATIO = 1000000n
-      const d = new Date(Number(BigInt(parsedInfo.mtime) / RATIO))
-      fs.utimesSync(resolved, d, d)
+      const date = new Date(Number(parsedInfo.mtime))
+      try {
+        fs.utimesSync(resolved, date, date)
+      } catch (e) {
+        logger.error(`utimeSync failure: ${JSON.stringify({ resolved, date, parsedInfo })}`, e)
+        throw new Error(`could not update time of ${resolved} to ${date.toISOString()}`)
+      }
 
       if (offset === atStart) {
         throw new Error(`Buffer seems to be corrupted: no offset change at the last pass ${offset}`)
