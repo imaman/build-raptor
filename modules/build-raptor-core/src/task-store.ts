@@ -165,15 +165,19 @@ export class TaskStore {
         }
 
         const resolved = this.repoRootDir.resolve(PathInRepo(p))
-        const { atime, ctime, mtime } = fs.statSync(resolved)
+
+        // the return value of fs.stat() and friends has counterintuitive behavior: .mtimeMs will undeterministically
+        // include fractions of ms (e.g., 1690808418692.3323). Thus we're sticking with .mtime.getTime(). Similarly for
+        // atime, ctime.
+        const { mtime, atime, ctime } = fs.statSync(resolved)
         this.trace?.push(`adding an entry: ${stat.mode.toString(8)} ${p} ${mtime.toISOString()}`)
         pack.entry(
           {
             path: p,
             mode: stat.mode,
-            mtime: BigInt(Math.trunc(mtime.getTime())),
-            ctime: BigInt(Math.trunc(ctime.getTime())),
-            atime: BigInt(Math.trunc(atime.getTime())),
+            mtime,
+            ctime,
+            atime,
           },
           content,
         )
@@ -299,11 +303,13 @@ class TarStream {
     return new TarStream()
   }
 
-  entry(inf: { path: string; mode: number; mtime: bigint; atime: bigint; ctime: bigint }, content: Buffer) {
+  entry(inf: { path: string; mode: number; mtime: Date; atime: Date; ctime: Date }, content: Buffer) {
     const info: Info = {
       path: inf.path,
       contentLen: content.length,
-      mtime: String(inf.mtime),
+      // The Math.trunc() is probably not needed but I could not find a statement which explicitly says that
+      // Date.getTime() always returns an integer.
+      mtime: String(Math.trunc(inf.mtime.getTime())),
       mode: inf.mode,
     }
     this.entires.push({ content, info })
