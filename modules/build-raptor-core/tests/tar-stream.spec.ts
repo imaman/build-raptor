@@ -94,7 +94,7 @@ describe('tar-stream', () => {
     expect(fs.readFileSync(path.join(dir, 'mylink'), 'utf-8')).toEqual('spot on')
     expect(fs.statSync(path.join(dir, 'mylink'))).toMatchObject({ mtime: d2 })
   })
-  test('can create multipel symlinks', async () => {
+  test('can create multiple symlinks', async () => {
     const ts = TarStream.pack()
     const d = new Date('2023-04-05T11:00:00.000Z')
     ts.entry({ path: 'a0', mode: 0o400, atime: d, ctime: d, mtime: d, isSymlink: false }, Buffer.from('A'))
