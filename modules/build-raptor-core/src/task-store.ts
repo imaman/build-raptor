@@ -357,9 +357,9 @@ class TarStream {
       fs.mkdirSync(path.dirname(resolved), { recursive: true  })
       fs.writeFileSync(resolved, contentBuf, { mode: parsedInfo.mode })
 
-      const ns = Number(parsedInfo.mtime)
-      console.log(`parsedInfo=${JSON.stringify(parsedInfo)}`)
+      const ns = Math.trunc(Number(parsedInfo.mtime))
       const d = new Date(Number(ns))
+      console.log(`d.getTime()=${d.getTime()}, d=${d.toISOString()}, parsedInfo=${JSON.stringify(parsedInfo)}`)
       fs.utimesSync(resolved, d, d)
 
         // const m2 = fs.statSync(resolved).mtime
