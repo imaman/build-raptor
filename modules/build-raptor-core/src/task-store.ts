@@ -166,9 +166,9 @@ export class TaskStore {
         }
 
         const resolved = this.repoRootDir.resolve(PathInRepo(p))
-        const { atimeMs, ctimeMs, mtimeMs } = fs.statSync(resolved)
-        this.trace?.push(`adding an entry: ${stat.mode.toString(8)} ${p} ${mtimeMs}`)
-        pack.entry({ path: p, mode: stat.mode, mtime: BigInt(Math.trunc(mtimeMs)), ctime: BigInt(Math.trunc(ctimeMs)), atime: BigInt(Math.trunc(atimeMs)) }, content)
+        const { atime, ctime, mtime } = fs.statSync(resolved)
+        this.trace?.push(`adding an entry: ${stat.mode.toString(8)} ${p} ${mtime.toISOString()}`)
+        pack.entry({ path: p, mode: stat.mode, mtime: BigInt(Math.trunc(mtime.getTime())), ctime: BigInt(Math.trunc(ctime.getTime())), atime: BigInt(Math.trunc(atime.getTime())) }, content)
       })
     }
 
