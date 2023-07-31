@@ -60,4 +60,19 @@ describe('tar-stream', () => {
     expect(fs.readFileSync(path.join(dir, 'a/b/c/d/e'), 'utf-8')).toEqual('epsilon')
     expect(fs.readlinkSync(path.join(dir, 'a/b/c/d/e'))).toEqual('../../h')
   })
+  test('correctly reconstructs symlinks even when they are defined before their target', async () => {
+    const ts = TarStream.pack()
+    const d = new Date('2023-04-05T11:00:00.000Z')
+    ts.entry({ path: 'a/b/c/d/e', mode: 0o400, atime: d, ctime: d, mtime: d, isSymlink: true }, Buffer.from('../../h'))
+    ts.entry({ path: 'a/b/h', mode: 0o400, atime: d, ctime: d, mtime: d }, Buffer.from('epsilon'))
+
+    const b = ts.toBuffer()
+
+    const dir = tempDir()
+    await TarStream.extract(b, dir, createNopLogger())
+
+    expect(fs.readFileSync(path.join(dir, 'a/b/h'), 'utf-8')).toEqual('epsilon')
+    expect(fs.readFileSync(path.join(dir, 'a/b/c/d/e'), 'utf-8')).toEqual('epsilon')
+    expect(fs.readlinkSync(path.join(dir, 'a/b/c/d/e'))).toEqual('../../h')
+  })
 })
