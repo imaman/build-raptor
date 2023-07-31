@@ -52,17 +52,14 @@ export class TarStream {
     }
   }
 
-  entry(
-    inf: { path: string; mode: number; mtime: Date; atime: Date; ctime: Date; isSymlink: boolean },
-    content: Buffer,
-  ) {
+  entry(inf: { path: string; mode: number; mtime: Date; atime: Date; ctime: Date }, content: Buffer) {
     this.checkPaths(inf.path)
     const info: Info = {
       path: inf.path,
       contentLen: content.length,
       mtime: dateToString(inf.mtime),
       mode: inf.mode,
-      isSymlink: inf.isSymlink,
+      isSymlink: false,
     }
     this.entires.push({ content, info })
   }

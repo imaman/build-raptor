@@ -14,10 +14,7 @@ describe('tar-stream', () => {
   test('can reconstruct a file (including its mode and mtime)', async () => {
     const ts = TarStream.pack()
     const d = new Date('2023-04-05T11:00:00.000Z')
-    ts.entry(
-      { path: 'a', mode: 0o400, atime: d, ctime: d, mtime: d, isSymlink: false },
-      Buffer.from('the quick brown fox'),
-    )
+    ts.entry({ path: 'a', mode: 0o400, atime: d, ctime: d, mtime: d }, Buffer.from('the quick brown fox'))
 
     const b = ts.toBuffer()
 
@@ -30,11 +27,11 @@ describe('tar-stream', () => {
   test('can reconstruct a directory structure', async () => {
     const ts = TarStream.pack()
     const d = new Date('2023-04-05T11:00:00.000Z')
-    ts.entry({ path: 'x/y', mode: 0o400, atime: d, ctime: d, mtime: d, isSymlink: false }, Buffer.from('alpha'))
-    ts.entry({ path: 'a/b/c/d/e', mode: 0o400, atime: d, ctime: d, mtime: d, isSymlink: false }, Buffer.from('beta'))
-    ts.entry({ path: 'a/b/c/f', mode: 0o400, atime: d, ctime: d, mtime: d, isSymlink: false }, Buffer.from('gamma'))
-    ts.entry({ path: 'a/b/c/g', mode: 0o400, atime: d, ctime: d, mtime: d, isSymlink: false }, Buffer.from('delta'))
-    ts.entry({ path: 'a/h', mode: 0o400, atime: d, ctime: d, mtime: d, isSymlink: false }, Buffer.from('epsilon'))
+    ts.entry({ path: 'x/y', mode: 0o400, atime: d, ctime: d, mtime: d }, Buffer.from('alpha'))
+    ts.entry({ path: 'a/b/c/d/e', mode: 0o400, atime: d, ctime: d, mtime: d }, Buffer.from('beta'))
+    ts.entry({ path: 'a/b/c/f', mode: 0o400, atime: d, ctime: d, mtime: d }, Buffer.from('gamma'))
+    ts.entry({ path: 'a/b/c/g', mode: 0o400, atime: d, ctime: d, mtime: d }, Buffer.from('delta'))
+    ts.entry({ path: 'a/h', mode: 0o400, atime: d, ctime: d, mtime: d }, Buffer.from('epsilon'))
 
     const b = ts.toBuffer()
 
@@ -52,8 +49,8 @@ describe('tar-stream', () => {
   test('can reconstruct symlinks', async () => {
     const ts = TarStream.pack()
     const d = new Date('2023-04-05T11:00:00.000Z')
-    ts.entry({ path: 'a/b/h', mode: 0o400, atime: d, ctime: d, mtime: d, isSymlink: false }, Buffer.from('epsilon'))
-    ts.entry({ path: 'a/b/c/d/e', mode: 0o400, atime: d, ctime: d, mtime: d, isSymlink: true }, Buffer.from('../../h'))
+    ts.entry({ path: 'a/b/h', mode: 0o400, atime: d, ctime: d, mtime: d }, Buffer.from('epsilon'))
+    ts.symlink({ from: 'a/b/c/d/e', to: '../../h', mtime: d })
 
     const b = ts.toBuffer()
 
@@ -67,8 +64,8 @@ describe('tar-stream', () => {
   test('correctly reconstructs symlinks even when they are defined before their target', async () => {
     const ts = TarStream.pack()
     const d = new Date('2023-04-05T11:00:00.000Z')
-    ts.entry({ path: 'a/b/c/d/e', mode: 0o400, atime: d, ctime: d, mtime: d, isSymlink: true }, Buffer.from('../../h'))
-    ts.entry({ path: 'a/b/h', mode: 0o400, atime: d, ctime: d, mtime: d, isSymlink: false }, Buffer.from('epsilon'))
+    ts.symlink({ from: 'a/b/c/d/e', mtime: d, to: '../../h' })
+    ts.entry({ path: 'a/b/h', mode: 0o400, atime: d, ctime: d, mtime: d }, Buffer.from('epsilon'))
 
     const b = ts.toBuffer()
 
@@ -82,9 +79,9 @@ describe('tar-stream', () => {
   test('sets mode and mtime of a symlink', async () => {
     const ts = TarStream.pack()
     const d1 = new Date('2011-01-01T11:00:00.000Z')
-    ts.entry({ path: 'myfile', mode: 0o400, atime: d1, ctime: d1, mtime: d1, isSymlink: false }, Buffer.from('spot on'))
+    ts.entry({ path: 'myfile', mode: 0o400, atime: d1, ctime: d1, mtime: d1 }, Buffer.from('spot on'))
     const d2 = new Date('2022-02-02T22:00:00.000Z')
-    ts.entry({ path: 'mylink', mode: 0, atime: d2, ctime: d2, mtime: d2, isSymlink: true }, Buffer.from('./myfile'))
+    ts.symlink({ from: 'mylink', mtime: d2, to: './myfile' })
 
     const b = ts.toBuffer()
 
@@ -97,9 +94,9 @@ describe('tar-stream', () => {
   test('can create multiple symlinks', async () => {
     const ts = TarStream.pack()
     const d = new Date('2023-04-05T11:00:00.000Z')
-    ts.entry({ path: 'a0', mode: 0o400, atime: d, ctime: d, mtime: d, isSymlink: false }, Buffer.from('A'))
+    ts.entry({ path: 'a0', mode: 0o400, atime: d, ctime: d, mtime: d }, Buffer.from('A'))
     ts.symlink({ from: 'a1', to: './a0', mtime: d })
-    ts.entry({ path: 'b0', mode: 0o400, atime: d, ctime: d, mtime: d, isSymlink: false }, Buffer.from('B'))
+    ts.entry({ path: 'b0', mode: 0o400, atime: d, ctime: d, mtime: d }, Buffer.from('B'))
     ts.symlink({ from: 'b1', to: './b0', mtime: d })
 
     const b = ts.toBuffer()
