@@ -443,8 +443,8 @@ describe('task-store', () => {
     })
     test.only('preserves modification time in milliseconds granularity', async () => {
 
-      async function takeSanpshot(root: RepoRoot) {
-        const x1 = await fse.stat(root.resolve(PathInRepo('a/b/x1.txt')))
+      function takeSanpshot(root: RepoRoot) {
+        const x1 = fse.statSync(root.resolve(PathInRepo('a/b/x1.txt')))
         return x1.mtime.getTime() 
       }
 
@@ -463,7 +463,7 @@ describe('task-store', () => {
       sc2.load(data)
       const dest = newTaskStore(sc2, logger)
       await dest.restoreTask(taskNameA, Fingerprint('fp'))
-      const a = await takeSanpshot(dest.repoRootDir)
+      const a = takeSanpshot(dest.repoRootDir)
       expect(a).toEqual(1690799705645)
     })
     test('wtf', async () => {
