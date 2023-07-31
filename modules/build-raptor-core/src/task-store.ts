@@ -19,8 +19,8 @@ import { TaskStoreEvent } from './task-store-event'
 const pipeline = util.promisify(stream.pipeline)
 const unzip = util.promisify(zlib.unzip)
 
-const metadataSchema = z.object({ outputs: z.string().array() })
-type Metadata = z.infer<typeof metadataSchema>
+const Metadata = z.object({ outputs: z.string().array() })
+type Metadata = z.infer<typeof Metadata>
 
 export type BlobId = Brand<string, 'BlobId'>
 
@@ -131,9 +131,7 @@ export class TaskStore {
     this.trace?.push(`bundling ${JSON.stringify(outputs)}`)
 
     const m: Metadata = { outputs: outputs.map(o => o.val) }
-    const metadata = JSON.stringify(metadataSchema.parse(m))
-
-    const metadataBuf = Buffer.from(metadata, 'utf-8')
+    const metadataBuf = Buffer.from(JSON.stringify(Metadata.parse(m)), 'utf-8')
     if (metadataBuf.length > 100000) {
       // Just for sanity.
       throw new Error('metadata is too big')
@@ -197,7 +195,7 @@ export class TaskStore {
     const metadataLen = buf.slice(0, LEN_BUF_SIZE).readInt32BE()
 
     const unparsed = JSON.parse(buf.slice(LEN_BUF_SIZE, LEN_BUF_SIZE + metadataLen).toString('utf-8'))
-    const metadata: Metadata = metadataSchema.parse(unparsed)
+    const metadata: Metadata = Metadata.parse(unparsed)
     const outputs = metadata.outputs.map(at => PathInRepo(at))
 
     const removeOutputDir = async (o: PathInRepo) =>
