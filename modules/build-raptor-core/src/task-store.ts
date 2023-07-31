@@ -1,5 +1,4 @@
 import { Brand } from 'brand'
-import * as child_process from 'child_process'
 import { PathInRepo, RepoRoot } from 'core-types'
 import * as fs from 'fs'
 import { createWriteStream } from 'fs'
@@ -168,7 +167,16 @@ export class TaskStore {
         const resolved = this.repoRootDir.resolve(PathInRepo(p))
         const { atime, ctime, mtime } = fs.statSync(resolved)
         this.trace?.push(`adding an entry: ${stat.mode.toString(8)} ${p} ${mtime.toISOString()}`)
-        pack.entry({ path: p, mode: stat.mode, mtime: BigInt(Math.trunc(mtime.getTime())), ctime: BigInt(Math.trunc(ctime.getTime())), atime: BigInt(Math.trunc(atime.getTime())) }, content)
+        pack.entry(
+          {
+            path: p,
+            mode: stat.mode,
+            mtime: BigInt(Math.trunc(mtime.getTime())),
+            ctime: BigInt(Math.trunc(ctime.getTime())),
+            atime: BigInt(Math.trunc(atime.getTime())),
+          },
+          content,
+        )
       })
     }
 
@@ -304,7 +312,6 @@ class TarStream {
   toBuffer() {
     let sum = 0
     for (const entry of this.entires) {
-      console.log(`++entry.info.mtime=${JSON.stringify(entry.info.mtime)}`)
       const b = Buffer.from(JSON.stringify(Info.parse(entry.info)))
       sum += 4 + b.length + entry.content.length
     }
@@ -343,7 +350,6 @@ class TarStream {
 
       const untyped = JSON.parse(infoBuf.toString('utf-8'))
       const parsedInfo = Info.parse(untyped)
-      console.log(`info.mtime=${JSON.stringify(parsedInfo.mtime)}`)
 
       const { contentLen } = parsedInfo
 
@@ -354,18 +360,12 @@ class TarStream {
       offset = contentEndOffset
 
       const resolved = resolve(parsedInfo.path)
-      fs.mkdirSync(path.dirname(resolved), { recursive: true  })
+      fs.mkdirSync(path.dirname(resolved), { recursive: true })
       fs.writeFileSync(resolved, contentBuf, { mode: parsedInfo.mode })
 
       const ns = Math.trunc(Number(parsedInfo.mtime))
       const d = new Date(Number(ns))
-      console.log(`d.getTime()=${d.getTime()}, d=${d.toISOString()}, parsedInfo=${JSON.stringify(parsedInfo)}`)
       fs.utimesSync(resolved, d, d)
-
-        // const m2 = fs.statSync(resolved).mtime
-        // if (d.toISOString() !== new Date(m2).toISOString()){
-        //   console.log(`mismatch: ${d} vs. ${m2}`)
-        // }
 
       if (offset === atStart) {
         throw new Error(`Buffer seems to be corrupted: no offset change at the last pass ${offset}`)
@@ -373,20 +373,3 @@ class TarStream {
     }
   }
 }
-
-export async function touch(p: string, mtime: string) {
-  fs.writeFileSync(p, 'N/A')
-
-  const RATIO = 1000000n
-  const ns = BigInt(mtime)
-  const d = new Date(Number(ns / RATIO))
-
-  await new Promise<void>(res => setTimeout(res, 1))
-  fs.utimesSync(p, d, d)
-
-  const m2 = fs.statSync(p).mtime
-  if (d.toISOString() !== new Date(m2).toISOString()){
-    console.log(`mismatch: ${d} vs. ${m2}`)
-  }
-}
-
