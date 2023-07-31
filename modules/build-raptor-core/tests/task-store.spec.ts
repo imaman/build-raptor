@@ -442,10 +442,6 @@ describe('task-store', () => {
       )
     })
     test('preserves modification time in milliseconds granularity', async () => {
-      let before: { x1: { mtime: number }; x2: { mtime: number } } = { x1: { mtime: 3 }, x2: { mtime: 3 } }
-      let after: { x1: { mtime: number }; x2: { mtime: number } } = { x1: { mtime: 0 }, x2: { mtime: 0 } }
-      let b = 0
-      let a = 0
       const sc = new InMemoryStorageClient()
       const store = newTaskStore(
         sc,
@@ -463,19 +459,15 @@ describe('task-store', () => {
         return ret
       }
 
-      before = await takeSanpshot(store.repoRootDir)
-      b = before.x1.mtime
+      const before = await takeSanpshot(store.repoRootDir)
       await store.recordTask(taskNameA, Fingerprint('fp'), [PathInRepo('a')], 'OK')
 
       const dest = newTaskStore(sc, logger)
       await dest.restoreTask(taskNameA, Fingerprint('fp'))
-      after = await takeSanpshot(dest.repoRootDir)
-      a = after.x1.mtime
+      const after = await takeSanpshot(dest.repoRootDir)
 
-      after.x1.mtime -= 0 * 2
-      expect(a).toEqual(b)
-      // expect(after.x1).toEqual(before.x1)
-      // expect(after.x2).toEqual(before.x2)
+      expect(after.x1).toEqual(before.x1)
+      expect(after.x2).toEqual(before.x2)
     })
   })
 })
