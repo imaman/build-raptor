@@ -18,6 +18,12 @@ interface Entry {
   info: Info
 }
 
+function dateToString(d: Date) {
+  // The Math.trunc() is probably not needed but I could not find a statement which explicitly says that
+  // Date.getTime() always returns an integer.
+  return String(Math.trunc(d.getTime()))
+}
+
 // TOOD(imaman): rename
 export class TarStream {
   private readonly entires: Entry[] = []
@@ -26,24 +32,23 @@ export class TarStream {
     return new TarStream()
   }
 
-  private checkPaths(entryPath: string, isSymlink: boolean, content: Buffer) {
+  private checkPaths(entryPath: string, to?: string) {
     if (path.isAbsolute(entryPath)) {
       throw new Error(`path must be relative (got: ${entryPath})`)
     }
 
-    if (!isSymlink) {
+    if (to === undefined) {
       return
     }
 
-    const target = content.toString('utf-8')
-    if (path.isAbsolute(target)) {
-      throw new Error(`symlink target path must be relative (got: ${target})`)
+    if (path.isAbsolute(to)) {
+      throw new Error(`symlink target path must be relative (got: ${to})`)
     }
 
     const fakeRoot = '/fake/'
-    const resolvedTarget = path.join(path.join(fakeRoot, entryPath), target)
+    const resolvedTarget = path.join(path.join(fakeRoot, entryPath), to)
     if (!resolvedTarget.startsWith(fakeRoot)) {
-      throw new Error(`symlink (${entryPath}) points outside of subtree (${target})`)
+      throw new Error(`symlink (${entryPath}) points outside of subtree (${to})`)
     }
   }
 
@@ -51,15 +56,26 @@ export class TarStream {
     inf: { path: string; mode: number; mtime: Date; atime: Date; ctime: Date; isSymlink: boolean },
     content: Buffer,
   ) {
-    this.checkPaths(inf.path, inf.isSymlink, content)
+    this.checkPaths(inf.path)
     const info: Info = {
       path: inf.path,
       contentLen: content.length,
-      // The Math.trunc() is probably not needed but I could not find a statement which explicitly says that
-      // Date.getTime() always returns an integer.
-      mtime: String(Math.trunc(inf.mtime.getTime())),
+      mtime: dateToString(inf.mtime),
       mode: inf.mode,
       isSymlink: inf.isSymlink,
+    }
+    this.entires.push({ content, info })
+  }
+
+  symlink(inf: { from: string; to: string; mtime: Date }) {
+    this.checkPaths(inf.from, inf.to)
+    const content = Buffer.from(inf.to)
+    const info: Info = {
+      path: inf.from,
+      contentLen: content.length,
+      mode: 0, // meaningless in symlinks
+      mtime: dateToString(inf.mtime),
+      isSymlink: true,
     }
     this.entires.push({ content, info })
   }

@@ -98,9 +98,9 @@ describe('tar-stream', () => {
     const ts = TarStream.pack()
     const d = new Date('2023-04-05T11:00:00.000Z')
     ts.entry({ path: 'a0', mode: 0o400, atime: d, ctime: d, mtime: d, isSymlink: false }, Buffer.from('A'))
-    ts.entry({ path: 'a1', mode: 0o400, atime: d, ctime: d, mtime: d, isSymlink: true }, Buffer.from('./a0'))
+    ts.symlink({ from: 'a1', to: './a0', mtime: d })
     ts.entry({ path: 'b0', mode: 0o400, atime: d, ctime: d, mtime: d, isSymlink: false }, Buffer.from('B'))
-    ts.entry({ path: 'b1', mode: 0o400, atime: d, ctime: d, mtime: d, isSymlink: true }, Buffer.from('./b0'))
+    ts.symlink({ from: 'b1', to: './b0', mtime: d })
 
     const b = ts.toBuffer()
 
@@ -114,8 +114,8 @@ describe('tar-stream', () => {
   test('a symlink cannot point outside of the bundle', () => {
     const ts = TarStream.pack()
     const d = new Date('2023-04-05T11:00:00.000Z')
-    expect(() =>
-      ts.entry({ path: 'a', mode: 0, atime: d, ctime: d, mtime: d, isSymlink: true }, Buffer.from('../../b')),
-    ).toThrowError('symlink (a) points outside of subtree (../../b)')
+    expect(() => ts.symlink({ from: 'a', mtime: d, to: '../../b' })).toThrowError(
+      'symlink (a) points outside of subtree (../../b)',
+    )
   })
 })
