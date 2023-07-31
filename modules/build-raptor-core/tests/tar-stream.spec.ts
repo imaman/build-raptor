@@ -107,4 +107,6 @@ describe('tar-stream', () => {
     expect(fs.readlinkSync(path.join(dir, 'a1'))).toEqual('./a0')
     expect(fs.readlinkSync(path.join(dir, 'b1'))).toEqual('./b0')
   })
+  test.todo('symlink has a dedicated function')
+  test.todo('symlink cannot point outside of the bundle')
 })
