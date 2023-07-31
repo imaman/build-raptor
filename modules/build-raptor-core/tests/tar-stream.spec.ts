@@ -14,7 +14,10 @@ describe('tar-stream', () => {
   test('can reconstruct a file (including its mode and mtime)', async () => {
     const ts = TarStream.pack()
     const d = new Date('2023-04-05T11:00:00.000Z')
-    ts.entry({ path: 'a', mode: 0o400, atime: d, ctime: d, mtime: d }, Buffer.from('the quick brown fox'))
+    ts.entry(
+      { path: 'a', mode: 0o400, atime: d, ctime: d, mtime: d, isSymlink: false },
+      Buffer.from('the quick brown fox'),
+    )
 
     const b = ts.toBuffer()
 
@@ -27,11 +30,11 @@ describe('tar-stream', () => {
   test('can reconstruct a directory structure', async () => {
     const ts = TarStream.pack()
     const d = new Date('2023-04-05T11:00:00.000Z')
-    ts.entry({ path: 'x/y', mode: 0o400, atime: d, ctime: d, mtime: d }, Buffer.from('alpha'))
-    ts.entry({ path: 'a/b/c/d/e', mode: 0o400, atime: d, ctime: d, mtime: d }, Buffer.from('beta'))
-    ts.entry({ path: 'a/b/c/f', mode: 0o400, atime: d, ctime: d, mtime: d }, Buffer.from('gamma'))
-    ts.entry({ path: 'a/b/c/g', mode: 0o400, atime: d, ctime: d, mtime: d }, Buffer.from('delta'))
-    ts.entry({ path: 'a/h', mode: 0o400, atime: d, ctime: d, mtime: d }, Buffer.from('epsilon'))
+    ts.entry({ path: 'x/y', mode: 0o400, atime: d, ctime: d, mtime: d, isSymlink: false }, Buffer.from('alpha'))
+    ts.entry({ path: 'a/b/c/d/e', mode: 0o400, atime: d, ctime: d, mtime: d, isSymlink: false }, Buffer.from('beta'))
+    ts.entry({ path: 'a/b/c/f', mode: 0o400, atime: d, ctime: d, mtime: d, isSymlink: false }, Buffer.from('gamma'))
+    ts.entry({ path: 'a/b/c/g', mode: 0o400, atime: d, ctime: d, mtime: d, isSymlink: false }, Buffer.from('delta'))
+    ts.entry({ path: 'a/h', mode: 0o400, atime: d, ctime: d, mtime: d, isSymlink: false }, Buffer.from('epsilon'))
 
     const b = ts.toBuffer()
 
@@ -49,7 +52,7 @@ describe('tar-stream', () => {
   test('can reconstruct symlinks', async () => {
     const ts = TarStream.pack()
     const d = new Date('2023-04-05T11:00:00.000Z')
-    ts.entry({ path: 'a/b/h', mode: 0o400, atime: d, ctime: d, mtime: d }, Buffer.from('epsilon'))
+    ts.entry({ path: 'a/b/h', mode: 0o400, atime: d, ctime: d, mtime: d, isSymlink: false }, Buffer.from('epsilon'))
     ts.entry({ path: 'a/b/c/d/e', mode: 0o400, atime: d, ctime: d, mtime: d, isSymlink: true }, Buffer.from('../../h'))
 
     const b = ts.toBuffer()
@@ -65,7 +68,7 @@ describe('tar-stream', () => {
     const ts = TarStream.pack()
     const d = new Date('2023-04-05T11:00:00.000Z')
     ts.entry({ path: 'a/b/c/d/e', mode: 0o400, atime: d, ctime: d, mtime: d, isSymlink: true }, Buffer.from('../../h'))
-    ts.entry({ path: 'a/b/h', mode: 0o400, atime: d, ctime: d, mtime: d }, Buffer.from('epsilon'))
+    ts.entry({ path: 'a/b/h', mode: 0o400, atime: d, ctime: d, mtime: d, isSymlink: false }, Buffer.from('epsilon'))
 
     const b = ts.toBuffer()
 
@@ -108,5 +111,11 @@ describe('tar-stream', () => {
     expect(fs.readlinkSync(path.join(dir, 'b1'))).toEqual('./b0')
   })
   test.todo('symlink has a dedicated function')
-  test.todo('symlink cannot point outside of the bundle')
+  test('a symlink cannot point outside of the bundle', () => {
+    const ts = TarStream.pack()
+    const d = new Date('2023-04-05T11:00:00.000Z')
+    expect(() =>
+      ts.entry({ path: 'a', mode: 0, atime: d, ctime: d, mtime: d, isSymlink: true }, Buffer.from('../../b')),
+    ).toThrowError('symlink (a) points outside of subtree (../../b)')
+  })
 })
