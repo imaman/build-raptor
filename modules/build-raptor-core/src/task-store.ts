@@ -209,7 +209,7 @@ export class TaskStore {
     const source = buf.slice(LEN_BUF_SIZE + metadataLen)
     const unzipped = await unzip(source)
     try {
-      await TarStream.extract(unzipped, this.repoRootDir.resolve())
+      await TarStream.extract(unzipped, this.repoRootDir.resolve(), this.logger)
     } catch (e) {
       throw new Error(`unbundling a buffer (${buf.length} bytes) has failed: ${e}`)
     }
@@ -330,7 +330,7 @@ class TarStream {
     return ret
   }
 
-  static async extract(source: Buffer, dir: string) {
+  static async extract(source: Buffer, dir: string, logger: Logger) {
     const resolve = (p: string) => path.join(dir, p)
     let offset = 0
 
@@ -361,7 +361,12 @@ class TarStream {
       fs.writeFileSync(resolved, contentBuf, { mode: parsedInfo.mode })
 
       const date = new Date(Number(parsedInfo.mtime))
-      fs.utimesSync(resolved, date, date)
+      try {
+        fs.utimesSync(resolved, date, date)
+      } catch (e) {
+        logger.error(`utimeSync failure: ${JSON.stringify({ resolved, date, parsedInfo })}`, e)
+        throw new Error(`could not update time of ${resolved} to ${date.toISOString()}`)
+      }
 
       if (offset === atStart) {
         throw new Error(`Buffer seems to be corrupted: no offset change at the last pass ${offset}`)
