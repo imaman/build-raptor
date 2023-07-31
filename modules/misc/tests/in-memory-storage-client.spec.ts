@@ -77,5 +77,17 @@ describe('in-memory-storage-client', () => {
       sc2.load(sc1.toJSON())
       expect(sc2.byteCount).toEqual(0)
     })
+    test('yells if the data to load is not well formed', async () => {
+      const sc = new InMemoryStorageClient(Int(14))
+
+      expect(() => sc.load({})).toThrowError('not an array')
+      expect(() => sc.load([{}])).toThrowError('entry 0 is not a pair (got: object)')
+      expect(() => sc.load(['a'])).toThrowError('entry 0 is not a pair (got: string)')
+      expect(() => sc.load(['a', 'b'])).toThrowError('entry 0 is not a pair (got: string)')
+      expect(() => sc.load([[]])).toThrowError('entry 0 is not a pair (length: 0)')
+      expect(() => sc.load([['a']])).toThrowError('entry 0 is not a pair (length: 1)')
+      expect(() => sc.load([['a', 'b', 'c']])).toThrowError('entry 0 is not a pair (length: 3)')
+      expect(() => sc.load([[100, 200]])).toThrowError('expected a pair of strings but found a number at pair 0')
+    })
   })
 })

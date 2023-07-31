@@ -69,7 +69,7 @@ export class InMemoryStorageClient implements StorageClient {
 
     u.forEach((at, i) => {
       if (!Array.isArray(at)) {
-        throw new Error(`entry ${i} is not an array (got: ${typeof at})`)
+        throw new Error(`entry ${i} is not a pair (got: ${typeof at})`)
       }
       if (at.length !== 2) {
         throw new Error(`entry ${i} is not a pair (length: ${at.length})`)
