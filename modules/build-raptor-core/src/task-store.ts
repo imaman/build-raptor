@@ -360,9 +360,8 @@ class TarStream {
       fs.mkdirSync(path.dirname(resolved), { recursive: true })
       fs.writeFileSync(resolved, contentBuf, { mode: parsedInfo.mode })
 
-      const ns = Math.trunc(Number(parsedInfo.mtime))
-      const d = new Date(Number(ns))
-      fs.utimesSync(resolved, d, d)
+      const date = new Date(Number(parsedInfo.mtime))
+      fs.utimesSync(resolved, date, date)
 
       if (offset === atStart) {
         throw new Error(`Buffer seems to be corrupted: no offset change at the last pass ${offset}`)
