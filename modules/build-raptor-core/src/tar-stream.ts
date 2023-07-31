@@ -1,5 +1,5 @@
-import * as child_process from 'child_process'
 import * as fs from 'fs'
+import { Logger } from 'logger'
 import * as path from 'path'
 import { z } from 'zod'
 
@@ -23,11 +23,13 @@ export class TarStream {
     return new TarStream()
   }
 
-  entry(inf: { path: string; mode: number; mtime: bigint; atime: bigint; ctime: bigint }, content: Buffer) {
+  entry(inf: { path: string; mode: number; mtime: Date; atime: Date; ctime: Date }, content: Buffer) {
     const info: Info = {
       path: inf.path,
       contentLen: content.length,
-      mtime: String(inf.mtime),
+      // The Math.trunc() is probably not needed but I could not find a statement which explicitly says that
+      // Date.getTime() always returns an integer.
+      mtime: String(Math.trunc(inf.mtime.getTime())),
       mode: inf.mode,
     }
     this.entires.push({ content, info })
@@ -36,7 +38,6 @@ export class TarStream {
   toBuffer() {
     let sum = 0
     for (const entry of this.entires) {
-      print(`++entry.info.mtime=${JSON.stringify(entry.info.mtime)}`)
       const b = Buffer.from(JSON.stringify(Info.parse(entry.info)))
       sum += 4 + b.length + entry.content.length
     }
@@ -58,7 +59,7 @@ export class TarStream {
     return ret
   }
 
-  static async extract(source: Buffer, dir: string) {
+  static async extract(source: Buffer, dir: string, logger: Logger) {
     const resolve = (p: string) => path.join(dir, p)
     let offset = 0
 
@@ -88,22 +89,12 @@ export class TarStream {
       fs.mkdirSync(path.dirname(resolved), { recursive: true })
       fs.writeFileSync(resolved, contentBuf, { mode: parsedInfo.mode })
 
-      const RATIO = 1000000n
-      const ns = BigInt(parsedInfo.mtime)
-      print(`parsedInfo=${JSON.stringify(parsedInfo)}`)
-      const d = new Date(Number(ns / RATIO))
-      if (useTouch) {
-        const ts = d.toISOString().slice(0, -1)
-        const decimal = String(ns % RATIO).padStart(6, '0')
-        const command = `touch -d "${ts}${decimal}Z" "${resolved}"`
-        child_process.execSync(command, { stdio: 'inherit' })
-      } else {
-        fs.utimesSync(resolved, d, d)
-
-        // const m2 = fs.statSync(resolved).mtime
-        // if (d.toISOString() !== new Date(m2).toISOString()){
-        //   print(`mismatch: ${d} vs. ${m2}`)
-        // }
+      const date = new Date(Number(parsedInfo.mtime))
+      try {
+        fs.utimesSync(resolved, date, date)
+      } catch (e) {
+        logger.error(`utimeSync failure: ${JSON.stringify({ resolved, date, parsedInfo })}`, e)
+        throw new Error(`could not update time of ${resolved} to ${date.toISOString()}`)
       }
 
       if (offset === atStart) {
@@ -111,9 +102,4 @@ export class TarStream {
       }
     }
   }
-}
-export const useTouch = false
-
-function print(msg: string) {
-  console.log(msg) // eslint-disable-line no-console
 }

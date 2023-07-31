@@ -1,14 +1,14 @@
 import { PathInRepo, RepoRoot } from 'core-types'
-import * as fse from 'fs-extra'
 import * as fs from 'fs'
+import * as fse from 'fs-extra'
 import { createNopLogger, Logger } from 'logger'
 import { chaoticDeterministicString, folderify, InMemoryStorageClient, Int, slurpDir, StorageClient } from 'misc'
 import { TaskKind, TaskName } from 'task-name'
 import * as TmpSync from 'tmp'
 import { UnitId } from 'unit-metadata'
-import * as crypto from 'crypto'
+
 import { Fingerprint } from '../src/fingerprint'
-import { TaskStore, touch } from '../src/task-store'
+import { TaskStore } from '../src/task-store'
 
 async function slurp(d: RepoRoot) {
   return await slurpDir(d.resolve())
@@ -441,52 +441,32 @@ describe('task-store', () => {
         'Output location <a/b> does not exist',
       )
     })
-    test.only('preserves modification time in milliseconds granularity', async () => {
+    test('preserves modification time in milliseconds granularity', async () => {
+      const sc = new InMemoryStorageClient()
+      const store = newTaskStore(
+        sc,
+        logger,
+        await folderify({
+          'a/b/x1.txt': 'this is x1',
+          'a/b/x2.txt': 'this is x2',
+        }),
+      )
 
-      function takeSanpshot(root: RepoRoot) {
-        const x1 = fse.statSync(root.resolve(PathInRepo('a/b/x1.txt')))
-        return x1.mtime.getTime() 
+      async function takeSanpshot(root: RepoRoot) {
+        const x1 = fs.statSync(root.resolve(PathInRepo('a/b/x1.txt')))
+        const x2 = fs.statSync(root.resolve(PathInRepo('a/b/x2.txt')))
+        return { x1: { mtime: x1.mtime.getTime() }, x2: { mtime: x2.mtime.getTime() } }
       }
 
-      const data = [
-        [
-          "std/94f34fca0a10acb05ea57742231ba70385fe73787f56ede4271bab39",
-          "AAAAEQAAAAB7Im91dHB1dHMiOlsiYSJdfR+LCAAAAAAAAAMNyk0KgCAQQGGPErOO1MYf9AwtuoKVoAs1aBZCdPeEt/ngMcb2F+5ACTwEfvAuF+oEM5R2RfCIq1ADlMsQSOOEdc4KbZQyiFrjWM9WKVbaYgUvxUcpP9Ooyx98EbQFXgAAAA=="
-        ],
-        [
-          "std/b05be627a71e78b8c958489c99173a653ccdc6719fb4734b2e9e1fde",
-          "eyJrZXkiOnsidHlwZSI6InZlcmRpY3QiLCJ0YXNrTmFtZSI6InU6QSIsImZpbmdlcnByaW50IjoiZnAiLCJ2ZXJkaWN0IjoiT0siLCJ2ZXJzaW9uIjoyfSwiYmxvYklkIjoiMmNjMTg0NzJmMmM2YjU4ZDU0ZjM1ZTQ3Mzg5YzExYmQxYzZiMjY1NmU4NjAzZTRjNDlmMjIzZjkifQ=="
-        ]
-      ]
+      const before = await takeSanpshot(store.repoRootDir)
+      await store.recordTask(taskNameA, Fingerprint('fp'), [PathInRepo('a')], 'OK')
 
-      const sc2 = new InMemoryStorageClient()
-      sc2.load(data)
-      const dest = newTaskStore(sc2, logger)
+      const dest = newTaskStore(sc, logger)
       await dest.restoreTask(taskNameA, Fingerprint('fp'))
-      const a = takeSanpshot(dest.repoRootDir)
-      expect(a).toEqual(1690799705645)
-    })
-    test('wtf', async () => {
-      const p0 = '/tmp/foo.0'
-      fse.writeFileSync(p0, '')
-      const x0 = fs.statSync(p0, {bigint: true})
-      const m0 = String(x0.mtimeNs)
-      const uuid = crypto.randomUUID()
+      const after = await takeSanpshot(dest.repoRootDir)
 
-      for (let i = 0; i < 100; ++i) {
-  
-        const p1 = `/tmp/foo.${uuid}.${i}.1`
-        await touch(p1, m0)
-        const x1 = await fse.stat(p1)
-  
-        const p2 = `/tmp/foo.${uuid}.${i}.2`
-        await touch(p2, m0)
-        const x2 = await fse.stat(p2)
-  
-        expect(x1.mtime.getTime()).toEqual(x2.mtime.getTime())  
-      }
+      expect(after.x1).toEqual(before.x1)
+      expect(after.x2).toEqual(before.x2)
     })
   })
 })
-
-// 26

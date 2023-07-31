@@ -165,9 +165,13 @@ export class TaskStore {
         }
 
         const resolved = this.repoRootDir.resolve(PathInRepo(p))
-        const { atimeNs, ctimeNs, mtimeNs } = fs.statSync(resolved, { bigint: true })
-        this.trace?.push(`adding an entry: ${stat.mode.toString(8)} ${p} ${mtimeNs}`)
-        pack.entry({ path: p, mode: stat.mode, mtime: mtimeNs, ctime: ctimeNs, atime: atimeNs }, content)
+
+        // the return value of fs.stat() and friends has counterintuitive behavior: .mtimeMs will undeterministically
+        // include fractions of ms (e.g., 1690808418692.3323). Thus we're sticking with .mtime.getTime(). Similarly for
+        // atime, ctime.
+        const { mtime, atime, ctime } = fs.statSync(resolved)
+        this.trace?.push(`adding an entry: ${stat.mode.toString(8)} ${p} ${mtime.toISOString()}`)
+        pack.entry({ path: p, mode: stat.mode, mtime, ctime, atime }, content)
       })
     }
 
@@ -194,7 +198,6 @@ export class TaskStore {
 
     const unparsed = JSON.parse(buf.slice(LEN_BUF_SIZE, LEN_BUF_SIZE + metadataLen).toString('utf-8'))
     const metadata: Metadata = metadataSchema.parse(unparsed)
-    print(`metadata=${JSON.stringify(metadata)}`)
     const outputs = metadata.outputs.map(at => PathInRepo(at))
 
     const removeOutputDir = async (o: PathInRepo) =>
@@ -206,7 +209,7 @@ export class TaskStore {
     const source = buf.slice(LEN_BUF_SIZE + metadataLen)
     const unzipped = await unzip(source)
     try {
-      await TarStream.extract(unzipped, this.repoRootDir.resolve())
+      await TarStream.extract(unzipped, this.repoRootDir.resolve(), this.logger)
     } catch (e) {
       throw new Error(`unbundling a buffer (${buf.length} bytes) has failed: ${e}`)
     }
@@ -238,7 +241,6 @@ export class TaskStore {
 
   async restoreTask(taskName: TaskName, fingerprint: Fingerprint): Promise<'FAIL' | 'OK' | 'FLAKY' | 'UNKNOWN'> {
     const [verdict, blobId] = await this.getVerdict(taskName, fingerprint)
-    print(`verdict of (${taskName}, ${fingerprint}) is ${verdict}, ${blobId}`)
     const files = await this.restoreBlob(blobId)
     this.publisher?.publish('taskStore', {
       opcode: 'RESTORED',
@@ -271,23 +273,3 @@ function blobIdOf(buf: Buffer) {
 }
 
 const LEN_BUF_SIZE = 8
-
-export async function touch(p: string, mtime: string) {
-  fs.writeFileSync(p, 'N/A')
-
-  const RATIO = 1000000n
-  const ns = BigInt(mtime)
-  const d = new Date(Number(ns / RATIO))
-
-  await new Promise<void>(res => setTimeout(res, 1))
-  fs.utimesSync(p, d, d)
-
-  const m2 = fs.statSync(p).mtime
-  if (d.toISOString() !== new Date(m2).toISOString()) {
-    print(`mismatch: ${d} vs. ${m2}`)
-  }
-}
-
-function print(msg: string) {
-  console.log(msg) // eslint-disable-line no-console
-}
