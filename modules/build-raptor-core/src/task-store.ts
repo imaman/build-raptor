@@ -1,3 +1,4 @@
+import * as path from 'path'
 import { Brand } from 'brand'
 import { PathInRepo, RepoRoot } from 'core-types'
 import * as fs from 'fs'
@@ -143,22 +144,32 @@ export class TaskStore {
 
     const pack = TarStream.pack()
     const scanner = new DirectoryScanner(this.repoRootDir.resolve())
+
+    console.log(`L.148: outputs=${JSON.stringify(outputs)} STARTING`)
     for (const o of outputs) {
+      const isnm = (o.val === 'node_modules') 
+      if (isnm) {
+        console.log(`%%%%%%%%%%%%% o=${JSON.stringify(o)}`)
+      }
       const exists = await fse.pathExists(this.repoRootDir.resolve(o))
       if (!exists) {
         // TODO(imaman): turn this into a user-build-error? move it out of this file?
         throw new Error(`Output location <${o}> does not exist (under <${this.repoRootDir}>)`)
       }
+      isnm && console.log(`L.158`)
       await scanner.scanTree(o.val, (p, content, stat) => {
+        try {
+
         if (stat.isDirectory()) {
           return
         }
+        
+        isnm && stat.isSymbolicLink() && console.log(`L.159 p=${p} isfile=${stat.isFile()} issymlink=${stat.isSymbolicLink()}`)
+        // if (stat.isSymbolicLink()) {
+        //   throw new Error(`Cannot handle symlinks in output: ${p} (under ${this.repoRootDir})`)
+        // }
 
-        if (stat.isSymbolicLink()) {
-          throw new Error(`Cannot handle symlinks in output: ${p} (under ${this.repoRootDir})`)
-        }
-
-        if (!stat.isFile()) {
+        if (!stat.isSymbolicLink() && !stat.isFile()) {
           throw new Error(`Cannot handle non-files in output: ${p} (under ${this.repoRootDir})`)
         }
 
@@ -169,9 +180,24 @@ export class TaskStore {
         // atime, ctime.
         const { mtime, atime, ctime } = fs.statSync(resolved)
         this.trace?.push(`adding an entry: ${stat.mode.toString(8)} ${p} ${mtime.toISOString()}`)
-        pack.entry({ path: p, mode: stat.mode, mtime, ctime, atime }, content)
+
+        if (stat.isSymbolicLink()) {
+          try {
+            const relative = fs.readlinkSync(resolved)
+            pack.symlink({from: p, mtime, to: path.normalize(path.join(path.dirname(p), relative)) })  
+          } catch (e) {
+            throw new Error(`could not process symlink ${p}: ${e}`)
+          }
+        } else {
+          pack.entry({ path: p, mode: stat.mode, mtime, ctime, atime }, content)
+        }
+      } catch (e) {
+        throw new Error(`L.194: p=${p}: ${e}`)
+      }
+
       })
     }
+    console.log(`outputs: ${JSON.stringify(outputs)} DONE`)
 
     const b = pack.toBuffer()
     this.trace?.push(`digest of b is ${computeObjectHash({ data: b.toString('hex') })}`)

@@ -427,7 +427,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
 
     this.logger.info(`logging uberbuild in ${outputFile}`)
-    const dirs = this.state.units.map(at => at.pathInRepo.val)
+    const dirs = computeRealUnits(this.state.units).map(at => at.pathInRepo.val)
     const p = this.run('tsc', ['--build', ...dirs], this.state.rootDir.resolve(), outputFile)
     this.state.uberBuildPromise = p
 
@@ -684,7 +684,13 @@ export class YarnRepoProtocol implements RepoProtocol {
         PathInRepo('package.json'),
         PathInRepo('.build-raptor.json'),
         PathInRepo('.gitignore'),
-        PathInRepo('README.md'),
+        PathInRepo('.gitignore'),
+        PathInRepo('.gitignore'),
+        PathInRepo('.gitignore'),
+        PathInRepo('.gitignore'),
+        PathInRepo('.gitignore'),
+        PathInRepo('.gitignore'),
+        PathInRepo('.gitignore'),
       ],
       outputLocations: [{ pathInRepo: PathInRepo('node_modules'), purge: 'NEVER' }],
     })

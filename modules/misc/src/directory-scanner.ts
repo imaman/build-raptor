@@ -130,8 +130,12 @@ export class DirectoryScanner {
     }
     if (!stat.isDirectory()) {
       if (cb) {
-        const content = await fse.readFile(resolvedPath)
-        cb(relativePath, content, stat)
+        try {
+          const content = stat.isSymbolicLink() ? Buffer.from('') : await fse.readFile(resolvedPath)
+          cb(relativePath, content, stat)  
+        } catch (e) {
+          throw new Error(`could not read ${resolvedPath}: ${e}`)
+        }
       }
 
       if (pathCallback) {
@@ -166,7 +170,7 @@ export class DirectoryScanner {
     // This function is mainly for providing a human-readable error message with a menaingful stacktrace (fs-extra uses
     // native calls which do not have a stacktrace).
     try {
-      return await fse.stat(resolvedPath)
+      return fs.lstatSync(resolvedPath)
     } catch (e) {
       throw new Error(`Cannot stat ${resolvedPath}: ${e}`)
     }
