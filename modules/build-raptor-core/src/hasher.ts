@@ -4,7 +4,7 @@ import { pairsToRecord } from 'misc'
 import { Fingerprint } from './fingerprint'
 
 export class Hasher {
-  private readonly hash = crypto.createHash('sha224').update('4')
+  private readonly hash = crypto.createHash('sha224').update('3')
   private readonly audit = new Map<string, string>()
   private status: 'OPEN' | 'CLOSED' = 'OPEN'
 
