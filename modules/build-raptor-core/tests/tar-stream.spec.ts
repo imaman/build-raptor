@@ -107,6 +107,38 @@ describe('tar-stream', () => {
     expect(fs.readlinkSync(path.join(dir, 'a1'))).toEqual('a0')
     expect(fs.readlinkSync(path.join(dir, 'b1'))).toEqual('b0')
   })
+  test(`a path cannot point outside of the subtree`, () => {
+    const ts = TarStream.pack()
+    const d = new Date('2023-04-05T11:00:00.000Z')
+    expect(() => ts.symlink({ from: '../a', mtime: d, to: 'x/y' })).toThrowError(
+      'path to a file outside of the subtree (got: ../a)',
+    )
+    expect(() => ts.symlink({ from: './../a', mtime: d, to: 'x/y' })).toThrowError(
+      'path to a file outside of the subtree (got: ./../a)',
+    )
+    expect(() => ts.symlink({ from: 'q/r/../../../a', mtime: d, to: 'x/y' })).toThrowError(
+      'path to a file outside of the subtree (got: q/r/../../../a)',
+    )
+    expect(() => ts.symlink({ from: 'foo', to: '../a', mtime: d })).toThrowError(
+      'path to a file outside of the subtree (got: ../a)',
+    )
+    expect(() => ts.symlink({ from: 'foo', to: './../a', mtime: d })).toThrowError(
+      'path to a file outside of the subtree (got: ./../a)',
+    )
+    expect(() => ts.symlink({ from: 'foo', to: 'q/r/../../../a', mtime: d })).toThrowError(
+      'path to a file outside of the subtree (got: q/r/../../../a)',
+    )
+
+    expect(() => ts.entry({ path: '../a', mtime: d, mode: 0, atime: d, ctime: d }, Buffer.from('x'))).toThrowError(
+      'path to a file outside of the subtree (got: ../a)',
+    )
+    expect(() => ts.entry({ path: './../a', mtime: d, mode: 0, atime: d, ctime: d }, Buffer.from('x'))).toThrowError(
+      'path to a file outside of the subtree (got: ./../a)',
+    )
+    expect(() =>
+      ts.entry({ path: 'q/r/../../../a', mtime: d, mode: 0, atime: d, ctime: d }, Buffer.from('x')),
+    ).toThrowError('path to a file outside of the subtree (got: q/r/../../../a)')
+  })
   test(`a symlink's target cannot be an absolute path`, () => {
     const ts = TarStream.pack()
     const d = new Date('2023-04-05T11:00:00.000Z')

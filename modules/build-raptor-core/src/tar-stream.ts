@@ -24,6 +24,20 @@ function dateToString(d: Date) {
   return String(Math.trunc(d.getTime()))
 }
 
+function findDirectories(p: string) {
+  p = path.normalize(p)
+  const ret: string[] = []
+  while (true) {
+    const parent = path.dirname(p)
+    if (parent === p) {
+      return ret.reverse()
+    }
+
+    ret.push(parent)
+    p = parent
+  }
+}
+
 // TOOD(imaman): rename
 export class TarStream {
   private readonly entires: Entry[] = []
@@ -36,6 +50,14 @@ export class TarStream {
     for (const at of paths) {
       if (path.isAbsolute(at)) {
         throw new Error(`path must be relative (got: ${at})`)
+      }
+
+      const fakeRoot = '/fake-root'
+      const resolved = path.resolve(fakeRoot, at)
+
+      const parents = findDirectories(resolved)
+      if (!parents.includes(fakeRoot)) {
+        throw new Error(`path to a file outside of the subtree (got: ${at})`)
       }
     }
   }
