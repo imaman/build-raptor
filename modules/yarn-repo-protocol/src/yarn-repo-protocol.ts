@@ -684,7 +684,6 @@ export class YarnRepoProtocol implements RepoProtocol {
         PathInRepo('package.json'),
         PathInRepo('.build-raptor.json'),
         PathInRepo('.gitignore'),
-        PathInRepo('.build-raptor/build-run-id'),
       ],
       outputLocations: [{ pathInRepo: PathInRepo('node_modules'), purge: 'NEVER' }],
     })

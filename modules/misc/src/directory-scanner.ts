@@ -150,7 +150,7 @@ export class DirectoryScanner {
   private readContent(resolvedPath: string, stat: fs.Stats) {
     try {
       if (stat.isSymbolicLink()) {
-        return Buffer.from('')
+        return Buffer.from(fs.readlinkSync(resolvedPath))
       }
       return fs.readFileSync(resolvedPath)
     } catch (e) {
