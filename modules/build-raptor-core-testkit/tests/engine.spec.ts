@@ -30,6 +30,17 @@ jest.setTimeout(30000)
 describe('engine', () => {
   const testName = () => expect.getState().currentTestName
 
+  test('stores build run ID in a file', async () => {
+    const driver = new Driver(testName())
+    const recipe = {
+      'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+      'modules/a/package.json': { name: 'a', version: '1.0.0', scripts: { build: '#' } },
+    }
+
+    const fork = await driver.repo(recipe).fork()
+    const run = await fork.run('OK', { taskKind: 'build' })
+    expect(await fork.file('.build-raptor/build-run-id').lines()).toEqual([run.buildRunId])
+  })
   test('runs the build and test tasks of a package and captures their output', async () => {
     const driver = new Driver(testName())
     const recipe = {
