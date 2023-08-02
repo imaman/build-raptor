@@ -679,12 +679,7 @@ export class YarnRepoProtocol implements RepoProtocol {
 
     ret.push({
       taskName: installTaskName,
-      inputs: [
-        PathInRepo('yarn.lock'),
-        PathInRepo('package.json'),
-        PathInRepo('.build-raptor.json'),
-        PathInRepo('.gitignore'),
-      ],
+      inputs: [PathInRepo('yarn.lock'), PathInRepo('package.json')],
       outputLocations: [{ pathInRepo: PathInRepo('node_modules'), purge: 'NEVER' }],
     })
 
