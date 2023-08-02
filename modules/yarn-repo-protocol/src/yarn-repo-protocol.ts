@@ -134,7 +134,8 @@ export class YarnRepoProtocol implements RepoProtocol {
     const yarnInfo = await this.getYarnInfo(rootDir)
 
     const config = this.parseConfig(repoProtocolConfig)
-    const units = computeUnits(yarnInfo)
+    const allUnits = computeUnits(yarnInfo)
+    const units = computeRealUnits(allUnits)
     const packageByUnitId = await readPackages(rootDir, units)
     const versionByPackageId = computeVersions([...packageByUnitId.values()])
 
@@ -169,7 +170,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     await this.generateTsConfigFiles(rootDir, units, graph)
 
     await this.generateSymlinksToPackages(rootDir, units)
-    this.state_ = { yarnInfo, graph, rootDir, units, packageByUnitId, versionByPackageId, publisher, config }
+    this.state_ = { yarnInfo, graph, rootDir, units: allUnits, packageByUnitId, versionByPackageId, publisher, config }
   }
 
   private async generateSymlinksToPackages(rootDir: RepoRoot, units: UnitMetadata[]) {
@@ -273,29 +274,6 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
   }
 
-  // TODO(imaman): cover
-  private async runCaptureStdout(cmd: string, args: string[], dir: string): Promise<string> {
-    const summary = `<${dir}$ ${cmd} ${args.join(' ')}>`
-    this.logger.info(`Dispatching ${summary}`)
-
-    let p
-    try {
-      p = await execa(cmd, args, { cwd: dir, reject: false })
-    } catch (e) {
-      this.logger.error(`execution of ${summary} failed`, e)
-      return 'CRASH'
-    }
-
-    this.logger.info(`exitCode of ${cmd} ${args.join(' ')} is ${p.exitCode}`)
-    if (p.exitCode !== 0) {
-      const e = new Error(`execution of ${summary} crashed with exit code ${p.exitCode}`)
-      this.logger.error(`Could not get stdout of a command`, e)
-      throw e
-    }
-
-    return p.stdout
-  }
-
   private async runAdditionalBuildActions(unitId: UnitId, dir: string, outputFile: string): Promise<ExitStatus> {
     return switchOn(await this.runPostBuild(unitId, dir, outputFile), {
       CRASH: () => Promise.resolve('CRASH'),
@@ -354,6 +332,15 @@ export class YarnRepoProtocol implements RepoProtocol {
   }
 
   async execute(taskName: TaskName, outputFile: string, _buildRunId: string): Promise<ExitStatus> {
+    if (taskName === installTaskName) {
+      if (!this.state.config.install) {
+        fs.writeFileSync(outputFile, '')
+        return 'OK'
+      }
+
+      return await this.run('yarn', ['--frozen-lockfile'], this.state.rootDir.resolve(), outputFile)
+    }
+
     const { taskKind, unitId } = TaskName().undo(taskName)
     const u = this.state.units.find(at => at.id === unitId) ?? failMe(`unit ID not found: ${unitId}`)
     const dir = this.state.rootDir.resolve(u.pathInRepo)
@@ -440,7 +427,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
 
     this.logger.info(`logging uberbuild in ${outputFile}`)
-    const dirs = this.state.units.map(at => at.pathInRepo.val)
+    const dirs = computeRealUnits(this.state.units).map(at => at.pathInRepo.val)
     const p = this.run('tsc', ['--build', ...dirs], this.state.rootDir.resolve(), outputFile)
     this.state.uberBuildPromise = p
 
@@ -683,12 +670,18 @@ export class YarnRepoProtocol implements RepoProtocol {
   }
 
   async getTasks(): Promise<TaskInfo[]> {
-    const unitIds = this.state.units.map(u => u.id)
+    const unitIds = computeRealUnits(this.state.units).map(at => at.id)
 
     const ret = unitIds
       .map(at => this.unitOf(at))
       .flatMap(u => [this.buildTask(u), this.testTask(u), this.packTask(u), this.publishTask(u)])
       .flatMap(x => (x ? [x] : []))
+
+    ret.push({
+      taskName: installTaskName,
+      inputs: [PathInRepo('yarn.lock'), PathInRepo('package.json')],
+      outputLocations: [{ pathInRepo: PathInRepo('node_modules'), purge: 'NEVER' }],
+    })
 
     return ret
   }
@@ -708,6 +701,7 @@ export class YarnRepoProtocol implements RepoProtocol {
         dir.expand('package.json'),
         ...deps.map(d => d.expand(this.dist('s'))),
       ],
+      deps: [installTaskName],
     }
   }
   private testTask(u: UnitMetadata): TaskInfo | undefined {
@@ -725,6 +719,7 @@ export class YarnRepoProtocol implements RepoProtocol {
         dir.expand('package.json'),
         ...deps.map(d => d.expand(this.dist('s'))),
       ],
+      deps: [installTaskName],
     }
   }
   private packTask(u: UnitMetadata): TaskInfo | undefined {
@@ -806,6 +801,8 @@ function computeUnits(yarnInfo: YarnWorkspacesInfo): UnitMetadata[] {
     const uid = UnitId(p)
     ret.push(new UnitMetadata(data.location, uid))
   }
+
+  ret.push(new UnitMetadata('', rootUnitId))
   return ret
 }
 
@@ -846,5 +843,12 @@ function computeVersions(packages: PackageJson[]) {
   return ret
 }
 
+function computeRealUnits(units: UnitMetadata[]) {
+  return units.filter(at => at.id !== rootUnitId)
+}
+
 const JEST_OUTPUT_FILE = 'jest-output.json'
 const PREPARED_ASSETS_DIR = 'prepared-assets'
+
+const rootUnitId = UnitId('.')
+const installTaskName = TaskName(rootUnitId, TaskKind('install'))

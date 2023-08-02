@@ -1,3 +1,4 @@
+import * as fs from 'fs'
 import * as fse from 'fs-extra'
 import * as path from 'path'
 
@@ -208,6 +209,19 @@ describe('directory-scanner', () => {
       acc.push(p)
     })
     expect(acc).toEqual([])
+  })
+  test(`passes a symlink's target to the callback function`, async () => {
+    const dir = await folderify({ 'x/y/z': 'zoo', 'x/y/f': 'foo', 'x/y/p/q/r/s1': '' })
+    fs.symlinkSync('../../../z', path.join(dir, 'x/y/p/q/r/s2'))
+    const ds = new DirectoryScanner(dir)
+
+    const acc: Record<string, string> = {}
+    await ds.scanTree('.', (p, c) => {
+      acc[p] = c.toString('utf-8')
+    })
+    expect(acc).toMatchObject({
+      'x/y/p/q/r/s2': '../../../z',
+    })
   })
   describe('ignore', () => {
     test('does not output files that match the given ignore pattern', async () => {

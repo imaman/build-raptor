@@ -5,6 +5,7 @@ import { createWriteStream } from 'fs'
 import * as fse from 'fs-extra'
 import { Logger } from 'logger'
 import { computeHash, computeObjectHash, DirectoryScanner, Key, promises, StorageClient, TypedPublisher } from 'misc'
+import * as path from 'path'
 import * as stream from 'stream'
 import { TaskName } from 'task-name'
 import * as Tmp from 'tmp-promise'
@@ -154,11 +155,7 @@ export class TaskStore {
           return
         }
 
-        if (stat.isSymbolicLink()) {
-          throw new Error(`Cannot handle symlinks in output: ${p} (under ${this.repoRootDir})`)
-        }
-
-        if (!stat.isFile()) {
+        if (!stat.isSymbolicLink() && !stat.isFile()) {
           throw new Error(`Cannot handle non-files in output: ${p} (under ${this.repoRootDir})`)
         }
 
@@ -169,7 +166,13 @@ export class TaskStore {
         // atime, ctime.
         const { mtime, atime, ctime } = fs.statSync(resolved)
         this.trace?.push(`adding an entry: ${stat.mode.toString(8)} ${p} ${mtime.toISOString()}`)
-        pack.entry({ path: p, mode: stat.mode, mtime, ctime, atime }, content)
+
+        if (stat.isSymbolicLink()) {
+          const to = path.normalize(path.join(path.dirname(p), content.toString('utf-8')))
+          pack.symlink({ from: p, mtime, to })
+        } else {
+          pack.entry({ path: p, mode: stat.mode, mtime, ctime, atime }, content)
+        }
       })
     }
 

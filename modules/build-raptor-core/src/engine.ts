@@ -1,6 +1,7 @@
 import { BuildFailedError } from 'build-failed-error'
 import { BuildRunId } from 'build-run-id'
 import { PathInRepo, RepoRoot } from 'core-types'
+import * as fs from 'fs'
 import * as fse from 'fs-extra'
 import ignore from 'ignore'
 import { Logger } from 'logger'
@@ -125,6 +126,7 @@ export class Engine {
 
   async run(buildRunId: BuildRunId) {
     this.steps.push({ step: 'BUILD_RUN_STARTED', buildRunId, commitHash: this.options.commitHash })
+    fs.writeFileSync(path.join(this.options.buildRaptorDir, 'build-run-id'), buildRunId)
     await this.fingerprintLedger.updateRun(buildRunId)
     await this.repoProtocol.initialize(this.rootDir, this.eventPublisher, this.options.config.repoProtocol)
     try {

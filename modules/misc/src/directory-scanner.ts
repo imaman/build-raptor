@@ -130,7 +130,7 @@ export class DirectoryScanner {
     }
     if (!stat.isDirectory()) {
       if (cb) {
-        const content = await fse.readFile(resolvedPath)
+        const content = this.readContent(resolvedPath, stat)
         cb(relativePath, content, stat)
       }
 
@@ -144,6 +144,17 @@ export class DirectoryScanner {
     // TODO(imaman): make this loop concurrent. we need to use p-qeueu to avoid too much concurrency.
     for (const file of files) {
       await this.scanFileTree(path.join(resolvedPath, file), predicate, pathCallback, cb)
+    }
+  }
+
+  private readContent(resolvedPath: string, stat: fs.Stats) {
+    try {
+      if (stat.isSymbolicLink()) {
+        return Buffer.from(fs.readlinkSync(resolvedPath))
+      }
+      return fs.readFileSync(resolvedPath)
+    } catch (e) {
+      throw new Error(`failed to read ${stat.isSymbolicLink() ? 'symbolic link' : 'file'} at ${resolvedPath}: ${e}`)
     }
   }
 
@@ -166,7 +177,7 @@ export class DirectoryScanner {
     // This function is mainly for providing a human-readable error message with a menaingful stacktrace (fs-extra uses
     // native calls which do not have a stacktrace).
     try {
-      return await fse.stat(resolvedPath)
+      return fs.lstatSync(resolvedPath)
     } catch (e) {
       throw new Error(`Cannot stat ${resolvedPath}: ${e}`)
     }

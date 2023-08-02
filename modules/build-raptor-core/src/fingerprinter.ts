@@ -1,3 +1,4 @@
+import * as fs from 'fs'
 import * as fse from 'fs-extra'
 import { Logger } from 'logger'
 import { DirectoryScanner, sortBy } from 'misc'
@@ -25,7 +26,13 @@ export class Fingerprinter {
 
   private async scan(pathInRepo: string) {
     const resolved = path.join(this.dirScanner.rootDir, pathInRepo)
-    const stat = await statPath(resolved)
+    const stat = statPath(resolved)
+    if (!stat) {
+      const hasher = new Hasher(pathInRepo)
+      const content = Buffer.from('')
+      hasher.update(content)
+      return await this.store(hasher, true, content.toString('utf-8'))
+    }
 
     const respectGitIgnore = this.dirScanner.isValid(pathInRepo, stat)
 
@@ -76,9 +83,9 @@ async function readFile(p: string) {
   }
 }
 
-async function statPath(p: string) {
+function statPath(p: string) {
   try {
-    return await fse.stat(p)
+    return fs.statSync(p, { throwIfNoEntry: false })
   } catch (e) {
     throw new Error(`Failed to stat ${p}: ${e}`)
   }

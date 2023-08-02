@@ -45,7 +45,7 @@ describe('asset-publishing', () => {
     const run = await fork.run('OK', { taskKind: 'publish-assets' })
 
     expect(await run.outputOf('publish-assets', 'a')).toEqual(['> a@1.0.0 prepare-assets', '> touch prepared-assets/x'])
-    expect(run.taskNames()).toEqual(['a:build', 'a:publish-assets'])
+    expect(run.taskNames()).toEqual(['.:install', 'a:build', 'a:publish-assets'])
   })
   test('publish-assets publishes a blob and generates a matching ASSET_PUBLSIHED step with a fingerprint', async () => {
     const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
