@@ -168,8 +168,8 @@ export class TaskStore {
         this.trace?.push(`adding an entry: ${stat.mode.toString(8)} ${p} ${mtime.toISOString()}`)
 
         if (stat.isSymbolicLink()) {
-          const relative = fs.readlinkSync(resolved)
-          pack.symlink({ from: p, mtime, to: path.normalize(path.join(path.dirname(p), relative)) })
+          const to = path.normalize(path.join(path.dirname(p), content.toString('utf-8')))
+          pack.symlink({ from: p, mtime, to })
         } else {
           pack.entry({ path: p, mode: stat.mode, mtime, ctime, atime }, content)
         }

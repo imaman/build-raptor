@@ -152,7 +152,7 @@ export class DirectoryScanner {
       if (stat.isSymbolicLink()) {
         return Buffer.from('')
       }
-      return fs.readFileSync(resolvedPath, 'utf-8')
+      return fs.readFileSync(resolvedPath)
     } catch (e) {
       throw new Error(`failed to read ${stat.isSymbolicLink() ? 'symbolic link' : 'file'} at ${resolvedPath}: ${e}`)
     }
