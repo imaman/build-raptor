@@ -130,7 +130,7 @@ export class DirectoryScanner {
     }
     if (!stat.isDirectory()) {
       if (cb) {
-        const content = stat.isSymbolicLink() ? Buffer.from('') : await fse.readFile(resolvedPath)
+        const content = this.readContent(resolvedPath, stat)
         cb(relativePath, content, stat)
       }
 
@@ -144,6 +144,17 @@ export class DirectoryScanner {
     // TODO(imaman): make this loop concurrent. we need to use p-qeueu to avoid too much concurrency.
     for (const file of files) {
       await this.scanFileTree(path.join(resolvedPath, file), predicate, pathCallback, cb)
+    }
+  }
+
+  private readContent(resolvedPath: string, stat: fs.Stats) {
+    try {
+      if (stat.isSymbolicLink()) {
+        return Buffer.from('')
+      }
+      return fs.readFileSync(resolvedPath, 'utf-8')
+    } catch (e) {
+      throw new Error(`failed to read ${stat.isSymbolicLink() ? 'symbolic link' : 'file'} at ${resolvedPath}: ${e}`)
     }
   }
 
