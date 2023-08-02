@@ -71,7 +71,7 @@ jobs:
         run: yarn --frozen-lockfile
       - name: build and test
         run: |
-          yarn test --config-file=.build-raptor.ci.json
+          yarn test
         env:
           s3_cache: ${{ secrets.S3_CACHE }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
