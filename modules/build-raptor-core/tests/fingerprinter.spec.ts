@@ -73,6 +73,17 @@ describe('fingerprinter', () => {
     await fingerprinter.computeFingerprint('x')
     expect(captured).toEqual([{ name: 'x/y', content: 'foo' }, { name: 'x/z', content: 'bar' }, { name: 'x' }])
   })
+  test('returns a fixed fingerprint for non existing file', async () => {
+    const { fingerprinter } = await create({ x: 'a' }, () => true)
+
+    const fx = await fingerprinter.computeFingerprint('x')
+    const fy = await fingerprinter.computeFingerprint('y')
+    const fz = await fingerprinter.computeFingerprint('z')
+
+    expect(fx).not.toEqual(fy)
+    expect(fx).not.toEqual(fz)
+    expect(fy).toEqual(fz)
+  })
   test.todo('computes a fingerprint')
   test.todo('a change in the source code of a package changes its fingerprint')
   test.todo('takes into account only the files under the given prefixes')
