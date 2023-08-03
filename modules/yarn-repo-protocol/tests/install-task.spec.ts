@@ -19,11 +19,11 @@ describe('install-task', () => {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
       'modules/a/package.json': driver.packageJson('a', []),
       'modules/a/src/a.ts': `export function a(n: number) { return n*101 }`,
-      'modules/a/tests/a.spec.ts': `import {a} from '../src/a';  test('a', () => { expect(a(2)).toEqual(202) })`,
+      'modules/a/tests/a.spec.ts': ``,
     }
 
     const fork = await driver.repo(recipe).fork()
-    await fork.run('OK', { taskKind: 'build' })
-    expect(5).toEqual(5)
+    const run = await fork.run('OK', { taskKind: 'build' })
+    expect(run.taskNames()).toEqual(['.:install', 'a:build'])
   })
 })
