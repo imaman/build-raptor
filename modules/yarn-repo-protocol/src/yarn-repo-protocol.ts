@@ -692,15 +692,19 @@ export class YarnRepoProtocol implements RepoProtocol {
       .flatMap(u => [this.buildTask(u), this.testTask(u), this.packTask(u), this.publishTask(u)])
       .flatMap(x => (x ? [x] : []))
 
+    const installTaskInfo: TaskInfo = {
+      taskName: installTaskName,
+      inputs: [PathInRepo('yarn.lock'), PathInRepo('package.json')],
+      outputLocations: [{ pathInRepo: PathInRepo('node_modules'), purge: 'NEVER' }],
+    }
+
     switchOn(this.getInstallFeatureToggle(), {
       off: () => {},
-      dormant: () => {},
+      dormant: () => {
+        ret.push(installTaskInfo)
+      },
       on: () => {
-        ret.push({
-          taskName: installTaskName,
-          inputs: [PathInRepo('yarn.lock'), PathInRepo('package.json')],
-          outputLocations: [{ pathInRepo: PathInRepo('node_modules'), purge: 'NEVER' }],
-        })
+        ret.push(installTaskInfo)
       },
     })
 
