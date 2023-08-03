@@ -331,14 +331,29 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
   }
 
+  private getInstallFeatureToggle(): 'off' | 'dormant' | 'on' {
+    const raw = this.state.config.install_ ?? 'off'
+    if (typeof raw === 'boolean') {
+      return raw ? 'on' : 'off'
+    }
+
+    return raw
+  }
+
   async execute(taskName: TaskName, outputFile: string, _buildRunId: string): Promise<ExitStatus> {
     if (taskName === installTaskName) {
-      if (!this.state.config.install) {
-        fs.writeFileSync(outputFile, '')
-        return 'OK'
-      }
-
-      return await this.run('yarn', ['--frozen-lockfile'], this.state.rootDir.resolve(), outputFile)
+      const ft = this.getInstallFeatureToggle()
+      return switchOn(ft, {
+        off: async () => {
+          throw new Error(`cannot execute ${taskName} when its feature toggle is set to ${ft}`)
+        },
+        dormant: async () => {
+          fs.writeFileSync(outputFile, '')
+          const ret: ExitStatus = 'OK'
+          return ret
+        },
+        on: async () => await this.run('yarn', ['--frozen-lockfile'], this.state.rootDir.resolve(), outputFile),
+      })
     }
 
     const { taskKind, unitId } = TaskName().undo(taskName)
@@ -677,13 +692,33 @@ export class YarnRepoProtocol implements RepoProtocol {
       .flatMap(u => [this.buildTask(u), this.testTask(u), this.packTask(u), this.publishTask(u)])
       .flatMap(x => (x ? [x] : []))
 
-    ret.push({
-      taskName: installTaskName,
-      inputs: [PathInRepo('yarn.lock'), PathInRepo('package.json')],
-      outputLocations: [{ pathInRepo: PathInRepo('node_modules'), purge: 'NEVER' }],
+    switchOn(this.getInstallFeatureToggle(), {
+      off: () => {},
+      dormant: () => {},
+      on: () => {
+        ret.push({
+          taskName: installTaskName,
+          inputs: [PathInRepo('yarn.lock'), PathInRepo('package.json')],
+          outputLocations: [{ pathInRepo: PathInRepo('node_modules'), purge: 'NEVER' }],
+        })
+      },
     })
 
     return ret
+  }
+
+  private depList(...taskNames: TaskName[]) {
+    return taskNames.filter(at => {
+      if (at !== installTaskName) {
+        return true
+      }
+
+      return switchOn(this.getInstallFeatureToggle(), {
+        off: () => false,
+        dormant: () => true,
+        on: () => true,
+      })
+    })
   }
 
   private buildTask(u: UnitMetadata): TaskInfo | undefined {
@@ -701,7 +736,7 @@ export class YarnRepoProtocol implements RepoProtocol {
         dir.expand('package.json'),
         ...deps.map(d => d.expand(this.dist('s'))),
       ],
-      deps: [installTaskName],
+      deps: this.depList(installTaskName),
     }
   }
   private testTask(u: UnitMetadata): TaskInfo | undefined {
@@ -719,7 +754,7 @@ export class YarnRepoProtocol implements RepoProtocol {
         dir.expand('package.json'),
         ...deps.map(d => d.expand(this.dist('s'))),
       ],
-      deps: [installTaskName],
+      deps: this.depList(installTaskName),
     }
   }
   private packTask(u: UnitMetadata): TaskInfo | undefined {
