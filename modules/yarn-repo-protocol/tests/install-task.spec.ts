@@ -1,0 +1,56 @@
+import { NopAssetPublisher } from 'build-raptor-core'
+import { Driver } from 'build-raptor-core-testkit'
+import { createNopLogger } from 'logger'
+
+import { YarnRepoProtocol } from '../src/yarn-repo-protocol'
+
+jest.setTimeout(60000)
+describe('install-task', () => {
+  const logger = createNopLogger()
+
+  function newYarnRepoProtocol() {
+    return new YarnRepoProtocol(logger, new NopAssetPublisher())
+  }
+  const testName = () => expect.getState().currentTestName
+  test('the build output contains errors from all modules', async () => {
+    const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+    const recipe = {
+      'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+      'modules/a/package.json': driver.packageJson('a', ['b']),
+      'modules/a/src/a.ts': `
+          import {b} from 'b'
+          export function a(n: number) { return b(n)*10+1 }`,
+      'modules/a/tests/a.spec.ts': `import {a} from '../src/a';  test('a', () => { expect(a(0)).toEqual(-321) })`,
+      'modules/b/package.json': driver.packageJson('b', ['c']),
+      'modules/b/src/index.ts': `
+          import {c} from 'c'
+          export function b(n: number) { return c(n)*10+2 }`,
+      'modules/b/tests/b.spec.ts': `import {b} from '../src'; test('b', () => {expect(b(0)).toEqual(32)})`,
+      'modules/c/package.json': driver.packageJson('c'),
+      'modules/c/src/index.ts': `export function c(s: string) { return s.length }`,
+      'modules/c/tests/c.spec.ts': `import {c} from '../src'; test('xyz', () => {expect(c('a')).toEqual(3)})`,
+    }
+
+    const fork = await driver.repo(recipe).fork()
+
+    const run1 = await fork.run('FAIL', { taskKind: 'build' })
+    expect(await run1.outputOf('build', 'c')).toEqual([
+      `modules/b/src/index.ts(3,51): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.`,
+    ])
+
+    await fork.file('modules/c/src/index.ts').write(`export function c(n: number) { return n+3 }`)
+    await fork
+      .file('modules/c/tests/c.spec.ts')
+      .write(`import {c} from '../src'; test('xyz', () => {expect(c(90)).toEqual(93)})`)
+    const run2 = await fork.run('OK', { taskKind: 'build' })
+    expect(await run2.outputOf('build', 'c')).toEqual([``])
+
+    const run3 = await fork.run('FAIL', { taskKind: 'test' })
+    expect(await run3.outputOf('test', 'a')).toContain('    Received: 321')
+
+    await fork
+      .file('modules/a/tests/a.spec.ts')
+      .write(`import {a} from '../src/a';  test('a', () => { expect(a(0)).toEqual(321) })`)
+    await fork.run('OK', { taskKind: 'test' })
+  })
+})
