@@ -332,7 +332,7 @@ export class YarnRepoProtocol implements RepoProtocol {
   }
 
   private getInstallFeatureToggle(): 'off' | 'dormant' | 'on' {
-    const raw = this.state.config.install_ ?? 'off'
+    const raw = this.state.config.install ?? 'off'
     if (typeof raw === 'boolean') {
       return raw ? 'on' : 'off'
     }
