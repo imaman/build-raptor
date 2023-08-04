@@ -362,7 +362,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     if (taskKind === 'build') {
       let buildStatus: ExitStatus
       if (this.state.config.uberBuild ?? true) {
-        buildStatus = await this.runUberBuild(outputFile)
+        buildStatus = await this.runUberBuild(outputFile, taskName)
       } else {
         buildStatus = await this.run('npm', ['run', this.scriptNames.build], dir, outputFile)
       }
@@ -434,10 +434,10 @@ export class YarnRepoProtocol implements RepoProtocol {
     throw new Error(`Unknown task ${taskKind} (at ${dir})`)
   }
 
-  private async runUberBuild(outputFile: string): Promise<ExitStatus> {
+  private async runUberBuild(outputFile: string, taskName: TaskName): Promise<ExitStatus> {
     if (this.state.uberBuildPromise) {
       const ret = await this.state.uberBuildPromise
-      await fse.writeFile(outputFile, 'uberbuild')
+      await fse.writeFile(outputFile, `uberbuild for ${taskName}\n`)
       return ret
     }
 
