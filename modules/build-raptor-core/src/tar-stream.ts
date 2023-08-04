@@ -169,6 +169,7 @@ export class TarStream {
       const resolved = resolve(info)
       fs.mkdirSync(path.dirname(resolved), { recursive: true })
       fs.symlinkSync(content.toString('utf-8'), resolved)
+      updateStats(info)
     }
   }
 }
