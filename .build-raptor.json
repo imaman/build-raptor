@@ -1,3 +1,6 @@
 {
-  "verbosePrintTasks": []
+  "verbosePrintTasks": [],
+  "repoProtocol": {
+    "install": "dormant"
+  }
 }
