@@ -645,12 +645,23 @@ export class YarnRepoProtocol implements RepoProtocol {
       )
     })
 
+    // const deps = this.state.graph
+    //     .traverseFrom(u.id)
+    //     .filter(at => at !== u.id)
+    //     .map(at => this.unitOf(at).pathInRepo)
+    //   return {
+    //     taskName: TaskName(u.id, TaskKind('pack')),
+    //     outputLocations: [{ pathInRepo: dir.expand(PACK_DIR), purge: 'NEVER' }],
+    //     inputs: [dir.expand(this.dist('s')), ...deps.map(d => d.expand(this.dist('s')))],
+    //   }
+    // }
+
     const packageDef = await this.computePackingPackageJson(u.id)
     this.logger.info(`updated packagejson is ${JSON.stringify(packageDef)}`)
     const packageJsonPath = path.join(dir, PACK_DIR, 'package.json')
 
     try {
-      await fse.writeFile(packageJsonPath, JSON.stringify(packageDef, null, 2))
+      fs.writeFileSync(packageJsonPath, JSON.stringify(packageDef, null, 2))
     } catch (e) {
       throw new Error(`Failed to write new package definition at ${packageJsonPath}: ${e}`)
     }
