@@ -437,11 +437,11 @@ export class YarnRepoProtocol implements RepoProtocol {
   private async runUberBuild(outputFile: string, taskName: TaskName): Promise<ExitStatus> {
     if (this.state.uberBuildPromise) {
       const ret = await this.state.uberBuildPromise
-      await fse.writeFile(outputFile, `uberbuild for ${taskName}\n`)
+      await fse.writeFile(outputFile, ``)
       return ret
     }
 
-    this.logger.info(`logging uberbuild in ${outputFile}`)
+    this.logger.info(`logging uberbuild in ${outputFile} (triggered by ${taskName})`)
     const dirs = computeRealUnits(this.state.units).map(at => at.pathInRepo.val)
     const p = this.run('tsc', ['--build', ...dirs], this.state.rootDir.resolve(), outputFile)
     this.state.uberBuildPromise = p
