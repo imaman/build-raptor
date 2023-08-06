@@ -6,7 +6,7 @@ import { YarnRepoProtocol } from '../src/yarn-repo-protocol'
 
 jest.setTimeout(120000)
 
-describe('b', () => {
+describe('uber-building-and-deletion', () => {
   describe('uber-building', () => {
     const logger = createNopLogger()
 
