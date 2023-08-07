@@ -601,59 +601,54 @@ export class YarnRepoProtocol implements RepoProtocol {
   }
 
   private async pack(u: UnitMetadata, dir: string): Promise<Stats | undefined> {
-    const inrepo: string[] = this.state.units.map(u => u.id)
+    const packageDef = await this.computePackingPackageJson(u.id)
+    const conf: webpack.Configuration = {
+      context: dir,
+      entry: {
+        'index.js': `./${path.join(this.dist('s'), 'index.js')}`,
+      },
+      output: {
+        filename: `${PACK_DIR}/${MAIN_FILE_NAME}`,
+        path: dir,
+        clean: true,
+      },
+      mode: 'production', // intentional
+      module: {
+        rules: [
+          {
+            test: /\.(js|ts)x?$/,
+            use: ['ts-loader'],
+            exclude: /node_modules/,
+          },
+        ],
+      },        
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+      plugins: [new ShebangPlugin() as WebpackPluginInstance],
+      externals: [Object.fromEntries(Object.keys(packageDef.dependencies ?? {}).map(k => [k, k]))],
+      resolve: {
+        fallback: {},
+        extensions: ['.ts', '.tsx', '.js'],
+        alias: Object.fromEntries(
+          computeRealUnits(this.state.units).map(u => [u.id, this.state.rootDir.resolve(u.pathInRepo.expand('src/index.ts'))]),
+        ),
+        // {
+        //   ['shopping-app-core']: path.resolve(__dirname, '../shopping-app-core/src/index.ts'),
+        //   ['online-shopping-api']: path.resolve(__dirname, '../online-shopping-api/src/index.ts'),
+        //   ['node-platform']: path.resolve(__dirname, '../browser-platform/src/index.ts'),
+        //   ['online-shopping-service']: path.resolve(__dirname, '../online-shopping-service/src/index.ts'),
+        //   ['online-shopping-endpoints']: path.resolve(__dirname, '../online-shopping-endpoints/src/index.ts'),
+        //   ['misc-clock']: path.resolve(__dirname, '../misc-clock/src/index.ts'),
+        //   ['misc-crypto']: path.resolve(__dirname, '../misc-crypto/src/index.ts'),
+        //   ['misc']: path.resolve(__dirname, '../misc/src/index.ts'),
+        //   ['duration']: path.resolve(__dirname, '../duration/src/index.ts'),
+        //   ['blockchain-proxy-api']: path.resolve(__dirname, '../blockchain-proxy-api/src/index.ts'),
+        // },
+      },
+    }
+
+    console.log(`webpack conf=${JSON.stringify(conf, null, 2)}`)
     const ret = await new Promise<Stats | undefined>(resolve => {
-      webpack(
-        {
-          context: dir,
-          entry: `./${this.dist('s')}/index.js`,
-          output: {
-            filename: `${PACK_DIR}/${MAIN_FILE_NAME}`,
-            path: dir,
-          },
-          mode: 'production', // intentional
-          // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-          plugins: [new ShebangPlugin() as WebpackPluginInstance],
-          externals: [
-            function (arg, callback) {
-              const req = arg.request ?? ''
-              let decision = 'R'
-              if (req.startsWith('.')) {
-                decision = 'bundle'
-              }
-
-              if (inrepo.includes(req)) {
-                decision = 'bundle'
-              }
-
-              if (decision === 'bundle') {
-                callback()
-              } else {
-                callback(undefined, 'commonjs ' + req)
-              }
-            },
-          ],
-          resolve: {
-            fallback: {},
-            extensions: ['.ts', '.tsx', '.js'],
-            alias: Object.fromEntries(
-              this.state.units.map(u => [u.id, this.state.rootDir.resolve(u.pathInRepo.expand('src/index.ts'))]),
-            ),
-            // {
-            //   ['shopping-app-core']: path.resolve(__dirname, '../shopping-app-core/src/index.ts'),
-            //   ['online-shopping-api']: path.resolve(__dirname, '../online-shopping-api/src/index.ts'),
-            //   ['node-platform']: path.resolve(__dirname, '../browser-platform/src/index.ts'),
-            //   ['online-shopping-service']: path.resolve(__dirname, '../online-shopping-service/src/index.ts'),
-            //   ['online-shopping-endpoints']: path.resolve(__dirname, '../online-shopping-endpoints/src/index.ts'),
-            //   ['misc-clock']: path.resolve(__dirname, '../misc-clock/src/index.ts'),
-            //   ['misc-crypto']: path.resolve(__dirname, '../misc-crypto/src/index.ts'),
-            //   ['misc']: path.resolve(__dirname, '../misc/src/index.ts'),
-            //   ['duration']: path.resolve(__dirname, '../duration/src/index.ts'),
-            //   ['blockchain-proxy-api']: path.resolve(__dirname, '../blockchain-proxy-api/src/index.ts'),
-            // },
-          },
-        },
-        async (err, stats) => {
+      webpack(conf, async (err, stats) => {
           if (err) {
             this.logger.error(`packing of ${dir} failed`, err)
             throw new Error(`packing ${u.id} failed`)
@@ -675,7 +670,6 @@ export class YarnRepoProtocol implements RepoProtocol {
     //   }
     // }
 
-    const packageDef = await this.computePackingPackageJson(u.id)
     this.logger.info(`updated packagejson is ${JSON.stringify(packageDef)}`)
     const packageJsonPath = path.join(dir, PACK_DIR, 'package.json')
 
