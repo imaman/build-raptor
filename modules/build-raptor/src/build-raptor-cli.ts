@@ -300,105 +300,109 @@ function withBuildOptions<T>(y: yargs.Argv<T>) {
     })
 }
 
-yargs(hideBin(process.argv))
-  .command(
-    'build',
-    'build the code',
-    yargs => withBuildOptions(yargs),
-    async argv => {
-      await run({
-        dir: argv.dir,
-        command: 'build',
-        units: argv.units,
-        githubActions: argv['github-actions'],
-        printPassing: argv['print-passing'],
-        buildOutputLocation: argv['build-output-locations'],
-        concurrency: argv['concurrency'],
-        compact: argv.compact,
-        stepByStepProcessor: argv['step-by-step-processor'],
-        buildRaptorConfigFile: argv['config-file'],
-      })
-    },
+export function main() {
+  return (
+    yargs(hideBin(process.argv))
+      .command(
+        'build',
+        'build the code',
+        yargs => withBuildOptions(yargs),
+        async argv => {
+          await run({
+            dir: argv.dir,
+            command: 'build',
+            units: argv.units,
+            githubActions: argv['github-actions'],
+            printPassing: argv['print-passing'],
+            buildOutputLocation: argv['build-output-locations'],
+            concurrency: argv['concurrency'],
+            compact: argv.compact,
+            stepByStepProcessor: argv['step-by-step-processor'],
+            buildRaptorConfigFile: argv['config-file'],
+          })
+        },
+      )
+      .command(
+        'test',
+        'run tests',
+        yargs =>
+          withBuildOptions(yargs)
+            .option('test-reporting', {
+              choices: ['just-failing', 'tree', 'tree-just-failing'],
+              describe: 'test reporing policy',
+            })
+            .option('test-caching', {
+              describe: 'whether to skip running tests that have already passed',
+              type: 'boolean',
+              default: true,
+            }),
+        async argv => {
+          const tr = argv['test-reporting']
+          await run({
+            dir: argv.dir,
+            command: 'test',
+            units: argv.units,
+            githubActions: argv['github-actions'],
+            printPassing: argv['print-passing'],
+            buildOutputLocation: argv['build-output-locations'],
+            concurrency: argv['concurrency'],
+            compact: argv.compact,
+            testCaching: argv['test-caching'],
+            testReporting:
+              tr === 'just-failing' || tr === 'tree' || tr === 'tree-just-failing' || tr === undefined
+                ? tr
+                : failMe(`unsupported value: ${tr}`),
+            stepByStepProcessor: argv['step-by-step-processor'],
+            buildRaptorConfigFile: argv['config-file'],
+          })
+        },
+      )
+      .command(
+        'pack',
+        'create publishable packages',
+        yargs => withBuildOptions(yargs),
+        async argv => {
+          await run({
+            dir: argv.dir,
+            command: 'pack',
+            units: argv.units,
+            githubActions: argv['github-actions'],
+            printPassing: argv['print-passing'],
+            buildOutputLocation: argv['build-output-locations'],
+            concurrency: argv['concurrency'],
+            compact: argv.compact,
+            stepByStepProcessor: argv['step-by-step-processor'],
+            buildRaptorConfigFile: argv['config-file'],
+          })
+        },
+      )
+      // TODO(imaman): 'pack', 'publish', etc. should not be an array option (and not separate commands)
+      .command(
+        'publish-assets',
+        'publish deployables (as blobs)',
+        yargs =>
+          withBuildOptions(yargs).option('register-assets', {
+            describe: 'whether to invoke the register-asset-endpoint with the details of each published asset',
+            type: 'boolean',
+            default: false,
+          }),
+        async argv => {
+          await run({
+            dir: argv.dir,
+            command: 'publish-assets',
+            units: argv.units,
+            githubActions: argv['github-actions'],
+            printPassing: argv['print-passing'],
+            buildOutputLocation: argv['build-output-locations'],
+            concurrency: argv['concurrency'],
+            compact: argv.compact,
+            callRegisterAsset: argv['register-assets'],
+            stepByStepProcessor: argv['step-by-step-processor'],
+            buildRaptorConfigFile: argv['config-file'],
+          })
+        },
+      )
+      .demandCommand(1)
+      .parse()
   )
-  .command(
-    'test',
-    'run tests',
-    yargs =>
-      withBuildOptions(yargs)
-        .option('test-reporting', {
-          choices: ['just-failing', 'tree', 'tree-just-failing'],
-          describe: 'test reporing policy',
-        })
-        .option('test-caching', {
-          describe: 'whether to skip running tests that have already passed',
-          type: 'boolean',
-          default: true,
-        }),
-    async argv => {
-      const tr = argv['test-reporting']
-      await run({
-        dir: argv.dir,
-        command: 'test',
-        units: argv.units,
-        githubActions: argv['github-actions'],
-        printPassing: argv['print-passing'],
-        buildOutputLocation: argv['build-output-locations'],
-        concurrency: argv['concurrency'],
-        compact: argv.compact,
-        testCaching: argv['test-caching'],
-        testReporting:
-          tr === 'just-failing' || tr === 'tree' || tr === 'tree-just-failing' || tr === undefined
-            ? tr
-            : failMe(`unsupported value: ${tr}`),
-        stepByStepProcessor: argv['step-by-step-processor'],
-        buildRaptorConfigFile: argv['config-file'],
-      })
-    },
-  )
-  .command(
-    'pack',
-    'create publishable packages',
-    yargs => withBuildOptions(yargs),
-    async argv => {
-      await run({
-        dir: argv.dir,
-        command: 'pack',
-        units: argv.units,
-        githubActions: argv['github-actions'],
-        printPassing: argv['print-passing'],
-        buildOutputLocation: argv['build-output-locations'],
-        concurrency: argv['concurrency'],
-        compact: argv.compact,
-        stepByStepProcessor: argv['step-by-step-processor'],
-        buildRaptorConfigFile: argv['config-file'],
-      })
-    },
-  )
-  // TODO(imaman): 'pack', 'publish', etc. should not be an array option (and not separate commands)
-  .command(
-    'publish-assets',
-    'publish deployables (as blobs)',
-    yargs =>
-      withBuildOptions(yargs).option('register-assets', {
-        describe: 'whether to invoke the register-asset-endpoint with the details of each published asset',
-        type: 'boolean',
-        default: false,
-      }),
-    async argv => {
-      await run({
-        dir: argv.dir,
-        command: 'publish-assets',
-        units: argv.units,
-        githubActions: argv['github-actions'],
-        printPassing: argv['print-passing'],
-        buildOutputLocation: argv['build-output-locations'],
-        concurrency: argv['concurrency'],
-        compact: argv.compact,
-        callRegisterAsset: argv['register-assets'],
-        stepByStepProcessor: argv['step-by-step-processor'],
-        buildRaptorConfigFile: argv['config-file'],
-      })
-    },
-  )
-  .demandCommand(1)
-  .parse()
+}

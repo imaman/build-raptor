@@ -6,7 +6,7 @@
   "license": "MIT",
   "author": "",
   "main": "dist/src/index.js",
-  "bin": "main.js",
+  "bin": "dist/src/main.js",
   "scripts": {
     "build": "tsc -b",
     "ncc": "ncc build/src/index.js -o build/src/index.node.js",
