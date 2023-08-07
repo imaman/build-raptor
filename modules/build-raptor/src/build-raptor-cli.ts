@@ -60,7 +60,7 @@ async function createStorageClient() {
   }
 }
 
-async function run(options: Options) {
+export async function run(options: Options) {
   if (options.callRegisterAsset) {
     throw new Error(`callRegisterAsset has been retired and can no longer accept a truthy value`)
   }
