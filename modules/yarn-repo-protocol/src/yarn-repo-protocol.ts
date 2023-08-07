@@ -32,8 +32,6 @@ import { TaskKind, TaskName } from 'task-name'
 import * as Tmp from 'tmp-promise'
 import { PackageJson, TsConfigJson } from 'type-fest'
 import { UnitId, UnitMetadata } from 'unit-metadata'
-import webpack, { Stats, WebpackPluginInstance } from 'webpack'
-import ShebangPlugin from 'webpack-shebang-plugin'
 import { z } from 'zod'
 
 import { RerunList } from './rerun-list'
@@ -389,13 +387,9 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
 
     if (taskKind === 'pack') {
-      const stat = await this.pack(u, dir)
-      if (stat?.hasErrors()) {
-        await fse.writeFile(outputFile, JSON.stringify(stat?.toJson('errors-only'), null, 2))
-      } else {
-        await fse.writeFile(outputFile, '')
-      }
-      return stat?.hasErrors() ? 'FAIL' : 'OK'
+      const ret = await this.pack(u, dir)
+      await fse.writeFile(outputFile, '')
+      return ret
     }
 
     if (taskKind === 'publish-assets') {
@@ -600,75 +594,12 @@ export class YarnRepoProtocol implements RepoProtocol {
     return hardGet(this.state.versionByPackageId, d)
   }
 
-  private async pack(u: UnitMetadata, dir: string): Promise<Stats | undefined> {
+  private async pack(u: UnitMetadata, dir: string): Promise<ExitStatus> {
     const packageDef = await this.computePackingPackageJson(u.id)
-    const conf: webpack.Configuration = {
-      context: dir,
-      entry: {
-        'index.js': `./${path.join(this.dist('s'), 'index.js')}`,
-      },
-      output: {
-        filename: `${PACK_DIR}/${MAIN_FILE_NAME}`,
-        path: dir,
-        clean: true,
-      },
-      mode: 'production', // intentional
-      module: {
-        rules: [
-          {
-            test: /\.(js|ts)x?$/,
-            use: ['ts-loader'],
-            exclude: /node_modules/,
-          },
-        ],
-      },        
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-      plugins: [new ShebangPlugin() as WebpackPluginInstance],
-      externals: [Object.fromEntries(Object.keys(packageDef.dependencies ?? {}).map(k => [k, k]))],
-      resolve: {
-        fallback: {},
-        extensions: ['.ts', '.tsx', '.js'],
-        alias: Object.fromEntries(
-          computeRealUnits(this.state.units).map(u => [u.id, this.state.rootDir.resolve(u.pathInRepo.expand('src/index.ts'))]),
-        ),
-        // {
-        //   ['shopping-app-core']: path.resolve(__dirname, '../shopping-app-core/src/index.ts'),
-        //   ['online-shopping-api']: path.resolve(__dirname, '../online-shopping-api/src/index.ts'),
-        //   ['node-platform']: path.resolve(__dirname, '../browser-platform/src/index.ts'),
-        //   ['online-shopping-service']: path.resolve(__dirname, '../online-shopping-service/src/index.ts'),
-        //   ['online-shopping-endpoints']: path.resolve(__dirname, '../online-shopping-endpoints/src/index.ts'),
-        //   ['misc-clock']: path.resolve(__dirname, '../misc-clock/src/index.ts'),
-        //   ['misc-crypto']: path.resolve(__dirname, '../misc-crypto/src/index.ts'),
-        //   ['misc']: path.resolve(__dirname, '../misc/src/index.ts'),
-        //   ['duration']: path.resolve(__dirname, '../duration/src/index.ts'),
-        //   ['blockchain-proxy-api']: path.resolve(__dirname, '../blockchain-proxy-api/src/index.ts'),
-        // },
-      },
-    }
-
-    console.log(`webpack conf=${JSON.stringify(conf, null, 2)}`)
-    const ret = await new Promise<Stats | undefined>(resolve => {
-      webpack(conf, async (err, stats) => {
-          if (err) {
-            this.logger.error(`packing of ${dir} failed`, err)
-            throw new Error(`packing ${u.id} failed`)
-          }
-
-          resolve(stats)
-        },
-      )
-    })
-
-    // const deps = this.state.graph
-    //     .traverseFrom(u.id)
-    //     .filter(at => at !== u.id)
-    //     .map(at => this.unitOf(at).pathInRepo)
-    //   return {
-    //     taskName: TaskName(u.id, TaskKind('pack')),
-    //     outputLocations: [{ pathInRepo: dir.expand(PACK_DIR), purge: 'NEVER' }],
-    //     inputs: [dir.expand(this.dist('s')), ...deps.map(d => d.expand(this.dist('s')))],
-    //   }
-    // }
+    const packDir = path.join(dir, PACK_DIR)
+    const packDirSrc = path.join(packDir, this.src)
+    fs.mkdirSync(packDirSrc, { recursive: true })
+    fs.cpSync(path.join(dir, this.dist('s')), packDirSrc, { recursive: true })
 
     this.logger.info(`updated packagejson is ${JSON.stringify(packageDef)}`)
     const packageJsonPath = path.join(dir, PACK_DIR, 'package.json')
@@ -679,7 +610,7 @@ export class YarnRepoProtocol implements RepoProtocol {
       throw new Error(`Failed to write new package definition at ${packageJsonPath}: ${e}`)
     }
 
-    return ret
+    return 'OK'
   }
 
   private async getYarnInfo(rootDir: RepoRoot): Promise<YarnWorkspacesInfo> {
