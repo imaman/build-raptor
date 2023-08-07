@@ -597,9 +597,9 @@ export class YarnRepoProtocol implements RepoProtocol {
   private async pack(u: UnitMetadata, dir: string): Promise<ExitStatus> {
     const packageDef = await this.computePackingPackageJson(u.id)
     const packDir = path.join(dir, PACK_DIR)
-    const packDirSrc = path.join(packDir, this.src)
-    fs.mkdirSync(packDirSrc, { recursive: true })
-    fs.cpSync(path.join(dir, this.dist('s')), packDirSrc, { recursive: true })
+    const packDirDistSrc = path.join(packDir, 'dist', this.src)
+    fs.mkdirSync(packDirDistSrc, { recursive: true })
+    fs.cpSync(path.join(dir, this.dist('s')), packDirDistSrc, { recursive: true })
 
     this.logger.info(`updated packagejson is ${JSON.stringify(packageDef)}`)
     const packageJsonPath = path.join(dir, PACK_DIR, 'package.json')
