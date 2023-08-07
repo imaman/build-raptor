@@ -584,8 +584,9 @@ export class YarnRepoProtocol implements RepoProtocol {
     // TODO(imaman): cover (the cloning).
     // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     const ret = JSON.parse(JSON.stringify(this.getPackageJson(unitId))) as PackageJson
+    ret.files = [this.dist()]
     ret.dependencies = pairsToRecord(outOfRepoDeps.sort().map(d => [d, this.getVersionOfDep(d)]))
-    ret.main = MAIN_FILE_NAME
+    ret.main = path.join(this.dist('s'), 'index.js')
     delete ret.devDependencies
     return ret
   }
@@ -597,12 +598,28 @@ export class YarnRepoProtocol implements RepoProtocol {
   private async pack(u: UnitMetadata, dir: string): Promise<ExitStatus> {
     const packageDef = await this.computePackingPackageJson(u.id)
     const packDir = path.join(dir, PACK_DIR)
-    const packDirDistSrc = path.join(packDir, 'dist', this.src)
+    const packDirDist = path.join(packDir, 'dist')
+    const packDirDistSrc = path.join(packDirDist, this.src)
+    const packDirDistDeps = path.join(packDirDist, 'deps')
+    const packDirDistNodeModules = path.join(packDirDist, 'node_modules')
     fs.mkdirSync(packDirDistSrc, { recursive: true })
     fs.cpSync(path.join(dir, this.dist('s')), packDirDistSrc, { recursive: true })
 
     this.logger.info(`updated packagejson is ${JSON.stringify(packageDef)}`)
     const packageJsonPath = path.join(dir, PACK_DIR, 'package.json')
+
+    fs.mkdirSync(packDirDistNodeModules)
+    const depUnits = this.state.graph
+      .traverseFrom(u.id, { direction: 'forward' })
+      .filter(at => at !== u.id)
+      .map(at => this.unitOf(at))
+    for (const at of depUnits) {
+      const d = path.join(packDirDistDeps, at.id)
+      fs.mkdirSync(d, { recursive: true })
+      fs.cpSync(this.state.rootDir.resolve(at.pathInRepo.expand(this.dist('s'))), d, { recursive: true })
+      const symlinkLoc = path.join(packDirDistNodeModules, at.id)
+      fs.symlinkSync(path.relative(path.dirname(symlinkLoc), d), symlinkLoc)
+    }
 
     try {
       fs.writeFileSync(packageJsonPath, JSON.stringify(packageDef, null, 2))
@@ -724,7 +741,7 @@ export class YarnRepoProtocol implements RepoProtocol {
       .map(at => this.unitOf(at).pathInRepo)
     return {
       taskName: TaskName(u.id, TaskKind('pack')),
-      outputLocations: [{ pathInRepo: dir.expand(PACK_DIR), purge: 'NEVER' }],
+      outputLocations: [{ pathInRepo: dir.expand(PACK_DIR), purge: 'ALWAYS' }],
       inputs: [dir.expand(this.dist('s')), ...deps.map(d => d.expand(this.dist('s')))],
     }
   }
@@ -787,7 +804,6 @@ export class YarnRepoProtocol implements RepoProtocol {
 }
 
 const PACK_DIR = 'pack'
-const MAIN_FILE_NAME = 'main.js'
 
 function computeUnits(yarnInfo: YarnWorkspacesInfo): UnitMetadata[] {
   const ret: UnitMetadata[] = []
