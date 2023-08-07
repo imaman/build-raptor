@@ -633,25 +633,6 @@ export class YarnRepoProtocol implements RepoProtocol {
               }
             },
           ],
-          resolve: {
-            fallback: {},
-            extensions: ['.ts', '.tsx', '.js'],
-            alias: Object.fromEntries(
-              this.state.units.map(u => [u.id, this.state.rootDir.resolve(u.pathInRepo.expand('src/index.ts'))]),
-            ),
-            // {
-            //   ['shopping-app-core']: path.resolve(__dirname, '../shopping-app-core/src/index.ts'),
-            //   ['online-shopping-api']: path.resolve(__dirname, '../online-shopping-api/src/index.ts'),
-            //   ['node-platform']: path.resolve(__dirname, '../browser-platform/src/index.ts'),
-            //   ['online-shopping-service']: path.resolve(__dirname, '../online-shopping-service/src/index.ts'),
-            //   ['online-shopping-endpoints']: path.resolve(__dirname, '../online-shopping-endpoints/src/index.ts'),
-            //   ['misc-clock']: path.resolve(__dirname, '../misc-clock/src/index.ts'),
-            //   ['misc-crypto']: path.resolve(__dirname, '../misc-crypto/src/index.ts'),
-            //   ['misc']: path.resolve(__dirname, '../misc/src/index.ts'),
-            //   ['duration']: path.resolve(__dirname, '../duration/src/index.ts'),
-            //   ['blockchain-proxy-api']: path.resolve(__dirname, '../blockchain-proxy-api/src/index.ts'),
-            // },
-          },
         },
         async (err, stats) => {
           if (err) {
