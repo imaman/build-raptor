@@ -597,27 +597,26 @@ export class YarnRepoProtocol implements RepoProtocol {
 
   private async pack(u: UnitMetadata, dir: string): Promise<ExitStatus> {
     const packageDef = await this.computePackingPackageJson(u.id)
-    const packDir = path.join(dir, PACK_DIR)
-    const packDirDist = path.join(packDir, 'dist')
-    const packDirDistSrc = path.join(packDirDist, this.src)
-    const packDirDistDeps = path.join(packDirDist, 'deps')
-    const packDirDistNodeModules = path.join(packDirDist, 'node_modules')
-    fs.mkdirSync(packDirDistSrc, { recursive: true })
-    fs.cpSync(path.join(dir, this.dist('s')), packDirDistSrc, { recursive: true })
+    const packDist = path.join(path.join(dir, PACK_DIR), 'dist')
+    const packDistSrc = path.join(packDist, this.src)
+    const packDistDeps = path.join(packDist, 'deps')
+    const packDistNodeModules = path.join(packDist, 'node_modules')
+    fs.mkdirSync(packDistSrc, { recursive: true })
+    fs.cpSync(path.join(dir, this.dist('s')), packDistSrc, { recursive: true })
 
     this.logger.info(`updated packagejson is ${JSON.stringify(packageDef)}`)
     const packageJsonPath = path.join(dir, PACK_DIR, 'package.json')
 
-    fs.mkdirSync(packDirDistNodeModules)
+    fs.mkdirSync(packDistNodeModules)
     const depUnits = this.state.graph
       .traverseFrom(u.id, { direction: 'forward' })
       .filter(at => at !== u.id)
       .map(at => this.unitOf(at))
     for (const at of depUnits) {
-      const d = path.join(packDirDistDeps, at.id)
+      const d = path.join(packDistDeps, at.id)
       fs.mkdirSync(d, { recursive: true })
       fs.cpSync(this.state.rootDir.resolve(at.pathInRepo.expand(this.dist('s'))), d, { recursive: true })
-      const symlinkLoc = path.join(packDirDistNodeModules, at.id)
+      const symlinkLoc = path.join(packDistNodeModules, at.id)
       fs.symlinkSync(path.relative(path.dirname(symlinkLoc), d), symlinkLoc)
     }
 
