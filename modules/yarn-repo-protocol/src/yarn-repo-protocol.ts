@@ -587,6 +587,10 @@ export class YarnRepoProtocol implements RepoProtocol {
     ret.files = [this.dist()]
     ret.dependencies = pairsToRecord(outOfRepoDeps.sort().map(d => [d, this.getVersionOfDep(d)]))
     ret.main = path.join(this.dist('s'), 'index.js')
+    ret.scripts = ret.scripts ?? {}
+    const earlier = ret.scripts.postinstall ? ` && ${ret.scripts.postinstall}` : ''
+    // TODO(imaman): use a node program to do that (to make it portable)
+    ret.scripts.postinstall = `mv dist/links dist/node_modules${earlier}`
     delete ret.devDependencies
     return ret
   }
@@ -600,14 +604,14 @@ export class YarnRepoProtocol implements RepoProtocol {
     const packDist = path.join(path.join(dir, PACK_DIR), 'dist')
     const packDistSrc = path.join(packDist, this.src)
     const packDistDeps = path.join(packDist, 'deps')
-    const packDistNodeModules = path.join(packDist, 'node_modules')
+    const packDistLinks = path.join(packDist, 'links')
     fs.mkdirSync(packDistSrc, { recursive: true })
     fs.cpSync(path.join(dir, this.dist('s')), packDistSrc, { recursive: true })
 
     this.logger.info(`updated packagejson is ${JSON.stringify(packageDef)}`)
     const packageJsonPath = path.join(dir, PACK_DIR, 'package.json')
 
-    fs.mkdirSync(packDistNodeModules)
+    fs.mkdirSync(packDistLinks)
     const depUnits = this.state.graph
       .traverseFrom(u.id, { direction: 'forward' })
       .filter(at => at !== u.id)
@@ -616,7 +620,7 @@ export class YarnRepoProtocol implements RepoProtocol {
       const d = path.join(packDistDeps, at.id)
       fs.mkdirSync(d, { recursive: true })
       fs.cpSync(this.state.rootDir.resolve(at.pathInRepo.expand(this.dist('s'))), d, { recursive: true })
-      const symlinkLoc = path.join(packDistNodeModules, at.id)
+      const symlinkLoc = path.join(packDistLinks, at.id)
       fs.symlinkSync(path.relative(path.dirname(symlinkLoc), d), symlinkLoc)
     }
 
