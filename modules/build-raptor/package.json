@@ -6,9 +6,10 @@
   "license": "MIT",
   "author": "",
   "main": "dist/src/index.js",
-  "bin": "main.js",
+  "bin": "dist/src/main.js",
   "scripts": {
     "build": "tsc -b",
+    "build:post": "chmod 755 dist/src/main.js",
     "ncc": "ncc build/src/index.js -o build/src/index.node.js",
     "prepare-assets": "echo 'abc' > prepared-assets/x2 && echo 'def' > prepared-assets/y2",
     "test": "jest"

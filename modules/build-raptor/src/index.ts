@@ -1,2 +1,1 @@
-#!/usr/bin/env node
-export * from './build-raptor-cli'
+export { run } from './build-raptor-cli'

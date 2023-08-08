@@ -32,8 +32,6 @@ import { TaskKind, TaskName } from 'task-name'
 import * as Tmp from 'tmp-promise'
 import { PackageJson, TsConfigJson } from 'type-fest'
 import { UnitId, UnitMetadata } from 'unit-metadata'
-import webpack, { Stats, WebpackPluginInstance } from 'webpack'
-import ShebangPlugin from 'webpack-shebang-plugin'
 import { z } from 'zod'
 
 import { RerunList } from './rerun-list'
@@ -389,13 +387,9 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
 
     if (taskKind === 'pack') {
-      const stat = await this.pack(u, dir)
-      if (stat?.hasErrors()) {
-        await fse.writeFile(outputFile, JSON.stringify(stat?.toJson('errors-only'), null, 2))
-      } else {
-        await fse.writeFile(outputFile, '')
-      }
-      return stat?.hasErrors() ? 'FAIL' : 'OK'
+      const ret = await this.pack(u, dir)
+      await fse.writeFile(outputFile, '')
+      return ret
     }
 
     if (taskKind === 'publish-assets') {
@@ -590,8 +584,9 @@ export class YarnRepoProtocol implements RepoProtocol {
     // TODO(imaman): cover (the cloning).
     // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     const ret = JSON.parse(JSON.stringify(this.getPackageJson(unitId))) as PackageJson
+    ret.files = [this.dist()]
     ret.dependencies = pairsToRecord(outOfRepoDeps.sort().map(d => [d, this.getVersionOfDep(d)]))
-    ret.main = MAIN_FILE_NAME
+    ret.main = path.join(this.dist('s'), 'index.js')
     delete ret.devDependencies
     return ret
   }
@@ -600,62 +595,38 @@ export class YarnRepoProtocol implements RepoProtocol {
     return hardGet(this.state.versionByPackageId, d)
   }
 
-  private async pack(u: UnitMetadata, dir: string): Promise<Stats | undefined> {
-    const inrepo: string[] = this.state.units.map(u => u.id)
-    const ret = await new Promise<Stats | undefined>(resolve => {
-      webpack(
-        {
-          context: dir,
-          entry: `./${this.dist('s')}/index.js`,
-          output: {
-            filename: `${PACK_DIR}/${MAIN_FILE_NAME}`,
-            path: dir,
-          },
-          mode: 'production', // intentional
-          // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-          plugins: [new ShebangPlugin() as WebpackPluginInstance],
-          externals: [
-            function (arg, callback) {
-              const req = arg.request ?? ''
-              let decision = 'R'
-              if (req.startsWith('.')) {
-                decision = 'bundle'
-              }
-
-              if (inrepo.includes(req)) {
-                decision = 'bundle'
-              }
-
-              if (decision === 'bundle') {
-                callback()
-              } else {
-                callback(undefined, 'commonjs ' + req)
-              }
-            },
-          ],
-        },
-        async (err, stats) => {
-          if (err) {
-            this.logger.error(`packing of ${dir} failed`, err)
-            throw new Error(`packing ${u.id} failed`)
-          }
-
-          resolve(stats)
-        },
-      )
-    })
-
+  private async pack(u: UnitMetadata, dir: string): Promise<ExitStatus> {
     const packageDef = await this.computePackingPackageJson(u.id)
+    const packDist = path.join(path.join(dir, PACK_DIR), 'dist')
+    const packDistSrc = path.join(packDist, this.src)
+    const packDistDeps = path.join(packDist, 'deps')
+    const packDistNodeModules = path.join(packDist, 'node_modules')
+    fs.mkdirSync(packDistSrc, { recursive: true })
+    fs.cpSync(path.join(dir, this.dist('s')), packDistSrc, { recursive: true })
+
     this.logger.info(`updated packagejson is ${JSON.stringify(packageDef)}`)
     const packageJsonPath = path.join(dir, PACK_DIR, 'package.json')
 
+    fs.mkdirSync(packDistNodeModules)
+    const depUnits = this.state.graph
+      .traverseFrom(u.id, { direction: 'forward' })
+      .filter(at => at !== u.id)
+      .map(at => this.unitOf(at))
+    for (const at of depUnits) {
+      const d = path.join(packDistDeps, at.id)
+      fs.mkdirSync(d, { recursive: true })
+      fs.cpSync(this.state.rootDir.resolve(at.pathInRepo.expand(this.dist('s'))), d, { recursive: true })
+      const symlinkLoc = path.join(packDistNodeModules, at.id)
+      fs.symlinkSync(path.relative(path.dirname(symlinkLoc), d), symlinkLoc)
+    }
+
     try {
-      await fse.writeFile(packageJsonPath, JSON.stringify(packageDef, null, 2))
+      fs.writeFileSync(packageJsonPath, JSON.stringify(packageDef, null, 2))
     } catch (e) {
       throw new Error(`Failed to write new package definition at ${packageJsonPath}: ${e}`)
     }
 
-    return ret
+    return 'OK'
   }
 
   private async getYarnInfo(rootDir: RepoRoot): Promise<YarnWorkspacesInfo> {
@@ -769,7 +740,7 @@ export class YarnRepoProtocol implements RepoProtocol {
       .map(at => this.unitOf(at).pathInRepo)
     return {
       taskName: TaskName(u.id, TaskKind('pack')),
-      outputLocations: [{ pathInRepo: dir.expand(PACK_DIR), purge: 'NEVER' }],
+      outputLocations: [{ pathInRepo: dir.expand(PACK_DIR), purge: 'ALWAYS' }],
       inputs: [dir.expand(this.dist('s')), ...deps.map(d => d.expand(this.dist('s')))],
     }
   }
@@ -832,7 +803,6 @@ export class YarnRepoProtocol implements RepoProtocol {
 }
 
 const PACK_DIR = 'pack'
-const MAIN_FILE_NAME = 'main.js'
 
 function computeUnits(yarnInfo: YarnWorkspacesInfo): UnitMetadata[] {
   const ret: UnitMetadata[] = []
