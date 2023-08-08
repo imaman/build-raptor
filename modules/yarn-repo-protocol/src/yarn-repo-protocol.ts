@@ -590,7 +590,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     ret.scripts = ret.scripts ?? {}
     const earlier = ret.scripts.postinstall ? ` && ${ret.scripts.postinstall}` : ''
     // TODO(imaman): use a node program to do that (to make it portable)
-    ret.scripts.postinstall = `mv dist/links dist/node_modules${earlier}`
+    ret.scripts.postinstall = `cp -r dist/links dist/node_modules${earlier}`
     delete ret.devDependencies
     return ret
   }
