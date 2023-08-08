@@ -130,45 +130,45 @@ describe('yarn-repo-protocol', () => {
         scripts: { postinstall: 'mv dist/links dist/node_modules' },
       })
     })
-  })
-  test('does not include out-of-repo dev-dependencies of an in-repo dep', async () => {
-    const d = await makeFolder({
-      'package.json': { workspaces: ['modules/*'], private: true },
-      'modules/a/package.json': { name: 'a', version: '1.0.0', dependencies: { b: '1.0.0', c: '1.0.0' } },
-      'modules/b/package.json': { name: 'b', version: '1.0.0', dependencies: { x: '100.1.0' } },
-      'modules/c/package.json': { name: 'c', version: '1.0.0', devDependencies: { y: '200.1.0' } },
+    test('does not include out-of-repo dev-dependencies of an in-repo dep', async () => {
+      const d = await makeFolder({
+        'package.json': { workspaces: ['modules/*'], private: true },
+        'modules/a/package.json': { name: 'a', version: '1.0.0', dependencies: { b: '1.0.0', c: '1.0.0' } },
+        'modules/b/package.json': { name: 'b', version: '1.0.0', dependencies: { x: '100.1.0' } },
+        'modules/c/package.json': { name: 'c', version: '1.0.0', devDependencies: { y: '200.1.0' } },
+      })
+
+      const yrp = newYarnRepoProtocol()
+      await yrp.initialize(d, p)
+
+      expect(await yrp.computePackingPackageJson(UnitId('a'))).toEqual({
+        name: 'a',
+        version: '1.0.0',
+        main: 'dist/src/index.js',
+        files: ['dist'],
+        dependencies: { x: '100.1.0' },
+        scripts: { postinstall: 'mv dist/links dist/node_modules' },
+      })
     })
+    test('does not include dependencies (dev or not) of an in-repo dev-dependency', async () => {
+      const d = await makeFolder({
+        'package.json': { workspaces: ['modules/*'], private: true },
+        'modules/a/package.json': { name: 'a', version: '1.0.0', devDependencies: { b: '1.0.0' } },
+        'modules/b/package.json': { name: 'b', version: '1.0.0', dependencies: { c: '1.0.0', x: '100.1.0' } },
+        'modules/c/package.json': { name: 'c', version: '1.0.0', devDependencies: { y: '200.1.0' } },
+      })
 
-    const yrp = newYarnRepoProtocol()
-    await yrp.initialize(d, p)
+      const yrp = newYarnRepoProtocol()
+      await yrp.initialize(d, p)
 
-    expect(await yrp.computePackingPackageJson(UnitId('a'))).toEqual({
-      name: 'a',
-      version: '1.0.0',
-      main: 'dist/src/index.js',
-      files: ['dist'],
-      dependencies: { x: '100.1.0' },
-      scripts: { postinstall: 'mv dist/links dist/node_modules' },
-    })
-  })
-  test('does not include dependencies (dev or not) of an in-repo dev-dependency', async () => {
-    const d = await makeFolder({
-      'package.json': { workspaces: ['modules/*'], private: true },
-      'modules/a/package.json': { name: 'a', version: '1.0.0', devDependencies: { b: '1.0.0' } },
-      'modules/b/package.json': { name: 'b', version: '1.0.0', dependencies: { c: '1.0.0', x: '100.1.0' } },
-      'modules/c/package.json': { name: 'c', version: '1.0.0', devDependencies: { y: '200.1.0' } },
-    })
-
-    const yrp = newYarnRepoProtocol()
-    await yrp.initialize(d, p)
-
-    expect(await yrp.computePackingPackageJson(UnitId('a'))).toEqual({
-      name: 'a',
-      version: '1.0.0',
-      main: 'dist/src/index.js',
-      files: ['dist'],
-      scripts: { postinstall: 'mv dist/links dist/node_modules' },
-      dependencies: {},
+      expect(await yrp.computePackingPackageJson(UnitId('a'))).toEqual({
+        name: 'a',
+        version: '1.0.0',
+        main: 'dist/src/index.js',
+        files: ['dist'],
+        scripts: { postinstall: 'mv dist/links dist/node_modules' },
+        dependencies: {},
+      })
     })
   })
   describe('generation of tsconfig.json files', () => {
