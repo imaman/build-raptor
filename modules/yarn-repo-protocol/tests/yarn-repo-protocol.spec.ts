@@ -86,6 +86,7 @@ describe('yarn-repo-protocol', () => {
         version: '1.0.0',
         main: 'dist/src/index.js',
         files: ['dist'],
+        scripts: { postinstall: 'mv dist/links dist/node_modules' },
         dependencies: {
           boo: '200.1.0',
           foo: '400.1.0',
@@ -110,6 +111,7 @@ describe('yarn-repo-protocol', () => {
         main: 'dist/src/index.js',
         files: ['dist'],
         dependencies: { x: '100.1.0' },
+        scripts: { postinstall: 'mv dist/links dist/node_modules' },
       })
       expect(await yrp.computePackingPackageJson(UnitId('b'))).toEqual({
         name: 'b',
@@ -117,6 +119,7 @@ describe('yarn-repo-protocol', () => {
         main: 'dist/src/index.js',
         files: ['dist'],
         dependencies: { x: '100.1.0' },
+        scripts: { postinstall: 'mv dist/links dist/node_modules' },
       })
       expect(await yrp.computePackingPackageJson(UnitId('c'))).toEqual({
         name: 'c',
@@ -124,6 +127,7 @@ describe('yarn-repo-protocol', () => {
         main: 'dist/src/index.js',
         files: ['dist'],
         dependencies: { y: '200.1.0' },
+        scripts: { postinstall: 'mv dist/links dist/node_modules' },
       })
     })
   })
@@ -144,6 +148,7 @@ describe('yarn-repo-protocol', () => {
       main: 'dist/src/index.js',
       files: ['dist'],
       dependencies: { x: '100.1.0' },
+      scripts: { postinstall: 'mv dist/links dist/node_modules' },
     })
   })
   test('does not include dependencies (dev or not) of an in-repo dev-dependency', async () => {
@@ -162,6 +167,7 @@ describe('yarn-repo-protocol', () => {
       version: '1.0.0',
       main: 'dist/src/index.js',
       files: ['dist'],
+      scripts: { postinstall: 'mv dist/links dist/node_modules' },
       dependencies: {},
     })
   })
