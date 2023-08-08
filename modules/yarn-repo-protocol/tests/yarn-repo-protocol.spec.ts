@@ -170,6 +170,36 @@ describe('yarn-repo-protocol', () => {
         dependencies: {},
       })
     })
+    test('retains pre-existing run scripts', async () => {
+      const d = await makeFolder({
+        'package.json': { workspaces: ['modules/*'], private: true },
+        'modules/a/package.json': { name: 'a', version: '1.0.0', scripts: { foo: 'I AM FOO', boo: 'I AM BOO' } },
+      })
+
+      const yrp = newYarnRepoProtocol()
+      await yrp.initialize(d, p)
+
+      const actual = await yrp.computePackingPackageJson(UnitId('a'))
+      expect(actual.scripts).toEqual({
+        postinstall: 'mv dist/links dist/node_modules',
+        foo: 'I AM FOO',
+        boo: 'I AM BOO',
+      })
+    })
+    test('retains a pre-existing postinstall script', async () => {
+      const d = await makeFolder({
+        'package.json': { workspaces: ['modules/*'], private: true },
+        'modules/a/package.json': { name: 'a', version: '1.0.0', scripts: { postinstall: 'quick-brown-fox' } },
+      })
+
+      const yrp = newYarnRepoProtocol()
+      await yrp.initialize(d, p)
+
+      const actual = await yrp.computePackingPackageJson(UnitId('a'))
+      expect(actual.scripts).toEqual({
+        postinstall: 'mv dist/links dist/node_modules && quick-brown-fox',
+      })
+    })
   })
   describe('generation of tsconfig.json files', () => {
     test(`basics`, async () => {
