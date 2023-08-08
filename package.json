@@ -3,7 +3,11 @@
   "version": "1.0.0",
   "private": true,
   "description": "monorepo of the build-raptor project",
-  "keywords": [],
+  "keywords": [
+    "build",
+    "typscript",
+    "monorepo"
+  ],
   "license": "ISC",
   "author": "imaman",
   "workspaces": [
