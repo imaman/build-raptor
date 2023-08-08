@@ -583,7 +583,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
     // TODO(imaman): cover (the cloning).
     // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-    const ret = JSON.parse(JSON.stringify(this.getPackageJson(unitId))) as PackageJson
+    const ret = JSON.parse(JSON.stringify(this.getPackageJson(unitId))) as PackageJson & { nohoist?: boolean }
     ret.files = [this.dist()]
     ret.dependencies = pairsToRecord(outOfRepoDeps.sort().map(d => [d, this.getVersionOfDep(d)]))
     ret.main = path.join(this.dist('s'), 'index.js')
@@ -594,6 +594,7 @@ export class YarnRepoProtocol implements RepoProtocol {
       'mkdir -p dist/node_modules && ls -1  dist/deps | while read p; do ln -s ../deps/${p} dist/node_modules/${p}; done' +
       earlier
     delete ret.devDependencies
+    ret.nohoist = true
     return ret
   }
 
