@@ -86,7 +86,7 @@ describe('yarn-repo-protocol', () => {
         version: '1.0.0',
         main: 'dist/src/index.js',
         files: ['dist'],
-        scripts: { postinstall: 'mv dist/links dist/node_modules' },
+        scripts: { postinstall: 'cp -r dist/links dist/node_modules' },
         dependencies: {
           boo: '200.1.0',
           foo: '400.1.0',
@@ -111,7 +111,7 @@ describe('yarn-repo-protocol', () => {
         main: 'dist/src/index.js',
         files: ['dist'],
         dependencies: { x: '100.1.0' },
-        scripts: { postinstall: 'mv dist/links dist/node_modules' },
+        scripts: { postinstall: 'cp -r dist/links dist/node_modules' },
       })
       expect(await yrp.computePackingPackageJson(UnitId('b'))).toEqual({
         name: 'b',
@@ -119,7 +119,7 @@ describe('yarn-repo-protocol', () => {
         main: 'dist/src/index.js',
         files: ['dist'],
         dependencies: { x: '100.1.0' },
-        scripts: { postinstall: 'mv dist/links dist/node_modules' },
+        scripts: { postinstall: 'cp -r dist/links dist/node_modules' },
       })
       expect(await yrp.computePackingPackageJson(UnitId('c'))).toEqual({
         name: 'c',
@@ -127,7 +127,7 @@ describe('yarn-repo-protocol', () => {
         main: 'dist/src/index.js',
         files: ['dist'],
         dependencies: { y: '200.1.0' },
-        scripts: { postinstall: 'mv dist/links dist/node_modules' },
+        scripts: { postinstall: 'cp -r dist/links dist/node_modules' },
       })
     })
     test('does not include out-of-repo dev-dependencies of an in-repo dep', async () => {
@@ -147,7 +147,7 @@ describe('yarn-repo-protocol', () => {
         main: 'dist/src/index.js',
         files: ['dist'],
         dependencies: { x: '100.1.0' },
-        scripts: { postinstall: 'mv dist/links dist/node_modules' },
+        scripts: { postinstall: 'cp -r dist/links dist/node_modules' },
       })
     })
     test('does not include dependencies (dev or not) of an in-repo dev-dependency', async () => {
@@ -166,7 +166,7 @@ describe('yarn-repo-protocol', () => {
         version: '1.0.0',
         main: 'dist/src/index.js',
         files: ['dist'],
-        scripts: { postinstall: 'mv dist/links dist/node_modules' },
+        scripts: { postinstall: 'cp -r dist/links dist/node_modules' },
         dependencies: {},
       })
     })
@@ -181,7 +181,7 @@ describe('yarn-repo-protocol', () => {
 
       const actual = await yrp.computePackingPackageJson(UnitId('a'))
       expect(actual.scripts).toEqual({
-        postinstall: 'mv dist/links dist/node_modules',
+        postinstall: 'cp -r dist/links dist/node_modules',
         foo: 'I AM FOO',
         boo: 'I AM BOO',
       })
@@ -197,7 +197,7 @@ describe('yarn-repo-protocol', () => {
 
       const actual = await yrp.computePackingPackageJson(UnitId('a'))
       expect(actual.scripts).toEqual({
-        postinstall: 'mv dist/links dist/node_modules && quick-brown-fox',
+        postinstall: 'cp -r dist/links dist/node_modules && quick-brown-fox',
       })
     })
   })
