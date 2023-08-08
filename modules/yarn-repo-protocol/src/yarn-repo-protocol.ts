@@ -606,14 +606,12 @@ export class YarnRepoProtocol implements RepoProtocol {
     const packDist = path.join(path.join(dir, PACK_DIR), 'dist')
     const packDistSrc = path.join(packDist, this.src)
     const packDistDeps = path.join(packDist, 'deps')
-    const packDistLinks = path.join(packDist, 'links')
     fs.mkdirSync(packDistSrc, { recursive: true })
     fs.cpSync(path.join(dir, this.dist('s')), packDistSrc, { recursive: true })
 
     this.logger.info(`updated packagejson is ${JSON.stringify(packageDef)}`)
     const packageJsonPath = path.join(dir, PACK_DIR, 'package.json')
 
-    fs.mkdirSync(packDistLinks)
     const depUnits = this.state.graph
       .traverseFrom(u.id, { direction: 'forward' })
       .filter(at => at !== u.id)
@@ -622,8 +620,6 @@ export class YarnRepoProtocol implements RepoProtocol {
       const d = path.join(packDistDeps, at.id)
       fs.mkdirSync(d, { recursive: true })
       fs.cpSync(this.state.rootDir.resolve(at.pathInRepo.expand(this.dist('s'))), d, { recursive: true })
-      const symlinkLoc = path.join(packDistLinks, at.id)
-      fs.symlinkSync(path.relative(path.dirname(symlinkLoc), d), symlinkLoc)
     }
 
     try {
