@@ -84,7 +84,8 @@ describe('yarn-repo-protocol', () => {
       expect(await yrp.computePackingPackageJson(UnitId('a'))).toMatchObject({
         name: 'a',
         version: '1.0.0',
-        main: 'main.js',
+        main: 'dist/src/index.js',
+        files: ['dist'],
         dependencies: {
           boo: '200.1.0',
           foo: '400.1.0',
@@ -106,19 +107,22 @@ describe('yarn-repo-protocol', () => {
       expect(await yrp.computePackingPackageJson(UnitId('a'))).toEqual({
         name: 'a',
         version: '1.0.0',
-        main: 'main.js',
+        main: 'dist/src/index.js',
+        files: ['dist'],
         dependencies: { x: '100.1.0' },
       })
       expect(await yrp.computePackingPackageJson(UnitId('b'))).toEqual({
         name: 'b',
         version: '1.0.0',
-        main: 'main.js',
+        main: 'dist/src/index.js',
+        files: ['dist'],
         dependencies: { x: '100.1.0' },
       })
       expect(await yrp.computePackingPackageJson(UnitId('c'))).toEqual({
         name: 'c',
         version: '1.0.0',
-        main: 'main.js',
+        main: 'dist/src/index.js',
+        files: ['dist'],
         dependencies: { y: '200.1.0' },
       })
     })
@@ -137,7 +141,8 @@ describe('yarn-repo-protocol', () => {
     expect(await yrp.computePackingPackageJson(UnitId('a'))).toEqual({
       name: 'a',
       version: '1.0.0',
-      main: 'main.js',
+      main: 'dist/src/index.js',
+      files: ['dist'],
       dependencies: { x: '100.1.0' },
     })
   })
@@ -155,7 +160,8 @@ describe('yarn-repo-protocol', () => {
     expect(await yrp.computePackingPackageJson(UnitId('a'))).toEqual({
       name: 'a',
       version: '1.0.0',
-      main: 'main.js',
+      main: 'dist/src/index.js',
+      files: ['dist'],
       dependencies: {},
     })
   })
