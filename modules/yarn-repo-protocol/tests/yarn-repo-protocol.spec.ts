@@ -174,13 +174,6 @@ describe('yarn-repo-protocol', () => {
       const actual = await yrp.computePackingPackageJson(UnitId('a'))
       expect(actual.dependencies).toEqual({})
       expect(actual.devDependencies).toBe(undefined)
-
-      // name: 'a',
-      // version: '1.0.0',
-      // main: 'dist/src/index.js',
-      // files: ['dist'],
-      // scripts: { postinstall: 'cp -r dist/links dist/node_modules' },
-      // dependencies: {},
     })
     test('retains pre-existing run scripts', async () => {
       const d = await makeFolder({
