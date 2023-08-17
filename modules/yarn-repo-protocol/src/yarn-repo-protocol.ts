@@ -629,6 +629,24 @@ export class YarnRepoProtocol implements RepoProtocol {
       throw new Error(`Failed to write new package definition at ${packageJsonPath}: ${e}`)
     }
 
+    fs.writeFileSync(
+      path.join(dir, PACK_DIR, 'postinstall.js'),
+      [
+        'const fs = require(`fs`)',
+        '',
+        'function main() {',
+        '  const distNodeModules = `dist/node_modules`',
+        '  fs.rmSync(distNodeModules, {force: true, recursive: true})',
+        '  fs.mkdirSync(distNodeModules, {recursive: true})',
+        '  for (const p of fs.readdirSync(`dist/deps`)) {',
+        '    fs.symlinkSync(`../deps/${p}`, `${distNodeModules}/${p}`)',
+        '  }',
+        '}',
+        '',
+        'main()',
+      ].join('\n'),
+    )
+
     return 'OK'
   }
 
