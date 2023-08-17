@@ -79,6 +79,29 @@ describe('yarn-repo-protocol', () => {
       }
     }
 
+    test('essentials - forbids hoisting, sets a postinstall script', async () => {
+      const d = await makeFolder({
+        'package.json': { workspaces: ['modules/*'], private: true },
+        'modules/a/package.json': { name: 'a', version: '1.0.0', dependencies: {} },
+      })
+
+      const yrp = newYarnRepoProtocol()
+      await yrp.initialize(d, p)
+
+      const actual = await yrp.computePackingPackageJson(UnitId('a'))
+      expect(actual).toEqual({
+        name: 'a',
+        version: '1.0.0',
+        files: ['dist'],
+        main: 'dist/src/index.js',
+        dependencies: {},
+        nohoist: true,
+        scripts: {
+          postinstall:
+            'mkdir -p dist/node_modules && ls -1  dist/deps | while read p; do ln -s ../deps/${p} dist/node_modules/${p}; done',
+        },
+      })
+    })
     test('includes out-of-repo deps of all in-repo deps (sorted)', async () => {
       const d = await makeFolder({
         'package.json': { workspaces: ['modules/*'], private: true },
@@ -136,13 +159,6 @@ describe('yarn-repo-protocol', () => {
       const actual = await yrp.computePackingPackageJson(UnitId('a'))
       expect(actual.dependencies).toEqual({ x: '100.1.0' })
       expect(actual.devDependencies).toBe(undefined)
-      // name: 'a',
-      // version: '1.0.0',
-      // main: 'dist/src/index.js',
-      // files: ['dist'],
-      // dependencies: { x: '100.1.0' },
-      // scripts: { postinstall: 'cp -r dist/links dist/node_modules' },
-      // })
     })
     test('does not include dependencies (dev or not) of an in-repo dev-dependency', async () => {
       const d = await makeFolder({
