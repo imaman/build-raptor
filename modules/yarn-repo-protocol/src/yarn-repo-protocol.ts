@@ -470,6 +470,9 @@ export class YarnRepoProtocol implements RepoProtocol {
       reporterOutput = ReporterOutput.parse(parsed)
     } catch (e) {
       const output = fs.readFileSync(outputFile, 'utf-8')
+      if (latest.trim().length === 0 && output.trim().length > 0) {
+        this.logger.print(`No jest tests were invoked. Jest output:\n${output}`)
+      }
       const limit = 512
       this.logger.error(
         `crashing due to jest output file parsing error: ${JSON.stringify({
