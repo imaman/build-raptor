@@ -17,6 +17,7 @@ import {
 import * as path from 'path'
 import { RepoProtocol } from 'repo-protocol'
 import { TaskKind, TaskName } from 'task-name'
+import { PackageJson } from 'type-fest'
 import { UnitId } from 'unit-metadata'
 
 import { SimpleNodeRepoProtocol } from './simple-node-repo-protocol'
@@ -284,8 +285,13 @@ export class Driver {
     return new Repo(recipe, this)
   }
 
-  packageJson(packageName: string, dependencies: string[] = [], scripts = {}) {
-    return {
+  packageJson(
+    packageName: string,
+    dependencies: string[] = [],
+    scripts = {},
+    mutator: (obj: PackageJson) => void = () => {},
+  ) {
+    const ret = {
       name: packageName,
       license: 'UNLICENSED',
       version: '1.0.0',
@@ -301,6 +307,8 @@ export class Driver {
       },
       dependencies: Object.fromEntries(dependencies.map(d => [d, '1.0.0'])),
     }
+    mutator(ret)
+    return ret
   }
 
   async slurpBlob(blobId?: string) {
