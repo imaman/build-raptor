@@ -26,5 +26,8 @@
     "repo-protocol-toolbox": "1.0.0",
     "task-name": "1.0.0",
     "unit-metadata": "1.0.0"
+  },
+  "devDependencies": {
+    "type-fest": "^2.12.2"
   }
 }
