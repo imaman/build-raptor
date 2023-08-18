@@ -653,9 +653,10 @@ export class YarnRepoProtocol implements RepoProtocol {
 
     const preamble = [
       'const fs = require(`fs`)',
-      '',
-      'const distNodeModules = `dist/node_modules`',
-      'const distDeps = `dist/deps`',
+      'const path = require(`path`)',
+      'const dist = path.dirname(__dirname)',
+      'const distNodeModules = path.join(dist, `node_modules`)',
+      'const distDeps = path.join(dist, `deps`)',
       'fs.rmSync(distNodeModules, {force: true, recursive: true})',
       'fs.mkdirSync(distNodeModules, {recursive: true})',
       'if (fs.existsSync(distDeps)) {',
