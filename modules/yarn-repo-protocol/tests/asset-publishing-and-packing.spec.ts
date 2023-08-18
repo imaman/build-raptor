@@ -110,19 +110,19 @@ describe('asset-publishing-and-packing', () => {
       const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
       const recipe = {
         'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
-        'modules/a/package.json': driver.packageJson('a', [], {}),
-        'modules/a/src/index.ts': `export function foo(n: number) { return n*1000 }`,
-        'modules/a/tests/index.spec.ts': ``,
+        'modules/foo/package.json': driver.packageJson('a', [], {}),
+        'modules/foo/src/index.ts': `export function foo(n: number) { return n*1000 }`,
+        'modules/foo/tests/index.spec.ts': ``,
       }
 
       const fork = await driver.repo(recipe).fork()
 
       await fork.run('OK', { taskKind: 'pack' })
 
-      const installFrom = fork.file('modules/a/pack').resolve()
+      const fooPack = fork.file('modules/foo/pack').resolve()
 
       const dir = await folderify({
-        'package.json': { name: 'boo', private: true, version: '1.0.0', dependencies: { foo: installFrom } },
+        'package.json': { name: 'app', private: true, version: '1.0.0', dependencies: { foo: fooPack } },
         'a.js': [`const {foo} = require('foo')`, `console.log(foo(200))`].join('\n'),
       })
 
