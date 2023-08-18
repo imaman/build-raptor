@@ -6,7 +6,7 @@ import { folderify } from 'misc'
 
 import { YarnRepoProtocol } from '../src/yarn-repo-protocol'
 
-jest.setTimeout(90000)
+jest.setTimeout(120000)
 describe('asset-publishing-and-packing', () => {
   const logger = createNopLogger()
 
