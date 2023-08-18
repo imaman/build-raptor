@@ -146,7 +146,7 @@ describe('high-definition-rerun', () => {
     await fork.run('FAIL', { taskKind: 'test', testCaching: false })
     expect(await invoked()).toEqual('P,N')
   })
-  test.only('jest configuration errors are yield a FAIL task status and the jest output is dumped to stdout', async () => {
+  test('jest configuration errors yield a FAIL task status and the jest output is dumped to stdout', async () => {
     const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
