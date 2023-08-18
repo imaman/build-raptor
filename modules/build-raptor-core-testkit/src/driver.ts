@@ -100,7 +100,7 @@ export class Run {
 class File {
   constructor(private readonly rootDir: string, private readonly pathInRepo: string) {}
 
-  private resolve() {
+  resolve() {
     return path.join(this.rootDir, this.pathInRepo)
   }
 

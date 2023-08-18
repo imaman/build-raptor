@@ -1,6 +1,8 @@
 import { NopAssetPublisher } from 'build-raptor-core'
 import { Driver } from 'build-raptor-core-testkit'
+import * as ChildProcess from 'child_process'
 import { createNopLogger } from 'logger'
+import { folderify } from 'misc'
 
 import { YarnRepoProtocol } from '../src/yarn-repo-protocol'
 
@@ -109,30 +111,36 @@ describe('asset-publishing-and-packing', () => {
       const recipe = {
         'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
         'modules/a/package.json': driver.packageJson('a', [], {}),
-        'modules/a/src/a.ts': `export function a(n: number) { return n * 100 }`,
-        'modules/a/tests/a.spec.ts': ``,
+        'modules/a/src/index.ts': `export function foo(n: number) { return n*1000 }`,
+        'modules/a/tests/index.spec.ts': ``,
       }
 
       const fork = await driver.repo(recipe).fork()
 
       await fork.run('OK', { taskKind: 'pack' })
 
-      const packageJson = fork.file('modules/a/pack/package.json').readJson()
-      expect(packageJson).toMatchObject({
-        name: 'a',
-        main: 'dist/src/index.js',
-        nohoist: true,
-        scripts: {
-          build: 'tsc -b',
-          postinstall: 'node postinstall.js',
-          test: 'jest',
+      const installFrom = fork.file('modules/a/pack').resolve()
+
+      const dir = await folderify({
+        'package.json': {
+          name: 'boo',
+          private: true,
+          version: '1.0.0',
+          main: 'index.js',
+          scripts: {},
+          keywords: [],
+          author: '',
+          license: 'ISC',
+          dependencies: {
+            foo: installFrom,
+          },
         },
-        files: ['dist'],
+        'a.js': [`const {foo} = require('foo')`, `console.log(foo(200))`].join('\n'),
       })
 
-      expect(packageJson.devDependencies).toBe(undefined)
-
-      expect(await fork.file('modules/a/pack/postinstall.js').lines()).toEqual([])
+      ChildProcess.execSync(`npm install`, { cwd: dir, encoding: 'utf-8', timeout: 120000 })
+      const output = ChildProcess.execSync(`node a.js`, { cwd: dir, encoding: 'utf-8', timeout: 120000 })
+      expect(output.trim()).toEqual('200000')
     })
   })
 })
