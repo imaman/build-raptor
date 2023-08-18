@@ -610,6 +610,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     this.logger.info(`updated packagejson is ${JSON.stringify(packageDef)}`)
     const packageJsonPath = path.join(dir, PACK_DIR, 'package.json')
 
+    // create a deps directory (part of the package) that includes the code of in-repo deps.
     const depUnits = this.state.graph
       .traverseFrom(u.id, { direction: 'forward' })
       .filter(at => at !== u.id)
@@ -626,6 +627,10 @@ export class YarnRepoProtocol implements RepoProtocol {
       throw new Error(`Failed to write new package definition at ${packageJsonPath}: ${e}`)
     }
 
+    // This program will run post-installation, creating symlinks to the deps directory in a package-only node_modules
+    // directory. This allow imports (import <sometning> from '<some-package-name>') to be correctly resolved.
+    // The symlinks needs to be created post-installation because NPM does not include symlinks in its packages
+    // (https://github.com/npm/npm/issues/3310#issuecomment-15904722).
     fs.writeFileSync(
       path.join(dir, PACK_DIR, POST_INSTALL_PROGRAM),
       [
