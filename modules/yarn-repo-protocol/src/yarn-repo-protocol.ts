@@ -601,9 +601,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     ret.dependencies = pairsToRecord(outOfRepoDeps.sort().map(d => [d, this.getVersionOfDep(d)]))
     ret.main = POST_INSTALL_PROGRAM
     ret.scripts = ret.scripts ?? {}
-    // const preexisting = ret.scripts.postinstall ? ` && ${ret.scripts.postinstall}` : ''
-    // ret.scripts.postinstall = `node ${POST_INSTALL_PROGRAM}` + preexisting
-    ret.devDependencies = {}
+    delete ret.devDependencies
     ret.nohoist = true
     return ret
   }
