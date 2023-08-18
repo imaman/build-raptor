@@ -597,9 +597,9 @@ export class YarnRepoProtocol implements RepoProtocol {
     // TODO(imaman): cover (the cloning).
     // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     const ret = JSON.parse(JSON.stringify(this.getPackageJson(unitId))) as PackageJson & { nohoist?: boolean }
-    ret.files = [this.dist(), POST_INSTALL_PROGRAM]
+    ret.files = [this.dist(), ENTRY_POINT]
     ret.dependencies = pairsToRecord(outOfRepoDeps.sort().map(d => [d, this.getVersionOfDep(d)]))
-    ret.main = POST_INSTALL_PROGRAM
+    ret.main = ENTRY_POINT
     delete ret.devDependencies
     ret.nohoist = true
     return ret
@@ -637,12 +637,18 @@ export class YarnRepoProtocol implements RepoProtocol {
       throw new Error(`Failed to write new package definition at ${packageJsonPath}: ${e}`)
     }
 
-    // This program will run post-installation, creating symlinks to the deps directory in a package-only node_modules
-    // directory. This allow imports (import <sometning> from '<some-package-name>') to be correctly resolved.
-    // The symlinks needs to be created post-installation because NPM does not include symlinks in its packages
-    // (https://github.com/npm/npm/issues/3310#issuecomment-15904722).
+    // We use a synthetic entry point file which does the following:
+    // (i) creates a package-only node_modules directory with symlinks to various deps/* directories
+    // (ii) delegates to the *real* entry point: dist/src/index.js
+    //
+    // Step (i) allows imports (i.e., import <sometning> from '<some-package-name>') to be correctly resolved.
+    //
+    // The symlinks cannot be created at packing-time because NPM does not include symlinks in its packages
+    // (https://github.com/npm/npm/issues/3310#issuecomment-15904722). Initially we tried to do it via a postinstall
+    // script but it turns out that yarn tries to optimize away the package-only node_modules directory (when it updates
+    // other packages, on subsequent install operations). Hence, we have to do this at import-time.
     fs.writeFileSync(
-      path.join(dir, PACK_DIR, POST_INSTALL_PROGRAM),
+      path.join(dir, PACK_DIR, ENTRY_POINT),
       [
         'const fs = require(`fs`)',
         '',
@@ -849,7 +855,7 @@ export class YarnRepoProtocol implements RepoProtocol {
 }
 
 const PACK_DIR = 'pack'
-const POST_INSTALL_PROGRAM = 'index.js'
+const ENTRY_POINT = 'index.js'
 
 function computeUnits(yarnInfo: YarnWorkspacesInfo): UnitMetadata[] {
   const ret: UnitMetadata[] = []
