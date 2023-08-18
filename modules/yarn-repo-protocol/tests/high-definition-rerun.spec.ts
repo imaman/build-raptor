@@ -146,4 +146,17 @@ describe('high-definition-rerun', () => {
     await fork.run('FAIL', { taskKind: 'test', testCaching: false })
     expect(await invoked()).toEqual('P,N')
   })
+  test('la la la', async () => {
+    const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+    const recipe = {
+      'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+      'modules/a/package.json': driver.packageJson('a'),
+      'modules/a/src/a.ts': 'export function a(n: number) { return n*2 }',
+      'modules/a/tests/a.spec.ts': `test('a', () => { expect(5).toEqual(5) }`,
+    }
+
+    const fork = await driver.repo(recipe).fork()
+    const run = await fork.run('FAIL', { taskKind: 'test' })
+    expect(await run.outputOf('test', 'a')).toEqual(['x'])
+  })
 })
