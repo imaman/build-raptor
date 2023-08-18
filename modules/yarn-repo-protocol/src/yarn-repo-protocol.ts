@@ -437,7 +437,7 @@ export class YarnRepoProtocol implements RepoProtocol {
 
     this.logger.info(`logging uberbuild in ${outputFile} (triggered by ${taskName})`)
     const dirs = computeRealUnits(this.state.units).map(at => at.pathInRepo.val)
-    const p = this.run('tsc', ['--build', ...dirs], this.state.rootDir.resolve(), outputFile)
+    const p = this.run('npx', ['tsc', '--build', ...dirs], this.state.rootDir.resolve(), outputFile)
     this.state.uberBuildPromise = p
 
     const ret = await this.state.uberBuildPromise
@@ -583,15 +583,15 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
     // TODO(imaman): cover (the cloning).
     // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-    const ret = JSON.parse(JSON.stringify(this.getPackageJson(unitId))) as PackageJson
+    const ret = JSON.parse(JSON.stringify(this.getPackageJson(unitId))) as PackageJson & { nohoist?: boolean }
     ret.files = [this.dist()]
     ret.dependencies = pairsToRecord(outOfRepoDeps.sort().map(d => [d, this.getVersionOfDep(d)]))
     ret.main = path.join(this.dist('s'), 'index.js')
     ret.scripts = ret.scripts ?? {}
-    const earlier = ret.scripts.postinstall ? ` && ${ret.scripts.postinstall}` : ''
-    // TODO(imaman): use a node program to do that (to make it portable)
-    ret.scripts.postinstall = `cp -r dist/links dist/node_modules${earlier}`
+    const preexisting = ret.scripts.postinstall ? ` && ${ret.scripts.postinstall}` : ''
+    ret.scripts.postinstall = `node ${POST_INSTALL_PROGRAM}` + preexisting
     delete ret.devDependencies
+    ret.nohoist = true
     return ret
   }
 
@@ -604,14 +604,13 @@ export class YarnRepoProtocol implements RepoProtocol {
     const packDist = path.join(path.join(dir, PACK_DIR), 'dist')
     const packDistSrc = path.join(packDist, this.src)
     const packDistDeps = path.join(packDist, 'deps')
-    const packDistLinks = path.join(packDist, 'links')
     fs.mkdirSync(packDistSrc, { recursive: true })
     fs.cpSync(path.join(dir, this.dist('s')), packDistSrc, { recursive: true })
 
     this.logger.info(`updated packagejson is ${JSON.stringify(packageDef)}`)
     const packageJsonPath = path.join(dir, PACK_DIR, 'package.json')
 
-    fs.mkdirSync(packDistLinks)
+    // create a deps directory (part of the package) that includes the code of in-repo deps.
     const depUnits = this.state.graph
       .traverseFrom(u.id, { direction: 'forward' })
       .filter(at => at !== u.id)
@@ -620,8 +619,6 @@ export class YarnRepoProtocol implements RepoProtocol {
       const d = path.join(packDistDeps, at.id)
       fs.mkdirSync(d, { recursive: true })
       fs.cpSync(this.state.rootDir.resolve(at.pathInRepo.expand(this.dist('s'))), d, { recursive: true })
-      const symlinkLoc = path.join(packDistLinks, at.id)
-      fs.symlinkSync(path.relative(path.dirname(symlinkLoc), d), symlinkLoc)
     }
 
     try {
@@ -629,6 +626,31 @@ export class YarnRepoProtocol implements RepoProtocol {
     } catch (e) {
       throw new Error(`Failed to write new package definition at ${packageJsonPath}: ${e}`)
     }
+
+    // This program will run post-installation, creating symlinks to the deps directory in a package-only node_modules
+    // directory. This allow imports (import <sometning> from '<some-package-name>') to be correctly resolved.
+    // The symlinks needs to be created post-installation because NPM does not include symlinks in its packages
+    // (https://github.com/npm/npm/issues/3310#issuecomment-15904722).
+    fs.writeFileSync(
+      path.join(dir, PACK_DIR, POST_INSTALL_PROGRAM),
+      [
+        'const fs = require(`fs`)',
+        '',
+        'function main() {',
+        '  const distNodeModules = `dist/node_modules`',
+        '  const distDeps = `dist/deps`',
+        '  fs.rmSync(distNodeModules, {force: true, recursive: true})',
+        '  fs.mkdirSync(distNodeModules, {recursive: true})',
+        '  if (fs.existsSync(distDeps)) {',
+        '    for (const p of fs.readdirSync(distDeps)) {',
+        '      fs.symlinkSync(`../deps/${p}`, `${distNodeModules}/${p}`)',
+        '    }',
+        '  }',
+        '}',
+        '',
+        'main()',
+      ].join('\n'),
+    )
 
     return 'OK'
   }
@@ -807,6 +829,7 @@ export class YarnRepoProtocol implements RepoProtocol {
 }
 
 const PACK_DIR = 'pack'
+const POST_INSTALL_PROGRAM = 'postinstall.js'
 
 function computeUnits(yarnInfo: YarnWorkspacesInfo): UnitMetadata[] {
   const ret: UnitMetadata[] = []
