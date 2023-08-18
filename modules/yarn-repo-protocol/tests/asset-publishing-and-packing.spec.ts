@@ -122,19 +122,7 @@ describe('asset-publishing-and-packing', () => {
       const installFrom = fork.file('modules/a/pack').resolve()
 
       const dir = await folderify({
-        'package.json': {
-          name: 'boo',
-          private: true,
-          version: '1.0.0',
-          main: 'index.js',
-          scripts: {},
-          keywords: [],
-          author: '',
-          license: 'ISC',
-          dependencies: {
-            foo: installFrom,
-          },
-        },
+        'package.json': { name: 'boo', private: true, version: '1.0.0', dependencies: { foo: installFrom } },
         'a.js': [`const {foo} = require('foo')`, `console.log(foo(200))`].join('\n'),
       })
 
