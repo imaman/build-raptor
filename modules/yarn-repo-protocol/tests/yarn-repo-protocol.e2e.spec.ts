@@ -178,7 +178,7 @@ describe('yarn-repo-protocol.e2e', () => {
     expect(run4.executionTypeOf('a', 'test')).toEqual('CACHED')
     expect(run4.executionTypeOf('b', 'test')).toEqual('CACHED')
   })
-  test('code is rebuilt when package.json changes', async () => {
+  test(`a module is rebuilt when the module's package.json file changes`, async () => {
     const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
@@ -202,5 +202,30 @@ describe('yarn-repo-protocol.e2e', () => {
     await fork.file('modules/a/package.json').write(driver.packageJson('a', [], { foo: '# nothing' }))
     const run3 = await fork.run('OK', { taskKind: 'build' })
     expect(run3.executionTypeOf('a', 'build')).toEqual('EXECUTED')
+  })
+  test('all modules are rebuilt when yarn.lock file changes', async () => {
+    const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+    const recipe = {
+      // turn install off because the install task is already depending on yarn.lock
+      '.build-raptor.json': { repoProtocol: { install: 'off' } },
+      'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+      'yarn.lock': '# abc',
+      'modules/a/package.json': driver.packageJson('a'),
+      'modules/a/src/a.ts': `export function a() { }`,
+      'modules/a/tests/a.spec.ts': ``,
+    }
+
+    const fork = await driver.repo(recipe).fork()
+
+    const run1 = await fork.run('OK', { taskKind: 'build' })
+    expect(run1.executionTypeOf('a', 'build')).toEqual('EXECUTED')
+
+    await fork.file('yarn.lock').write('# xyz')
+    const run2 = await fork.run('OK', { taskKind: 'build' })
+    expect(run2.executionTypeOf('a', 'build')).toEqual('EXECUTED')
+
+    await fork.file('yarn.lock').write('# abc')
+    const run3 = await fork.run('OK', { taskKind: 'build' })
+    expect(run3.executionTypeOf('a', 'build')).toEqual('CACHED')
   })
 })
