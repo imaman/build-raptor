@@ -597,7 +597,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     // TODO(imaman): cover (the cloning).
     // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     const ret = JSON.parse(JSON.stringify(this.getPackageJson(unitId))) as PackageJson & { nohoist?: boolean }
-    ret.files = [this.dist()]
+    ret.files = [this.dist(), POST_INSTALL_PROGRAM]
     ret.dependencies = pairsToRecord(outOfRepoDeps.sort().map(d => [d, this.getVersionOfDep(d)]))
     ret.main = path.join(this.dist('s'), 'index.js')
     ret.scripts = ret.scripts ?? {}
