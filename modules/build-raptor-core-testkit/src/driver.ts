@@ -1,6 +1,7 @@
 import { Step, StepByName, StepByStep, StepName } from 'build-raptor-api'
 import { BlobId, Breakdown, EngineBootstrapper, TaskStore } from 'build-raptor-core'
 import { PathInRepo, RepoRoot } from 'core-types'
+import * as fs from 'fs'
 import * as fse from 'fs-extra'
 import { createNopLogger } from 'logger'
 import {
@@ -126,13 +127,13 @@ class File {
       .map(at => (trimEach ? at.trim() : at))
   }
 
-  async readJson() {
+  readJson() {
     const resolved = this.resolve()
-    if (!(await fse.pathExists(resolved))) {
+    if (!fs.existsSync(resolved)) {
       return undefined
     }
 
-    return await fse.readJSON(resolved)
+    return JSON.parse(fs.readFileSync(resolved, 'utf-8'))
   }
 
   async write(content: string | object) {
@@ -222,8 +223,9 @@ class Fork {
     return this.file(BUILD_RAPTOR_DIR_NAME)
   }
 
+  // TODO(imaman): can be made sync
   async readStepByStepFile() {
-    const unparsed = await this.getBuildRaptorDir().to('step-by-step.json').readJson()
+    const unparsed = this.getBuildRaptorDir().to('step-by-step.json').readJson()
     return StepByStep.parse(unparsed)
   }
 

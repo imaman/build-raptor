@@ -108,24 +108,31 @@ describe('asset-publishing-and-packing', () => {
       const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
       const recipe = {
         'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
-        'modules/a/package.json': driver.packageJson('a', [], { 'prepare-assets': 'echo "a" > prepared-assets/x1' }),
+        'modules/a/package.json': driver.packageJson('a', [], {}),
         'modules/a/src/a.ts': `export function a(n: number) { return n * 100 }`,
         'modules/a/tests/a.spec.ts': ``,
       }
 
       const fork = await driver.repo(recipe).fork()
 
-      const readBlob = async (taskName: string) => {
-        const steps = await fork.readStepByStepFile()
-        const blobId: string | undefined = steps
-          .filter(at => at.step !== 'BUILD_RUN_STARTED' && at.step !== 'BUILD_RUN_ENDED' && at.taskName === taskName)
-          .flatMap(at => (at.step === 'TASK_STORE_GET' || at.step === 'TASK_STORE_PUT' ? [at] : []))
-          .find(Boolean)?.blobId
-        return await driver.slurpBlob(blobId)
-      }
+      await fork.run('OK', { taskKind: 'pack' })
 
-      await fork.run('OK', { taskKind: 'publish-assets' })
-      expect(Object.keys(await readBlob('a:publish-assets'))).toEqual(['modules/a/prepared-assets/x1'])
+      const packageJson = fork.file('modules/a/pack/package.json').readJson()
+      expect(packageJson).toMatchObject({
+        name: 'a',
+        main: 'dist/src/index.js',
+        nohoist: true,
+        scripts: {
+          build: 'tsc -b',
+          postinstall: 'node postinstall.js',
+          test: 'jest',
+        },
+        files: ['dist'],
+      })
+
+      expect(packageJson.devDependencies).toBe(undefined)
+
+      expect(await fork.file('modules/a/pack/postinstall.js').lines()).toEqual([])
     })
   })
 })
