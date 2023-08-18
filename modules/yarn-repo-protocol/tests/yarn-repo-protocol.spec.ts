@@ -92,13 +92,10 @@ describe('yarn-repo-protocol', () => {
       expect(actual).toEqual({
         name: 'a',
         version: '1.0.0',
-        files: ['dist', 'postinstall.js'],
-        main: 'dist/src/index.js',
+        files: ['dist', 'index.js'],
+        main: 'index.js',
         dependencies: {},
         nohoist: true,
-        scripts: {
-          postinstall: 'node postinstall.js',
-        },
       })
     })
     test('includes out-of-repo deps of all in-repo deps (sorted)', async () => {
@@ -174,7 +171,7 @@ describe('yarn-repo-protocol', () => {
       expect(actual.dependencies).toEqual({})
       expect(actual.devDependencies).toBe(undefined)
     })
-    test('retains pre-existing run scripts', async () => {
+    test('retains run scripts', async () => {
       const d = await makeFolder({
         'package.json': { workspaces: ['modules/*'], private: true },
         'modules/a/package.json': { name: 'a', version: '1.0.0', scripts: { foo: 'I AM FOO', boo: 'I AM BOO' } },
@@ -185,23 +182,8 @@ describe('yarn-repo-protocol', () => {
 
       const actual = await yrp.computePackingPackageJson(UnitId('a'))
       expect(actual.scripts).toEqual({
-        postinstall: 'node postinstall.js',
         foo: 'I AM FOO',
         boo: 'I AM BOO',
-      })
-    })
-    test('retains a pre-existing postinstall script', async () => {
-      const d = await makeFolder({
-        'package.json': { workspaces: ['modules/*'], private: true },
-        'modules/a/package.json': { name: 'a', version: '1.0.0', scripts: { postinstall: 'quick-brown-fox' } },
-      })
-
-      const yrp = newYarnRepoProtocol()
-      await yrp.initialize(d, p)
-
-      const actual = await yrp.computePackingPackageJson(UnitId('a'))
-      expect(actual.scripts).toEqual({
-        postinstall: 'node postinstall.js && quick-brown-fox',
       })
     })
   })
