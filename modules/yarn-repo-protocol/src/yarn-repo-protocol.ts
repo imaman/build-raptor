@@ -463,26 +463,13 @@ export class YarnRepoProtocol implements RepoProtocol {
       dir,
       outputFile,
     )
-
-    const readStdout = () => fs.readFileSync(outputFile, 'utf-8').trim()
-    const latest = fs.readFileSync(reporterOutputFile, 'utf-8')
-    if (latest.trim().length === 0) {
-      const output = readStdout()
-      if (output.length) {
-        this.logger.print(
-          `<No Jest tests were invoked. Jest output follows below. latest=${JSON.stringify(latest)}>\n${output}`,
-        )
-        fs.writeFileSync(jof, JSON.stringify(emptyRerunList))
-        return 'FAIL'
-      }
-    }
-
+    const latest = fse.readFileSync(reporterOutputFile, 'utf-8')
     let reporterOutput
     try {
       const parsed = JSON.parse(latest)
       reporterOutput = ReporterOutput.parse(parsed)
     } catch (e) {
-      const output = readStdout()
+      const output = fs.readFileSync(outputFile, 'utf-8')
       const limit = 512
       this.logger.error(
         `crashing due to jest output file parsing error: ${JSON.stringify({
@@ -532,7 +519,7 @@ export class YarnRepoProtocol implements RepoProtocol {
       failingCases.map(at => ({ fileName: at.fileName, testCaseFullName: at.testCaseFullName })),
       at => `${at.fileName} ${at.testCaseFullName}`,
     )
-    fs.writeFileSync(jof, JSON.stringify(RerunList.parse(rerunList)))
+    await fse.writeJSON(jof, RerunList.parse(rerunList))
 
     return ret
   }
@@ -804,11 +791,12 @@ export class YarnRepoProtocol implements RepoProtocol {
 
     const content = await fse.readFile(resolved, 'utf-8')
     let parsed
+    const fallback: RerunList = RerunList.parse([])
     try {
       parsed = JSON.parse(content)
     } catch (e) {
       this.logger.info(`failed to JSON parse ${resolved} <${e}> - using fallback`)
-      parsed = emptyRerunList
+      parsed = fallback
     }
     let rerunList
 
@@ -816,7 +804,7 @@ export class YarnRepoProtocol implements RepoProtocol {
       rerunList = RerunList.parse(parsed)
     } catch (e) {
       this.logger.info(`failed to parse rerun-list from ${resolved} <${e}> - using fallback`)
-      rerunList = emptyRerunList
+      rerunList = fallback
     }
 
     if (rerunList.length === 0) {
@@ -900,5 +888,3 @@ const PREPARED_ASSETS_DIR = 'prepared-assets'
 
 const rootUnitId = UnitId('.')
 const installTaskName = TaskName(rootUnitId, TaskKind('install'))
-
-const emptyRerunList: RerunList = RerunList.parse([])
