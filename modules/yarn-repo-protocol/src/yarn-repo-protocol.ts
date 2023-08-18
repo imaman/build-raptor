@@ -741,7 +741,7 @@ export class YarnRepoProtocol implements RepoProtocol {
       .traverseFrom(u.id)
       .filter(at => at !== u.id)
       .map(at => this.unitOf(at).pathInRepo)
-    return {
+    const ret: TaskInfo = {
       taskName: TaskName(u.id, TaskKind('build')),
       outputLocations: [{ pathInRepo: dir.expand(this.dist()), purge: 'NEVER' }],
       inputs: [
@@ -752,6 +752,16 @@ export class YarnRepoProtocol implements RepoProtocol {
       ],
       deps: this.depList(installTaskName),
     }
+
+    switchOn(this.getInstallFeatureToggle(), {
+      off: () => {
+        ret.inputs?.push(PathInRepo('yarn.lock'))
+      },
+      dormant: () => {},
+      on: () => {},
+    })
+
+    return ret
   }
   private testTask(u: UnitMetadata): TaskInfo | undefined {
     const dir = u.pathInRepo
