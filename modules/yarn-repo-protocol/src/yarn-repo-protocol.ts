@@ -599,11 +599,11 @@ export class YarnRepoProtocol implements RepoProtocol {
     const ret = JSON.parse(JSON.stringify(this.getPackageJson(unitId))) as PackageJson & { nohoist?: boolean }
     ret.files = [this.dist(), POST_INSTALL_PROGRAM]
     ret.dependencies = pairsToRecord(outOfRepoDeps.sort().map(d => [d, this.getVersionOfDep(d)]))
-    ret.main = path.join(this.dist('s'), 'index.js')
+    ret.main = POST_INSTALL_PROGRAM
     ret.scripts = ret.scripts ?? {}
-    const preexisting = ret.scripts.postinstall ? ` && ${ret.scripts.postinstall}` : ''
-    ret.scripts.postinstall = `node ${POST_INSTALL_PROGRAM}` + preexisting
-    delete ret.devDependencies
+    // const preexisting = ret.scripts.postinstall ? ` && ${ret.scripts.postinstall}` : ''
+    // ret.scripts.postinstall = `node ${POST_INSTALL_PROGRAM}` + preexisting
+    ret.devDependencies = {}
     ret.nohoist = true
     return ret
   }
@@ -662,6 +662,7 @@ export class YarnRepoProtocol implements RepoProtocol {
         '}',
         '',
         'main()',
+        'module.exports = require("./' + path.join(this.dist('s'), 'index.js') + '")',
       ].join('\n'),
     )
 
@@ -851,7 +852,7 @@ export class YarnRepoProtocol implements RepoProtocol {
 }
 
 const PACK_DIR = 'pack'
-const POST_INSTALL_PROGRAM = 'postinstall.js'
+const POST_INSTALL_PROGRAM = 'index.js'
 
 function computeUnits(yarnInfo: YarnWorkspacesInfo): UnitMetadata[] {
   const ret: UnitMetadata[] = []
