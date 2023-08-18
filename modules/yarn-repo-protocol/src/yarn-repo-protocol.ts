@@ -597,9 +597,9 @@ export class YarnRepoProtocol implements RepoProtocol {
     // TODO(imaman): cover (the cloning).
     // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     const ret = JSON.parse(JSON.stringify(this.getPackageJson(unitId))) as PackageJson & { nohoist?: boolean }
-    ret.files = [this.dist(), ENTRY_POINT]
+    ret.files = [this.dist()]
     ret.dependencies = pairsToRecord(outOfRepoDeps.sort().map(d => [d, this.getVersionOfDep(d)]))
-    ret.main = ENTRY_POINT
+    ret.main = path.join(this.dist('s'), 'index.js')
     delete ret.devDependencies
     ret.nohoist = true
     return ret
@@ -647,27 +647,31 @@ export class YarnRepoProtocol implements RepoProtocol {
     // (https://github.com/npm/npm/issues/3310#issuecomment-15904722). Initially we tried to do it via a postinstall
     // script but it turns out that yarn tries to optimize away the package-only node_modules directory (when it updates
     // other packages, on subsequent install operations). Hence, we have to do this at import-time.
-    fs.writeFileSync(
-      path.join(dir, PACK_DIR, ENTRY_POINT),
-      [
-        'const fs = require(`fs`)',
-        '',
-        'function main() {',
-        '  const distNodeModules = `dist/node_modules`',
-        '  const distDeps = `dist/deps`',
-        '  fs.rmSync(distNodeModules, {force: true, recursive: true})',
-        '  fs.mkdirSync(distNodeModules, {recursive: true})',
-        '  if (fs.existsSync(distDeps)) {',
-        '    for (const p of fs.readdirSync(distDeps)) {',
-        '      fs.symlinkSync(`../deps/${p}`, `${distNodeModules}/${p}`)',
-        '    }',
-        '  }',
-        '}',
-        '',
-        'main()',
-        'module.exports = require("./' + path.join(this.dist('s'), 'index.js') + '")',
-      ].join('\n'),
-    )
+
+    const indexJs = path.join(dir, PACK_DIR, this.dist('s'), 'index.js')
+    const content = fs.readFileSync(indexJs, 'utf-8')
+
+    const preamble = [
+      'const fs = require(`fs`)',
+      '',
+      'function main() {',
+      '  const distNodeModules = `dist/node_modules`',
+      '  const distDeps = `dist/deps`',
+      '  fs.rmSync(distNodeModules, {force: true, recursive: true})',
+      '  fs.mkdirSync(distNodeModules, {recursive: true})',
+      '  if (fs.existsSync(distDeps)) {',
+      '    for (const p of fs.readdirSync(distDeps)) {',
+      '      fs.symlinkSync(`../deps/${p}`, `${distNodeModules}/${p}`)',
+      '    }',
+      '  }',
+      '}',
+      '',
+      'main()',
+      'module.exports = require("./' + path.join(this.dist('s'), 'index.js') + '")',
+      '',
+    ].join('\n')
+
+    fs.writeFileSync(indexJs, preamble + content)
 
     return 'OK'
   }
@@ -855,7 +859,6 @@ export class YarnRepoProtocol implements RepoProtocol {
 }
 
 const PACK_DIR = 'pack'
-const ENTRY_POINT = 'index.js'
 
 function computeUnits(yarnInfo: YarnWorkspacesInfo): UnitMetadata[] {
   const ret: UnitMetadata[] = []
