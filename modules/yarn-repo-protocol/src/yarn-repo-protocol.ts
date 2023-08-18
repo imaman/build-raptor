@@ -588,11 +588,8 @@ export class YarnRepoProtocol implements RepoProtocol {
     ret.dependencies = pairsToRecord(outOfRepoDeps.sort().map(d => [d, this.getVersionOfDep(d)]))
     ret.main = path.join(this.dist('s'), 'index.js')
     ret.scripts = ret.scripts ?? {}
-    const earlier = ret.scripts.postinstall ? ` && ${ret.scripts.postinstall}` : ''
-    // TODO(imaman): use a node program to do that (to make it portable)
-    ret.scripts.postinstall =
-      'mkdir -p dist/node_modules && ls -1  dist/deps | while read p; do ln -s ../deps/${p} dist/node_modules/${p}; done' +
-      earlier
+    const preexisting = ret.scripts.postinstall ? ` && ${ret.scripts.postinstall}` : ''
+    ret.scripts.postinstall = `node ${POST_INSTALL_PROGRAM}` + preexisting
     delete ret.devDependencies
     ret.nohoist = true
     return ret
@@ -630,7 +627,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
 
     fs.writeFileSync(
-      path.join(dir, PACK_DIR, 'postinstall.js'),
+      path.join(dir, PACK_DIR, POST_INSTALL_PROGRAM),
       [
         'const fs = require(`fs`)',
         '',
@@ -824,6 +821,7 @@ export class YarnRepoProtocol implements RepoProtocol {
 }
 
 const PACK_DIR = 'pack'
+const POST_INSTALL_PROGRAM = 'postinstall.js'
 
 function computeUnits(yarnInfo: YarnWorkspacesInfo): UnitMetadata[] {
   const ret: UnitMetadata[] = []
