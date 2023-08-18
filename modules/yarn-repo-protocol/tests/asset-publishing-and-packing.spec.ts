@@ -106,13 +106,16 @@ describe('asset-publishing-and-packing', () => {
     expect(Object.keys(await readBlob('a:publish-assets'))).toEqual(['modules/a/prepared-assets/x2'])
   })
   describe('packing', () => {
-    test('foo', async () => {
+    test('packed module (with in-repo dependencies) can be be NPM install-ed and consumed by a node program', async () => {
       const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
       const recipe = {
-        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
-        'modules/foo/package.json': driver.packageJson('a', [], {}),
-        'modules/foo/src/index.ts': `export function foo(n: number) { return n*1000 }`,
+        'package.json': { name: 'my-libs', private: true, workspaces: ['modules/*'] },
+        'modules/foo/package.json': driver.packageJson('foo', ['goo'], {}),
+        'modules/foo/src/index.ts': `import {goo} from 'goo'; export function foo(s: string) { return 'f:' + goo(s) }`,
         'modules/foo/tests/index.spec.ts': ``,
+        'modules/goo/package.json': driver.packageJson('goo', [], {}),
+        'modules/goo/src/index.ts': `export function goo(s: string) { return 'g:' + s.toUpperCase() }`,
+        'modules/goo/tests/index.spec.ts': ``,
       }
 
       const fork = await driver.repo(recipe).fork()
@@ -123,12 +126,12 @@ describe('asset-publishing-and-packing', () => {
 
       const dir = await folderify({
         'package.json': { name: 'app', private: true, version: '1.0.0', dependencies: { foo: fooPack } },
-        'a.js': [`const {foo} = require('foo')`, `console.log(foo(200))`].join('\n'),
+        'a.js': [`const {foo} = require('foo')`, `console.log(foo('xyz'))`].join('\n'),
       })
 
       ChildProcess.execSync(`npm install`, { cwd: dir, encoding: 'utf-8', timeout: 120000 })
       const output = ChildProcess.execSync(`node a.js`, { cwd: dir, encoding: 'utf-8', timeout: 120000 })
-      expect(output.trim()).toEqual('200000')
+      expect(output.trim()).toEqual('f:g:XYZ')
     })
   })
 })
