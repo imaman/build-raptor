@@ -97,8 +97,7 @@ describe('yarn-repo-protocol', () => {
         dependencies: {},
         nohoist: true,
         scripts: {
-          postinstall:
-            'mkdir -p dist/node_modules && ls -1  dist/deps | while read p; do ln -s ../deps/${p} dist/node_modules/${p}; done',
+          postinstall: 'node postinstall.js',
         },
       })
     })
@@ -186,7 +185,7 @@ describe('yarn-repo-protocol', () => {
 
       const actual = await yrp.computePackingPackageJson(UnitId('a'))
       expect(actual.scripts).toEqual({
-        postinstall: expect.stringMatching(/^.{50,}$/),
+        postinstall: 'node postinstall.js',
         foo: 'I AM FOO',
         boo: 'I AM BOO',
       })
@@ -202,8 +201,7 @@ describe('yarn-repo-protocol', () => {
 
       const actual = await yrp.computePackingPackageJson(UnitId('a'))
       expect(actual.scripts).toEqual({
-        postinstall:
-          'mkdir -p dist/node_modules && ls -1  dist/deps | while read p; do ln -s ../deps/${p} dist/node_modules/${p}; done && quick-brown-fox',
+        postinstall: 'node postinstall.js && quick-brown-fox',
       })
     })
   })
