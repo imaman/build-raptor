@@ -146,17 +146,29 @@ describe('high-definition-rerun', () => {
     await fork.run('FAIL', { taskKind: 'test', testCaching: false })
     expect(await invoked()).toEqual('P,N')
   })
-  test('la la la', async () => {
+  test('jest configuration errors are yield a FAIL task status and the jest output is dumped to stdout', async () => {
     const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
-      'modules/a/package.json': driver.packageJson('a'),
-      'modules/a/src/a.ts': 'export function a(n: number) { return n*2 }',
-      'modules/a/tests/a.spec.ts': `test('a', () => { expect(5).toEqual(5) }`,
+      'modules/a/package.json': driver.packageJson('a', [], {}, obj => {
+        const casted = obj as { jest: unknown } // eslint-disable-line @typescript-eslint/consistent-type-assertions
+        casted.jest = {
+          roots: ['<rootDir>/dist'],
+          resolver: 'this-is-an-incorrect-resolver-value',
+        }
+      }),
+      'modules/a/src/a.ts': `//`,
+      'modules/a/tests/a.spec.ts': `test('foo', () => { expect(1).toEqual(1) })`,
     }
 
     const fork = await driver.repo(recipe).fork()
+
     const run = await fork.run('FAIL', { taskKind: 'test' })
-    expect(await run.outputOf('test', 'a')).toEqual(['x'])
+    const actual = await run.outputOf('test', 'a')
+    expect(actual.slice(0, 3)).toEqual([
+      '● Validation Error:',
+      '',
+      '  Module this-is-an-incorrect-resolver-value in the resolver option was not found.',
+    ])
   })
 })
