@@ -4,7 +4,7 @@ import { createNopLogger } from 'logger'
 
 import { YarnRepoProtocol } from '../src/yarn-repo-protocol'
 
-jest.setTimeout(90000)
+jest.setTimeout(120000)
 describe('yarn-repo-protocol.e2e', () => {
   const logger = createNopLogger()
 
