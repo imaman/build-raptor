@@ -33,10 +33,10 @@ export class TaskExecutor {
     private readonly tasksToDiagnose: string[],
   ) {}
 
-  async executeTask(taskName: TaskName, deps: TaskName[]) {
+  async executeTask(taskName: TaskName, fingerprintDeps: TaskName[]) {
     const ste = new SingleTaskExecutor(
       taskName,
-      deps,
+      fingerprintDeps,
       this.model,
       this.tracker,
       this.logger,
@@ -59,7 +59,7 @@ class SingleTaskExecutor {
 
   constructor(
     private readonly taskName: TaskName,
-    private readonly deps: TaskName[],
+    private readonly fingerprintDeps: TaskName[],
     private readonly model: Model,
     private readonly tracker: TaskTracker,
     private readonly logger: Logger,
@@ -115,8 +115,8 @@ class SingleTaskExecutor {
     // TODO(imaman): test coverage for the sort-by
     // TODO(imaman): concurrent loop
 
-    this.diagnose(`deps are ${JSON.stringify(this.deps)}, info.deps=${JSON.stringify(t.taskInfo.deps)}`)
-    for (const d of this.deps) {
+    this.diagnose(`deps are ${JSON.stringify(this.fingerprintDeps)}, info.deps=${JSON.stringify(t.taskInfo.deps)}`)
+    for (const d of this.fingerprintDeps) {
       const dep = this.tracker.getTask(d)
       fps.push(dep.getFingerprint())
     }
