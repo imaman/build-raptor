@@ -112,4 +112,22 @@ describe('logger', () => {
     expect(fileContent).toContain(`[info] Atlantic {"maxDepth":8376,"waterVolum":"310,410,900 km^3"}\n`)
     expect(fileContent).toContain(`[info] Indian {"maxDepth":7258,"surfacrArea":"70,560,000 km^2"}\n`)
   })
+  test('wipes out the file', async () => {
+    const f = await Tmp.file({})
+
+    const logger1 = createDefaultLogger(f.path)
+    logger1.info(`Atlantic`)
+    logger1.info(`EOF-1`)
+
+    const content1 = await readContent(f.path, 'EOF-1')
+    expect(content1.split('\n')[0]).toContain('Atlantic')
+
+    const logger2 = createDefaultLogger(f.path)
+    logger2.info(`Indian`)
+    logger2.info(`EOF-2`)
+
+    const content2 = await readContent(f.path, 'EOF-2')
+    expect(content2).not.toContain('Atlantic')
+    expect(content2.split('\n')[0]).toContain('Indian')
+  })
 })
