@@ -115,10 +115,10 @@ class SingleTaskExecutor {
     // TODO(imaman): test coverage for the sort-by
     // TODO(imaman): concurrent loop
 
-    // for (const d of this.deps) {
-    //   const dep = this.tracker.getTask(d)
-    //   fps.push(dep.getFingerprint())
-    // }
+    for (const d of t.taskInfo.deps ?? []) {
+      const dep = this.tracker.getTask(d)
+      fps.push(dep.getFingerprint())
+    }
     const parts: Record<string, Fingerprint> = {}
 
     this.diagnose(`inputs are: ${t.inputs}`)
