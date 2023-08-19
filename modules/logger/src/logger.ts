@@ -34,13 +34,9 @@ export function createNopLogger() {
 }
 
 export function createDefaultLogger(logFile: string, logLevel?: Level, uiStream?: NodeJS.WritableStream): FileLogger {
-  try {
-    const stat = fs.statSync(logFile, { throwIfNoEntry: false })
-    if (stat && stat.size > 0) {
-      fs.rmSync(logFile, { force: true })
-    }
-  } catch (e) {
-    throw new Error(`failed to delete a file (${logFile})`)
+  const stat = fs.statSync(logFile, { throwIfNoEntry: false })
+  if (stat && stat.size > 0) {
+    fs.rmSync(logFile, { force: true })
   }
   return new FileLogger(logFile, logLevel, uiStream)
 }
