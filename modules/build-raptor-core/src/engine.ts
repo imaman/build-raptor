@@ -171,9 +171,7 @@ export class Engine {
 
     const workFunction = async (tn: TaskName) => {
       try {
-        const deps = this.tracker?.getTask(tn).taskInfo.deps ?? []
-        // const deps = plan.taskGraph.neighborsOf(tn)
-        await taskExecutor.executeTask(tn, deps)
+        await taskExecutor.executeTask(tn)
       } catch (e) {
         this.logger.info(`crashed while running ${tn}`)
         throw e
