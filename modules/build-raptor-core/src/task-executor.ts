@@ -33,6 +33,10 @@ export class TaskExecutor {
     private readonly tasksToDiagnose: string[],
   ) {}
 
+  /**
+   * @param taskName
+   * @param fingerprintDeps other tasks whose fingerprint need to be part of the fingerprint of `taskName`.
+   */
   async executeTask(taskName: TaskName, fingerprintDeps: TaskName[]) {
     const ste = new SingleTaskExecutor(
       taskName,
@@ -57,6 +61,21 @@ class SingleTaskExecutor {
   private readonly phasePublisher = new TypedPublisher<{ phase: Phase }>()
   private readonly isTest: boolean
 
+  /**
+   * @param taskName
+   * @param fingerprintDeps other tasks whose fingerprint need to be part of the fingerprint of `taskName`.
+   * @param model
+   * @param tracker
+   * @param logger
+   * @param repoProtocol
+   * @param taskStore
+   * @param taskOutputDir
+   * @param eventPublisher
+   * @param fingerprintLedger
+   * @param purger
+   * @param testCaching
+   * @param shouldDiagnose
+   */
   constructor(
     private readonly taskName: TaskName,
     private readonly fingerprintDeps: TaskName[],
