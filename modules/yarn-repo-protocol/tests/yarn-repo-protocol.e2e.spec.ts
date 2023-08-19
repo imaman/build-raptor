@@ -142,6 +142,8 @@ describe('yarn-repo-protocol.e2e', () => {
   test('does not run tests when test code of a dependnecy changes', async () => {
     const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
     const recipe = {
+      // This behavior is controlled by a switch
+      '.build-raptor.json': { tightFingerprints: true },
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
       'modules/a/package.json': driver.packageJson('a', ['b']),
       'modules/a/src/index.ts': `
@@ -173,8 +175,8 @@ describe('yarn-repo-protocol.e2e', () => {
       `)
 
     const runB = await fork.run('OK', { taskKind: 'test' })
-    expect(runB.getSummary('a', 'build')).toMatchObject({ execution: 'EXECUTED' })
-    expect(runB.getSummary('a', 'test')).toMatchObject({ execution: 'EXECUTED' })
+    expect(runB.getSummary('a', 'build')).toMatchObject({ execution: 'CACHED' })
+    expect(runB.getSummary('a', 'test')).toMatchObject({ execution: 'CACHED' })
     expect(runB.getSummary('b', 'build')).toMatchObject({ execution: 'EXECUTED' })
     expect(runB.getSummary('b', 'test')).toMatchObject({ execution: 'EXECUTED' })
   })

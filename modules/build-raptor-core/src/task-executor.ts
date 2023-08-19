@@ -115,6 +115,7 @@ class SingleTaskExecutor {
     // TODO(imaman): test coverage for the sort-by
     // TODO(imaman): concurrent loop
 
+    this.diagnose(`deps are ${JSON.stringify(this.deps)}, info.deps=${JSON.stringify(t.taskInfo.deps)}`)
     for (const d of this.deps) {
       const dep = this.tracker.getTask(d)
       fps.push(dep.getFingerprint())
