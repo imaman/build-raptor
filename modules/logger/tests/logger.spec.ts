@@ -1,4 +1,4 @@
-import * as fse from 'fs-extra'
+import * as fs from 'fs'
 import { aTimeoutOf } from 'misc'
 import * as Tmp from 'tmp-promise'
 
@@ -22,7 +22,10 @@ async function awaitFor<T>(ms: number, calc: () => Promise<T | undefined>): Prom
 
 async function readContent(path: string, sentinel: string): Promise<string> {
   return await awaitFor(2000, async () => {
-    const content = await fse.readFile(path, 'utf8')
+    if (!fs.existsSync(path)) {
+      return undefined
+    }
+    const content = fs.readFileSync(path, 'utf8')
     return content.includes(sentinel) ? content : undefined
   })
 }
@@ -47,7 +50,7 @@ describe('logger', () => {
 
     const lines = content.split('\n')
     expect(lines[0]).toMatch(/\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d\.\d+([+-][0-2]\d:[0-5]\d|Z) \[error\] uh-oh/)
-    expect(lines[1]).toContain(`${__filename.replace('/dist/', '/').replace(/\.js$/, '.ts')}:44:27`)
+    expect(lines[1]).toContain(`${__filename.replace('/dist/', '/').replace(/\.js$/, '.ts')}:47:27`)
   })
   test('by default, does not write debug-level messages to the file', async () => {
     const f = await Tmp.file({})
@@ -81,7 +84,7 @@ describe('logger', () => {
   test('print() sends messages to the UI stream (in addition to the log file)', async () => {
     const f = await Tmp.file({})
     const ui = await Tmp.file({ keep: true })
-    const uiStream = fse.createWriteStream(ui.path)
+    const uiStream = fs.createWriteStream(ui.path)
 
     const logger = createDefaultLogger(f.path, undefined, uiStream)
     logger.info(`Atlantic`)
@@ -92,13 +95,13 @@ describe('logger', () => {
     const fileContent = await readContent(f.path, '-the end-')
     expect(fileContent).toContain(`[info] Pacific\n`)
 
-    const uiContent = await fse.readFile(ui.path, 'utf-8')
+    const uiContent = fs.readFileSync(ui.path, 'utf-8')
     expect(uiContent.trim()).toEqual('Pacific')
   })
   test('additional objects are logged (in JSON format) after the text message', async () => {
     const f = await Tmp.file({})
     const ui = await Tmp.file({ keep: true })
-    const uiStream = fse.createWriteStream(ui.path)
+    const uiStream = fs.createWriteStream(ui.path)
 
     const logger = createDefaultLogger(f.path, undefined, uiStream)
     logger.info(`Atlantic`, { maxDepth: 8376, waterVolum: '310,410,900 km^3' })
@@ -108,5 +111,23 @@ describe('logger', () => {
     const fileContent = await readContent(f.path, '-the end-')
     expect(fileContent).toContain(`[info] Atlantic {"maxDepth":8376,"waterVolum":"310,410,900 km^3"}\n`)
     expect(fileContent).toContain(`[info] Indian {"maxDepth":7258,"surfacrArea":"70,560,000 km^2"}\n`)
+  })
+  test('wipes out the file', async () => {
+    const f = await Tmp.file({})
+
+    const logger1 = createDefaultLogger(f.path)
+    logger1.info(`Atlantic`)
+    logger1.info(`EOF-1`)
+
+    const content1 = await readContent(f.path, 'EOF-1')
+    expect(content1.split('\n')[0]).toContain('Atlantic')
+
+    const logger2 = createDefaultLogger(f.path)
+    logger2.info(`Indian`)
+    logger2.info(`EOF-2`)
+
+    const content2 = await readContent(f.path, 'EOF-2')
+    expect(content2).not.toContain('Atlantic')
+    expect(content2.split('\n')[0]).toContain('Indian')
   })
 })
