@@ -33,9 +33,10 @@ export class TaskExecutor {
     private readonly tasksToDiagnose: string[],
   ) {}
 
-  async executeTask(taskName: TaskName) {
+  async executeTask(taskName: TaskName, deps: TaskName[]) {
     const ste = new SingleTaskExecutor(
       taskName,
+      deps,
       this.model,
       this.tracker,
       this.logger,
@@ -58,6 +59,7 @@ class SingleTaskExecutor {
 
   constructor(
     private readonly taskName: TaskName,
+    private readonly deps: TaskName[],
     private readonly model: Model,
     private readonly tracker: TaskTracker,
     private readonly logger: Logger,
@@ -113,10 +115,7 @@ class SingleTaskExecutor {
     // TODO(imaman): test coverage for the sort-by
     // TODO(imaman): concurrent loop
 
-    // take into account the fingerprint of tasks which are listed in TaskInfo.deps (i.e., explicit dependency). For
-    // tasks which are dependency due to input/output relationship (t's input is an output of some other task) take the
-    // fingerprint of the input.
-    for (const d of t.taskInfo.deps ?? []) {
+    for (const d of this.deps) {
       const dep = this.tracker.getTask(d)
       fps.push(dep.getFingerprint())
     }
