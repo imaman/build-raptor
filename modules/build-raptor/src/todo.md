@@ -131,6 +131,7 @@
 - [ ] storage-client (and task-store thast wrapping it) should offer a batch-query API (to issue multiple object-exists calls).
 - transitive: do not run build in dep if is due to run at dependent
 - separate tests build from application build
+- [ ] log files - sliding window of last <N> invocations.
 
 * task-name
 
