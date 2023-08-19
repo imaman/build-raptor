@@ -92,8 +92,8 @@ describe('yarn-repo-protocol', () => {
       expect(actual).toEqual({
         name: 'a',
         version: '1.0.0',
-        files: ['dist', 'index.js'],
-        main: 'index.js',
+        files: ['dist'],
+        main: 'dist/src/index.js',
         dependencies: {},
         nohoist: true,
       })
