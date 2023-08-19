@@ -1,4 +1,4 @@
-import * as fse from 'fs-extra'
+import * as fs from 'fs'
 import { aTimeoutOf } from 'misc'
 import * as Tmp from 'tmp-promise'
 
@@ -22,7 +22,10 @@ async function awaitFor<T>(ms: number, calc: () => Promise<T | undefined>): Prom
 
 async function readContent(path: string, sentinel: string): Promise<string> {
   return await awaitFor(2000, async () => {
-    const content = await fse.readFile(path, 'utf8')
+    if (!fs.existsSync(path)) {
+      return undefined
+    }
+    const content = fs.readFileSync(path, 'utf8')
     return content.includes(sentinel) ? content : undefined
   })
 }
@@ -81,7 +84,7 @@ describe('logger', () => {
   test('print() sends messages to the UI stream (in addition to the log file)', async () => {
     const f = await Tmp.file({})
     const ui = await Tmp.file({ keep: true })
-    const uiStream = fse.createWriteStream(ui.path)
+    const uiStream = fs.createWriteStream(ui.path)
 
     const logger = createDefaultLogger(f.path, undefined, uiStream)
     logger.info(`Atlantic`)
@@ -92,13 +95,13 @@ describe('logger', () => {
     const fileContent = await readContent(f.path, '-the end-')
     expect(fileContent).toContain(`[info] Pacific\n`)
 
-    const uiContent = await fse.readFile(ui.path, 'utf-8')
+    const uiContent = fs.readFileSync(ui.path, 'utf-8')
     expect(uiContent.trim()).toEqual('Pacific')
   })
   test('additional objects are logged (in JSON format) after the text message', async () => {
     const f = await Tmp.file({})
     const ui = await Tmp.file({ keep: true })
-    const uiStream = fse.createWriteStream(ui.path)
+    const uiStream = fs.createWriteStream(ui.path)
 
     const logger = createDefaultLogger(f.path, undefined, uiStream)
     logger.info(`Atlantic`, { maxDepth: 8376, waterVolum: '310,410,900 km^3' })

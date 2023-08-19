@@ -1,3 +1,4 @@
+import * as fs from 'fs'
 import { format } from 'logform'
 import * as path from 'path'
 import jsonStringify from 'safe-stable-stringify'
@@ -33,6 +34,13 @@ export function createNopLogger() {
 }
 
 export function createDefaultLogger(logFile: string, logLevel?: Level, uiStream?: NodeJS.WritableStream): FileLogger {
+  try {
+    if (fs.existsSync(logFile)) {
+      fs.rmSync(logFile, { force: true })
+    }
+  } catch (e) {
+    throw new Error(`failed to delete a file (${logFile})`)
+  }
   return new FileLogger(logFile, logLevel, uiStream)
 }
 
@@ -111,12 +119,13 @@ function newLogger(logFile: string, level: Level, uiStream: NodeJS.WritableStrea
     levels,
     defaultMeta: undefined,
     transports: [
-      // - Write all logs with level `info` and below to logFile
+      // Writes all log entries with level `info` and below to logFile.
       new winston.transports.File({
         filename: logFile,
         level,
         format: format.combine(format.timestamp(), format.errors({ stack: true }), finalFormat),
       }),
+      // Writes all logs entries marked as "UI" to the the UI stream (typically, stdout).
       new winston.transports.Stream({
         stream: uiStream,
         level: 'info',
