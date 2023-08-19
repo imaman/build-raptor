@@ -1,5 +1,6 @@
 {
   "verbosePrintTasks": [],
+  "tightFingerprints": true,
   "repoProtocol": {
     "install": "dormant"
   }

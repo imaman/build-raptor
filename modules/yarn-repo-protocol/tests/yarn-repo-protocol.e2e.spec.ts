@@ -139,6 +139,47 @@ describe('yarn-repo-protocol.e2e', () => {
     expect(runB.getSummary('a', 'test')).toMatchObject({ execution: 'EXECUTED' })
     expect(await runB.outputOf('test', 'a')).toContain('PASS dist/tests/times-two.spec.js')
   })
+  test('does not run tests when test code of a dependnecy changes', async () => {
+    const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+    const recipe = {
+      // This behavior is controlled by a switch
+      '.build-raptor.json': { tightFingerprints: true },
+      'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+      'modules/a/package.json': driver.packageJson('a', ['b']),
+      'modules/a/src/index.ts': `
+        import {b} from 'b'
+        export function a(n: number) { return '<' + b(n) + '>' }`,
+      'modules/a/tests/a.spec.ts': `
+        import {a} from '../src'
+        test('a', () => { expect(a(100)).toEqual('<_100_>') })
+      `,
+      'modules/b/package.json': driver.packageJson('b'),
+      'modules/b/src/index.ts': `export function b(n: number) { return '_' + n + '_' }`,
+      'modules/b/tests/b.spec.ts': `
+        import {b} from '../src'
+        test('b', () => { expect(b(200)).toEqual('_200_') })
+      `,
+    }
+
+    const fork = await driver.repo(recipe).fork()
+
+    const runA = await fork.run('OK', { taskKind: 'test' })
+    expect(runA.getSummary('a', 'build')).toMatchObject({ execution: 'EXECUTED' })
+    expect(runA.getSummary('a', 'test')).toMatchObject({ execution: 'EXECUTED' })
+    expect(runA.getSummary('b', 'build')).toMatchObject({ execution: 'EXECUTED' })
+    expect(runA.getSummary('b', 'test')).toMatchObject({ execution: 'EXECUTED' })
+
+    await fork.file('modules/b/tests/b.spec.ts').write(`
+        import {b} from '../src'
+        test('b', () => { expect(b(222)).toEqual('_222_') })
+      `)
+
+    const runB = await fork.run('OK', { taskKind: 'test' })
+    expect(runB.getSummary('a', 'build')).toMatchObject({ execution: 'CACHED' })
+    expect(runB.getSummary('a', 'test')).toMatchObject({ execution: 'CACHED' })
+    expect(runB.getSummary('b', 'build')).toMatchObject({ execution: 'EXECUTED' })
+    expect(runB.getSummary('b', 'test')).toMatchObject({ execution: 'EXECUTED' })
+  })
   test('if nothing has changed the tasks are cached', async () => {
     const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
     const recipe = {

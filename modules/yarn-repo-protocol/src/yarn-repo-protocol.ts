@@ -805,7 +805,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     return {
       taskName: TaskName(u.id, TaskKind('publish-assets')),
       outputLocations: [{ pathInRepo: dir.expand(PREPARED_ASSETS_DIR), purge: 'NEVER' }],
-      inputs: [dir.expand(this.dist('s'))],
+      inputs: [dir.expand('package.json'), dir.expand(this.dist('s'))],
     }
   }
 

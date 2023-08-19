@@ -33,10 +33,14 @@ export class TaskExecutor {
     private readonly tasksToDiagnose: string[],
   ) {}
 
-  async executeTask(taskName: TaskName, deps: TaskName[]) {
+  /**
+   * @param taskName
+   * @param fingerprintDeps other tasks whose fingerprint need to be part of the fingerprint of `taskName`.
+   */
+  async executeTask(taskName: TaskName, fingerprintDeps: TaskName[]) {
     const ste = new SingleTaskExecutor(
       taskName,
-      deps,
+      fingerprintDeps,
       this.model,
       this.tracker,
       this.logger,
@@ -57,9 +61,24 @@ class SingleTaskExecutor {
   private readonly phasePublisher = new TypedPublisher<{ phase: Phase }>()
   private readonly isTest: boolean
 
+  /**
+   * @param taskName
+   * @param fingerprintDeps other tasks whose fingerprint need to be part of the fingerprint of `taskName`.
+   * @param model
+   * @param tracker
+   * @param logger
+   * @param repoProtocol
+   * @param taskStore
+   * @param taskOutputDir
+   * @param eventPublisher
+   * @param fingerprintLedger
+   * @param purger
+   * @param testCaching
+   * @param shouldDiagnose
+   */
   constructor(
     private readonly taskName: TaskName,
-    private readonly deps: TaskName[],
+    private readonly fingerprintDeps: TaskName[],
     private readonly model: Model,
     private readonly tracker: TaskTracker,
     private readonly logger: Logger,
@@ -115,7 +134,8 @@ class SingleTaskExecutor {
     // TODO(imaman): test coverage for the sort-by
     // TODO(imaman): concurrent loop
 
-    for (const d of this.deps) {
+    this.diagnose(`deps are ${JSON.stringify(this.fingerprintDeps)}, info.deps=${JSON.stringify(t.taskInfo.deps)}`)
+    for (const d of this.fingerprintDeps) {
       const dep = this.tracker.getTask(d)
       fps.push(dep.getFingerprint())
     }
