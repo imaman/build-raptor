@@ -35,7 +35,8 @@ export function createNopLogger() {
 
 export function createDefaultLogger(logFile: string, logLevel?: Level, uiStream?: NodeJS.WritableStream): FileLogger {
   try {
-    if (fs.existsSync(logFile)) {
+    const stat = fs.statSync(logFile, { throwIfNoEntry: false })
+    if (stat && stat.size > 0) {
       fs.rmSync(logFile, { force: true })
     }
   } catch (e) {
