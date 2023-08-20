@@ -652,20 +652,18 @@ export class YarnRepoProtocol implements RepoProtocol {
     const content = fs.readFileSync(indexJs, 'utf-8')
 
     const preamble = [
-      '(() => {',
-      '  const fs = require(`fs`)',
-      '  const path = require(`path`)',
-      '  const dist = path.dirname(__dirname)',
-      '  const distNodeModules = path.join(dist, `node_modules`)',
-      '  const distDeps = path.join(dist, `deps`)',
-      '  fs.rmSync(distNodeModules, {force: true, recursive: true})',
-      '  fs.mkdirSync(distNodeModules, {recursive: true})',
-      '  if (fs.existsSync(distDeps)) {',
-      '    for (const p of fs.readdirSync(distDeps)) {',
-      '      fs.symlinkSync(`../deps/${p}`, `${distNodeModules}/${p}`)',
-      '    }',
+      'const fs = require(`fs`)',
+      'const path = require(`path`)',
+      'const dist = path.dirname(__dirname)',
+      'const distNodeModules = path.join(dist, `node_modules`)',
+      'const distDeps = path.join(dist, `deps`)',
+      'fs.rmSync(distNodeModules, {force: true, recursive: true})',
+      'fs.mkdirSync(distNodeModules, {recursive: true})',
+      'if (fs.existsSync(distDeps)) {',
+      '  for (const p of fs.readdirSync(distDeps)) {',
+      '    fs.symlinkSync(`../deps/${p}`, `${distNodeModules}/${p}`)',
       '  }',
-      '})()',
+      '}',
       '',
     ].join('\n')
 
