@@ -159,7 +159,7 @@ describe('asset-publishing-and-packing', () => {
 
       ChildProcess.execSync(`npm install`, { cwd: dir, encoding: 'utf-8', timeout: 120000 })
       const output = ChildProcess.execSync(`node a.js`, { cwd: dir, encoding: 'utf-8', timeout: 120000 })
-      expect(output.trim()).toEqual('f:g:XYZ')
+      expect(output.trim()).toEqual('four scores and seven years ago')
     })
   })
 })
