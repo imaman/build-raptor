@@ -5,8 +5,8 @@
   "description": "monorepo of the build-raptor project",
   "keywords": [
     "build",
-    "typscript",
-    "monorepo"
+    "monorepo",
+    "typscript"
   ],
   "license": "ISC",
   "author": "imaman",
