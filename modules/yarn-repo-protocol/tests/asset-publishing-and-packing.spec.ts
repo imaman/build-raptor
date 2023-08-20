@@ -133,5 +133,33 @@ describe('asset-publishing-and-packing', () => {
       const output = ChildProcess.execSync(`node a.js`, { cwd: dir, encoding: 'utf-8', timeout: 120000 })
       expect(output.trim()).toEqual('f:g:XYZ')
     })
+    test('allows the index.ts to define its own imports', async () => {
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+      const recipe = {
+        'package.json': { name: 'my-libs', private: true, workspaces: ['modules/*'] },
+        'modules/foo/package.json': driver.packageJson('foo', [], {}),
+        'modules/foo/src/index.ts': `
+          import * as path from 'path'; 
+          import * as fs from 'fs'; 
+          export function foo(dir: string, f: string) { return fs.readFileSync(path.join(dir, f), 'utf-8')}`,
+        'modules/foo/tests/index.spec.ts': ``,
+      }
+
+      const fork = await driver.repo(recipe).fork()
+      await fork.run('OK', { taskKind: 'pack' })
+      const fooPack = fork.file('modules/foo/pack').resolve()
+
+      const dir = await folderify({
+        'package.json': { name: 'app', private: true, version: '1.0.0', dependencies: { foo: fooPack } },
+        'a.js': `
+          const {foo} = require('foo')
+          console.log(foo(__dirname, 'myfile'))`,
+        myfile: 'four scores and seven years ago',
+      })
+
+      ChildProcess.execSync(`npm install`, { cwd: dir, encoding: 'utf-8', timeout: 120000 })
+      const output = ChildProcess.execSync(`node a.js`, { cwd: dir, encoding: 'utf-8', timeout: 120000 })
+      expect(output.trim()).toEqual('f:g:XYZ')
+    })
   })
 })
