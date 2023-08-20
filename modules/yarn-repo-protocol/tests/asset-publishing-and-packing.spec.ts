@@ -134,6 +134,10 @@ describe('asset-publishing-and-packing', () => {
       expect(output.trim()).toEqual('f:g:XYZ')
     })
     test('allows the index.ts to define its own imports', async () => {
+      // This test verifies that the symlinking code (the "preamble") that is injected into the index.ts file of the
+      // packed bundle is isolated from the "real" code in that file. To this end, this test defines an index.ts file
+      // which defines `fs` and `path` files (similar to the ones defined by the preamble) and makes sure the package
+      // still runs correctly.
       const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
       const recipe = {
         'package.json': { name: 'my-libs', private: true, workspaces: ['modules/*'] },
