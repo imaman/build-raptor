@@ -1,4 +1,5 @@
 export * from './arrays'
+export * from './camelize-record'
 export * from './constructs'
 export * from './directory-scanner'
 export * from './executor'
