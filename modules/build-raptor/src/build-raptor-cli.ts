@@ -392,7 +392,7 @@ export function main() {
         async argv => {
           await run({
             dir: argv.dir,
-            commands: ['publish-assets'],
+            commands: ['publish-assets', 'test'],
             units: argv.units,
             githubActions: argv['github-actions'],
             printPassing: argv['print-passing'],
