@@ -166,7 +166,7 @@ class File {
 
 interface RunOptions {
   units?: string[]
-  taskKind?: string
+  taskKind?: string | string[]
   concurrencyLevel?: number
   checkGitIgnore?: boolean
   testCaching?: boolean
@@ -186,14 +186,14 @@ class Fork {
   }
 
   async run(expectedStatus: 'OK' | 'FAIL' | 'CRASH', options: RunOptions = {}): Promise<Run> {
-    const command = options.taskKind ?? ''
+    const commands = !options.taskKind ? [] : Array.isArray(options.taskKind) ? options.taskKind : [options.taskKind]
     const units = options.units ?? []
     const concurrencyLevel = Int(options.concurrencyLevel ?? 10)
     const rp = this.repoProtocol
     const bootstrapper = await EngineBootstrapper.create(this.dir, this.storageClient, rp, Date.now(), this.testName)
 
     await fse.mkdirp(this.buildRaptorDir)
-    const runner = await bootstrapper.makeRunner([command], units, undefined, {
+    const runner = await bootstrapper.makeRunner(commands, units, undefined, {
       checkGitIgnore: options.checkGitIgnore ?? false,
       concurrency: concurrencyLevel,
       buildRaptorDir: this.buildRaptorDir,
