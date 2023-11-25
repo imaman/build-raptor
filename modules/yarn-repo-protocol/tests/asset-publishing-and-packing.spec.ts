@@ -22,7 +22,7 @@ describe('asset-publishing-and-packing', () => {
         'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
         'modules/a/package.json': driver.packageJson('a', [], { 'prepare-assets': 'touch prepared-assets/x' }),
         'modules/a/src/a.ts': `export function a(n: number) { return n * 100 }`,
-        'modules/a/tests/a.spec.ts': ``,
+        'modules/a/tests/a.spec.ts': `test('a', () => { expect(1).toEqual(1) })`,
       }
 
       const fork = await driver.repo(recipe).fork()
@@ -40,10 +40,10 @@ describe('asset-publishing-and-packing', () => {
         'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
         'modules/a/package.json': driver.packageJson('a', [], { 'prepare-assets': 'touch prepared-assets/x' }),
         'modules/a/src/a.ts': `export function a(n: number) { return n * 100 }`,
-        'modules/a/tests/a.spec.ts': ``,
+        'modules/a/tests/a.spec.ts': `test('a', () => { expect(1).toEqual(1) })`,
         'modules/b/package.json': driver.packageJson('b'),
         'modules/b/src/b.ts': `export function b(n: number) { return n * 200 }`,
-        'modules/b/tests/b.spec.ts': ``,
+        'modules/b/tests/b.spec.ts': `test('b', () => { expect(1).toEqual(1) })`,
       }
 
       const fork = await driver.repo(recipe).fork()
@@ -54,7 +54,7 @@ describe('asset-publishing-and-packing', () => {
         '> a@1.0.0 prepare-assets',
         '> touch prepared-assets/x',
       ])
-      expect(run.taskNames()).toEqual(['a:build', 'a:publish-assets'])
+      expect(run.taskNames()).toEqual(['a:build', 'a:publish-assets', 'a:test'])
     })
     test('publish-assets publishes a blob and generates a matching ASSET_PUBLSIHED step with a fingerprint', async () => {
       const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
@@ -62,7 +62,7 @@ describe('asset-publishing-and-packing', () => {
         'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
         'modules/a/package.json': driver.packageJson('a', [], { 'prepare-assets': 'echo "a" > prepared-assets/x' }),
         'modules/a/src/a.ts': `export function a(n: number) { return n * 100 }`,
-        'modules/a/tests/a.spec.ts': ``,
+        'modules/a/tests/a.spec.ts': `test('a', () => { expect(1).toEqual(1) })`,
       }
 
       const fork = await driver.repo(recipe).fork()
@@ -82,7 +82,7 @@ describe('asset-publishing-and-packing', () => {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
       'modules/a/package.json': driver.packageJson('a', [], { 'prepare-assets': 'echo "a" > prepared-assets/x1' }),
       'modules/a/src/a.ts': `export function a(n: number) { return n * 100 }`,
-      'modules/a/tests/a.spec.ts': ``,
+      'modules/a/tests/a.spec.ts': `test('a', () => { expect(1).toEqual(1) })`,
     }
 
     const fork = await driver.repo(recipe).fork()
