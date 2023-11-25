@@ -298,6 +298,15 @@ function withBuildOptions<T>(y: yargs.Argv<T>) {
       type: 'string',
       demandOption: false,
     })
+    .option('test-reporting', {
+      choices: ['just-failing', 'tree', 'tree-just-failing'],
+      describe: 'test reporing policy',
+    })
+    .option('test-caching', {
+      describe: 'whether to skip running tests that have already passed',
+      type: 'boolean',
+      default: true,
+    })
 }
 
 export function main() {
@@ -307,53 +316,45 @@ export function main() {
         'build',
         'build the code',
         yargs => withBuildOptions(yargs),
-        async argv => {
+        async rawArgv => {
+          const argv = camelizeRec(rawArgv)
           await run({
             dir: argv.dir,
             command: 'build',
             units: argv.units,
-            githubActions: argv['github-actions'],
-            printPassing: argv['print-passing'],
-            buildOutputLocation: argv['build-output-locations'],
-            concurrency: argv['concurrency'],
+            githubActions: argv.githubActions,
+            printPassing: argv.printPassing,
+            buildOutputLocation: argv.buildOutputLocations,
+            concurrency: argv.concurrency,
             compact: argv.compact,
-            stepByStepProcessor: argv['step-by-step-processor'],
-            buildRaptorConfigFile: argv['config-file'],
+            stepByStepProcessor: argv.stepByStepProcessor,
+            buildRaptorConfigFile: argv.configFile,
           })
         },
       )
       .command(
         'test',
         'run tests',
-        yargs =>
-          withBuildOptions(yargs)
-            .option('test-reporting', {
-              choices: ['just-failing', 'tree', 'tree-just-failing'],
-              describe: 'test reporing policy',
-            })
-            .option('test-caching', {
-              describe: 'whether to skip running tests that have already passed',
-              type: 'boolean',
-              default: true,
-            }),
-        async argv => {
-          const tr = argv['test-reporting']
+        yargs => withBuildOptions(yargs),
+        async rawArgv => {
+          const argv = camelizeRec(rawArgv)
+          const tr = argv.testReporting
           await run({
             dir: argv.dir,
             command: 'test',
             units: argv.units,
-            githubActions: argv['github-actions'],
-            printPassing: argv['print-passing'],
-            buildOutputLocation: argv['build-output-locations'],
-            concurrency: argv['concurrency'],
+            githubActions: argv.githubActions,
+            printPassing: argv.printPassing,
+            buildOutputLocation: argv.buildOutputLocations,
+            concurrency: argv.concurrency,
             compact: argv.compact,
-            testCaching: argv['test-caching'],
+            testCaching: argv.testCaching,
             testReporting:
               tr === 'just-failing' || tr === 'tree' || tr === 'tree-just-failing' || tr === undefined
                 ? tr
                 : failMe(`unsupported value: ${tr}`),
-            stepByStepProcessor: argv['step-by-step-processor'],
-            buildRaptorConfigFile: argv['config-file'],
+            stepByStepProcessor: argv.stepByStepProcessor,
+            buildRaptorConfigFile: argv.configFile,
           })
         },
       )
@@ -361,18 +362,19 @@ export function main() {
         'pack',
         'create publishable packages',
         yargs => withBuildOptions(yargs),
-        async argv => {
+        async rawArgv => {
+          const argv = camelizeRec(rawArgv)
           await run({
             dir: argv.dir,
             command: 'pack',
             units: argv.units,
-            githubActions: argv['github-actions'],
-            printPassing: argv['print-passing'],
-            buildOutputLocation: argv['build-output-locations'],
-            concurrency: argv['concurrency'],
+            githubActions: argv.githubActions,
+            printPassing: argv.printPassing,
+            buildOutputLocation: argv.buildOutputLocations,
+            concurrency: argv.concurrency,
             compact: argv.compact,
-            stepByStepProcessor: argv['step-by-step-processor'],
-            buildRaptorConfigFile: argv['config-file'],
+            stepByStepProcessor: argv.stepByStepProcessor,
+            buildRaptorConfigFile: argv.configFile,
           })
         },
       )
@@ -405,4 +407,30 @@ export function main() {
       .demandCommand(1)
       .parse()
   )
+}
+
+type CamelizeString<T extends PropertyKey, C extends string = ''> = T extends string
+  ? string extends T
+    ? string
+    : T extends `${infer F}-${infer R}`
+    ? CamelizeString<Capitalize<R>, `${C}${F}`>
+    : `${C}${T}`
+  : T
+
+type Camelize<T> = { [K in keyof T as CamelizeString<K>]: T[K] }
+
+function camelizeRec<T extends Record<string, boolean | string | number | unknown>>(rec: T): Camelize<T> {
+  const ret: Record<string, unknown> = {}
+
+  for (const k of Object.keys(rec)) {
+    const parts = k.split('-')
+    if (parts.length === 1) {
+      ret[k] = rec[k]
+      continue
+    }
+
+    ret[parts.map((p, i) => (i === 0 ? p : p[0].toUpperCase() + p.slice(1))).join('')] = rec[k]
+  }
+
+  return ret as Camelize<T> // eslint-disable-line @typescript-eslint/consistent-type-assertions
 }
