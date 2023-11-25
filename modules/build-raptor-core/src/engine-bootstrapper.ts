@@ -32,7 +32,12 @@ export class EngineBootstrapper {
     this.rootDir = RepoRoot(rootDir)
   }
 
-  private async makeEngine(command: string, units: string[], configFile: string | undefined, options: EngineOptions) {
+  private async makeEngine(
+    commands: string[],
+    units: string[],
+    configFile: string | undefined,
+    options: EngineOptions,
+  ) {
     const taskOutputDir = (await Tmp.dir()).path
     this.logger.info(`rootDir is ${this.rootDir}`)
     this.logger.info(`The console outputs (stdout/stderr) of tasks are stored under ${taskOutputDir}`)
@@ -52,7 +57,7 @@ export class EngineBootstrapper {
       this.repoProtocol,
       taskStore,
       taskOutputDir,
-      command,
+      commands,
       units,
       this.eventPublisher,
       transmitter,
@@ -92,11 +97,11 @@ export class EngineBootstrapper {
    * @param concurrency maximum number of tasks to run in parallel.
    * @returns
    */
-  async makeRunner(command: string, units: string[], configFile: string | undefined, options: EngineOptions) {
+  async makeRunner(commands: string[], units: string[], configFile: string | undefined, options: EngineOptions) {
     try {
       const t1 = Date.now()
-      this.logger.info(`Creating a runner for ${JSON.stringify({ command, units, options })}`)
-      const engine = await this.makeEngine(command, units, configFile, options)
+      this.logger.info(`Creating a runner for ${JSON.stringify({ commands, units, options })}`)
+      const engine = await this.makeEngine(commands, units, configFile, options)
       const buildRunId = this.newBuildRunId()
       return async () => {
         try {

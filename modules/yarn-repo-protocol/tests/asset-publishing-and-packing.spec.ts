@@ -56,6 +56,29 @@ describe('asset-publishing-and-packing', () => {
       ])
       expect(run.taskNames()).toEqual(['a:build', 'a:publish-assets'])
     })
+    test('can runs tests in parallel to publish-assets', async () => {
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': driver.packageJson('a', [], { 'prepare-assets': 'touch prepared-assets/x' }),
+        'modules/a/src/a.ts': `export function a(n: number) { return n * 100 }`,
+        'modules/a/tests/a.spec.ts': `test('a', () => expect(1).toEqual(1))`,
+        'modules/b/package.json': driver.packageJson('b'),
+        'modules/b/src/b.ts': `export function b(n: number) { return n * 200 }`,
+        'modules/b/tests/b.spec.ts': `test('b', () => expect(20).toEqual(21))`,
+      }
+
+      const fork = await driver.repo(recipe).fork()
+
+      const run = await fork.run('FAIL', { taskKind: ['publish-assets', 'test'] })
+
+      expect(await run.outputOf('publish-assets', 'a')).toEqual([
+        '> a@1.0.0 prepare-assets',
+        '> touch prepared-assets/x',
+      ])
+      expect(await run.outputOf('test', 'b')).toEqual(expect.arrayContaining(['    Expected: 21', '    Received: 20']))
+      expect(run.taskNames()).toEqual(['a:build', 'a:publish-assets', 'a:test', 'b:build', 'b:test'])
+    })
     test('publish-assets publishes a blob and generates a matching ASSET_PUBLSIHED step with a fingerprint', async () => {
       const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
       const recipe = {
