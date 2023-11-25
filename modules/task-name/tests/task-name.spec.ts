@@ -5,12 +5,12 @@ import { TaskKind, TaskName } from '../src/task-name'
 describe('task-name', () => {
   describe('TaskName', () => {
     test('generates a string from unit-ID, task-kind', () => {
-      const taskName = TaskName(UnitId('U'), TaskKind('T'))
+      const taskName = TaskName(UnitId('U'), TaskKind('T'), '')
       expect(taskName).toEqual('U:T')
     })
     describe('undo', () => {
       test('decomposes a TaskName back into unit-ID, task-kind', () => {
-        const taskName = TaskName(UnitId('U'), TaskKind('T'))
+        const taskName = TaskName(UnitId('U'), TaskKind('T'), '')
         const decomposed = TaskName().undo(taskName)
         expect(decomposed).toEqual({ unitId: 'U', taskKind: 'T' })
       })

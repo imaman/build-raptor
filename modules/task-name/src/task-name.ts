@@ -31,12 +31,12 @@ class TaskNameUtils {
 
   parse(input: string) {
     const { unitId, taskKind } = this.undoImpl(input)
-    return TaskName(unitId, taskKind)
+    return TaskName(unitId, taskKind, '')
   }
 }
 
 export function TaskName(): TaskNameUtils
-export function TaskName(unitId: UnitId, taskKind: TaskKind): TaskName
+export function TaskName(unitId: UnitId, taskKind: TaskKind, selector: string): TaskName
 export function TaskName(unitId?: UnitId, taskKind?: TaskKind): TaskNameUtils | TaskName {
   if (unitId === undefined && taskKind === undefined) {
     return new TaskNameUtils()
