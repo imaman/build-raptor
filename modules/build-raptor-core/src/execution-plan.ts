@@ -25,8 +25,8 @@ export class ExecutionPlan {
     return taskNames.map(tn => this.getTask(tn))
   }
 
-  apply(command: string, units: string[]) {
-    const startingPoints = this.computeStartingPoints(command, units)
+  apply(commands: string[], units: string[]) {
+    const startingPoints = this.computeStartingPoints(commands, units)
     this.dropOutOfScope(startingPoints)
     return startingPoints
   }
@@ -42,12 +42,12 @@ export class ExecutionPlan {
     this.logger.info(`Task graph (only in-scope):\n${this.taskGraph}`)
   }
 
-  private computeStartingPoints(command: string, units: string[]) {
+  private computeStartingPoints(commands: string[], units: string[]) {
     const setOfUnitId = new Set<string>(units)
     this.logger.info(`setOfUnitId=${[...setOfUnitId].join('; ')}`)
-    this.logger.info(`command=<${command}>`)
+    this.logger.info(`command=<${commands}>`)
     const matchesUnit = setOfUnitId.size === 0 ? () => true : (t: Task) => setOfUnitId.has(t.unitId)
-    const matchesCommand = command === '' ? () => true : (t: Task) => t.kind === command
+    const matchesCommand = commands.length === 0 ? () => true : (t: Task) => commands.includes(t.kind)
     const ret = this.tasks()
       .filter(t => matchesUnit(t) && matchesCommand(t))
       .map(t => t.name)
