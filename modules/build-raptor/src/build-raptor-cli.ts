@@ -28,7 +28,7 @@ import { getPrForCommit } from './get-pr-for-commit'
 type TestReporting = 'just-failing' | 'tree' | 'tree-just-failing'
 
 interface Options {
-  command: 'build' | 'test' | 'pack' | 'publish-assets'
+  commands: ('build' | 'test' | 'pack' | 'publish-assets')[]
   dir: string | undefined
   units: string[]
   githubActions: boolean
@@ -157,7 +157,7 @@ export async function run(options: Options) {
     }
   })
 
-  const runner = await bootstrapper.makeRunner(options.command, options.units, options.buildRaptorConfigFile, {
+  const runner = await bootstrapper.makeRunner(options.commands, options.units, options.buildRaptorConfigFile, {
     stepByStepProcessorModuleName: options.stepByStepProcessor,
     concurrency: Int(options.concurrency),
     buildRaptorDir,
@@ -321,7 +321,7 @@ export function main() {
           const argv = camelizeRecord(rawArgv)
           await run({
             dir: argv.dir,
-            command: 'build',
+            commands: ['build'],
             units: argv.units,
             githubActions: argv.githubActions,
             printPassing: argv.printPassing,
@@ -342,7 +342,7 @@ export function main() {
           const tr = argv.testReporting
           await run({
             dir: argv.dir,
-            command: 'test',
+            commands: ['test'],
             units: argv.units,
             githubActions: argv.githubActions,
             printPassing: argv.printPassing,
@@ -367,7 +367,7 @@ export function main() {
           const argv = camelizeRecord(rawArgv)
           await run({
             dir: argv.dir,
-            command: 'pack',
+            commands: ['pack'],
             units: argv.units,
             githubActions: argv.githubActions,
             printPassing: argv.printPassing,
@@ -392,7 +392,7 @@ export function main() {
         async argv => {
           await run({
             dir: argv.dir,
-            command: 'publish-assets',
+            commands: ['publish-assets'],
             units: argv.units,
             githubActions: argv['github-actions'],
             printPassing: argv['print-passing'],
