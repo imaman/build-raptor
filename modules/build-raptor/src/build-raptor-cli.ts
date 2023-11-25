@@ -389,19 +389,26 @@ export function main() {
             type: 'boolean',
             default: false,
           }),
-        async argv => {
+        async rawArgv => {
+          const argv = camelizeRecord(rawArgv)
+          const tr = argv.testReporting
           await run({
             dir: argv.dir,
             commands: ['publish-assets', 'test'],
             units: argv.units,
-            githubActions: argv['github-actions'],
-            printPassing: argv['print-passing'],
-            buildOutputLocation: argv['build-output-locations'],
-            concurrency: argv['concurrency'],
+            githubActions: argv.githubActions,
+            printPassing: argv.printPassing,
+            buildOutputLocation: argv.buildOutputLocations,
+            concurrency: argv.concurrency,
             compact: argv.compact,
-            callRegisterAsset: argv['register-assets'],
-            stepByStepProcessor: argv['step-by-step-processor'],
-            buildRaptorConfigFile: argv['config-file'],
+            testCaching: argv.testCaching,
+            testReporting:
+              tr === 'just-failing' || tr === 'tree' || tr === 'tree-just-failing' || tr === undefined
+                ? tr
+                : failMe(`unsupported value: ${tr}`),
+            callRegisterAsset: argv.registerAssets,
+            stepByStepProcessor: argv.stepByStepProcessor,
+            buildRaptorConfigFile: argv.configFile,
           })
         },
       )
