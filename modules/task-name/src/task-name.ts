@@ -36,14 +36,14 @@ class TaskNameUtils {
 }
 
 export function TaskName(): TaskNameUtils
-export function TaskName(unitId: UnitId, taskKind: TaskKind, selector: string): TaskName
-export function TaskName(unitId?: UnitId, taskKind?: TaskKind): TaskNameUtils | TaskName {
+export function TaskName(unitId: UnitId, taskKind: TaskKind, selector?: string): TaskName
+export function TaskName(unitId?: UnitId, taskKind?: TaskKind, selector = ''): TaskNameUtils | TaskName {
   if (unitId === undefined && taskKind === undefined) {
     return new TaskNameUtils()
   }
 
   // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-  return `${unitId}:${taskKind}` as TaskName
+  return `${unitId}:${taskKind}${selector ? '/' + selector : ''}` as TaskName
 }
 
 export type TaskKind = Brand<string, 'TaskKind'>
