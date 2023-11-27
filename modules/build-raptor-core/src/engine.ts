@@ -56,7 +56,7 @@ export class Engine {
     private readonly repoProtocol: RepoProtocol,
     private readonly taskStore: TaskStore,
     private readonly taskOutputDir: string,
-    private readonly command: string,
+    private readonly commands: string[],
     private readonly units: string[],
     private readonly eventPublisher: TypedPublisher<EngineEventScheme>,
     private readonly steps: StepByStepTransmitter,
@@ -135,10 +135,10 @@ export class Engine {
       const taskList = await this.repoProtocol.getTasks()
       this.logger.info(`catalog=\n${JSON.stringify(taskList, null, 2)}`)
       const plan = await new Planner(this.logger).computePlan(taskList, model)
-      const startingPoints = plan.apply(this.command, this.units)
+      const startingPoints = plan.apply(this.commands, this.units)
       if (startingPoints.length === 0) {
         throw new BuildFailedError(
-          `No tasks to run in this build (command=<${this.command}>, units=<${JSON.stringify(this.units)})>`,
+          `No tasks to run in this build (command=<${this.commands}>, units=<${JSON.stringify(this.units)})>`,
         )
       }
 

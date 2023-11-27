@@ -3,6 +3,7 @@ import * as fse from 'fs-extra'
 import { createDefaultLogger, Logger } from 'logger'
 import {
   assigningGet,
+  camelizeRecord,
   dumpFile,
   failMe,
   FilesystemStorageClient,
@@ -27,7 +28,7 @@ import { getPrForCommit } from './get-pr-for-commit'
 type TestReporting = 'just-failing' | 'tree' | 'tree-just-failing'
 
 interface Options {
-  command: 'build' | 'test' | 'pack' | 'publish-assets'
+  commands: ('build' | 'test' | 'pack' | 'publish-assets')[]
   dir: string | undefined
   units: string[]
   githubActions: boolean
@@ -156,7 +157,7 @@ export async function run(options: Options) {
     }
   })
 
-  const runner = await bootstrapper.makeRunner(options.command, options.units, options.buildRaptorConfigFile, {
+  const runner = await bootstrapper.makeRunner(options.commands, options.units, options.buildRaptorConfigFile, {
     stepByStepProcessorModuleName: options.stepByStepProcessor,
     concurrency: Int(options.concurrency),
     buildRaptorDir,
@@ -298,6 +299,15 @@ function withBuildOptions<T>(y: yargs.Argv<T>) {
       type: 'string',
       demandOption: false,
     })
+    .option('test-reporting', {
+      choices: ['just-failing', 'tree', 'tree-just-failing'],
+      describe: 'test reporing policy',
+    })
+    .option('test-caching', {
+      describe: 'whether to skip running tests that have already passed',
+      type: 'boolean',
+      default: true,
+    })
 }
 
 export function main() {
@@ -307,53 +317,45 @@ export function main() {
         'build',
         'build the code',
         yargs => withBuildOptions(yargs),
-        async argv => {
+        async rawArgv => {
+          const argv = camelizeRecord(rawArgv)
           await run({
             dir: argv.dir,
-            command: 'build',
+            commands: ['build'],
             units: argv.units,
-            githubActions: argv['github-actions'],
-            printPassing: argv['print-passing'],
-            buildOutputLocation: argv['build-output-locations'],
-            concurrency: argv['concurrency'],
+            githubActions: argv.githubActions,
+            printPassing: argv.printPassing,
+            buildOutputLocation: argv.buildOutputLocations,
+            concurrency: argv.concurrency,
             compact: argv.compact,
-            stepByStepProcessor: argv['step-by-step-processor'],
-            buildRaptorConfigFile: argv['config-file'],
+            stepByStepProcessor: argv.stepByStepProcessor,
+            buildRaptorConfigFile: argv.configFile,
           })
         },
       )
       .command(
         'test',
         'run tests',
-        yargs =>
-          withBuildOptions(yargs)
-            .option('test-reporting', {
-              choices: ['just-failing', 'tree', 'tree-just-failing'],
-              describe: 'test reporing policy',
-            })
-            .option('test-caching', {
-              describe: 'whether to skip running tests that have already passed',
-              type: 'boolean',
-              default: true,
-            }),
-        async argv => {
-          const tr = argv['test-reporting']
+        yargs => withBuildOptions(yargs),
+        async rawArgv => {
+          const argv = camelizeRecord(rawArgv)
+          const tr = argv.testReporting
           await run({
             dir: argv.dir,
-            command: 'test',
+            commands: ['test'],
             units: argv.units,
-            githubActions: argv['github-actions'],
-            printPassing: argv['print-passing'],
-            buildOutputLocation: argv['build-output-locations'],
-            concurrency: argv['concurrency'],
+            githubActions: argv.githubActions,
+            printPassing: argv.printPassing,
+            buildOutputLocation: argv.buildOutputLocations,
+            concurrency: argv.concurrency,
             compact: argv.compact,
-            testCaching: argv['test-caching'],
+            testCaching: argv.testCaching,
             testReporting:
               tr === 'just-failing' || tr === 'tree' || tr === 'tree-just-failing' || tr === undefined
                 ? tr
                 : failMe(`unsupported value: ${tr}`),
-            stepByStepProcessor: argv['step-by-step-processor'],
-            buildRaptorConfigFile: argv['config-file'],
+            stepByStepProcessor: argv.stepByStepProcessor,
+            buildRaptorConfigFile: argv.configFile,
           })
         },
       )
@@ -361,18 +363,19 @@ export function main() {
         'pack',
         'create publishable packages',
         yargs => withBuildOptions(yargs),
-        async argv => {
+        async rawArgv => {
+          const argv = camelizeRecord(rawArgv)
           await run({
             dir: argv.dir,
-            command: 'pack',
+            commands: ['pack'],
             units: argv.units,
-            githubActions: argv['github-actions'],
-            printPassing: argv['print-passing'],
-            buildOutputLocation: argv['build-output-locations'],
-            concurrency: argv['concurrency'],
+            githubActions: argv.githubActions,
+            printPassing: argv.printPassing,
+            buildOutputLocation: argv.buildOutputLocations,
+            concurrency: argv.concurrency,
             compact: argv.compact,
-            stepByStepProcessor: argv['step-by-step-processor'],
-            buildRaptorConfigFile: argv['config-file'],
+            stepByStepProcessor: argv.stepByStepProcessor,
+            buildRaptorConfigFile: argv.configFile,
           })
         },
       )
@@ -386,19 +389,26 @@ export function main() {
             type: 'boolean',
             default: false,
           }),
-        async argv => {
+        async rawArgv => {
+          const argv = camelizeRecord(rawArgv)
+          const tr = argv.testReporting
           await run({
             dir: argv.dir,
-            command: 'publish-assets',
+            commands: ['publish-assets', 'test'],
             units: argv.units,
-            githubActions: argv['github-actions'],
-            printPassing: argv['print-passing'],
-            buildOutputLocation: argv['build-output-locations'],
-            concurrency: argv['concurrency'],
+            githubActions: argv.githubActions,
+            printPassing: argv.printPassing,
+            buildOutputLocation: argv.buildOutputLocations,
+            concurrency: argv.concurrency,
             compact: argv.compact,
-            callRegisterAsset: argv['register-assets'],
-            stepByStepProcessor: argv['step-by-step-processor'],
-            buildRaptorConfigFile: argv['config-file'],
+            testCaching: argv.testCaching,
+            testReporting:
+              tr === 'just-failing' || tr === 'tree' || tr === 'tree-just-failing' || tr === undefined
+                ? tr
+                : failMe(`unsupported value: ${tr}`),
+            callRegisterAsset: argv.registerAssets,
+            stepByStepProcessor: argv.stepByStepProcessor,
+            buildRaptorConfigFile: argv.configFile,
           })
         },
       )
