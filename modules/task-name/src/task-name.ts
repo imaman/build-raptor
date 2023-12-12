@@ -43,7 +43,7 @@ export function TaskName(unitId?: UnitId, taskKind?: TaskKind, selector = ''): T
   }
 
   // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-  return `${unitId}:${taskKind}${selector ? '/' + selector : ''}` as TaskName
+  return `${unitId}:${taskKind}${selector ? ':' + selector : ''}` as TaskName
 }
 
 export type TaskKind = Brand<string, 'TaskKind'>

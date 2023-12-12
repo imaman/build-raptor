@@ -8,11 +8,20 @@ describe('task-name', () => {
       const taskName = TaskName(UnitId('U'), TaskKind('T'), '')
       expect(taskName).toEqual('U:T')
     })
+    test('can take an optional sub-kind value', () => {
+      const taskName = TaskName(UnitId('U'), TaskKind('T'), 'abc')
+      expect(taskName).toEqual('U:T:abc')
+    })
     describe('undo', () => {
       test('decomposes a TaskName back into unit-ID, task-kind', () => {
         const taskName = TaskName(UnitId('U'), TaskKind('T'), '')
         const decomposed = TaskName().undo(taskName)
         expect(decomposed).toEqual({ unitId: 'U', taskKind: 'T' })
+      })
+      test('can decompose a TaskName back into unit-ID, task-kind, sub-kind', () => {
+        const taskName = TaskName(UnitId('U'), TaskKind('T'), 'abc')
+        const decomposed = TaskName().undo(taskName)
+        expect(decomposed).toEqual({ unitId: 'U', taskKind: 'T', subKind: 'abc' })
       })
     })
   })
