@@ -192,6 +192,9 @@ export class YarnRepoProtocol implements RepoProtocol {
     const rootBase = rootDir.resolve(PathInRepo(this.tsconfigBaseName))
     const rootBaseExists = await fse.pathExists(rootBase)
 
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+    const rootBaseContent = rootBaseExists ? ((await fse.readJSON(rootBase)) as Includer) : {}
+
     const defaultOptions: TsConfigJson.CompilerOptions = {
       module: 'CommonJS',
       inlineSourceMap: true,
@@ -220,11 +223,7 @@ export class YarnRepoProtocol implements RepoProtocol {
         additions = content.include ?? []
       }
 
-      if (rootBaseExists) {
-        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-        const content = (await fse.readJSON(rootBase)) as Includer
-        additions.push(...(content.include ?? []))
-      }
+      additions.push(...(rootBaseContent.include ?? []))
 
       const tsconf: TsConfigJson = {
         ...(localBaseExists
