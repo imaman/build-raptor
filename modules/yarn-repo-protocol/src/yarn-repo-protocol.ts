@@ -215,13 +215,15 @@ export class YarnRepoProtocol implements RepoProtocol {
 
       let additions: string[] = []
       if (localBaseExists) {
-        const content = await fse.readJSON(localBase) as TsConfigJson
+        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+        const content = (await fse.readJSON(localBase)) as Includer
         additions = content.include ?? []
       }
 
       if (rootBaseExists) {
-        const content = await fse.readJSON(rootBase) as TsConfigJson
-        additions.push(...content.include ?? [])
+        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+        const content = (await fse.readJSON(rootBase)) as Includer
+        additions.push(...(content.include ?? []))
       }
 
       const tsconf: TsConfigJson = {
@@ -242,7 +244,13 @@ export class YarnRepoProtocol implements RepoProtocol {
             path: path.relative(u.pathInRepo.val, dp.pathInRepo.val),
           }
         }),
-        include: [`${this.src}/**/*`, `${this.src}/**/*.json`, `${this.tests}/**/*`, `${this.tests}/**/*.json`, ...additions],
+        include: [
+          `${this.src}/**/*`,
+          `${this.src}/**/*.json`,
+          `${this.tests}/**/*`,
+          `${this.tests}/**/*.json`,
+          ...additions,
+        ],
       }
 
       if (!tsconf.references?.length) {
@@ -930,3 +938,5 @@ const rootUnitId = UnitId('.')
 const installTaskName = TaskName(rootUnitId, TaskKind('install'))
 
 const emptyRerunList: RerunList = RerunList.parse([])
+
+type Includer = { include?: string[] }
