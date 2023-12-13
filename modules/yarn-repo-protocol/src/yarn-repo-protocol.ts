@@ -215,7 +215,7 @@ export class YarnRepoProtocol implements RepoProtocol {
       let additions: string[] = []
       if (localBaseExists) {
         const content = await fse.readJSON(localBase) as TsConfigJson
-        additions.push(...content.include ?? [])
+        additions = content.include ?? []
       }
 
       const tsconf: TsConfigJson = {
