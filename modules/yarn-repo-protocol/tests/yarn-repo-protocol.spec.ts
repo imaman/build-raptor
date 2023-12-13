@@ -264,7 +264,7 @@ describe('yarn-repo-protocol', () => {
   
         const actual = await slurp(d)
         expect(JSON.parse(actual['modules/a/tsconfig.json'])).toEqual({
-          extends: './tsconfig-base.json',
+          extends: '../../tsconfig-base.json',
           compilerOptions: { composite: true, outDir: 'dist' },
           include: ['src/**/*', 'src/**/*.json', 'tests/**/*', 'tests/**/*.json', 'pqr.ts'],
         })

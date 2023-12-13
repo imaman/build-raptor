@@ -189,7 +189,8 @@ export class YarnRepoProtocol implements RepoProtocol {
   }
 
   private async generateTsConfigFiles(rootDir: RepoRoot, units: UnitMetadata[], graph: Graph<UnitId>) {
-    const rootBaseExists = await fse.pathExists(rootDir.resolve(PathInRepo(this.tsconfigBaseName)))
+    const rootBase = rootDir.resolve(PathInRepo(this.tsconfigBaseName))
+    const rootBaseExists = await fse.pathExists(rootBase)
 
     const defaultOptions: TsConfigJson.CompilerOptions = {
       module: 'CommonJS',
@@ -216,6 +217,11 @@ export class YarnRepoProtocol implements RepoProtocol {
       if (localBaseExists) {
         const content = await fse.readJSON(localBase) as TsConfigJson
         additions = content.include ?? []
+      }
+
+      if (rootBaseExists) {
+        const content = await fse.readJSON(rootBase) as TsConfigJson
+        additions.push(...content.include ?? [])
       }
 
       const tsconf: TsConfigJson = {
