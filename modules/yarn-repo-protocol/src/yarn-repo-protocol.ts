@@ -209,7 +209,14 @@ export class YarnRepoProtocol implements RepoProtocol {
     for (const u of units) {
       const deps = graph.neighborsOf(u.id)
 
-      const localBaseExists = await fse.pathExists(rootDir.resolve(u.pathInRepo.expand(this.tsconfigBaseName)))
+      const localBase = rootDir.resolve(u.pathInRepo.expand(this.tsconfigBaseName))
+      const localBaseExists = await fse.pathExists(localBase)
+
+      let additions: string[] = []
+      if (localBaseExists) {
+        const content = await fse.readJSON(localBase) as TsConfigJson
+        additions.push(...content.include ?? [])
+      }
 
       const tsconf: TsConfigJson = {
         ...(localBaseExists
@@ -229,7 +236,7 @@ export class YarnRepoProtocol implements RepoProtocol {
             path: path.relative(u.pathInRepo.val, dp.pathInRepo.val),
           }
         }),
-        include: [`${this.src}/**/*`, `${this.src}/**/*.json`, `${this.tests}/**/*`, `${this.tests}/**/*.json`],
+        include: [`${this.src}/**/*`, `${this.src}/**/*.json`, `${this.tests}/**/*`, `${this.tests}/**/*.json`, ...additions],
       }
 
       if (!tsconf.references?.length) {
