@@ -1,3 +1,4 @@
+import fs from 'fs'
 import { Logger } from 'logger'
 import path from 'path'
 import ts from 'typescript'
@@ -5,7 +6,7 @@ import ts from 'typescript'
 export class Compiler {
   constructor(private readonly logger: Logger) {}
 
-  compile(taskName: string, dir: string): number {
+  compile(taskName: string, dir: string, outputFile: string): number {
     const configFileName = ts.findConfigFile(path.join(dir, 'tsconfig.json'), ts.sys.fileExists, 'tsconfig.json')
     if (!configFileName) {
       throw new Error(`config file not found under ${dir}`)
@@ -17,20 +18,19 @@ export class Compiler {
     const emitResult = program.emit()
 
     const allDiagnostics = ts.getPreEmitDiagnostics(program).concat(emitResult.diagnostics)
-    for (const diagnostic of allDiagnostics) {
+    const mapped = allDiagnostics.map(diagnostic => {
       if (!diagnostic.file) {
-        this.logger.print(`${taskName} ${ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n')}`)
-        continue
+        return `${taskName} ${ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n')}`
       }
       const message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n')
       if (!diagnostic.start) {
-        this.logger.print(`${taskName} ${diagnostic.file.fileName}: ${message}`)
-        continue
+        return `${taskName} ${diagnostic.file.fileName}: ${message}`
       }
       const { line, character } = ts.getLineAndCharacterOfPosition(diagnostic.file, diagnostic.start)
-      this.logger.print(`${taskName} ${diagnostic.file.fileName} (${line + 1},${character + 1}): ${message}`)
-    }
+      return `${taskName} ${diagnostic.file.fileName} (${line + 1},${character + 1}): ${message}`
+    })
 
+    fs.writeFileSync(outputFile, mapped.join('\n'))
     const exitCode = emitResult.emitSkipped ? 1 : 0
     return exitCode
   }

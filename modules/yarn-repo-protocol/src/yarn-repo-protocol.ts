@@ -393,7 +393,7 @@ export class YarnRepoProtocol implements RepoProtocol {
       }
 
       try {
-        const exitValue = this.compiler.compile(taskName, dir)
+        const exitValue = this.compiler.compile(taskName, dir, outputFile)
         if (exitValue === 0) {
           return this.runAdditionalBuildActions(u.id, dir, outputFile)
         }
