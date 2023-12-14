@@ -84,7 +84,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     private readonly logger: Logger,
     // TODO(imaman): deprecate it.
     private readonly assetPublisher: Publisher,
-    private readonly compilationMode: 'old' | 'new' = 'old',
+    private readonly compilationMode: 'old' | 'new' = 'new',
   ) {
     if (!isSimpleName(this.tsconfigBaseName)) {
       throw new Error(`tsconfig base file name must be a simple name (not a path). Got: "${this.tsconfigBaseName}"`)
