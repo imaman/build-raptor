@@ -34,7 +34,7 @@ import { PackageJson, TsConfigJson } from 'type-fest'
 import { UnitId, UnitMetadata } from 'unit-metadata'
 import { z } from 'zod'
 
-import { compile } from './compiler'
+import { compile, Compiler } from './compiler'
 import { RerunList } from './rerun-list'
 import { YarnRepoProtocolConfig } from './yarn-repo-protocol-config'
 
@@ -79,6 +79,7 @@ export class YarnRepoProtocol implements RepoProtocol {
 
   private readonly src = 'src'
   private readonly tests = 'tests'
+  private readonly compiler
 
   constructor(
     private readonly logger: Logger,
@@ -89,6 +90,8 @@ export class YarnRepoProtocol implements RepoProtocol {
     if (!isSimpleName(this.tsconfigBaseName)) {
       throw new Error(`tsconfig base file name must be a simple name (not a path). Got: "${this.tsconfigBaseName}"`)
     }
+
+    this.compiler = new Compiler(logger)
   }
 
   private readonly tsconfigBaseName = 'tsconfig-base.json'
