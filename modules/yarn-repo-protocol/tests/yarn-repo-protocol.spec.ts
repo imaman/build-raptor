@@ -225,17 +225,14 @@ describe('yarn-repo-protocol', () => {
       expect(JSON.parse(actual['libs/b/tsconfig.json']).extends).toEqual('../../tsconfig-base.json')
       expect(JSON.parse(actual['libs/c/tsconfig.json']).extends).toEqual('./tsconfig-base.json')
     })
-    test(`local file`, async () => {
+    test(`foo`, async () => {
       const d = await makeFolder({
-        'package.json': { workspaces: ['modules/*'], private: true },
-        'tsconfig-base.json': {},
-        'modules/a/package.json': { name: 'a', version: '1.0.0' },
-        'modules/a/tsconfig-base.json': {
-          "include": [
-            'abc.ts',
-            'xyz.ts'
-          ]
+        'package.json': { workspaces: ['libs/*'], private: true },
+        'tsconfig-base.json': {
+          include: ['abc.ts', 'xyz.ts'],
         },
+        'libs/a/package.json': { name: 'a', version: '1.0.0' },
+        'libs/a/tsconfig-base.json': {},
       })
 
       const yrp = newYarnRepoProtocol()
@@ -243,32 +240,11 @@ describe('yarn-repo-protocol', () => {
 
       const actual = await slurp(d)
       expect(JSON.parse(actual['modules/a/tsconfig.json'])).toEqual({
-        extends: './tsconfig-base.json',
+        extends: '../../tsconfig-base.json',
         compilerOptions: { composite: true, outDir: 'dist' },
         include: ['src/**/*', 'src/**/*.json', 'tests/**/*', 'tests/**/*.json', 'abc.ts', 'xyz.ts'],
       })
     })
-      test(`root file`, async () => {
-        const d = await makeFolder({
-          'package.json': { workspaces: ['modules/*'], private: true },
-          'tsconfig-base.json': {
-            "include": [
-              'pqr.ts',
-            ]
-          },
-          'modules/a/package.json': { name: 'a', version: '1.0.0' },
-        })
-  
-        const yrp = newYarnRepoProtocol()
-        await yrp.initialize(d, p)
-  
-        const actual = await slurp(d)
-        expect(JSON.parse(actual['modules/a/tsconfig.json'])).toEqual({
-          extends: '../../tsconfig-base.json',
-          compilerOptions: { composite: true, outDir: 'dist' },
-          include: ['src/**/*', 'src/**/*.json', 'tests/**/*', 'tests/**/*.json', 'pqr.ts'],
-        })
-      })
     test(`extends a tsconfig-base file at the repo's root`, async () => {
       const d = await makeFolder({
         'package.json': { workspaces: ['libs/*', 'apps/mobile/*', 'apps/web/**'], private: true },
