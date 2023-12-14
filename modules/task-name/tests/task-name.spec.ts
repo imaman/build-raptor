@@ -24,6 +24,13 @@ describe('task-name', () => {
         expect(decomposed).toEqual({ unitId: 'U', taskKind: 'T', subKind: 'abc' })
       })
     })
+    describe('parse', () => {
+      test('can parse a taskname with a sub-kind', () => {
+        const taskName = TaskName().parse('v:w:xyz')
+        const decomposed = TaskName().undo(taskName)
+        expect(decomposed).toEqual({ unitId: 'v', taskKind: 'w', subKind: 'xyz' })
+      })
+    })
   })
   describe('TaskKind', () => {
     test('cosntructs a new TaskKind value', () => {
