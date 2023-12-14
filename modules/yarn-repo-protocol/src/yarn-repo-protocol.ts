@@ -34,6 +34,7 @@ import { PackageJson, TsConfigJson } from 'type-fest'
 import { UnitId, UnitMetadata } from 'unit-metadata'
 import { z } from 'zod'
 
+import { compile } from './compiler'
 import { RerunList } from './rerun-list'
 import { YarnRepoProtocolConfig } from './yarn-repo-protocol-config'
 
@@ -83,6 +84,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     private readonly logger: Logger,
     // TODO(imaman): deprecate it.
     private readonly assetPublisher: Publisher,
+    private readonly compilationMode: 'old' | 'new' = 'old',
   ) {
     if (!isSimpleName(this.tsconfigBaseName)) {
       throw new Error(`tsconfig base file name must be a simple name (not a path). Got: "${this.tsconfigBaseName}"`)
@@ -373,17 +375,31 @@ export class YarnRepoProtocol implements RepoProtocol {
     const u = this.state.units.find(at => at.id === unitId) ?? failMe(`unit ID not found: ${unitId}`)
     const dir = this.state.rootDir.resolve(u.pathInRepo)
     if (taskKind === 'build') {
-      let buildStatus: ExitStatus
-      if (this.state.config.uberBuild ?? true) {
-        buildStatus = await this.runUberBuild(outputFile, taskName)
-      } else {
-        buildStatus = await this.run('npm', ['run', this.scriptNames.build], dir, outputFile)
+      if (this.compilationMode == 'old') {
+        let buildStatus: ExitStatus
+        if (this.state.config.uberBuild ?? true) {
+          buildStatus = await this.runUberBuild(outputFile, taskName)
+        } else {
+          buildStatus = await this.run('npm', ['run', this.scriptNames.build], dir, outputFile)
+        }
+        return await switchOn(buildStatus, {
+          CRASH: () => Promise.resolve(buildStatus),
+          FAIL: () => Promise.resolve(buildStatus),
+          OK: () => this.runAdditionalBuildActions(u.id, dir, outputFile),
+        })
       }
-      return await switchOn(buildStatus, {
-        CRASH: () => Promise.resolve(buildStatus),
-        FAIL: () => Promise.resolve(buildStatus),
-        OK: () => this.runAdditionalBuildActions(u.id, dir, outputFile),
-      })
+
+      try {
+        const exitValue = compile(taskName, dir, this.logger)
+        if (exitValue === 0) {
+          return this.runAdditionalBuildActions(u.id, dir, outputFile)
+        }
+
+        return 'FAIL'
+      } catch (e) {
+        this.logger.error(`compilation crashed`, e)
+        return 'CRASH'
+      }
     }
 
     if (taskKind === 'test') {
