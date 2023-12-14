@@ -107,7 +107,7 @@ export async function run(options: Options) {
   const { storageClient, lambdaClient } = await storageClientFactory(logger)
   logger.info(`(typeof lambdaClient)=${typeof lambdaClient}`)
   const assetPublisher = new DefaultAssetPublisher(storageClient, logger)
-  const repoProtocol = new YarnRepoProtocol(logger, assetPublisher)
+  const repoProtocol = new YarnRepoProtocol(logger, assetPublisher, 'new')
   const bootstrapper = await EngineBootstrapper.create(rootDir, storageClient, repoProtocol, t0, '', logger)
 
   const testOutput = new Map<TaskName, TestEndedEvent[]>()
@@ -129,6 +129,8 @@ export async function run(options: Options) {
     try {
       await dumpFile(arg.outputFile, stream)
       logger.info(`wrote output of ${arg.taskName} to ${fileName}`)
+    } catch (e) {
+      throw new Error(`output file of task ${arg.taskName} (${arg.outputFile}) could not be outputted`)
     } finally {
       stream.end()
     }
