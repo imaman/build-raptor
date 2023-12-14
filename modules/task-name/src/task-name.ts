@@ -17,7 +17,7 @@ class TaskNameUtils {
     return {
       unitId: UnitId(parts[0]),
       taskKind: TaskKind(parts[1]),
-      subKind: parts.at(2),
+      subKind: parts.at(2) ?? '',
     }
   }
 

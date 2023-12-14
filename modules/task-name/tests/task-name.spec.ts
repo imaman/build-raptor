@@ -16,7 +16,7 @@ describe('task-name', () => {
       test('decomposes a TaskName back into unit-ID, task-kind', () => {
         const taskName = TaskName(UnitId('U'), TaskKind('T'), '')
         const decomposed = TaskName().undo(taskName)
-        expect(decomposed).toEqual({ unitId: 'U', taskKind: 'T' })
+        expect(decomposed).toEqual({ unitId: 'U', taskKind: 'T', subKind: '' })
       })
       test('can decompose a TaskName back into unit-ID, task-kind, sub-kind', () => {
         const taskName = TaskName(UnitId('U'), TaskKind('T'), 'abc')
