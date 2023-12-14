@@ -33,7 +33,7 @@ describe('task-name', () => {
       test('when a sub-kind is not present it defaults to the empty string', () => {
         const taskName = TaskName().parse('v:w')
         const decomposed = TaskName().undo(taskName)
-        expect(decomposed).toEqual({ unitId: 'v', taskKind: 'w', subKind: '_' })
+        expect(decomposed).toEqual({ unitId: 'v', taskKind: 'w', subKind: '' })
       })
     })
   })
