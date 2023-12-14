@@ -225,6 +225,50 @@ describe('yarn-repo-protocol', () => {
       expect(JSON.parse(actual['libs/b/tsconfig.json']).extends).toEqual('../../tsconfig-base.json')
       expect(JSON.parse(actual['libs/c/tsconfig.json']).extends).toEqual('./tsconfig-base.json')
     })
+    test(`adds all entries from the include array of the local tsconfig-base file`, async () => {
+      const d = await makeFolder({
+        'package.json': { workspaces: ['modules/*'], private: true },
+        'tsconfig-base.json': {},
+        'modules/a/package.json': { name: 'a', version: '1.0.0' },
+        'modules/a/tsconfig-base.json': {
+          include: ['abc.ts', 'xyz.ts'],
+        },
+      })
+
+      const yrp = newYarnRepoProtocol()
+      await yrp.initialize(d, p)
+
+      const actual = await slurp(d)
+      const parsed = JSON.parse(actual['modules/a/tsconfig.json'])
+      expect(parsed.include).toEqual(['src/**/*', 'src/**/*.json', 'tests/**/*', 'tests/**/*.json', 'abc.ts', 'xyz.ts'])
+    })
+    test(`adds also all entries from the include array of the root tsconfig-base file`, async () => {
+      const d = await makeFolder({
+        'package.json': { workspaces: ['modules/*'], private: true },
+        'tsconfig-base.json': {
+          include: ['pqr.ts', 'stu.ts'],
+        },
+        'modules/a/package.json': { name: 'a', version: '1.0.0' },
+        'modules/a/tsconfig-base.json': {
+          include: ['abc.ts'],
+        },
+      })
+
+      const yrp = newYarnRepoProtocol()
+      await yrp.initialize(d, p)
+
+      const actual = await slurp(d)
+      const parsed = JSON.parse(actual['modules/a/tsconfig.json'])
+      expect(parsed.include).toEqual([
+        'src/**/*',
+        'src/**/*.json',
+        'tests/**/*',
+        'tests/**/*.json',
+        'abc.ts',
+        'pqr.ts',
+        'stu.ts',
+      ])
+    })
     test(`extends a tsconfig-base file at the repo's root`, async () => {
       const d = await makeFolder({
         'package.json': { workspaces: ['libs/*', 'apps/mobile/*', 'apps/web/**'], private: true },
