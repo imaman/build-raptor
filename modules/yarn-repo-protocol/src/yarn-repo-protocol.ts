@@ -400,7 +400,7 @@ export class YarnRepoProtocol implements RepoProtocol {
 
         return 'FAIL'
       } catch (e) {
-        this.logger.error(`compilation crashed`, e)
+        console.error(`compilation crashed`, e)
         return 'CRASH'
       }
     }
