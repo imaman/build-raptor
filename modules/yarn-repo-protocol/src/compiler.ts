@@ -13,10 +13,14 @@ export class Compiler {
     const configFile = ts.readConfigFile(configFileName, ts.sys.readFile)
     const parsed = ts.parseJsonConfigFileContent(configFile.config, ts.sys, dir)
 
-    const program = ts.createProgram(parsed.fileNames, parsed.options)
-    const emitResult = program.emit()
+    const builderProgram = ts.createEmitAndSemanticDiagnosticsBuilderProgram(
+      parsed.fileNames,
+      parsed.options,
+      undefined,
+    )
+    const emitResult = builderProgram.emit()
 
-    const allDiagnostics = ts.getPreEmitDiagnostics(program).concat(emitResult.diagnostics)
+    const allDiagnostics = ts.getPreEmitDiagnostics(builderProgram.getProgram()).concat(emitResult.diagnostics)
     for (const diagnostic of allDiagnostics) {
       if (!diagnostic.file) {
         this.logger.print(`${taskName} ${ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n')}`)
