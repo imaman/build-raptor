@@ -34,7 +34,7 @@ import { PackageJson, TsConfigJson } from 'type-fest'
 import { UnitId, UnitMetadata } from 'unit-metadata'
 import { z } from 'zod'
 
-import { compile, Compiler } from './compiler'
+import { Compiler } from './compiler'
 import { RerunList } from './rerun-list'
 import { YarnRepoProtocolConfig } from './yarn-repo-protocol-config'
 
@@ -393,7 +393,7 @@ export class YarnRepoProtocol implements RepoProtocol {
       }
 
       try {
-        const exitValue = compile(taskName, dir, this.logger)
+        const exitValue = this.compiler.compile(taskName, dir)
         if (exitValue === 0) {
           return this.runAdditionalBuildActions(u.id, dir, outputFile)
         }
