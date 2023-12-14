@@ -384,7 +384,7 @@ export function main() {
       // TODO(imaman): 'pack', 'publish', etc. should not be an array option (and not separate commands)
       .command(
         'publish-assets',
-        'publish deployables (as blobs)',
+        `runs tests and builds assets (by running 'prepare-assets' run scripts)`,
         yargs =>
           withBuildOptions(yargs).option('register-assets', {
             describe: 'whether to invoke the register-asset-endpoint with the details of each published asset',
