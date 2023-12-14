@@ -189,7 +189,11 @@ export class YarnRepoProtocol implements RepoProtocol {
   }
 
   private async generateTsConfigFiles(rootDir: RepoRoot, units: UnitMetadata[], graph: Graph<UnitId>) {
-    const rootBaseExists = await fse.pathExists(rootDir.resolve(PathInRepo(this.tsconfigBaseName)))
+    const rootBase = rootDir.resolve(PathInRepo(this.tsconfigBaseName))
+    const rootBaseExists = await fse.pathExists(rootBase)
+
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+    const rootBaseContent = rootBaseExists ? ((await fse.readJSON(rootBase)) as Includer) : {}
 
     const defaultOptions: TsConfigJson.CompilerOptions = {
       module: 'CommonJS',
@@ -209,7 +213,12 @@ export class YarnRepoProtocol implements RepoProtocol {
     for (const u of units) {
       const deps = graph.neighborsOf(u.id)
 
-      const localBaseExists = await fse.pathExists(rootDir.resolve(u.pathInRepo.expand(this.tsconfigBaseName)))
+      const localBase = rootDir.resolve(u.pathInRepo.expand(this.tsconfigBaseName))
+      const localBaseExists = await fse.pathExists(localBase)
+
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+      const localBaseContent = localBaseExists ? ((await fse.readJSON(localBase)) as Includer) : {}
+      const additions = [...(localBaseContent.include ?? []), ...(rootBaseContent.include ?? [])]
 
       const tsconf: TsConfigJson = {
         ...(localBaseExists
@@ -229,7 +238,13 @@ export class YarnRepoProtocol implements RepoProtocol {
             path: path.relative(u.pathInRepo.val, dp.pathInRepo.val),
           }
         }),
-        include: [`${this.src}/**/*`, `${this.src}/**/*.json`, `${this.tests}/**/*`, `${this.tests}/**/*.json`],
+        include: [
+          `${this.src}/**/*`,
+          `${this.src}/**/*.json`,
+          `${this.tests}/**/*`,
+          `${this.tests}/**/*.json`,
+          ...additions,
+        ],
       }
 
       if (!tsconf.references?.length) {
@@ -917,3 +932,5 @@ const rootUnitId = UnitId('.')
 const installTaskName = TaskName(rootUnitId, TaskKind('install'))
 
 const emptyRerunList: RerunList = RerunList.parse([])
+
+type Includer = { include?: string[] }
