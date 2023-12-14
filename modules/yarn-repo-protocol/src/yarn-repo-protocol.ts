@@ -400,7 +400,7 @@ export class YarnRepoProtocol implements RepoProtocol {
 
         return 'FAIL'
       } catch (e) {
-        console.error(`compilation crashed`, e)
+        console.error(`compilation crashed`, e) // eslint-disable-line no-console
         return 'CRASH'
       }
     }
