@@ -129,6 +129,8 @@ export async function run(options: Options) {
     try {
       await dumpFile(arg.outputFile, stream)
       logger.info(`wrote output of ${arg.taskName} to ${fileName}`)
+    } catch (e) {
+      throw new Error(`output file of task ${arg.taskName} (${arg.outputFile}) could not be outputted`)
     } finally {
       stream.end()
     }
