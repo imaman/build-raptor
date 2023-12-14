@@ -13,7 +13,7 @@ describe('uber-building-and-deletion', () => {
       return new YarnRepoProtocol(logger, new NopAssetPublisher())
     }
     const testName = () => expect.getState().currentTestName
-    test.skip('the build output contains errors from all modules', async () => {
+    test('the build output contains errors from all modules', async () => {
       const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
       const recipe = {
         'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
