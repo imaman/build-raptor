@@ -277,10 +277,9 @@ describe('yarn-repo-protocol.e2e', () => {
         'modules/a/package.json': {
           ...driver.packageJson('a', undefined, { 'do-abc': `echo "pretzels" > dist/p` }),
           buildTasks: {
-            abc: {
+            'do-abc': {
               inputs: [],
               output: ['dist/p'],
-              runScript: 'do-abc',
             },
           },
         },
@@ -290,7 +289,7 @@ describe('yarn-repo-protocol.e2e', () => {
 
       const fork = await driver.repo(recipe).fork()
 
-      const run = await fork.run('OK', { taskKind: 'build' })
+      const run = await fork.run('OK', { taskKind: 'build', subKind: '' })
       expect(await run.outputOf('test', 'a')).toContain('    the quick BROWN fox')
     })
   })

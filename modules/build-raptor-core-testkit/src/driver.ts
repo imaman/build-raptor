@@ -167,6 +167,7 @@ class File {
 interface RunOptions {
   units?: string[]
   taskKind?: string | string[]
+  subKind?: string
   concurrencyLevel?: number
   checkGitIgnore?: boolean
   testCaching?: boolean

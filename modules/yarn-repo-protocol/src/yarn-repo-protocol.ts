@@ -862,9 +862,9 @@ export class YarnRepoProtocol implements RepoProtocol {
     const ret: TaskInfo[] = []
     for (const name of Object.keys(btr)) {
       const def = btr[name]
-      if (!this.hasRunScript(u.id, def.runScript)) {
+      if (!this.hasRunScript(u.id, name)) {
         throw new BuildFailedError(
-          `${pj}: build task ${name} uses run-script named "${def.runScript}" but no such run-script is defined`,
+          `found a build task named "${name}" but no run script with that name is defined in ${pj}`,
         )
       }
 
