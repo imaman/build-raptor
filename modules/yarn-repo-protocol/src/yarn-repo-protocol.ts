@@ -35,7 +35,6 @@ import { UnitId, UnitMetadata } from 'unit-metadata'
 import { z } from 'zod'
 
 import { BuildTaskRecord } from './build-task-record'
-import { Compiler } from './compiler'
 import { RerunList } from './rerun-list'
 import { YarnRepoProtocolConfig } from './yarn-repo-protocol-config'
 
@@ -80,19 +79,15 @@ export class YarnRepoProtocol implements RepoProtocol {
 
   private readonly src = 'src'
   private readonly tests = 'tests'
-  private readonly compiler
 
   constructor(
     private readonly logger: Logger,
     // TODO(imaman): deprecate it.
     private readonly assetPublisher: Publisher,
-    private readonly compilationMode: 'old' | 'new' = 'new',
   ) {
     if (!isSimpleName(this.tsconfigBaseName)) {
       throw new Error(`tsconfig base file name must be a simple name (not a path). Got: "${this.tsconfigBaseName}"`)
     }
-
-    this.compiler = new Compiler(logger)
   }
 
   private readonly tsconfigBaseName = 'tsconfig-base.json'
@@ -375,35 +370,30 @@ export class YarnRepoProtocol implements RepoProtocol {
       })
     }
 
-    const { taskKind, unitId } = TaskName().undo(taskName)
+    const { taskKind, unitId, subKind } = TaskName().undo(taskName)
     const u = this.state.units.find(at => at.id === unitId) ?? failMe(`unit ID not found: ${unitId}`)
     const dir = this.state.rootDir.resolve(u.pathInRepo)
-    if (taskKind === 'build') {
-      if (this.compilationMode == 'old') {
-        let buildStatus: ExitStatus
-        if (this.state.config.uberBuild ?? true) {
-          buildStatus = await this.runUberBuild(outputFile, taskName)
-        } else {
-          buildStatus = await this.run('npm', ['run', this.scriptNames.build], dir, outputFile)
-        }
-        return await switchOn(buildStatus, {
-          CRASH: () => Promise.resolve(buildStatus),
-          FAIL: () => Promise.resolve(buildStatus),
-          OK: () => this.runAdditionalBuildActions(u.id, dir, outputFile),
-        })
+    if (taskKind === 'build' && subKind === '') {
+      let buildStatus: ExitStatus
+      if (this.state.config.uberBuild ?? true) {
+        buildStatus = await this.runUberBuild(outputFile, taskName)
+      } else {
+        buildStatus = await this.run('npm', ['run', this.scriptNames.build], dir, outputFile)
       }
+      return await switchOn(buildStatus, {
+        CRASH: () => Promise.resolve(buildStatus),
+        FAIL: () => Promise.resolve(buildStatus),
+        OK: () => this.runAdditionalBuildActions(u.id, dir, outputFile),
+      })
+    }
+    if (taskKind === 'build' && subKind !== '') {
+      const buildStatus = await this.run('npm', ['run', subKind], dir, outputFile)
 
-      try {
-        const exitValue = this.compiler.compile(taskName, dir, outputFile)
-        if (exitValue === 0) {
-          return this.runAdditionalBuildActions(u.id, dir, outputFile)
-        }
-
-        return 'FAIL'
-      } catch (e) {
-        console.error(`compilation crashed`, e) // eslint-disable-line no-console
-        return 'CRASH'
-      }
+      return await switchOn(buildStatus, {
+        CRASH: () => Promise.resolve(buildStatus),
+        FAIL: () => Promise.resolve(buildStatus),
+        OK: () => this.runAdditionalBuildActions(u.id, dir, outputFile),
+      })
     }
 
     if (taskKind === 'test') {
@@ -859,7 +849,9 @@ export class YarnRepoProtocol implements RepoProtocol {
     const pj = dir.expand('package.json')
     const parseResult = BuildTaskRecord.safeParse(casted.buildTasks ?? {})
     if (!parseResult.success) {
-      throw new BuildFailedError(`found a buildTasks object (in ${pj}) which is not well formed: ${parseResult.error.message}`)
+      throw new BuildFailedError(
+        `found a buildTasks object (in ${pj}) which is not well formed: ${parseResult.error.message}`,
+      )
     }
     const btr = parseResult.data
 
