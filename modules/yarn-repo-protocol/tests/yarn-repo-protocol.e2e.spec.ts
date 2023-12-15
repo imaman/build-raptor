@@ -289,8 +289,8 @@ describe('yarn-repo-protocol.e2e', () => {
 
       const fork = await driver.repo(recipe).fork()
 
-      const run = await fork.run('OK', { taskKind: 'build', subKind: '' })
-      expect(await run.outputOf('test', 'a')).toContain('    the quick BROWN fox')
+      await fork.run('OK', { taskKind: 'build', subKind: 'do-abc' })
+      expect(await fork.file('modules/a/dist/p').lines()).toEqual(['_'])
     })
   })
 })
