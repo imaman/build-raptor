@@ -269,4 +269,104 @@ describe('yarn-repo-protocol.e2e', () => {
     const run3 = await fork.run('OK', { taskKind: 'build' })
     expect(run3.executionTypeOf('a', 'build')).toEqual('CACHED')
   })
+  describe('custom build tasks', () => {
+    test('is defined in the package.json file', async () => {
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': {
+          ...driver.packageJson('a', undefined, { 'do-abc': `(mkdir -p .out) && (echo "pretzels" > .out/p)` }),
+          buildTasks: {
+            'do-abc': {
+              inputs: [],
+              outputs: ['.out/p'],
+            },
+          },
+        },
+        'modules/a/src/a.ts': '// something',
+        'modules/a/tests/a.spec.ts': `test('a', () => {expect(1).toEqual(1)});`,
+      }
+
+      const fork = await driver.repo(recipe).fork()
+
+      await fork.run('OK', { taskKind: 'build', subKind: 'do-abc' })
+      expect(await fork.file('modules/a/.out/p').lines()).toEqual(['pretzels'])
+    })
+    test('emits a build error if the buildTask object (the package.json file) is not well formed', async () => {
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': {
+          ...driver.packageJson('a', undefined, { 'do-abc': `#` }),
+          buildTasks: {
+            'do-abc': {
+              inputs: [],
+              outputs: 'la la la',
+            },
+          },
+        },
+        'modules/a/src/a.ts': '// something',
+        'modules/a/tests/a.spec.ts': `test('a', () => {expect(1).toEqual(1)});`,
+      }
+
+      const fork = await driver.repo(recipe).fork()
+
+      const run = await fork.run('FAIL', { taskKind: 'build', subKind: 'do-abc' })
+      expect(run.message).toContain(`found a buildTasks object (in modules/a/package.json) which is not well formed`)
+    })
+    test('emits a build error if there is a task definition without a matching run script', async () => {
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': {
+          ...driver.packageJson('a', undefined, { 'do-abc': `#` }),
+          buildTasks: {
+            'do-xyz': {
+              inputs: [],
+              outputs: [],
+            },
+          },
+        },
+        'modules/a/src/a.ts': '// something',
+        'modules/a/tests/a.spec.ts': `test('a', () => {expect(1).toEqual(1)});`,
+      }
+
+      const fork = await driver.repo(recipe).fork()
+
+      const run = await fork.run('FAIL', { taskKind: 'build', subKind: 'do-abc' })
+      expect(run.message).toContain(
+        `found a build task named "do-xyz" but no run script with that name is defined in modules/a/package.json`,
+      )
+    })
+    test('runs dependencies before running the custom task', async () => {
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': {
+          ...driver.packageJson('a', undefined, {
+            'do-abc': `(mkdir -p .out) && (echo "pretzels" > .out/lower)`,
+            'do-xyz': `cat .out/lower | tr [:lower:] [:upper:] > .out/upper`,
+          }),
+          buildTasks: {
+            'do-abc': {
+              inputs: [],
+              outputs: ['.out/lower'],
+            },
+            'do-xyz': {
+              inputs: ['.out/lower'],
+              outputs: ['.out/upper'],
+            },
+          },
+        },
+        'modules/a/src/a.ts': '// something',
+        'modules/a/tests/a.spec.ts': `test('a', () => {expect(1).toEqual(1)});`,
+      }
+
+      const fork = await driver.repo(recipe).fork()
+
+      await fork.run('OK', { taskKind: 'build', subKind: 'do-xyz' })
+      expect(await fork.file('modules/a/.out/lower').lines()).toEqual(['pretzels'])
+      expect(await fork.file('modules/a/.out/upper').lines()).toEqual(['PRETZELS'])
+    })
+  })
 })

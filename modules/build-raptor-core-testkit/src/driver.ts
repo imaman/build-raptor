@@ -167,6 +167,7 @@ class File {
 interface RunOptions {
   units?: string[]
   taskKind?: string | string[]
+  subKind?: string
   concurrencyLevel?: number
   checkGitIgnore?: boolean
   testCaching?: boolean
@@ -288,7 +289,7 @@ export class Driver {
   packageJson(
     packageName: string,
     dependencies: string[] = [],
-    scripts = {},
+    scripts: Record<string, string> = {},
     mutator: (obj: PackageJson) => void = () => {},
   ) {
     const ret = {

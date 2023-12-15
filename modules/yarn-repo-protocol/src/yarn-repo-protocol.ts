@@ -34,6 +34,7 @@ import { PackageJson, TsConfigJson } from 'type-fest'
 import { UnitId, UnitMetadata } from 'unit-metadata'
 import { z } from 'zod'
 
+import { BuildTaskRecord } from './build-task-record'
 import { RerunList } from './rerun-list'
 import { YarnRepoProtocolConfig } from './yarn-repo-protocol-config'
 
@@ -287,6 +288,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
   }
 
+  // TODO(imaman): this should be retired. custom build tasks should be used instead.
   private async runAdditionalBuildActions(unitId: UnitId, dir: string, outputFile: string): Promise<ExitStatus> {
     return switchOn(await this.runPostBuild(unitId, dir, outputFile), {
       CRASH: () => Promise.resolve('CRASH'),
@@ -369,10 +371,10 @@ export class YarnRepoProtocol implements RepoProtocol {
       })
     }
 
-    const { taskKind, unitId } = TaskName().undo(taskName)
+    const { taskKind, unitId, subKind } = TaskName().undo(taskName)
     const u = this.state.units.find(at => at.id === unitId) ?? failMe(`unit ID not found: ${unitId}`)
     const dir = this.state.rootDir.resolve(u.pathInRepo)
-    if (taskKind === 'build') {
+    if (taskKind === 'build' && subKind === '') {
       let buildStatus: ExitStatus
       if (this.state.config.uberBuild ?? true) {
         buildStatus = await this.runUberBuild(outputFile, taskName)
@@ -384,6 +386,9 @@ export class YarnRepoProtocol implements RepoProtocol {
         FAIL: () => Promise.resolve(buildStatus),
         OK: () => this.runAdditionalBuildActions(u.id, dir, outputFile),
       })
+    }
+    if (taskKind === 'build' && subKind !== '') {
+      return await this.run('npm', ['run', subKind], dir, outputFile)
     }
 
     if (taskKind === 'test') {
@@ -720,7 +725,13 @@ export class YarnRepoProtocol implements RepoProtocol {
 
     const ret = unitIds
       .map(at => this.unitOf(at))
-      .flatMap(u => [this.buildTask(u), this.testTask(u), this.packTask(u), this.publishTask(u)])
+      .flatMap(u => [
+        this.buildTask(u),
+        this.testTask(u),
+        this.packTask(u),
+        this.publishTask(u),
+        ...this.customTasks(u),
+      ])
       .flatMap(x => (x ? [x] : []))
 
     const installTaskInfo: TaskInfo = {
@@ -824,6 +835,41 @@ export class YarnRepoProtocol implements RepoProtocol {
       outputLocations: [{ pathInRepo: dir.expand(PREPARED_ASSETS_DIR), purge: 'NEVER' }],
       inputs: [dir.expand('package.json'), dir.expand(this.dist('s'))],
     }
+  }
+
+  private customTasks(u: UnitMetadata): TaskInfo[] {
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+    const casted = this.getPackageJson(u.id) as { buildTasks?: unknown }
+    const dir = u.pathInRepo
+    const pj = dir.expand('package.json')
+    const parseResult = BuildTaskRecord.safeParse(casted.buildTasks ?? {})
+    if (!parseResult.success) {
+      throw new BuildFailedError(
+        `found a buildTasks object (in ${pj}) which is not well formed: ${parseResult.error.message}`,
+      )
+    }
+    const btr = parseResult.data
+
+    const ret: TaskInfo[] = []
+    for (const name of Object.keys(btr)) {
+      const def = btr[name]
+      if (!this.hasRunScript(u.id, name)) {
+        throw new BuildFailedError(
+          `found a build task named "${name}" but no run script with that name is defined in ${pj}`,
+        )
+      }
+
+      ret.push({
+        taskName: TaskName(u.id, TaskKind('build'), name),
+        inputs: [pj, ...def.inputs.map(at => dir.expand(at))],
+        outputLocations: def.outputs.map(at => ({
+          pathInRepo: dir.expand(at),
+          purge: 'ALWAYS',
+        })),
+      })
+    }
+
+    return ret
   }
 
   private async computeTestsToRun(resolved: string): Promise<string[]> {
