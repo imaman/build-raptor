@@ -28,14 +28,16 @@ class TaskNameUtils {
 }
 
 export function TaskName(): TaskNameUtils
-export function TaskName(unitId: UnitId, taskKind: TaskKind, selector?: string): TaskName
-export function TaskName(unitId?: UnitId, taskKind?: TaskKind, selector = ''): TaskNameUtils | TaskName {
+export function TaskName(unitId: UnitId, taskKind: TaskKind, subKind?: string): TaskName
+export function TaskName(unitId?: UnitId, taskKind?: TaskKind, subKind = ''): TaskNameUtils | TaskName {
   if (unitId === undefined && taskKind === undefined) {
     return new TaskNameUtils()
   }
 
+  // TODO(imaman): fail if subKind contains a ':' character
+
   // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-  return `${unitId}:${taskKind}${selector ? ':' + selector : ''}` as TaskName
+  return `${unitId}:${taskKind}${subKind ? ':' + subKind : ''}` as TaskName
 }
 
 export type TaskKind = Brand<string, 'TaskKind'>
