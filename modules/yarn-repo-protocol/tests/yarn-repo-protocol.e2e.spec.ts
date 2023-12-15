@@ -270,7 +270,7 @@ describe('yarn-repo-protocol.e2e', () => {
     expect(run3.executionTypeOf('a', 'build')).toEqual('CACHED')
   })
   describe('custom build tasks', () => {
-    test.only('foo', async () => {
+    test('is defined in the package.json file', async () => {
       const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
       const recipe = {
         'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
@@ -290,8 +290,39 @@ describe('yarn-repo-protocol.e2e', () => {
       const fork = await driver.repo(recipe).fork()
 
       await fork.run('OK', { taskKind: 'build', subKind: 'do-abc' })
-      expect(await fork.file('modules/a/dist/p').lines()).toEqual(['_'])
+      expect(await fork.file('modules/a/.out/p').lines()).toEqual(['pretzels'])
     })
+    test('runs dependencies before running the custom task', async () => {
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': {
+          ...driver.packageJson('a', undefined, {
+            'do-abc': `(mkdir -p .out) && (echo "pretzels" > .out/lower)`,
+            'do-xyz': `cat .out/lower | tr [:lower:] [:upper:] > .out/upper`,
+          }),
+          buildTasks: {
+            'do-abc': {
+              inputs: [],
+              outputs: ['.out/lower'],
+            },
+            'do-xyz': {
+              inputs: ['.out/lower'],
+              outputs: ['.out/upper'],
+            },
+          },
+        },
+        'modules/a/src/a.ts': '// something',
+        'modules/a/tests/a.spec.ts': `test('a', () => {expect(1).toEqual(1)});`,
+      }
+
+      const fork = await driver.repo(recipe).fork()
+
+      await fork.run('OK', { taskKind: 'build', subKind: 'do-xyz' })
+      expect(await fork.file('modules/a/.out/lower').lines()).toEqual(['pretzels'])
+      expect(await fork.file('modules/a/.out/upper').lines()).toEqual(['PRETZELS'])
+    })
+
     test.todo('build failed error if build-task-object is not well formed')
   })
 })
