@@ -387,13 +387,7 @@ export class YarnRepoProtocol implements RepoProtocol {
       })
     }
     if (taskKind === 'build' && subKind !== '') {
-      const buildStatus = await this.run('npm', ['run', subKind], dir, outputFile)
-
-      return await switchOn(buildStatus, {
-        CRASH: () => Promise.resolve(buildStatus),
-        FAIL: () => Promise.resolve(buildStatus),
-        OK: () => this.runAdditionalBuildActions(u.id, dir, outputFile),
-      })
+      return await this.run('npm', ['run', subKind], dir, outputFile)
     }
 
     if (taskKind === 'test') {
