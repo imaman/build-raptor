@@ -288,6 +288,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
   }
 
+  // TODO(imaman): this should be retired. custom build tasks should be used instead.
   private async runAdditionalBuildActions(unitId: UnitId, dir: string, outputFile: string): Promise<ExitStatus> {
     return switchOn(await this.runPostBuild(unitId, dir, outputFile), {
       CRASH: () => Promise.resolve('CRASH'),
