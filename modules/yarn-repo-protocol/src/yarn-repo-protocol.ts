@@ -855,9 +855,13 @@ export class YarnRepoProtocol implements RepoProtocol {
   private customTasks(u: UnitMetadata): TaskInfo[] {
     // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     const casted = this.getPackageJson(u.id) as { buildTasks?: unknown }
-    const btr = BuildTaskRecord.parse(casted.buildTasks ?? {})
     const dir = u.pathInRepo
     const pj = dir.expand('package.json')
+    const parseResult = BuildTaskRecord.safeParse(casted.buildTasks ?? {})
+    if (!parseResult.success) {
+      throw new BuildFailedError(`found a buildTasks object (in ${pj}) which is not well formed: ${parseResult.error.message}`)
+    }
+    const btr = parseResult.data
 
     const ret: TaskInfo[] = []
     for (const name of Object.keys(btr)) {

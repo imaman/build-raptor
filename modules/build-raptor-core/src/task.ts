@@ -19,8 +19,6 @@ export class Task {
 
   constructor(
     private readonly buildRunId: string,
-    readonly kind: TaskKind,
-    readonly unitId: UnitId,
     readonly taskInfo: TaskInfo,
     inputs: PathInRepo[],
   ) {
@@ -28,7 +26,7 @@ export class Task {
       sortBy(inputs, t => t.val),
       t => t.val,
     )
-    this.name = TaskName(unitId, kind)
+    this.name = taskInfo.taskName
     this.id = computeObjectHash({ buildRunId: this.buildRunId, name: this.name })
     this.executionRecord = {
       verdict: 'UNKNOWN',
@@ -37,6 +35,14 @@ export class Task {
       endedAt: SlotIndex(-1),
       phases: [],
     }
+  }
+
+  get unitId() {
+    return TaskName().undo(this.name).unitId
+  }
+
+  get kind() {
+    return TaskName().undo(this.name).taskKind
   }
 
   changeStatus(status: 'RUNNING' | 'DONE', counter: SlotIndex) {

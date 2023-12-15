@@ -26,17 +26,14 @@ export class Planner {
       throw new BuildFailedError(`Cyclic task dependency detected ${this.taskGraph}`)
     }
 
-    const allInfos = this.tasks.map(t => t.taskInfo)
-    this.logger.info(`Task dump:\n${JSON.stringify(allInfos, null, 2)}`)
     return new ExecutionPlan(this.taskGraph, this.tasks, this.logger)
   }
 
   private registerTask(model: Model, info: TaskInfo, reg: TaskOutputRegistry) {
     const taskName = info.taskName
-    const { unitId, taskKind } = TaskName().undo(taskName)
 
     const inputs = info.inputs ?? []
-    const task = new Task(model.buildRunId, taskKind, unitId, info, inputs)
+    const task = new Task(model.buildRunId, info, inputs)
     this.tasks.push(task)
     this.taskGraph.vertex(taskName)
 

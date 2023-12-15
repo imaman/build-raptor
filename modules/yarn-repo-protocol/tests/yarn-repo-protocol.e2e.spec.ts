@@ -270,16 +270,16 @@ describe('yarn-repo-protocol.e2e', () => {
     expect(run3.executionTypeOf('a', 'build')).toEqual('CACHED')
   })
   describe('custom build tasks', () => {
-    test('foo', async () => {
+    test.only('foo', async () => {
       const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
       const recipe = {
         'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
         'modules/a/package.json': {
-          ...driver.packageJson('a', undefined, { 'do-abc': `echo "pretzels" > dist/p` }),
+          ...driver.packageJson('a', undefined, { 'do-abc': `(mdkir -p .out) && (echo "pretzels" > .out/p)` }),
           buildTasks: {
             'do-abc': {
               inputs: [],
-              output: ['dist/p'],
+              outputs: ['.out/p'],
             },
           },
         },
@@ -292,5 +292,6 @@ describe('yarn-repo-protocol.e2e', () => {
       await fork.run('OK', { taskKind: 'build', subKind: 'do-abc' })
       expect(await fork.file('modules/a/dist/p').lines()).toEqual(['_'])
     })
+    test.todo('build failed error if build-task-object is not well formed')
   })
 })
