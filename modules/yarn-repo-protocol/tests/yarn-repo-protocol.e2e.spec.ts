@@ -269,4 +269,29 @@ describe('yarn-repo-protocol.e2e', () => {
     const run3 = await fork.run('OK', { taskKind: 'build' })
     expect(run3.executionTypeOf('a', 'build')).toEqual('CACHED')
   })
+  describe('custom build tasks', () => {
+    test('foo', async () => {
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': {
+          ...driver.packageJson('a', undefined, { 'do-abc': `echo "pretzels" > dist/p` }),
+          buildTasks: {
+            abc: {
+              inputs: [],
+              output: ['dist/p'],
+              runScript: 'do-abc',
+            },
+          },
+        },
+        'modules/a/src/a.ts': '// something',
+        'modules/a/tests/a.spec.ts': `test('a', () => {expect(1).toEqual(1)});`,
+      }
+
+      const fork = await driver.repo(recipe).fork()
+
+      const run = await fork.run('OK', { taskKind: 'build' })
+      expect(await run.outputOf('test', 'a')).toContain('    the quick BROWN fox')
+    })
+  })
 })

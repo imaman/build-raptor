@@ -34,6 +34,7 @@ import { PackageJson, TsConfigJson } from 'type-fest'
 import { UnitId, UnitMetadata } from 'unit-metadata'
 import { z } from 'zod'
 
+import { BuildTaskRecord } from './build-task-record'
 import { Compiler } from './compiler'
 import { RerunList } from './rerun-list'
 import { YarnRepoProtocolConfig } from './yarn-repo-protocol-config'
@@ -739,7 +740,13 @@ export class YarnRepoProtocol implements RepoProtocol {
 
     const ret = unitIds
       .map(at => this.unitOf(at))
-      .flatMap(u => [this.buildTask(u), this.testTask(u), this.packTask(u), this.publishTask(u)])
+      .flatMap(u => [
+        this.buildTask(u),
+        this.testTask(u),
+        this.packTask(u),
+        this.publishTask(u),
+        ...this.customTasks(u),
+      ])
       .flatMap(x => (x ? [x] : []))
 
     const installTaskInfo: TaskInfo = {
@@ -843,6 +850,35 @@ export class YarnRepoProtocol implements RepoProtocol {
       outputLocations: [{ pathInRepo: dir.expand(PREPARED_ASSETS_DIR), purge: 'NEVER' }],
       inputs: [dir.expand('package.json'), dir.expand(this.dist('s'))],
     }
+  }
+
+  private customTasks(u: UnitMetadata): TaskInfo[] {
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+    const casted = this.getPackageJson(u.id) as { buildTasks?: unknown }
+    const btr = BuildTaskRecord.parse(casted.buildTasks ?? {})
+    const dir = u.pathInRepo
+    const pj = dir.expand('package.json')
+
+    const ret: TaskInfo[] = []
+    for (const name of Object.keys(btr)) {
+      const def = btr[name]
+      if (!this.hasRunScript(u.id, def.runScript)) {
+        throw new BuildFailedError(
+          `${pj}: build task ${name} uses run-script named "${def.runScript}" but no such run-script is defined`,
+        )
+      }
+
+      ret.push({
+        taskName: TaskName(u.id, TaskKind('build'), name),
+        inputs: [pj, ...def.inputs.map(at => dir.expand(at))],
+        outputLocations: def.outputs.map(at => ({
+          pathInRepo: dir.expand(at),
+          purge: 'ALWAYS',
+        })),
+      })
+    }
+
+    return ret
   }
 
   private async computeTestsToRun(resolved: string): Promise<string[]> {
