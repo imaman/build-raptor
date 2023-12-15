@@ -275,7 +275,7 @@ describe('yarn-repo-protocol.e2e', () => {
       const recipe = {
         'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
         'modules/a/package.json': {
-          ...driver.packageJson('a', undefined, { 'do-abc': `(mdkir -p .out) && (echo "pretzels" > .out/p)` }),
+          ...driver.packageJson('a', undefined, { 'do-abc': `(mkdir -p .out) && (echo "pretzels" > .out/p)` }),
           buildTasks: {
             'do-abc': {
               inputs: [],
