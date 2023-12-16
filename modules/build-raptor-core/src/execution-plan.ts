@@ -34,8 +34,10 @@ export class ExecutionPlan {
   }
 
   apply(commands: string[], units: string[], goals: PathInRepo[]) {
+    this.logger.info(`apply(${JSON.stringify(commands)}, ${JSON.stringify(units)}, ${JSON.stringify(goals)} called`)
     const startingPoints = this.computeStartingPoints(commands, units, goals)
     this.dropOutOfScope(startingPoints)
+    this.logger.info(`computed these startingPoints: ${JSON.stringify(startingPoints)}`)
     return startingPoints
   }
 
