@@ -39,16 +39,20 @@ export class Engine {
   private readonly fingerprintLedger
   private readonly purger
   private tracker?: TaskTracker
+
   /**
    *
    * @param logger
    * @param rootDir
    * @param repoProtocol
    * @param taskStore
-   * @param printPassing whehter to send the output of passing tasks to stdout.
    * @param taskOutputDir
    * @param command the task kind to run. An empty string means "all tasks".
    * @param units the units whose tasks are to be run. An empty array means "all units".
+   * @param goals list of output locations. The tasks that produce these outputs will be added to "tasks to run".
+   * @param eventPublisher
+   * @param steps
+   * @param options
    */
   constructor(
     private readonly logger: Logger,
@@ -58,6 +62,7 @@ export class Engine {
     private readonly taskOutputDir: string,
     private readonly commands: string[],
     private readonly units: string[],
+    private readonly goals: PathInRepo[],
     private readonly eventPublisher: TypedPublisher<EngineEventScheme>,
     private readonly steps: StepByStepTransmitter,
     options: EngineOptions,
@@ -135,7 +140,7 @@ export class Engine {
       const taskList = await this.repoProtocol.getTasks()
       this.logger.info(`catalog=\n${JSON.stringify(taskList, null, 2)}`)
       const plan = await new Planner(this.logger).computePlan(taskList, model)
-      const startingPoints = plan.apply(this.commands, this.units)
+      const startingPoints = plan.apply(this.commands, this.units, this.goals)
       if (startingPoints.length === 0) {
         throw new BuildFailedError(
           `No tasks to run in this build (command=<${this.commands}>, units=<${JSON.stringify(this.units)})>`,

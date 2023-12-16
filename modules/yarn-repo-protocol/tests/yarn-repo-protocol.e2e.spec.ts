@@ -369,4 +369,48 @@ describe('yarn-repo-protocol.e2e', () => {
       expect(await fork.file('modules/a/.out/upper').lines()).toEqual(['PRETZELS'])
     })
   })
+  describe('goals', () => {
+    test('when a goal is specified runs only the tasks that are needed to produce this goal', async () => {
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': {
+          ...driver.packageJson('a', undefined, {
+            'do-abc': `(mkdir -p .out) && (echo "the sea was" > .out/marine-biologist)`,
+          }),
+          buildTasks: {
+            'do-abc': {
+              inputs: [],
+              outputs: ['.out/marine-biologist'],
+            },
+          },
+        },
+        'modules/a/src/index.ts': '// something-a',
+        'modules/a/tests/index.spec.ts': `test('a', () => {expect(1).toEqual(1)});`,
+        'modules/b/package.json': {
+          ...driver.packageJson('b', undefined, {
+            'do-abc': `(mkdir -p .out) && (echo "angry that day, my friends" > .out/marine-biologist)`,
+          }),
+          buildTasks: {
+            'do-abc': {
+              inputs: [],
+              outputs: ['.out/marine-biologist'],
+            },
+          },
+        },
+        'modules/b/src/index.ts': '// something-b',
+        'modules/b/tests/index.spec.ts': `test('b', () => {expect(1).toEqual(1)});`,
+      }
+
+      const fork1 = await driver.repo(recipe).fork()
+      await fork1.run('OK', { goals: ['modules/a/.out/marine-biologist'] })
+      expect(await fork1.file('modules/a/.out/marine-biologist').lines()).toContain('the sea was')
+      expect(await fork1.file('modules/b/.out/marine-biologist').lines()).toBe(undefined)
+
+      const fork2 = await driver.repo(recipe).fork()
+      await fork2.run('OK', { goals: ['modules/b/.out/marine-biologist'] })
+      expect(await fork2.file('modules/a/.out/marine-biologist').lines()).toBe(undefined)
+      expect(await fork2.file('modules/b/.out/marine-biologist').lines()).toContain('angry that day, my friends')
+    })
+  })
 })
