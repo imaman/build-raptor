@@ -1,4 +1,5 @@
 import { DefaultAssetPublisher, EngineBootstrapper } from 'build-raptor-core'
+import { PathInRepo } from 'core-types'
 import * as fse from 'fs-extra'
 import { createDefaultLogger, Logger } from 'logger'
 import {
@@ -31,6 +32,7 @@ interface Options {
   commands: ('build' | 'test' | 'pack' | 'publish-assets')[]
   dir: string | undefined
   units: string[]
+  goals: string[]
   githubActions: boolean
   printPassing: boolean
   compact: boolean
@@ -159,13 +161,19 @@ export async function run(options: Options) {
     }
   })
 
-  const runner = await bootstrapper.makeRunner(options.commands, options.units, options.buildRaptorConfigFile, {
-    stepByStepProcessorModuleName: options.stepByStepProcessor,
-    concurrency: Int(options.concurrency),
-    buildRaptorDir,
-    testCaching: options.testCaching ?? true,
-    commitHash,
-  })
+  const runner = await bootstrapper.makeRunner(
+    options.commands,
+    options.units,
+    options.goals.map(at => PathInRepo(at)),
+    options.buildRaptorConfigFile,
+    {
+      stepByStepProcessorModuleName: options.stepByStepProcessor,
+      concurrency: Int(options.concurrency),
+      buildRaptorDir,
+      testCaching: options.testCaching ?? true,
+      commitHash,
+    },
+  )
   const { exitCode } = await runner()
   // eslint-disable-next-line require-atomic-updates
   process.exitCode = exitCode
@@ -258,6 +266,14 @@ function withBuildOptions<T>(y: yargs.Argv<T>) {
       demandOption: false,
       default: [],
     })
+    .option('goals', {
+      alias: 'g',
+      describe: 'paths to outputs to be built',
+      type: 'string',
+      array: true,
+      demandOption: false,
+      default: [],
+    })
     .option('dir', {
       alias: 'd',
       describe: 'the path to the root dir of the repository',
@@ -325,6 +341,7 @@ export function main() {
             dir: argv.dir,
             commands: ['build'],
             units: argv.units,
+            goals: argv.goals,
             githubActions: argv.githubActions,
             printPassing: argv.printPassing,
             buildOutputLocation: argv.buildOutputLocations,
@@ -346,6 +363,7 @@ export function main() {
             dir: argv.dir,
             commands: ['test'],
             units: argv.units,
+            goals: argv.goals,
             githubActions: argv.githubActions,
             printPassing: argv.printPassing,
             buildOutputLocation: argv.buildOutputLocations,
@@ -371,6 +389,7 @@ export function main() {
             dir: argv.dir,
             commands: ['pack'],
             units: argv.units,
+            goals: argv.goals,
             githubActions: argv.githubActions,
             printPassing: argv.printPassing,
             buildOutputLocation: argv.buildOutputLocations,
@@ -398,6 +417,7 @@ export function main() {
             dir: argv.dir,
             commands: ['publish-assets', 'test'],
             units: argv.units,
+            goals: argv.goals,
             githubActions: argv.githubActions,
             printPassing: argv.printPassing,
             buildOutputLocation: argv.buildOutputLocations,

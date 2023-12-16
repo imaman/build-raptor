@@ -35,6 +35,7 @@ export class EngineBootstrapper {
   private async makeEngine(
     commands: string[],
     units: string[],
+    goals: PathInRepo[],
     configFile: string | undefined,
     options: EngineOptions,
   ) {
@@ -59,6 +60,7 @@ export class EngineBootstrapper {
       taskOutputDir,
       commands,
       units,
+      goals,
       this.eventPublisher,
       transmitter,
       options,
@@ -93,15 +95,22 @@ export class EngineBootstrapper {
    *
    * @param command the task kind to build. An empty string means "all tasks".
    * @param units the units whose tasks are to be built. An empty array means "all units".
-   * @param printPassing whehter to send the output of passing tasks to stdout.
-   * @param concurrency maximum number of tasks to run in parallel.
+   * @param goals list of output locations. The tasks that produce these outputs will be added to "tasks to run".
+   * @param configFile
+   * @param options
    * @returns
    */
-  async makeRunner(commands: string[], units: string[], configFile: string | undefined, options: EngineOptions) {
+  async makeRunner(
+    commands: string[],
+    units: string[],
+    goals: PathInRepo[],
+    configFile: string | undefined,
+    options: EngineOptions,
+  ) {
     try {
       const t1 = Date.now()
       this.logger.info(`Creating a runner for ${JSON.stringify({ commands, units, options })}`)
-      const engine = await this.makeEngine(commands, units, configFile, options)
+      const engine = await this.makeEngine(commands, units, goals, configFile, options)
       const buildRunId = this.newBuildRunId()
       return async () => {
         try {

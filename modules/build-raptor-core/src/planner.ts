@@ -26,7 +26,7 @@ export class Planner {
       throw new BuildFailedError(`Cyclic task dependency detected ${this.taskGraph}`)
     }
 
-    return new ExecutionPlan(this.taskGraph, this.tasks, this.logger)
+    return new ExecutionPlan(this.taskGraph, this.tasks, this.logger, reg)
   }
 
   private registerTask(model: Model, info: TaskInfo, reg: TaskOutputRegistry) {
