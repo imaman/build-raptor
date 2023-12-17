@@ -30,15 +30,15 @@ export type PathInRepo = {
 
 export function PathInRepo(input: string): PathInRepo {
   const val = norm(input)
-  const isPrefixOf = (other: PathInRepo) => other.val.startsWith(val)
+  const isPrefixOf = (other: PathInRepo) => val === '.' || other.val.startsWith(val)
   return {
     mark: '' as Mark, // eslint-disable-line @typescript-eslint/consistent-type-assertions
     val,
     isPrefixOf,
     expand: (relativePath: string) => {
-      const ret = PathInRepo(path.join(val, relativePath))
+      const ret = PathInRepo(path.normalize(path.join(val, relativePath)))
       if (!isPrefixOf(ret)) {
-        throw new Error(`Cannot expand (${val}) with a ${relativePath}`)
+        throw new Error(`Cannot expand (${val}) to ${ret}`)
       }
       return ret
     },

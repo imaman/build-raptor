@@ -1,5 +1,12 @@
+import { PathInRepo } from '../src'
+
 describe('core-types', () => {
-  test('foo', async () => {
-    expect(5).toEqual(5)
+  describe('PathInRepo', () => {
+    describe('expand()', () => {
+      test('appends the given path', async () => {
+        const abc = PathInRepo('abc')
+        expect(abc.expand('xyz').val).toEqual(PathInRepo('abc/xyz').val)
+      })
+    })
   })
 })
