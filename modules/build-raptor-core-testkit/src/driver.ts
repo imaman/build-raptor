@@ -170,7 +170,8 @@ interface RunOptions {
   subKind?: string
   goals?: string[]
   /**
-   * The directory build-raptor was invoked at (expressed relative path from the root dir).
+   * The directory that build-ratpor was invoked at. If relative it is relative to the repo root. If absolute it must
+   * point to a dir somewhere under the repo root.
    */
   dir?: string
   concurrencyLevel?: number
