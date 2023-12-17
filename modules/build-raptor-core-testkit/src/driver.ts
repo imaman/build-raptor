@@ -173,7 +173,7 @@ interface RunOptions {
    * The directory that build-ratpor was invoked at. If relative it is relative to the repo root. If absolute it must
    * point to a dir somewhere under the repo root.
    */
-  dir?: string
+  userDir?: string
   concurrencyLevel?: number
   checkGitIgnore?: boolean
   testCaching?: boolean
@@ -195,7 +195,7 @@ class Fork {
   async run(expectedStatus: 'OK' | 'FAIL' | 'CRASH', options: RunOptions = {}): Promise<Run> {
     const commands = !options.taskKind ? [] : Array.isArray(options.taskKind) ? options.taskKind : [options.taskKind]
     const units = options.units ?? []
-    const goals = (options.goals ?? []).map(at => PathInRepo(at))
+    const goals = (options.goals ?? [])
     const concurrencyLevel = Int(options.concurrencyLevel ?? 10)
     const rp = this.repoProtocol
     const bootstrapper = await EngineBootstrapper.create(this.dir, this.storageClient, rp, Date.now(), this.testName)
@@ -207,7 +207,7 @@ class Fork {
       buildRaptorDir: this.buildRaptorDir,
       testCaching: options.testCaching,
       commitHash: 'COMMIT-HASH-FOR-TESTING',
-      dir: options.dir ?? '',
+      userDir: options.userDir ?? '',
     })
     const output = await runner()
     if (expectedStatus === output.overallVerdict) {

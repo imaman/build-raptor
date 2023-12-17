@@ -35,7 +35,7 @@ export class EngineBootstrapper {
   private async makeEngine(
     commands: string[],
     units: string[],
-    goals: PathInRepo[],
+    goals: string[],
     configFile: string | undefined,
     options: EngineOptions,
   ) {
@@ -103,7 +103,7 @@ export class EngineBootstrapper {
   async makeRunner(
     commands: string[],
     units: string[],
-    goals: PathInRepo[],
+    goals: string[],
     configFile: string | undefined,
     options: EngineOptions,
   ) {

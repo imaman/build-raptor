@@ -164,7 +164,7 @@ export async function run(options: Options) {
   const runner = await bootstrapper.makeRunner(
     options.commands,
     options.units,
-    options.goals.map(at => PathInRepo(at)),
+    options.goals,
     options.buildRaptorConfigFile,
     {
       stepByStepProcessorModuleName: options.stepByStepProcessor,
@@ -172,7 +172,7 @@ export async function run(options: Options) {
       buildRaptorDir,
       testCaching: options.testCaching ?? true,
       commitHash,
-      dir: process.cwd(),
+      userDir: process.cwd(),
     },
   )
   const { exitCode } = await runner()
