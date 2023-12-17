@@ -25,9 +25,10 @@ import { TaskTracker } from './task-tracker'
 
 export interface EngineOptions {
   /**
-   * The directory that build-ratpor was invoked at.
+   * The directory that build-ratpor was invoked at. If relative it is relative to the repo root. If absolute it must
+   * point to a dir somewhere under the repo root.
    */
-  dir?: string
+  dir: string
   checkGitIgnore?: boolean
   concurrency: Int
   buildRaptorDir: string
@@ -79,6 +80,7 @@ export class Engine {
       testCaching: options.testCaching ?? true,
       commitHash: options.commitHash,
       config: options.config ?? {},
+      dir: options.dir,
     }
     const ledgerFile = path.join(this.options.buildRaptorDir, 'fingerprint-ledger.json')
     this.eventPublisher.on('taskStore', e => {

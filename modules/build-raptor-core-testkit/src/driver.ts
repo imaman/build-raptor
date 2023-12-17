@@ -206,7 +206,7 @@ class Fork {
       buildRaptorDir: this.buildRaptorDir,
       testCaching: options.testCaching,
       commitHash: 'COMMIT-HASH-FOR-TESTING',
-      dir: options.dir,
+      dir: options.dir ?? '',
     })
     const output = await runner()
     if (expectedStatus === output.overallVerdict) {

@@ -172,6 +172,7 @@ export async function run(options: Options) {
       buildRaptorDir,
       testCaching: options.testCaching ?? true,
       commitHash,
+      dir: process.cwd(),
     },
   )
   const { exitCode } = await runner()
