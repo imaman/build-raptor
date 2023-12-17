@@ -24,6 +24,10 @@ import { TaskStore } from './task-store'
 import { TaskTracker } from './task-tracker'
 
 export interface EngineOptions {
+  /**
+   * The directory that build-ratpor was invoked at.
+   */
+  dir?: string
   checkGitIgnore?: boolean
   concurrency: Int
   buildRaptorDir: string
