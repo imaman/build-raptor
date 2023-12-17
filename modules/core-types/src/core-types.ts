@@ -30,7 +30,7 @@ export type PathInRepo = {
 
 export function PathInRepo(input: string): PathInRepo {
   const val = norm(input)
-  const isPrefixOf = (other: PathInRepo) => val === '.' || other.val.startsWith(val)
+  const isPrefixOf = (other: PathInRepo) => other.val.startsWith(val)
   return {
     mark: '' as Mark, // eslint-disable-line @typescript-eslint/consistent-type-assertions
     val,
