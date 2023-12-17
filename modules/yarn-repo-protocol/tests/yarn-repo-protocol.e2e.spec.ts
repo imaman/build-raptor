@@ -425,5 +425,19 @@ describe('yarn-repo-protocol.e2e', () => {
       const run = await fork.run('FAIL', { goals: ['modules/a/.out/mulligatawny'] })
       expect(run.message).toEqual(`no task found for this output location: modules/a/.out/mulligatawny`)
     })
+    test.only('a goal is a path that is relative to cwd', async () => {
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': driver.packageJson('a'),
+        'modules/a/src/index.ts': '// something-a',
+        'modules/a/tests/index.spec.ts': `test('a', () => {expect(1).toEqual(1)});`,
+      }
+
+      const fork = await driver.repo(recipe).fork()
+      const run = await fork.run('OK', { dir: 'modules/a', goals: ['dist/src'] })
+      expect(run.executionTypeOf('a', 'build')).toEqual('EXECUTED')
+      expect(run.taskNames()).toEqual(['a:build'])
+    })
   })
 })

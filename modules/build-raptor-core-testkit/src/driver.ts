@@ -169,6 +169,10 @@ interface RunOptions {
   taskKind?: string | string[]
   subKind?: string
   goals?: string[]
+  /**
+   * The directory build-raptor was invoked at (expressed relative path from the root dir).
+   */
+  dir?: string
   concurrencyLevel?: number
   checkGitIgnore?: boolean
   testCaching?: boolean
