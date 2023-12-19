@@ -439,5 +439,6 @@ describe('yarn-repo-protocol.e2e', () => {
       expect(run.executionTypeOf('a', 'build')).toEqual('EXECUTED')
       expect(run.taskNames()).toEqual(['a:build'])
     })
+    test.todo('goal can be a relative path that climbs up')
   })
 })
