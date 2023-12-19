@@ -95,6 +95,7 @@ describe('uber-building-and-deletion', () => {
     }
     const testName = () => expect.getState().currentTestName
 
+    test.todo('deletion is before build:post')
     test('deletes dist/src/*.{js,d.ts} files that do not have a matching *.ts file under src/', async () => {
       const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
       const recipe = {
