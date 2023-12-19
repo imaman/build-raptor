@@ -23,7 +23,17 @@ export type PathInRepo = {
   readonly mark: Mark
   val: string
   isPrefixOf(other: PathInRepo): boolean
+  /**
+   * Returns a new PathInRepo object that points to a subdirectory of this path. Fails if "relativePath" tries to climb
+   * up.
+   * @param relativePath an addition to this path
+   */
   expand(relativePath: string): PathInRepo
+  /**
+   * Similr to expand() but allows relative paths that climb up as long as they are still inside the repo
+   * @param relativePath an addition to this path
+   */
+  to(relativePath: string): PathInRepo
   toJSON(): string
   toString(): string
 }
@@ -36,11 +46,21 @@ export function PathInRepo(input: string): PathInRepo {
     val,
     isPrefixOf,
     expand: (relativePath: string) => {
+      if (val === '.') {
+        return PathInRepo(relativePath)
+      }
       const ret = PathInRepo(path.normalize(path.join(val, relativePath)))
       if (!isPrefixOf(ret)) {
-        throw new Error(`Cannot expand (${val}) to ${ret}`)
+        throw new Error(`Cannot expand '${val}' to '${ret}'`)
       }
       return ret
+    },
+    to: (relativePath: string) => {
+      const joined = path.normalize(path.join(val, relativePath))
+      if (joined.startsWith('.')) {
+        throw new Error('cannot go up outside of the repo')
+      }
+      return PathInRepo(joined)
     },
     toJSON: () => val,
     toString: () => val,
