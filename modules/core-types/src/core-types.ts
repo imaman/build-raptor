@@ -41,7 +41,7 @@ export type PathInRepo = {
 export function PathInRepo(input: string): PathInRepo {
   const val = norm(input)
 
-  if (val !== '.' && val.startsWith('.')) {
+  if (val.startsWith('..')) {
     throw new Error(`cannot go up outside of the repo (got: '${val}')`)
   }
 
