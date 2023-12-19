@@ -18,7 +18,6 @@ export type RepoRoot = ReturnType<typeof RepoRoot>
 
 type Mark = Brand<string, 'PathInRepo'>
 
-// TODO(imaman): cannot exceed reporoot
 export type PathInRepo = {
   readonly mark: Mark
   val: string
