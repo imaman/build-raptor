@@ -41,6 +41,7 @@ export type PathInRepo = {
 export function PathInRepo(input: string): PathInRepo {
   const val = norm(input)
   const isPrefixOf = (other: PathInRepo) => other.val.startsWith(val)
+
   return {
     mark: '' as Mark, // eslint-disable-line @typescript-eslint/consistent-type-assertions
     val,
@@ -57,6 +58,9 @@ export function PathInRepo(input: string): PathInRepo {
     },
     to: (relativePath: string) => {
       const joined = path.normalize(path.join(val, relativePath))
+      if (joined === '.') {
+        return PathInRepo('.')
+      }
       if (joined.startsWith('.')) {
         throw new Error('cannot go up outside of the repo')
       }

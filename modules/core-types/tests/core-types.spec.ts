@@ -26,6 +26,19 @@ describe('core-types', () => {
     describe('to()', () => {
       test('allows relative paths to climb up', () => {
         expect(PathInRepo('abc/rst/uvw/xyz').to('../../jkl').val).toEqual('abc/rst/jkl')
+        expect(PathInRepo('abc').to('..').val).toEqual('.')
+      })
+      test('errors if the result tries to go up', () => {
+        expect(() => PathInRepo('abc').to('../../')).toThrowError('cannot go up outside of the repo')
+        expect(() => PathInRepo('abc').to('pqr/../../../')).toThrowError('cannot go up outside of the repo')
+      })
+      test('when passed an empty path stays the same', () => {
+        expect(PathInRepo('abc/def').to('').val).toEqual('abc/def')
+        expect(PathInRepo('abc/def').to('.').val).toEqual('abc/def')
+      })
+      test('when it is the empty path the result is the argument', () => {
+        expect(PathInRepo('').to('pqr/s').val).toEqual('pqr/s')
+        expect(PathInRepo('.').to('pqr/s').val).toEqual('pqr/s')
       })
     })
   })
