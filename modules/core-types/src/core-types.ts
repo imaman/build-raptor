@@ -40,6 +40,11 @@ export type PathInRepo = {
 
 export function PathInRepo(input: string): PathInRepo {
   const val = norm(input)
+
+  if (val !== '.' && val.startsWith('.')) {
+    throw new Error(`cannot go up outside of the repo (got: '${val}')`)
+  }
+
   const isPrefixOf = (other: PathInRepo) => other.val.startsWith(val)
 
   return {
@@ -58,12 +63,6 @@ export function PathInRepo(input: string): PathInRepo {
     },
     to: (relativePath: string) => {
       const joined = path.normalize(path.join(val, relativePath))
-      if (joined === '.') {
-        return PathInRepo('.')
-      }
-      if (joined.startsWith('.')) {
-        throw new Error('cannot go up outside of the repo')
-      }
       return PathInRepo(joined)
     },
     toJSON: () => val,

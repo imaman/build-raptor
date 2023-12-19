@@ -2,6 +2,18 @@ import { PathInRepo, RepoRoot } from '../src'
 
 describe('core-types', () => {
   describe('PathInRepo', () => {
+    test('can be constructed with a relative path', () => {
+      expect(PathInRepo('abc/pqr').val).toEqual('abc/pqr')
+    })
+    test('can be constructed with an empty path', () => {
+      expect(PathInRepo('').val).toEqual('.')
+      expect(PathInRepo('.').val).toEqual('.')
+      expect(PathInRepo('abc/def/../../').val).toEqual('.')
+    })
+    test('errors if constructed with a path that climbs up', () => {
+      expect(() => PathInRepo('../x').val).toThrowError('..')
+      expect(() => PathInRepo('abc/def/../../..').val).toThrowError('..')
+    })
     describe('expand()', () => {
       test('appends the given path', async () => {
         expect(PathInRepo('abc').expand('xyz').val).toEqual('abc/xyz')
@@ -29,8 +41,9 @@ describe('core-types', () => {
         expect(PathInRepo('abc').to('..').val).toEqual('.')
       })
       test('errors if the result tries to go up', () => {
-        expect(() => PathInRepo('abc').to('../../')).toThrowError('cannot go up outside of the repo')
-        expect(() => PathInRepo('abc').to('pqr/../../../')).toThrowError('cannot go up outside of the repo')
+        expect(() => PathInRepo('abc').to('../../')).toThrowError(`cannot go up outside of the repo (got: '..')`)
+        expect(() => PathInRepo('abc').to('../../../')).toThrowError(`cannot go up outside of the repo (got: '../..')`)
+        expect(() => PathInRepo('abc').to('pqr/../../../')).toThrowError(`cannot go up outside of the repo (got: '..')`)
       })
       test('when passed an empty path stays the same', () => {
         expect(PathInRepo('abc/def').to('').val).toEqual('abc/def')
@@ -44,9 +57,13 @@ describe('core-types', () => {
   })
   describe('RepoRoot', () => {
     describe('unresolve()', () => {
-      test.skip('does not allow escaping', async () => {
+      test('returns a PathInRepo to the given input (an absolute path)', async () => {
+        const r = RepoRoot('/abc/def/')
+        expect(r.unresolve('/abc/def/pqr/stu').val).toEqual('pqr/stu')
+      })
+      test('errors if the given input is outside of the subtree', async () => {
         const r = RepoRoot('/abc/def/ghi')
-        expect(() => r.unresolve('/abc/pqr')).toThrowError('--')
+        expect(() => r.unresolve('/abc/pqr')).toThrowError(`cannot go up outside of the repo (got: '../../pqr')`)
       })
     })
   })
