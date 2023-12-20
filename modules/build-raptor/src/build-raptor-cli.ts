@@ -449,10 +449,10 @@ export function main() {
       )
       .command(
         'run <program>',
-        `compiles a program and runs it. use "--" to pass command line options down to the invoked program. E.g., run dist/a.js --foo=1 --bar=goo`,
+        `compiles a program and runs it. use "--" to pass command line options down to the invoked program. E.g., run dist/a.js -- --foo=1 --bar=goo`,
         yargs =>
           yargs.positional('program', {
-            describe: 'relative path to the program to run (e.g., dist/src/main.js)',
+            describe: 'relative path to the program to run (e.g., "dist/a.js")',
             type: 'string',
           }),
         async rawArgv => {
@@ -463,7 +463,8 @@ export function main() {
             units: argv.units,
             goals: argv.goals,
             program: rawArgv.program,
-            programArgs: rawArgv._.map(at => String(at)),
+            // drop the command ("run") which yargs adds into the ._ array
+            programArgs: rawArgv._.slice(1).map(at => String(at)),
             githubActions: argv.githubActions,
             printPassing: argv.printPassing,
             buildOutputLocation: argv.buildOutputLocations,
