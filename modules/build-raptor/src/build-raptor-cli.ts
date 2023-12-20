@@ -144,7 +144,7 @@ export async function run(options: Options) {
       stream.end()
     }
 
-    reportTests(logger, testOutput.get(arg.taskName) ?? [], options.testReporting ?? 'just-failing')
+    reportTests(logger, testOutput.get(arg.taskName) ?? [], options.testReporting ?? 'tree')
 
     const doPrint =
       options.printPassing ||
@@ -322,7 +322,7 @@ export function main() {
       .options('compact', {
         describe: 'whether to list only executing tasks (i.e., do not print skipped tasks)',
         type: 'boolean',
-        default: false,
+        default: true,
       })
       .options('step-by-step-processor', {
         describe: `name of a node module implementing build-raptor's step-by-step-processor protocol`,
@@ -337,6 +337,7 @@ export function main() {
       .option('test-reporting', {
         choices: ['just-failing', 'tree', 'tree-just-failing'],
         describe: 'test reporing policy',
+        default: 'tree',
       })
       .option('test-caching', {
         describe: 'whether to skip running tests that have already passed',
