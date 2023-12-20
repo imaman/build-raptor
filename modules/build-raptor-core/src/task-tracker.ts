@@ -98,6 +98,10 @@ export class TaskTracker {
     return this.plan.getTask(tn)
   }
 
+  get successful() {
+    return this.tasks().every(t => t.record.verdict === 'OK')
+  }
+
   private propagateFailure(taskName: TaskName) {
     const toFail = this.plan.errorPropagationGraph.traverseFrom(taskName, { direction: 'backwards' })
     for (const t of toFail) {
