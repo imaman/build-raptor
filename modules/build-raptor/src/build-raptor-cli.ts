@@ -180,10 +180,14 @@ export async function run(options: Options) {
       testCaching: options.testCaching ?? true,
       commitHash,
       userDir,
-      toRun: {
-        program: options.program ?? '',
-        args: options.programArgs ?? [],
-      },
+      ...(options.program
+        ? {
+            toRun: {
+              program: options.program,
+              args: options.programArgs ?? [],
+            },
+          }
+        : {}),
     },
   )
   const { exitCode } = await runner()
