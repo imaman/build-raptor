@@ -1,4 +1,4 @@
-import { DefaultAssetPublisher, EngineBootstrapper } from 'build-raptor-core'
+import { DefaultAssetPublisher, EngineBootstrapper, findRepoDir } from 'build-raptor-core'
 import * as fse from 'fs-extra'
 import { createDefaultLogger, Logger } from 'logger'
 import {
