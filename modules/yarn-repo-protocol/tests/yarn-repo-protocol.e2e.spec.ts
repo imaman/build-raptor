@@ -439,6 +439,21 @@ describe('yarn-repo-protocol.e2e', () => {
       expect(run.executionTypeOf('a', 'build')).toEqual('EXECUTED')
       expect(run.taskNames()).toEqual(['a:build'])
     })
-    test.todo('goal can be a relative path that climbs up')
+    test('the goal can be a relative path that climbs up', async () => {
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': driver.packageJson('a'),
+        'modules/a/src/index.ts': '// something-a',
+        'modules/a/tests/index.spec.ts': `test('a', () => {expect(1).toEqual(1)});`,
+        'modules/b/src/index.ts': '// something-b',
+        'modules/b/tests/index.spec.ts': `test('b', () => {expect(1).toEqual(1)});`,
+      }
+
+      const fork = await driver.repo(recipe).fork()
+      const run = await fork.run('OK', { userDir: 'modules/b', goals: ['../a/dist/src'] })
+      expect(run.executionTypeOf('a', 'build')).toEqual('EXECUTED')
+      expect(run.taskNames()).toEqual(['a:build'])
+    })
   })
 })
