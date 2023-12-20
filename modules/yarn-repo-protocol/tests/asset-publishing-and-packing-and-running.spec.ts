@@ -256,6 +256,28 @@ describe('asset-publishing-and-packing', () => {
       })
       expect(await fork.file('this/is/a/very/different/location/abc').lines()).toEqual(['COYOTE'])
     })
+    test('does not run the program if it failed to compile', async () => {
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': driver.packageJson('a', [], {
+          // set the mode to 400 to make sure that if it does try to execute there will be a different error in the run
+          'build:post': `chmod 400 dist/src/index.js`,
+        }),
+        'modules/a/src/index.ts': `"abc".loremIpsum()`,
+        'modules/a/tests/index.spec.ts': `test('a', () => {expect(1).toEqual(1)});`,
+      }
+
+      const fork = await driver.repo(recipe).fork()
+
+      const run = await fork.run('FAIL', { toRun: { program: 'modules/a/dist/src/index.js', args: [] } })
+      expect(run.exitCode).toEqual(2)
+      expect(run.taskNames()).toEqual(['a:build'])
+      expect(await run.outputOf('build', 'a')).toEqual([
+        `modules/a/src/index.ts(1,7): error TS2339: Property 'loremIpsum' does not exist on type '"abc"'.`,
+      ])
+      expect(run.message).toBe(undefined)
+    })
     test('outputs reasonable explanation if it could not start executing the program', async () => {
       const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
       const recipe = {
