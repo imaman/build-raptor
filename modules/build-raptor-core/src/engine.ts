@@ -232,11 +232,22 @@ export class Engine {
 
     const resolved = this.rootDir.resolve(this.options.toRun.program)
     const cwd = this.rootDir.resolve(this.options.userDir)
-    try {
-      child_process.execFileSync(resolved, this.options.toRun.args, { cwd, stdio: 'inherit' })
-    } catch (e) {
-      throw new BuildFailedError(`execution of ${resolved} failed:\n${e}`)
+    const spawnResult = child_process.spawnSync(resolved, this.options.toRun.args, {
+      cwd,
+      stdio: 'inherit',
+      shell: false,
+    })
+    if (spawnResult.error) {
+      throw new BuildFailedError(`could not execute ${this.options.toRun.program}: ${spawnResult.error}`)
     }
+
+    if (spawnResult.status === 0) {
+      return
+    }
+
+    throw new BuildFailedError(
+      `execution of ${this.options.toRun.program} exited with status=${spawnResult.status}, signal=${spawnResult.signal}`,
+    )
   }
 
   async loadModel(buildRunId: BuildRunId) {

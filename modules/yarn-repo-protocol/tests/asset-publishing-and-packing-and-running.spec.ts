@@ -257,7 +257,7 @@ describe('asset-publishing-and-packing', () => {
       expect(await fork.file('this/is/a/very/different/location/abc').lines()).toEqual(['COYOTE'])
     })
     test.todo('does not run if build failed')
-    test.only('outpus the output on failure', async () => {
+    test('outpus the output on failure', async () => {
       const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
       const recipe = {
         'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
@@ -267,7 +267,7 @@ describe('asset-publishing-and-packing', () => {
         'modules/a/src/index.ts': `#!/usr/bin/env node      
           function a() { b() }
           function b() { c() }
-          function c() { } //throw new Error("no-no-no") }
+          function c() { throw new Error("THIS_IS_AN_INTENTIONAL_FAILURE") }
 
           a()`,
         'modules/a/tests/index.spec.ts': `test('a', () => {expect(1).toEqual(1)});`,
@@ -275,11 +275,28 @@ describe('asset-publishing-and-packing', () => {
 
       const fork = await driver.repo(recipe).fork()
 
-      const run = await fork.run('OK', { toRun: { program: 'modules/a/dist/src/index.js', args: [] } })
-      expect(run.exitCode).toEqual(0)
-      expect(run.message).toEqual(undefined)
-      expect(run.taskNames()).toEqual(['a:build'])
-      expect(await run.outputOf('build', 'a')).toEqual(['> a@1.0.0 build:post', '> chmod 700 dist/src/index.js'])
+      const run = await fork.run('FAIL', { toRun: { program: 'modules/a/dist/src/index.js', args: [] } })
+      expect(run.exitCode).toEqual(2)
+      expect(run.message).toEqual('execution of modules/a/dist/src/index.js exited with status=1, signal=null')
+    })
+    test('output before executing', async () => {
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': driver.packageJson('a', [], {
+          'build:post': `chmod 400 dist/src/index.js`,
+        }),
+        'modules/a/src/index.ts': `// `,
+        'modules/a/tests/index.spec.ts': `test('a', () => {expect(1).toEqual(1)});`,
+      }
+
+      const fork = await driver.repo(recipe).fork()
+
+      const run = await fork.run('FAIL', { toRun: { program: 'modules/a/dist/src/index.js', args: [] } })
+      expect(run.exitCode).toEqual(2)
+      expect(run.message).toMatch(
+        /could not execute modules\/a\/dist\/src\/index.js: Error: spawnSync .*modules\/a\/dist\/src\/index.js EACCES/,
+      )
     })
   })
 })
