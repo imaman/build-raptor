@@ -1,3 +1,6 @@
+import fs from 'fs'
+import path from 'path'
+
 export function findRepoDir(dir: string) {
   while (true) {
     const pj = path.join(dir, 'package.json')
