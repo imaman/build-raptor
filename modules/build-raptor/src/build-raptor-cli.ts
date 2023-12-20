@@ -1,5 +1,4 @@
-import { DefaultAssetPublisher, EngineBootstrapper } from 'build-raptor-core'
-import { PathInRepo } from 'core-types'
+import { DefaultAssetPublisher, EngineBootstrapper, findRepoDir } from 'build-raptor-core'
 import * as fse from 'fs-extra'
 import { createDefaultLogger, Logger } from 'logger'
 import {
@@ -73,7 +72,13 @@ export async function run(options: Options) {
   // Should be called as early as possible to secure the secret.
   const storageClientFactory = getS3StorageClientFactory() ?? createStorageClient
 
-  const rootDir = options.dir ?? process.cwd()
+  const userDir = process.cwd()
+  const rootDir = findRepoDir(userDir)
+  if (!rootDir) {
+    throw new Error(
+      `could not find a repo dir (a directory with a package.json file that has a 'workspace' attribute) in or above ${userDir}`,
+    )
+  }
   const buildRaptorDir = path.join(rootDir, '.build-raptor')
   await fse.ensureDir(buildRaptorDir)
   const logFile = path.join(buildRaptorDir, 'main.log')
@@ -164,7 +169,7 @@ export async function run(options: Options) {
   const runner = await bootstrapper.makeRunner(
     options.commands,
     options.units,
-    options.goals.map(at => PathInRepo(at)),
+    options.goals,
     options.buildRaptorConfigFile,
     {
       stepByStepProcessorModuleName: options.stepByStepProcessor,
@@ -172,6 +177,7 @@ export async function run(options: Options) {
       buildRaptorDir,
       testCaching: options.testCaching ?? true,
       commitHash,
+      userDir,
     },
   )
   const { exitCode } = await runner()

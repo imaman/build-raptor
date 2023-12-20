@@ -24,6 +24,11 @@ import { TaskStore } from './task-store'
 import { TaskTracker } from './task-tracker'
 
 export interface EngineOptions {
+  /**
+   * The directory that build-ratpor was invoked at. If relative it is relative to the repo root. If absolute it must
+   * point to a dir somewhere under the repo root.
+   */
+  userDir: string
   checkGitIgnore?: boolean
   concurrency: Int
   buildRaptorDir: string
@@ -39,6 +44,7 @@ export class Engine {
   private readonly fingerprintLedger
   private readonly purger
   private tracker?: TaskTracker
+  private readonly goals: PathInRepo[]
 
   /**
    *
@@ -62,7 +68,7 @@ export class Engine {
     private readonly taskOutputDir: string,
     private readonly commands: string[],
     private readonly units: string[],
-    private readonly goals: PathInRepo[],
+    goals: string[],
     private readonly eventPublisher: TypedPublisher<EngineEventScheme>,
     private readonly steps: StepByStepTransmitter,
     options: EngineOptions,
@@ -75,7 +81,14 @@ export class Engine {
       testCaching: options.testCaching ?? true,
       commitHash: options.commitHash,
       config: options.config ?? {},
+      userDir: options.userDir,
     }
+
+    const userDirAbsolute = path.isAbsolute(this.options.userDir)
+      ? this.options.userDir
+      : this.rootDir.resolve(PathInRepo(this.options.userDir))
+    const userDirInRepo = this.rootDir.unresolve(userDirAbsolute)
+    this.goals = goals.map(g => userDirInRepo.to(g))
     const ledgerFile = path.join(this.options.buildRaptorDir, 'fingerprint-ledger.json')
     this.eventPublisher.on('taskStore', e => {
       const step =
