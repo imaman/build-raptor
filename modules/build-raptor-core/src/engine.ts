@@ -178,7 +178,9 @@ export class Engine {
       }
 
       const ret = await this.executePlan(plan, model)
-      await this.executeProgram()
+      if (ret.successful) {
+        await this.executeProgram()
+      }
       this.steps.push({ step: 'BUILD_RUN_ENDED' })
       await Promise.all([this.fingerprintLedger.close(), this.steps.close()])
       return ret
@@ -230,7 +232,11 @@ export class Engine {
 
     const resolved = this.rootDir.resolve(this.options.toRun.program)
     const cwd = this.rootDir.resolve(this.options.userDir)
-    child_process.execFileSync(resolved, this.options.toRun.args, { cwd, stdio: 'inherit' })
+    try {
+      child_process.execFileSync(resolved, this.options.toRun.args, { cwd, stdio: 'inherit' })
+    } catch (e) {
+      throw new BuildFailedError(`execution of ${resolved} failed:\n${e}`)
+    }
   }
 
   async loadModel(buildRunId: BuildRunId) {
