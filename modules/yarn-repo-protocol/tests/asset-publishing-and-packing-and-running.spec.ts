@@ -190,7 +190,7 @@ describe('asset-publishing-and-packing', () => {
     })
   })
   describe('run', () => {
-    test('builds and run a program', async () => {
+    test('builds and run a program passing command line args to it', async () => {
       const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
       const recipe = {
         'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
@@ -205,13 +205,56 @@ describe('asset-publishing-and-packing', () => {
 
       const fork = await driver.repo(recipe).fork()
 
+      await fork.run('OK', { toRun: { program: 'modules/a/dist/src/index.js', args: ['p', 'q', 'r'] } })
+      expect(await fork.file('abc').lines()).toEqual(['P;Q;R'])
+
+      await fork.run('OK', { toRun: { program: 'modules/a/dist/src/index.js', args: ['x', 'y', 'z'] } })
+      expect(await fork.file('abc').lines()).toEqual(['X;Y;Z'])
+    })
+    test('the program is not rebuilt if its code stays the same (even if the command line args change)', async () => {
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': driver.packageJson('a', [], {
+          'build:post': `chmod 700 dist/src/index.js`,
+        }),
+        'modules/a/src/index.ts': `#!/usr/bin/env node      
+          console.log('')`,
+        'modules/a/tests/index.spec.ts': `test('a', () => {expect(1).toEqual(1)});`,
+      }
+
+      const fork = await driver.repo(recipe).fork()
+
       const run1 = await fork.run('OK', { toRun: { program: 'modules/a/dist/src/index.js', args: ['p', 'q', 'r'] } })
       expect(run1.executionTypeOf('a', 'build')).toEqual('EXECUTED')
-      expect(await fork.file('abc').lines()).toEqual(['P;Q;R'])
 
       const run2 = await fork.run('OK', { toRun: { program: 'modules/a/dist/src/index.js', args: ['x', 'y', 'z'] } })
       expect(run2.executionTypeOf('a', 'build')).toEqual('CACHED')
-      expect(await fork.file('abc').lines()).toEqual(['X;Y;Z'])
+    })
+    test('the program is invoked from the user dir', async () => {
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': driver.packageJson('a', [], {
+          'build:post': `chmod 700 dist/src/index.js`,
+        }),
+        'modules/a/src/index.ts': `#!/usr/bin/env node      
+          import fs from 'fs'      
+          fs.writeFileSync('abc', process.argv[2].toUpperCase())`,
+        'modules/a/tests/index.spec.ts': `test('a', () => {expect(1).toEqual(1)});`,
+        'this/is/a/very/different/location/myfile': '',
+      }
+
+      const fork = await driver.repo(recipe).fork()
+
+      await fork.run('OK', { userDir: 'modules/a/tests', toRun: { program: '../dist/src/index.js', args: ['bee'] } })
+      expect(await fork.file('modules/a/tests/abc').lines()).toEqual(['BEE'])
+
+      await fork.run('OK', {
+        userDir: 'this/is/a/very/different/location',
+        toRun: { program: '../../../../../../modules/a/dist/src/index.js', args: ['coyote'] },
+      })
+      expect(await fork.file('this/is/a/very/different/location/abc').lines()).toEqual(['COYOTE'])
     })
   })
 })
