@@ -95,7 +95,6 @@ describe('uber-building-and-deletion', () => {
     }
     const testName = () => expect.getState().currentTestName
 
-    test.todo('deletion is before build:post')
     test('deletes dist/src/*.{js,d.ts} files that do not have a matching *.ts file under src/', async () => {
       const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
       const recipe = {
@@ -160,6 +159,24 @@ describe('uber-building-and-deletion', () => {
       expect(await Promise.all([xjs.exists(), xdts.exists()])).toEqual([true, true])
       await fork.run('OK', { taskKind: 'build' })
       expect(await Promise.all([xjs.exists(), xdts.exists()])).toEqual([false, false])
+    })
+    test('does not delete files that were produced by a build:post run script', async () => {
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': driver.packageJson('a', [], {
+          'build:post': `echo "brown fox" > dist/src/myfile`,
+        }),
+        'modules/a/src/a.ts': 'export function a() {}',
+        'modules/a/tests/a.spec.ts': '//',
+      }
+
+      const fork = await driver.repo(recipe).fork()
+      const myfile = fork.file('modules/a/dist/src/myfile')
+
+      expect(await myfile.exists()).toBe(false)
+      await fork.run('OK', { taskKind: 'build' })
+      expect(await myfile.lines()).toEqual(['brown fox'])
     })
   })
 })
