@@ -1,5 +1,5 @@
 import { DefaultAssetPublisher, EngineBootstrapper } from 'build-raptor-core'
-import { PathInRepo } from 'core-types'
+import fs from 'fs'
 import * as fse from 'fs-extra'
 import { createDefaultLogger, Logger } from 'logger'
 import {
@@ -73,7 +73,13 @@ export async function run(options: Options) {
   // Should be called as early as possible to secure the secret.
   const storageClientFactory = getS3StorageClientFactory() ?? createStorageClient
 
-  const rootDir = options.dir ?? process.cwd()
+  const userDir = process.cwd()
+  const rootDir = findRepoDir(userDir)
+  if (!rootDir) {
+    throw new Error(
+      `could not find a repo dir (a directory with a package.json file that has a 'workspace' attribute) in or above ${userDir}`,
+    )
+  }
   const buildRaptorDir = path.join(rootDir, '.build-raptor')
   await fse.ensureDir(buildRaptorDir)
   const logFile = path.join(buildRaptorDir, 'main.log')
@@ -172,7 +178,7 @@ export async function run(options: Options) {
       buildRaptorDir,
       testCaching: options.testCaching ?? true,
       commitHash,
-      userDir: process.cwd(),
+      userDir,
     },
   )
   const { exitCode } = await runner()
@@ -438,4 +444,24 @@ export function main() {
       .demandCommand(1)
       .parse()
   )
+}
+
+function findRepoDir(dir: string) {
+  while (true) {
+    const pj = path.join(dir, 'package.json')
+    const ex = fs.existsSync(pj)
+    if (ex) {
+      const content = JSON.parse(fs.readFileSync(pj, 'utf-8'))
+      const keys = Object.keys(content)
+      if (keys.includes('workspaces')) {
+        return dir
+      }
+    }
+
+    const next = path.dirname(dir)
+    if (next === dir) {
+      return undefined
+    }
+    dir = next
+  }
 }

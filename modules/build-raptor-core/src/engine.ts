@@ -88,7 +88,7 @@ export class Engine {
       ? this.options.userDir
       : this.rootDir.resolve(PathInRepo(this.options.userDir))
     const userDirInRepo = this.rootDir.unresolve(userDirAbsolute)
-    this.goals = goals.map(g => userDirInRepo.expand(g))
+    this.goals = goals.map(g => userDirInRepo.to(g))
     const ledgerFile = path.join(this.options.buildRaptorDir, 'fingerprint-ledger.json')
     this.eventPublisher.on('taskStore', e => {
       const step =
