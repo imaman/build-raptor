@@ -33,6 +33,7 @@ interface Options {
   units: string[]
   goals: string[]
   program?: string
+  programArgs?: string[]
   githubActions: boolean
   printPassing: boolean
   compact: boolean
@@ -447,29 +448,31 @@ export function main() {
         yargs =>
           withBuildOptions(yargs)
             .positional('program', {
-              describe: 'relative path to the program (e.g., dist/src/main.js)',
+              describe: 'relative path to the program to run (e.g., dist/src/main.js)',
               type: 'string',
+            })
+            .positional('args', {
+              describe: 'command line options to pass as-is to the invoked program (e.g., --foo=x --boo=5)',
+              type: 'string',
+              array: true,
+              default: [],
             })
             .demandOption('program'),
         async rawArgv => {
           const argv = camelizeRecord(rawArgv)
-          const tr = argv.testReporting
           await run({
             dir: argv.dir,
             commands: ['run'],
             units: argv.units,
             goals: argv.goals,
             program: argv.program,
+            programArgs: argv.args,
             githubActions: argv.githubActions,
             printPassing: argv.printPassing,
             buildOutputLocation: argv.buildOutputLocations,
             concurrency: argv.concurrency,
             compact: argv.compact,
             testCaching: argv.testCaching,
-            testReporting:
-              tr === 'just-failing' || tr === 'tree' || tr === 'tree-just-failing' || tr === undefined
-                ? tr
-                : failMe(`unsupported value: ${tr}`),
             callRegisterAsset: argv.registerAssets,
             stepByStepProcessor: argv.stepByStepProcessor,
             buildRaptorConfigFile: argv.configFile,
