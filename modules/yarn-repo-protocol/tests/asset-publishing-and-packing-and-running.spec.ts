@@ -189,4 +189,135 @@ describe('asset-publishing-and-packing', () => {
       expect(output.trim()).toEqual('four scores and seven years ago')
     })
   })
+  describe('run', () => {
+    test('builds and run a program passing command line args to it', async () => {
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': driver.packageJson('a', [], {
+          'build:post': `chmod 700 dist/src/index.js`,
+        }),
+        'modules/a/src/index.ts': `#!/usr/bin/env node      
+          import fs from 'fs'      
+          fs.writeFileSync('abc', process.argv.slice(2).join(';').toUpperCase())`,
+        'modules/a/tests/index.spec.ts': `test('a', () => {expect(1).toEqual(1)});`,
+      }
+
+      const fork = await driver.repo(recipe).fork()
+
+      await fork.run('OK', { toRun: { program: 'modules/a/dist/src/index.js', args: ['p', 'q', 'r'] } })
+      expect(await fork.file('abc').lines()).toEqual(['P;Q;R'])
+
+      await fork.run('OK', { toRun: { program: 'modules/a/dist/src/index.js', args: ['x', 'y', 'z'] } })
+      expect(await fork.file('abc').lines()).toEqual(['X;Y;Z'])
+    })
+    test('the program is not rebuilt if its code stays the same (even if the command line args change)', async () => {
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': driver.packageJson('a', [], {
+          'build:post': `chmod 700 dist/src/index.js`,
+        }),
+        'modules/a/src/index.ts': `#!/usr/bin/env node      
+          console.log('')`,
+        'modules/a/tests/index.spec.ts': `test('a', () => {expect(1).toEqual(1)});`,
+      }
+
+      const fork = await driver.repo(recipe).fork()
+
+      const run1 = await fork.run('OK', { toRun: { program: 'modules/a/dist/src/index.js', args: ['p', 'q', 'r'] } })
+      expect(run1.executionTypeOf('a', 'build')).toEqual('EXECUTED')
+
+      const run2 = await fork.run('OK', { toRun: { program: 'modules/a/dist/src/index.js', args: ['x', 'y', 'z'] } })
+      expect(run2.executionTypeOf('a', 'build')).toEqual('CACHED')
+    })
+    test('the program is invoked from the user dir', async () => {
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': driver.packageJson('a', [], {
+          'build:post': `chmod 700 dist/src/index.js`,
+        }),
+        'modules/a/src/index.ts': `#!/usr/bin/env node      
+          import fs from 'fs'      
+          fs.writeFileSync('abc', process.argv[2].toUpperCase())`,
+        'modules/a/tests/index.spec.ts': `test('a', () => {expect(1).toEqual(1)});`,
+        'this/is/a/very/different/location/myfile': '',
+      }
+
+      const fork = await driver.repo(recipe).fork()
+
+      await fork.run('OK', { userDir: 'modules/a/tests', toRun: { program: '../dist/src/index.js', args: ['bee'] } })
+      expect(await fork.file('modules/a/tests/abc').lines()).toEqual(['BEE'])
+
+      await fork.run('OK', {
+        userDir: 'this/is/a/very/different/location',
+        toRun: { program: '../../../../../../modules/a/dist/src/index.js', args: ['coyote'] },
+      })
+      expect(await fork.file('this/is/a/very/different/location/abc').lines()).toEqual(['COYOTE'])
+    })
+    test('does not run the program if it failed to compile', async () => {
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': driver.packageJson('a', [], {
+          // set the mode to 400 to make sure that if it does try to execute there will be a different error in the run
+          'build:post': `chmod 400 dist/src/index.js`,
+        }),
+        'modules/a/src/index.ts': `"abc".loremIpsum()`,
+        'modules/a/tests/index.spec.ts': `test('a', () => {expect(1).toEqual(1)});`,
+      }
+
+      const fork = await driver.repo(recipe).fork()
+
+      const run = await fork.run('FAIL', { toRun: { program: 'modules/a/dist/src/index.js', args: [] } })
+      expect(run.exitCode).toEqual(2)
+      expect(run.taskNames()).toEqual(['a:build'])
+      expect(await run.outputOf('build', 'a')).toEqual([
+        `modules/a/src/index.ts(1,7): error TS2339: Property 'loremIpsum' does not exist on type '"abc"'.`,
+      ])
+      expect(run.message).toBe(undefined)
+    })
+    test('outputs reasonable explanation if it could not start executing the program', async () => {
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': driver.packageJson('a', [], {
+          'build:post': `chmod 400 dist/src/index.js`,
+        }),
+        'modules/a/src/index.ts': `// `,
+        'modules/a/tests/index.spec.ts': `test('a', () => {expect(1).toEqual(1)});`,
+      }
+
+      const fork = await driver.repo(recipe).fork()
+
+      const run = await fork.run('FAIL', { toRun: { program: 'modules/a/dist/src/index.js', args: [] } })
+      expect(run.exitCode).toEqual(2)
+      expect(run.message).toMatch(
+        /could not execute modules\/a\/dist\/src\/index.js: Error: spawnSync .*modules\/a\/dist\/src\/index.js EACCES/,
+      )
+    })
+    test('outpus exit-code/signal if the program errored while executing', async () => {
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': driver.packageJson('a', [], {
+          'build:post': `chmod 700 dist/src/index.js`,
+        }),
+        'modules/a/src/index.ts': `#!/usr/bin/env node      
+          function a() { b() }
+          function b() { c() }
+          function c() { throw new Error("THIS_IS_AN_INTENTIONAL_FAILURE") }
+
+          a()`,
+        'modules/a/tests/index.spec.ts': `test('a', () => {expect(1).toEqual(1)});`,
+      }
+
+      const fork = await driver.repo(recipe).fork()
+
+      const run = await fork.run('FAIL', { toRun: { program: 'modules/a/dist/src/index.js', args: [] } })
+      expect(run.exitCode).toEqual(2)
+      expect(run.message).toEqual('execution of modules/a/dist/src/index.js exited with status=1, signal=null')
+    })
+  })
 })
