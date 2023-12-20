@@ -189,4 +189,29 @@ describe('asset-publishing-and-packing', () => {
       expect(output.trim()).toEqual('four scores and seven years ago')
     })
   })
+  describe('run', () => {
+    test('builds and run a program', async () => {
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': driver.packageJson('a', [], {
+          'build:post': `chmod 700 dist/src/index.js`,
+        }),
+        'modules/a/src/index.ts': `#!/usr/bin/env node      
+          import fs from 'fs'      
+          fs.writeFileSync('abc', process.argv.slice(2).join(';').toUpperCase())`,
+        'modules/a/tests/index.spec.ts': `test('a', () => {expect(1).toEqual(1)});`,
+      }
+
+      const fork = await driver.repo(recipe).fork()
+
+      const run1 = await fork.run('OK', { toRun: { program: 'modules/a/dist/src/index.js', args: ['p', 'q', 'r'] } })
+      expect(run1.executionTypeOf('a', 'build')).toEqual('EXECUTED')
+      expect(await fork.file('abc').lines()).toEqual(['P;Q;R'])
+
+      const run2 = await fork.run('OK', { toRun: { program: 'modules/a/dist/src/index.js', args: ['x', 'y', 'z'] } })
+      expect(run2.executionTypeOf('a', 'build')).toEqual('CACHED')
+      expect(await fork.file('abc').lines()).toEqual(['X;Y;Z'])
+    })
+  })
 })

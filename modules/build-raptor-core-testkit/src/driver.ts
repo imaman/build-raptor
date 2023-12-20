@@ -177,6 +177,13 @@ interface RunOptions {
   concurrencyLevel?: number
   checkGitIgnore?: boolean
   testCaching?: boolean
+  toRun?: {
+    /**
+     * Relative path from userDir
+     */
+    program: string
+    args: string[]
+  }
 }
 
 const BUILD_RAPTOR_DIR_NAME = '.build-raptor'
@@ -195,7 +202,7 @@ class Fork {
   async run(expectedStatus: 'OK' | 'FAIL' | 'CRASH', options: RunOptions = {}): Promise<Run> {
     const commands = !options.taskKind ? [] : Array.isArray(options.taskKind) ? options.taskKind : [options.taskKind]
     const units = options.units ?? []
-    const goals = (options.goals ?? [])
+    const goals = options.goals ?? []
     const concurrencyLevel = Int(options.concurrencyLevel ?? 10)
     const rp = this.repoProtocol
     const bootstrapper = await EngineBootstrapper.create(this.dir, this.storageClient, rp, Date.now(), this.testName)
@@ -208,6 +215,7 @@ class Fork {
       testCaching: options.testCaching,
       commitHash: 'COMMIT-HASH-FOR-TESTING',
       userDir: options.userDir ?? '',
+      toRun: options.toRun,
     })
     const output = await runner()
     if (expectedStatus === output.overallVerdict) {
