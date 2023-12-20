@@ -106,6 +106,7 @@ export class Engine {
       toRun: options.toRun ? { args: options.toRun.args, program: userDir.to(options.toRun.program) } : undefined,
     }
     this.goals = [...goals, options.toRun?.program].flatMap(g => (g ? [g] : [])).map(g => userDir.to(g))
+    this.logger.info(`goals=${JSON.stringify(goals)}`)
     const ledgerFile = path.join(this.options.buildRaptorDir, 'fingerprint-ledger.json')
     this.eventPublisher.on('taskStore', e => {
       const step =
@@ -227,9 +228,11 @@ export class Engine {
 
   async executeProgram() {
     if (!this.options.toRun) {
+      this.logger.info(`no program to execute`)
       return
     }
 
+    this.logger.info(`about to execute ${JSON.stringify(this.options.toRun)}`)
     const resolved = this.rootDir.resolve(this.options.toRun.program)
     const cwd = this.rootDir.resolve(this.options.userDir)
     const spawnResult = child_process.spawnSync(resolved, this.options.toRun.args, {
