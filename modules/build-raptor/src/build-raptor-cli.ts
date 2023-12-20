@@ -28,10 +28,11 @@ import { getPrForCommit } from './get-pr-for-commit'
 type TestReporting = 'just-failing' | 'tree' | 'tree-just-failing'
 
 interface Options {
-  commands: ('build' | 'test' | 'pack' | 'publish-assets')[]
+  commands: ('build' | 'test' | 'pack' | 'publish-assets' | 'run')[]
   dir: string | undefined
   units: string[]
   goals: string[]
+  program?: string
   githubActions: boolean
   printPassing: boolean
   compact: boolean
@@ -424,6 +425,41 @@ export function main() {
             commands: ['publish-assets', 'test'],
             units: argv.units,
             goals: argv.goals,
+            githubActions: argv.githubActions,
+            printPassing: argv.printPassing,
+            buildOutputLocation: argv.buildOutputLocations,
+            concurrency: argv.concurrency,
+            compact: argv.compact,
+            testCaching: argv.testCaching,
+            testReporting:
+              tr === 'just-failing' || tr === 'tree' || tr === 'tree-just-failing' || tr === undefined
+                ? tr
+                : failMe(`unsupported value: ${tr}`),
+            callRegisterAsset: argv.registerAssets,
+            stepByStepProcessor: argv.stepByStepProcessor,
+            buildRaptorConfigFile: argv.configFile,
+          })
+        },
+      )
+      .command(
+        'run',
+        `compiles a program and runs it`,
+        yargs =>
+          withBuildOptions(yargs)
+            .positional('program', {
+              describe: 'relative path to the program (e.g., dist/src/main.js)',
+              type: 'string',
+            })
+            .demandOption('program'),
+        async rawArgv => {
+          const argv = camelizeRecord(rawArgv)
+          const tr = argv.testReporting
+          await run({
+            dir: argv.dir,
+            commands: ['run'],
+            units: argv.units,
+            goals: argv.goals,
+            program: argv.program,
             githubActions: argv.githubActions,
             printPassing: argv.printPassing,
             buildOutputLocation: argv.buildOutputLocations,
