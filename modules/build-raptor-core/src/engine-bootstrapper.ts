@@ -3,7 +3,7 @@ import { BuildRunId } from 'build-run-id'
 import { PathInRepo, RepoRoot } from 'core-types'
 import * as fs from 'fs'
 import { createDefaultLogger, Logger } from 'logger'
-import { errorLike, StorageClient, Subscribable, TypedPublisher } from 'misc'
+import { errorLike, StorageClient, Subscribable, switchOn, TypedPublisher } from 'misc'
 import * as path from 'path'
 import { RepoProtocol } from 'repo-protocol'
 import * as Tmp from 'tmp-promise'
@@ -129,8 +129,12 @@ export class EngineBootstrapper {
           )
         } catch (err) {
           if (err instanceof BuildFailedError) {
+            const prefix = switchOn(err.hint, {
+              program: () => '',
+              task: () => 'build-raptor detected the following problem: ',
+            })
             // TODO(imaman): cover this print
-            this.logger.print(`build-raptor detected the following problem: ${err.message}`)
+            this.logger.print(`${prefix}${err.message}`)
             return new Breakdown(
               'FAIL',
               buildRunId,

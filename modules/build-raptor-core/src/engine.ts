@@ -238,7 +238,7 @@ export class Engine {
       shell: false,
     })
     if (spawnResult.error) {
-      throw new BuildFailedError(`could not execute ${this.options.toRun.program}: ${spawnResult.error}`)
+      throw new BuildFailedError(`could not execute ${this.options.toRun.program}: ${spawnResult.error}`, 'program')
     }
 
     if (spawnResult.status === 0) {
@@ -247,6 +247,7 @@ export class Engine {
 
     throw new BuildFailedError(
       `execution of ${this.options.toRun.program} exited with status=${spawnResult.status}, signal=${spawnResult.signal}`,
+      'program',
     )
   }
 
