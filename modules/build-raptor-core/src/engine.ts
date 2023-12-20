@@ -1,5 +1,6 @@
 import { BuildFailedError } from 'build-failed-error'
 import { BuildRunId } from 'build-run-id'
+import child_process from 'child_process'
 import { PathInRepo, RepoRoot } from 'core-types'
 import * as fs from 'fs'
 import * as fse from 'fs-extra'
@@ -37,10 +38,26 @@ export interface EngineOptions {
   commitHash: string | undefined
   stepByStepProcessorModuleName?: string
   config?: BuildRaptorConfig
+  toRun?: {
+    program: string
+    args: string[]
+  }
 }
 
+type ResolvedEngineOptions = Required<
+  Omit<Omit<Omit<EngineOptions, 'stepByStepProcessorModuleName'>, 'toRun'>, 'userDir'> & {
+    userDir: PathInRepo
+    toRun:
+      | {
+          program: PathInRepo
+          args: string[]
+        }
+      | undefined
+  }
+>
+
 export class Engine {
-  private readonly options: Required<Omit<EngineOptions, 'stepByStepProcessorModuleName'>>
+  private readonly options: ResolvedEngineOptions
   private readonly fingerprintLedger
   private readonly purger
   private tracker?: TaskTracker
@@ -73,6 +90,10 @@ export class Engine {
     private readonly steps: StepByStepTransmitter,
     options: EngineOptions,
   ) {
+    const userDirAbsolute = path.isAbsolute(options.userDir)
+      ? options.userDir
+      : this.rootDir.resolve(PathInRepo(options.userDir))
+    const userDir = this.rootDir.unresolve(userDirAbsolute)
     this.options = {
       checkGitIgnore: options.checkGitIgnore ?? true,
       concurrency: options.concurrency,
@@ -81,14 +102,10 @@ export class Engine {
       testCaching: options.testCaching ?? true,
       commitHash: options.commitHash,
       config: options.config ?? {},
-      userDir: options.userDir,
+      userDir,
+      toRun: options.toRun ? { args: options.toRun.args, program: userDir.to(options.toRun.program) } : undefined,
     }
-
-    const userDirAbsolute = path.isAbsolute(this.options.userDir)
-      ? this.options.userDir
-      : this.rootDir.resolve(PathInRepo(this.options.userDir))
-    const userDirInRepo = this.rootDir.unresolve(userDirAbsolute)
-    this.goals = goals.map(g => userDirInRepo.to(g))
+    this.goals = [...goals, options.toRun?.program].flatMap(g => (g ? [g] : [])).map(g => userDir.to(g))
     const ledgerFile = path.join(this.options.buildRaptorDir, 'fingerprint-ledger.json')
     this.eventPublisher.on('taskStore', e => {
       const step =
@@ -160,7 +177,8 @@ export class Engine {
         )
       }
 
-      const ret = await this.execute(plan, model)
+      const ret = await this.executePlan(plan, model)
+      await this.executeProgram()
       this.steps.push({ step: 'BUILD_RUN_ENDED' })
       await Promise.all([this.fingerprintLedger.close(), this.steps.close()])
       return ret
@@ -169,7 +187,7 @@ export class Engine {
     }
   }
 
-  async execute(plan: ExecutionPlan, model: Model) {
+  async executePlan(plan: ExecutionPlan, model: Model) {
     this.logger.info(`plan.taskGraph=${plan.taskGraph}`)
     const taskTracker = new TaskTracker(plan)
     this.tracker = taskTracker
@@ -203,6 +221,16 @@ export class Engine {
 
     await plan.taskGraph.execute(this.options.concurrency, workFunction)
     return taskTracker
+  }
+
+  async executeProgram() {
+    if (!this.options.toRun) {
+      return
+    }
+
+    const resolved = this.rootDir.resolve(this.options.toRun.program)
+    const cwd = this.rootDir.resolve(this.options.userDir)
+    child_process.execFileSync(resolved, this.options.toRun.args, { cwd, stdio: 'inherit' })
   }
 
   async loadModel(buildRunId: BuildRunId) {

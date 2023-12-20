@@ -180,6 +180,10 @@ export async function run(options: Options) {
       testCaching: options.testCaching ?? true,
       commitHash,
       userDir,
+      toRun: {
+        program: options.program ?? '',
+        args: options.programArgs ?? [],
+      },
     },
   )
   const { exitCode } = await runner()
@@ -264,85 +268,81 @@ function reportTests(logger: Logger, arr: TestEndedEvent[], tr: TestReporting) {
   }
 }
 
-function withBuildOptions<T>(y: yargs.Argv<T>) {
-  return y
-    .option('units', {
-      alias: 'u',
-      describe: 'the names of the units',
-      type: 'string',
-      array: true,
-      demandOption: false,
-      default: [],
-    })
-    .option('goals', {
-      alias: 'g',
-      describe: 'paths to outputs to be built',
-      type: 'string',
-      array: true,
-      demandOption: false,
-      default: [],
-    })
-    .option('dir', {
-      alias: 'd',
-      describe: 'the path to the root dir of the repository',
-      type: 'string',
-    })
-    .option('print-passing', {
-      describe: 'whether to print the output of passing tasks to the terminal.',
-      type: 'boolean',
-      default: false,
-    })
-    .option('github-actions', {
-      describe: 'whether to use the github-actions cache storage client',
-      type: 'boolean',
-      default: false,
-    })
-    .option('build-output-locations', {
-      describe: 'unit-relative path to files/directories where the output of the build step stored',
-      type: 'string',
-      array: true,
-      demandOption: false,
-      default: [],
-    })
-    .option('concurrency', {
-      describe: 'a limit on the number of tasks to run concurrently',
-      type: 'number',
-      demandOption: false,
-      default: 8,
-    })
-    .options('compact', {
-      describe: 'whether to list only executing tasks (i.e., do not print skipped tasks)',
-      type: 'boolean',
-      default: false,
-    })
-    .options('step-by-step-processor', {
-      describe: `name of a node module implementing build-raptor's step-by-step-processor protocol`,
-      type: 'string',
-      demandOption: false,
-    })
-    .options('config-file', {
-      describe: `repo-relative path to a build-raptor config file (defaults to '.build-raptor.json')`,
-      type: 'string',
-      demandOption: false,
-    })
-    .option('test-reporting', {
-      choices: ['just-failing', 'tree', 'tree-just-failing'],
-      describe: 'test reporing policy',
-    })
-    .option('test-caching', {
-      describe: 'whether to skip running tests that have already passed',
-      type: 'boolean',
-      default: true,
-    })
-}
-
 export function main() {
   return (
     yargs(hideBin(process.argv))
+      .option('units', {
+        alias: 'u',
+        describe: 'the names of the units',
+        type: 'string',
+        array: true,
+        demandOption: false,
+        default: [],
+      })
+      .option('goals', {
+        alias: 'g',
+        describe: 'paths to outputs to be built',
+        type: 'string',
+        array: true,
+        demandOption: false,
+        default: [],
+      })
+      .option('dir', {
+        alias: 'd',
+        describe: 'the path to the root dir of the repository',
+        type: 'string',
+      })
+      .option('print-passing', {
+        describe: 'whether to print the output of passing tasks to the terminal.',
+        type: 'boolean',
+        default: false,
+      })
+      .option('github-actions', {
+        describe: 'whether to use the github-actions cache storage client',
+        type: 'boolean',
+        default: false,
+      })
+      .option('build-output-locations', {
+        describe: 'unit-relative path to files/directories where the output of the build step stored',
+        type: 'string',
+        array: true,
+        demandOption: false,
+        default: [],
+      })
+      .option('concurrency', {
+        describe: 'a limit on the number of tasks to run concurrently',
+        type: 'number',
+        demandOption: false,
+        default: 8,
+      })
+      .options('compact', {
+        describe: 'whether to list only executing tasks (i.e., do not print skipped tasks)',
+        type: 'boolean',
+        default: false,
+      })
+      .options('step-by-step-processor', {
+        describe: `name of a node module implementing build-raptor's step-by-step-processor protocol`,
+        type: 'string',
+        demandOption: false,
+      })
+      .options('config-file', {
+        describe: `repo-relative path to a build-raptor config file (defaults to '.build-raptor.json')`,
+        type: 'string',
+        demandOption: false,
+      })
+      .option('test-reporting', {
+        choices: ['just-failing', 'tree', 'tree-just-failing'],
+        describe: 'test reporing policy',
+      })
+      .option('test-caching', {
+        describe: 'whether to skip running tests that have already passed',
+        type: 'boolean',
+        default: true,
+      })
       .command(
         'build',
         'build the code',
-        yargs => withBuildOptions(yargs),
+        yargs => yargs,
         async rawArgv => {
           const argv = camelizeRecord(rawArgv)
           await run({
@@ -363,7 +363,7 @@ export function main() {
       .command(
         'test',
         'run tests',
-        yargs => withBuildOptions(yargs),
+        yargs => yargs,
         async rawArgv => {
           const argv = camelizeRecord(rawArgv)
           const tr = argv.testReporting
@@ -390,7 +390,7 @@ export function main() {
       .command(
         'pack',
         'create publishable packages',
-        yargs => withBuildOptions(yargs),
+        yargs => yargs,
         async rawArgv => {
           const argv = camelizeRecord(rawArgv)
           await run({
@@ -413,7 +413,7 @@ export function main() {
         'publish-assets',
         `runs tests and builds assets (by running 'prepare-assets' run scripts)`,
         yargs =>
-          withBuildOptions(yargs).option('register-assets', {
+          yargs.option('register-assets', {
             describe: 'whether to invoke the register-asset-endpoint with the details of each published asset',
             type: 'boolean',
             default: false,
@@ -443,21 +443,13 @@ export function main() {
         },
       )
       .command(
-        'run',
-        `compiles a program and runs it`,
+        'run <program>',
+        `compiles a program and runs it. use "--" to pass command line options down to the invoked program. E.g., run dist/a.js --foo=1 --bar=goo`,
         yargs =>
-          withBuildOptions(yargs)
-            .positional('program', {
-              describe: 'relative path to the program to run (e.g., dist/src/main.js)',
-              type: 'string',
-            })
-            .positional('args', {
-              describe: 'command line options to pass as-is to the invoked program (e.g., --foo=x --boo=5)',
-              type: 'string',
-              array: true,
-              default: [],
-            })
-            .demandOption('program'),
+          yargs.positional('program', {
+            describe: 'relative path to the program to run (e.g., dist/src/main.js)',
+            type: 'string',
+          }),
         async rawArgv => {
           const argv = camelizeRecord(rawArgv)
           await run({
@@ -465,8 +457,8 @@ export function main() {
             commands: ['run'],
             units: argv.units,
             goals: argv.goals,
-            program: argv.program,
-            programArgs: argv.args,
+            program: rawArgv.program,
+            programArgs: rawArgv._.map(at => String(at)),
             githubActions: argv.githubActions,
             printPassing: argv.printPassing,
             buildOutputLocation: argv.buildOutputLocations,
