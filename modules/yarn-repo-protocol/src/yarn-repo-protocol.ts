@@ -706,9 +706,19 @@ export class YarnRepoProtocol implements RepoProtocol {
     const p = await execa('yarn', ['--silent', 'workspaces', 'info', '--json'], {
       cwd: rootDir.resolve(),
       reject: false,
+      encoding: 'utf-8',
+      extendEnv: false,
+      env: {},
     })
     if (p.exitCode === 0) {
-      const parsed = JSON.parse(p.stdout)
+      let parsed: unknown
+      try {
+        parsed = JSON.parse(p.stdout)
+      } catch (e) {
+        this.logger.info(`unparsable output of yarn workspaces info: <${p.stdout}>`)
+        throw new Error(`could not parse yarn workspaces info`)
+      }
+
       return yarnWorkspacesInfoSchema.parse(parsed)
     }
 
