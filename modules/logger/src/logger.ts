@@ -71,8 +71,10 @@ class FileLogger implements Logger {
     this.criticalityLevel = criticalityLegend[criticalityLevel]
   }
 
-  print(message: string, criticality: Criticality = 'moderate') {
-    if (criticalityLegend[criticality] <= this.criticalityLevel) {
+  print(message: string, messageCriticality: Criticality = 'moderate') {
+    const messageLevel = criticalityLegend[messageCriticality]
+    const doPrint = messageLevel <= this.criticalityLevel
+    if (doPrint) {
       this.logger.info(message, { ui: true })
     }
   }
