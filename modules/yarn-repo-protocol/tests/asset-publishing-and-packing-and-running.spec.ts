@@ -272,11 +272,12 @@ describe('asset-publishing-and-packing', () => {
 
       const run = await fork.run('FAIL', { toRun: { program: 'modules/a/dist/src/index.js', args: [] } })
       expect(run.exitCode).toEqual(2)
+      // make sure the failure is not due to a crash or a different issue
+      expect(run.message).toBe(undefined)
       expect(run.taskNames()).toEqual(['a:build'])
       expect(await run.outputOf('build', 'a')).toEqual([
         `modules/a/src/index.ts(1,7): error TS2339: Property 'loremIpsum' does not exist on type '"abc"'.`,
       ])
-      expect(run.message).toBe(undefined)
     })
     test('outputs reasonable explanation if it could not start executing the program', async () => {
       const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
