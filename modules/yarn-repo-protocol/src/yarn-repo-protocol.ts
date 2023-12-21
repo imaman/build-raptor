@@ -706,6 +706,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     const copy: NodeJS.ProcessEnv = {}
     // eslint-disable-next-line no-process-env
     for (const [k, v] of Object.entries(process.env)) {
+      // FORCE_COLOR makes yarn return colored output and then JSON.parse() fails
       if (k === 'FORCE_COLOR') {
         continue
       }
