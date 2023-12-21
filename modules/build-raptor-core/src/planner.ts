@@ -33,7 +33,7 @@ export class Planner {
     const taskName = info.taskName
 
     const inputs = info.inputs ?? []
-    const task = new Task(model.buildRunId, info, inputs)
+    const task = new Task(model.buildRunId, info, inputs, info.labels ?? [])
     this.tasks.push(task)
     this.taskGraph.vertex(taskName)
 

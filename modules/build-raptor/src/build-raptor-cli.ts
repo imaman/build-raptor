@@ -290,6 +290,14 @@ export function main() {
         demandOption: false,
         default: [],
       })
+      .option('labels', {
+        alias: 'l',
+        describe: 'labels of tasks to run',
+        type: 'string',
+        array: true,
+        demandOption: false,
+        default: [],
+      })
       .option('print-passing', {
         describe: 'whether to print the output of passing tasks to the terminal.',
         type: 'boolean',

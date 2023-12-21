@@ -171,7 +171,7 @@ export class Engine {
       const taskList = await this.repoProtocol.getTasks()
       this.logger.info(`catalog=\n${JSON.stringify(taskList, null, 2)}`)
       const plan = await new Planner(this.logger).computePlan(taskList, model)
-      const startingPoints = plan.apply(this.commands, this.units, this.goals)
+      const startingPoints = plan.apply(this.commands, this.units, this.goals, this.commands)
       if (startingPoints.length === 0) {
         throw new BuildFailedError(
           `No tasks to run in this build (command=<${this.commands}>, units=<${JSON.stringify(this.units)})>`,

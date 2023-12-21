@@ -1,9 +1,8 @@
 import { PathInRepo } from 'core-types'
 import { computeObjectHash, failMe, Jsonable, shouldNeverHappen, sortBy, uniqueBy } from 'misc'
 import { OutputLocation, TaskInfo } from 'repo-protocol'
-import { TaskKind, TaskName } from 'task-name'
+import { TaskName } from 'task-name'
 import { Mutable } from 'type-fest'
-import { UnitId } from 'unit-metadata'
 
 import { ExecutionRecord } from './execution-record'
 import { Fingerprint } from './fingerprint'
@@ -16,11 +15,13 @@ export class Task {
   private fingerprint: Fingerprint | undefined
   private readonly executionRecord: Mutable<ExecutionRecord>
   readonly inputs: readonly PathInRepo[]
+  readonly labels: readonly string[]
 
   constructor(
     private readonly buildRunId: string,
     readonly taskInfo: TaskInfo,
     inputs: PathInRepo[],
+    labels: string[],
   ) {
     this.inputs = uniqueBy(
       sortBy(inputs, t => t.val),
@@ -35,6 +36,8 @@ export class Task {
       endedAt: SlotIndex(-1),
       phases: [],
     }
+
+    this.labels = labels.length === 0 ? [this.kind] : labels
   }
 
   get unitId() {

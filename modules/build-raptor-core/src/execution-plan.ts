@@ -33,9 +33,9 @@ export class ExecutionPlan {
     return taskNames.map(tn => this.getTask(tn))
   }
 
-  apply(commands: string[], units: string[], goals: PathInRepo[]) {
+  apply(commands: string[], units: string[], goals: PathInRepo[], labels: string[]) {
     this.logger.info(`apply(${JSON.stringify(commands)}, ${JSON.stringify(units)}, ${JSON.stringify(goals)} called`)
-    const startingPoints = this.computeStartingPoints(commands, units, goals)
+    const startingPoints = this.computeStartingPoints(commands, units, goals, labels)
     this.dropOutOfScope(startingPoints)
     this.logger.info(`computed these startingPoints: ${JSON.stringify(startingPoints)}`)
     return startingPoints
@@ -52,7 +52,7 @@ export class ExecutionPlan {
     this.logger.info(`Task graph (only in-scope):\n${this.taskGraph}`)
   }
 
-  private computeStartingPoints(commands: string[], units: string[], goals: PathInRepo[]) {
+  private computeStartingPoints(commands: string[], units: string[], goals: PathInRepo[], labels: string[]) {
     const setOfUnitId = new Set<string>(units)
     this.logger.info(`setOfUnitId=${[...setOfUnitId].join('; ')}`)
     this.logger.info(`command=<${commands}>`)
@@ -67,9 +67,10 @@ export class ExecutionPlan {
       setOfUnitId.size === 0 && goals.length === 0 ? () => true : (t: Task) => setOfUnitId.has(t.unitId)
     const matchesCommand =
       commands.length === 0 && goals.length === 0 ? () => true : (t: Task) => commands.includes(t.kind)
+    const matchesLabel = labels.length === 0 ? () => true : (t: Task) => labels.some(label => t.labels.includes(label))
     ret.push(
       ...this.tasks()
-        .filter(t => matchesUnit(t) && matchesCommand(t))
+        .filter(t => matchesUnit(t) && matchesCommand(t) && matchesLabel(t))
         .map(t => t.name),
     )
     ret.sort()
