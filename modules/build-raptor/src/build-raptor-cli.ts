@@ -324,6 +324,11 @@ export function main() {
         type: 'boolean',
         default: true,
       })
+      .options('progress', {
+        describe: 'how detailed should the progress report be',
+        choices: ['none', 's', 'm', 'l'],
+        default: 's',
+      })
       .options('step-by-step-processor', {
         describe: `name of a node module implementing build-raptor's step-by-step-processor protocol`,
         type: 'string',
