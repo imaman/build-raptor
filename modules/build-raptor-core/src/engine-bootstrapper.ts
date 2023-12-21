@@ -2,7 +2,7 @@ import { BuildFailedError } from 'build-failed-error'
 import { BuildRunId } from 'build-run-id'
 import { PathInRepo, RepoRoot } from 'core-types'
 import * as fs from 'fs'
-import { createDefaultLogger, Logger } from 'logger'
+import { createDefaultLogger, Criticality, Logger } from 'logger'
 import { errorLike, StorageClient, Subscribable, switchOn, TypedPublisher } from 'misc'
 import * as path from 'path'
 import { RepoProtocol } from 'repo-protocol'
@@ -134,7 +134,7 @@ export class EngineBootstrapper {
               task: () => 'build-raptor detected the following problem: ',
             })
             // TODO(imaman): cover this print
-            this.logger.print(`${prefix}${err.message}`)
+            this.logger.print(`${prefix}${err.message}`, 'high')
             return new Breakdown(
               'FAIL',
               buildRunId,
@@ -146,7 +146,7 @@ export class EngineBootstrapper {
             )
           }
           this.logger.error(`this build-raptor run has crashed due to an unexpected error`, err)
-          this.logger.print(`this build-raptor run has crashed due to an unexpected error ${util.inspect(err)}`)
+          this.logger.print(`this build-raptor run has crashed due to an unexpected error ${util.inspect(err)}`, 'high')
           return new Breakdown('CRASH', buildRunId, [], this.rootDir.resolve(), undefined, err)
         }
       }
@@ -161,12 +161,13 @@ export class EngineBootstrapper {
     storageClient: StorageClient,
     repoProtocol: RepoProtocol,
     t0: number,
+    criticalityLevel: Criticality,
     name?: string,
     logger?: Logger,
   ) {
     if (!logger) {
       const logFile = path.join(rootDir, 'build-raptor.log')
-      logger = createDefaultLogger(logFile)
+      logger = createDefaultLogger(logFile, criticalityLevel)
       logger.info(`Logger initialized`)
       const formatted = name ? ` ("${name}") ` : ' '
       logger.print(`logging${formatted}to ${logFile}`)

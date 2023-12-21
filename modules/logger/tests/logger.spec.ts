@@ -33,7 +33,7 @@ async function readContent(path: string, sentinel: string): Promise<string> {
 describe('logger', () => {
   test('writes the message to a file', async () => {
     const f = await Tmp.file({})
-    const logger = createDefaultLogger(f.path)
+    const logger = createDefaultLogger(f.path, 'moderate')
     logger.info('foo')
 
     const content = await readContent(f.path, 'foo')
@@ -43,7 +43,7 @@ describe('logger', () => {
   })
   test('can write errors to a file', async () => {
     const f = await Tmp.file({ keep: true })
-    const logger = createDefaultLogger(f.path)
+    const logger = createDefaultLogger(f.path, 'moderate')
     logger.error(`uh-oh`, new Error(`Huston, we have a problem`))
 
     const content = await readContent(f.path, 'we have a problem')
@@ -54,7 +54,7 @@ describe('logger', () => {
   })
   test('by default, does not write debug-level messages to the file', async () => {
     const f = await Tmp.file({})
-    const logger = createDefaultLogger(f.path)
+    const logger = createDefaultLogger(f.path, 'moderate')
     logger.info(`Atlantic`)
     logger.debug(`Pacific`)
     logger.info(`Indian`)
@@ -69,7 +69,7 @@ describe('logger', () => {
   })
   test('when the log level is set to "debug", does write debug-level messages to the file', async () => {
     const f = await Tmp.file({})
-    const logger = createDefaultLogger(f.path, 'debug')
+    const logger = createDefaultLogger(f.path, 'moderate', 'debug')
     logger.info(`Atlantic`)
     logger.debug(`Pacific`)
     logger.info(`Indian`)
@@ -86,7 +86,7 @@ describe('logger', () => {
     const ui = await Tmp.file({ keep: true })
     const uiStream = fs.createWriteStream(ui.path)
 
-    const logger = createDefaultLogger(f.path, undefined, uiStream)
+    const logger = createDefaultLogger(f.path, 'moderate', undefined, uiStream)
     logger.info(`Atlantic`)
     logger.print(`Pacific`)
     logger.info(`Indian`)
@@ -98,12 +98,36 @@ describe('logger', () => {
     const uiContent = fs.readFileSync(ui.path, 'utf-8')
     expect(uiContent.trim()).toEqual('Pacific')
   })
+  test(`print() prints the message only if the criticality of the message is higher than the log's`, async () => {
+    const f = await Tmp.file({})
+
+    const { path: highPath } = await Tmp.file({ keep: true })
+    const high = createDefaultLogger(f.path, 'high', undefined, fs.createWriteStream(highPath))
+    high.print(`Adriatic`, 'low')
+    high.print(`Indian`, 'moderate')
+    high.print(`Pacific`, 'high')
+    expect(fs.readFileSync(highPath, 'utf-8').trim()).toEqual('Pacific')
+
+    const { path: moderatePath } = await Tmp.file({ keep: true })
+    const moderate = createDefaultLogger(f.path, 'moderate', undefined, fs.createWriteStream(moderatePath))
+    moderate.print(`Adriatic`, 'low')
+    moderate.print(`Indian`, 'moderate')
+    moderate.print(`Pacific`, 'high')
+    expect(fs.readFileSync(moderatePath, 'utf-8').trim()).toEqual('Pacific')
+
+    const { path: lowPath } = await Tmp.file({ keep: true })
+    const low = createDefaultLogger(f.path, 'low', undefined, fs.createWriteStream(lowPath))
+    low.print(`Adriatic`, 'low')
+    low.print(`Indian`, 'moderate')
+    low.print(`Pacific`, 'high')
+    expect(fs.readFileSync(lowPath, 'utf-8').trim()).toEqual('Pacific')
+  })
   test('additional objects are logged (in JSON format) after the text message', async () => {
     const f = await Tmp.file({})
     const ui = await Tmp.file({ keep: true })
     const uiStream = fs.createWriteStream(ui.path)
 
-    const logger = createDefaultLogger(f.path, undefined, uiStream)
+    const logger = createDefaultLogger(f.path, 'moderate', undefined, uiStream)
     logger.info(`Atlantic`, { maxDepth: 8376, waterVolum: '310,410,900 km^3' })
     logger.info(`Indian`, { maxDepth: 7258, surfacrArea: '70,560,000 km^2' })
     logger.info(`-the end-`)
@@ -115,14 +139,14 @@ describe('logger', () => {
   test('wipes out the file', async () => {
     const f = await Tmp.file({})
 
-    const logger1 = createDefaultLogger(f.path)
+    const logger1 = createDefaultLogger(f.path, 'moderate')
     logger1.info(`Atlantic`)
     logger1.info(`EOF-1`)
 
     const content1 = await readContent(f.path, 'EOF-1')
     expect(content1.split('\n')[0]).toContain('Atlantic')
 
-    const logger2 = createDefaultLogger(f.path)
+    const logger2 = createDefaultLogger(f.path, 'moderate')
     logger2.info(`Indian`)
     logger2.info(`EOF-2`)
 

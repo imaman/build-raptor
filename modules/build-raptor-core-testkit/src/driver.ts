@@ -205,7 +205,14 @@ class Fork {
     const goals = options.goals ?? []
     const concurrencyLevel = Int(options.concurrencyLevel ?? 10)
     const rp = this.repoProtocol
-    const bootstrapper = await EngineBootstrapper.create(this.dir, this.storageClient, rp, Date.now(), this.testName)
+    const bootstrapper = await EngineBootstrapper.create(
+      this.dir,
+      this.storageClient,
+      rp,
+      Date.now(),
+      'moderate',
+      this.testName,
+    )
 
     await fse.mkdirp(this.buildRaptorDir)
     const runner = await bootstrapper.makeRunner(commands, units, goals, undefined, {
