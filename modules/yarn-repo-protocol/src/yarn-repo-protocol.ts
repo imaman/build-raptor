@@ -309,9 +309,12 @@ export class YarnRepoProtocol implements RepoProtocol {
 
   private async checkBuiltFiles(dir: string): Promise<void> {
     for (const codeDir of [this.src, this.tests]) {
-      const inputFiles = new Set<string>(
-        await DirectoryScanner.listPaths(path.join(dir, codeDir), { startingPointMustExist: false }),
-      )
+      const inputFiles = new Map<string, number>()
+      const inputDir = path.join(dir, codeDir)
+      const paths = await DirectoryScanner.listPaths(inputDir, { startingPointMustExist: false })
+      for (const p of paths) {
+        inputFiles.set(p, fs.statSync(path.join(inputDir, p)).mode)
+      }
 
       const d = path.join(dir, `${this.dist()}/${codeDir}`)
       const distFiles = await DirectoryScanner.listPaths(d, { startingPointMustExist: false })
@@ -320,25 +323,33 @@ export class YarnRepoProtocol implements RepoProtocol {
         f.replace(/\.js$/, targetSuffx).replace(/\.d\.ts$/, targetSuffx)
 
       const inputFileExists = (f: string) => {
-        if (inputFiles.has(f)) {
-          return true
+        let ret: number | undefined
+        ret = inputFiles.get(f)
+        if (ret) {
+          return ret
         }
-        if (inputFiles.has(replaceSuffix(f, '.ts'))) {
-          return true
-        }
-        if (inputFiles.has(replaceSuffix(f, '.tsx'))) {
-          return true
+        ret = inputFiles.get(replaceSuffix(f, '.ts'))
+        if (ret) {
+          return ret
         }
 
-        return false
+        ret = inputFiles.get(replaceSuffix(f, '.tsx'))
+        if (ret) {
+          return ret
+        }
+
+        return undefined
       }
 
-      const toDelete = distFiles.filter(f => !inputFileExists(f))
-      if (toDelete.length) {
-        this.logger.info(`deleting unmatched dist files: ${JSON.stringify({ inputFiles, toDelete })}`)
-      }
-      for (const f of toDelete) {
-        await fse.rm(path.join(d, f))
+      for (const f of distFiles) {
+        const orig = inputFileExists(f)
+        const resolved = path.join(d, f)
+        if (orig === undefined) {
+          this.logger.info(`deleting unmatched dist file: ${f}`)
+          fs.rmSync(resolved)
+        } else {
+          fs.chmodSync(resolved, orig)
+        }
       }
     }
   }
