@@ -172,6 +172,7 @@ export async function run(options: Options) {
     options.commands,
     options.units,
     options.goals,
+    options.labels,
     options.buildRaptorConfigFile,
     {
       stepByStepProcessorModuleName: options.stepByStepProcessor,

@@ -36,6 +36,7 @@ export class EngineBootstrapper {
     commands: string[],
     units: string[],
     goals: string[],
+    labels: string[],
     configFile: string | undefined,
     options: EngineOptions,
   ) {
@@ -61,6 +62,7 @@ export class EngineBootstrapper {
       commands,
       units,
       goals,
+      labels,
       this.eventPublisher,
       transmitter,
       options,
@@ -104,13 +106,14 @@ export class EngineBootstrapper {
     commands: string[],
     units: string[],
     goals: string[],
+    labels: string[],
     configFile: string | undefined,
     options: EngineOptions,
   ) {
     try {
       const t1 = Date.now()
       this.logger.info(`Creating a runner for ${JSON.stringify({ commands, units, options })}`)
-      const engine = await this.makeEngine(commands, units, goals, configFile, options)
+      const engine = await this.makeEngine(commands, units, goals, labels, configFile, options)
       const buildRunId = this.newBuildRunId()
       return async () => {
         try {
