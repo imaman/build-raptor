@@ -31,6 +31,7 @@ interface Options {
   commands: ('build' | 'test' | 'pack' | 'publish-assets' | 'run')[]
   units: string[]
   goals: string[]
+  labels: string[]
   program?: string
   programArgs?: string[]
   printPassing: boolean
@@ -351,6 +352,7 @@ export function main() {
             commands: ['build'],
             units: argv.units,
             goals: argv.goals,
+            labels: argv.labels,
             printPassing: argv.printPassing,
             concurrency: argv.concurrency,
             compact: argv.compact,
@@ -371,6 +373,7 @@ export function main() {
             commands: ['test'],
             units: argv.units,
             goals: argv.goals,
+            labels: argv.labels,
             printPassing: argv.printPassing,
             concurrency: argv.concurrency,
             compact: argv.compact,
@@ -395,6 +398,7 @@ export function main() {
             commands: ['pack'],
             units: argv.units,
             goals: argv.goals,
+            labels: argv.labels,
             printPassing: argv.printPassing,
             concurrency: argv.concurrency,
             compact: argv.compact,
@@ -421,6 +425,7 @@ export function main() {
             commands: ['publish-assets', 'test'],
             units: argv.units,
             goals: argv.goals,
+            labels: argv.labels,
             printPassing: argv.printPassing,
             concurrency: argv.concurrency,
             compact: argv.compact,
@@ -449,6 +454,7 @@ export function main() {
             commands: ['run'],
             units: argv.units,
             goals: argv.goals,
+            labels: argv.labels,
             program: rawArgv.program,
             // drop the command ("run") which yargs adds into the ._ array
             programArgs: rawArgv._.slice(1).map(at => String(at)),
