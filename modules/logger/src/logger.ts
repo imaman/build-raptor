@@ -4,8 +4,16 @@ import * as path from 'path'
 import jsonStringify from 'safe-stable-stringify'
 import * as winston from 'winston'
 
+const criticalityLegend: Record<Criticality, number> = {
+  high: 0,
+  moderate: 100,
+  low: 200,
+}
+
+export type Criticality = 'high' | 'moderate' | 'low'
+
 export interface Logger {
-  print(message: string): void
+  print(message: string, criticality?: Criticality): void
   info(message: string, ...rest: unknown[]): void
   debug(message: string, ...rest: unknown[]): void
   error(message: string, err: unknown, ...rest: unknown[]): void
@@ -33,26 +41,42 @@ export function createNopLogger() {
   return new NopLogger()
 }
 
-export function createDefaultLogger(logFile: string, logLevel?: Level, uiStream?: NodeJS.WritableStream): FileLogger {
+export function createDefaultLogger(
+  logFile: string,
+  pickiness: Criticality,
+  logLevel?: Level,
+  uiStream?: NodeJS.WritableStream,
+): FileLogger {
   const stat = fs.statSync(logFile, { throwIfNoEntry: false })
   if (stat && stat.size > 0) {
     fs.rmSync(logFile, { force: true })
   }
-  return new FileLogger(logFile, logLevel, uiStream)
+  return new FileLogger(logFile, pickiness, logLevel, uiStream)
 }
 
 class FileLogger implements Logger {
   private readonly logger: winston.Logger
+  private readonly pickiness
 
-  constructor(logFile: string, logLevel: Level = 'info', uiStream: NodeJS.WritableStream = process.stdout) {
+  constructor(
+    logFile: string,
+    pickinessLevel: Criticality,
+    logLevel: Level = 'info',
+    uiStream: NodeJS.WritableStream = process.stdout,
+  ) {
     if (!path.isAbsolute(logFile)) {
       throw new Error(`logDir must be absolute: ${logFile}`)
     }
     this.logger = newLogger(logFile, logLevel, uiStream)
+    this.pickiness = criticalityLegend[pickinessLevel]
   }
 
-  print(message: string) {
-    this.logger.info(message, { ui: true })
+  print(message: string, messageCriticality: Criticality = 'moderate') {
+    const messageLevel = criticalityLegend[messageCriticality]
+    const doPrint = messageLevel <= this.pickiness
+    if (doPrint) {
+      this.logger.info(message, { ui: true })
+    }
   }
 
   info(message: string, ...rest: unknown[]) {

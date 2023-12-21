@@ -1,6 +1,6 @@
 import { DefaultAssetPublisher, EngineBootstrapper, findRepoDir } from 'build-raptor-core'
 import * as fse from 'fs-extra'
-import { createDefaultLogger, Logger } from 'logger'
+import { createDefaultLogger, Criticality, Logger } from 'logger'
 import {
   assigningGet,
   camelizeRecord,
@@ -36,7 +36,8 @@ interface Options {
   programArgs?: string[]
   githubActions: boolean
   printPassing: boolean
-  compact: boolean
+  compact?: boolean
+  criticality: Criticality
   buildOutputLocation: string[]
   concurrency: number
   testReporting?: TestReporting
@@ -65,6 +66,9 @@ async function createStorageClient() {
 }
 
 export async function run(options: Options) {
+  if (options.compact !== undefined) {
+    options.criticality = 'moderate'
+  }
   if (options.callRegisterAsset) {
     throw new Error(`callRegisterAsset has been retired and can no longer accept a truthy value`)
   }
@@ -84,7 +88,7 @@ export async function run(options: Options) {
   const buildRaptorDir = path.join(rootDir, '.build-raptor')
   await fse.ensureDir(buildRaptorDir)
   const logFile = path.join(buildRaptorDir, 'main.log')
-  const logger = createDefaultLogger(logFile)
+  const logger = createDefaultLogger(logFile, options.criticality)
 
   logger.info(`Logger initialized`)
   logger.print(`logging to ${logFile}`)
@@ -117,7 +121,15 @@ export async function run(options: Options) {
   logger.info(`(typeof lambdaClient)=${typeof lambdaClient}`)
   const assetPublisher = new DefaultAssetPublisher(storageClient, logger)
   const repoProtocol = new YarnRepoProtocol(logger, assetPublisher)
-  const bootstrapper = await EngineBootstrapper.create(rootDir, storageClient, repoProtocol, t0, '', logger)
+  const bootstrapper = await EngineBootstrapper.create(
+    rootDir,
+    storageClient,
+    repoProtocol,
+    t0,
+    options.criticality,
+    '',
+    logger,
+  )
 
   const testOutput = new Map<TaskName, TestEndedEvent[]>()
   bootstrapper.subscribable.on('testEnded', arg => {
@@ -163,9 +175,7 @@ export async function run(options: Options) {
   })
 
   bootstrapper.subscribable.on('executionSkipped', tn => {
-    if (!options.compact) {
-      logger.print(`Task ${tn} succeeded earlier. Skipping.\n`)
-    }
+    logger.print(`Task ${tn} succeeded earlier. Skipping.\n`, 'low')
   })
 
   const runner = await bootstrapper.makeRunner(
@@ -221,7 +231,7 @@ function reportTests(logger: Logger, arr: TestEndedEvent[], tr: TestReporting) {
     }
 
     for (let j = i; j < key.length; ++j) {
-      logger.print(`${indent}${key[j]}`)
+      logger.print(`${indent}${key[j]}`, 'high')
       indent += '  '
     }
 
@@ -252,7 +262,7 @@ function reportTests(logger: Logger, arr: TestEndedEvent[], tr: TestReporting) {
       })
 
       const duration = at.durationMillis === undefined ? '' : ` (${at.durationMillis} ms)`
-      logger.print(`${spaces}${v} ${at.testPath.at(-1)}${duration}`)
+      logger.print(`${spaces}${v} ${at.testPath.at(-1)}${duration}`, 'high')
 
       prev = k
     }
@@ -263,11 +273,11 @@ function reportTests(logger: Logger, arr: TestEndedEvent[], tr: TestReporting) {
   const passing = sorted.filter(at => isPassing(at.tests))
   if (printPassing) {
     for (const at of passing) {
-      logger.print(`✅ PASSED ${at.fileName}`)
+      logger.print(`✅ PASSED ${at.fileName}`, 'high')
     }
   }
   for (const at of sorted.filter(at => !isPassing(at.tests))) {
-    logger.print(at.fileName)
+    logger.print(at.fileName, 'high')
     printTests(at.tests)
   }
 }
@@ -322,7 +332,14 @@ export function main() {
       .options('compact', {
         describe: 'whether to list only executing tasks (i.e., do not print skipped tasks)',
         type: 'boolean',
-        default: true,
+      })
+      .options('loudness', {
+        describe: `how detailed should the progress report be. Values are T-shirt sizes: 
+          s - just critical details/errors are printed
+          m - print names of executed tasks
+          l - print names of all tasks (including skipped ones)`,
+        choices: ['s', 'm', 'l'],
+        default: 'm',
       })
       .options('step-by-step-processor', {
         describe: `name of a node module implementing build-raptor's step-by-step-processor protocol`,
@@ -360,6 +377,7 @@ export function main() {
             buildOutputLocation: argv.buildOutputLocations,
             concurrency: argv.concurrency,
             compact: argv.compact,
+            criticality: stringToLoudness(argv.loudness),
             stepByStepProcessor: argv.stepByStepProcessor,
             buildRaptorConfigFile: argv.configFile,
           })
@@ -382,6 +400,7 @@ export function main() {
             buildOutputLocation: argv.buildOutputLocations,
             concurrency: argv.concurrency,
             compact: argv.compact,
+            criticality: stringToLoudness(argv.loudness),
             testCaching: argv.testCaching,
             testReporting:
               tr === 'just-failing' || tr === 'tree' || tr === 'tree-just-failing' || tr === undefined
@@ -408,6 +427,7 @@ export function main() {
             buildOutputLocation: argv.buildOutputLocations,
             concurrency: argv.concurrency,
             compact: argv.compact,
+            criticality: stringToLoudness(argv.loudness),
             stepByStepProcessor: argv.stepByStepProcessor,
             buildRaptorConfigFile: argv.configFile,
           })
@@ -436,6 +456,7 @@ export function main() {
             buildOutputLocation: argv.buildOutputLocations,
             concurrency: argv.concurrency,
             compact: argv.compact,
+            criticality: stringToLoudness(argv.loudness),
             testCaching: argv.testCaching,
             testReporting:
               tr === 'just-failing' || tr === 'tree' || tr === 'tree-just-failing' || tr === undefined
@@ -470,6 +491,7 @@ export function main() {
             buildOutputLocation: argv.buildOutputLocations,
             concurrency: argv.concurrency,
             compact: argv.compact,
+            criticality: stringToLoudness(argv.loudness),
             testCaching: argv.testCaching,
             callRegisterAsset: argv.registerAssets,
             stepByStepProcessor: argv.stepByStepProcessor,
@@ -480,4 +502,20 @@ export function main() {
       .demandCommand(1)
       .parse()
   )
+}
+
+function stringToLoudness(s: string): Criticality {
+  if (s === 's') {
+    return 'high'
+  }
+
+  if (s === 'm') {
+    return 'moderate'
+  }
+
+  if (s === 'l') {
+    return 'low'
+  }
+
+  throw new Error(`illegal loudness value: "${s}"`)
 }
