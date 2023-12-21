@@ -41,7 +41,6 @@ interface Options {
   concurrency: number
   testReporting?: TestReporting
   testCaching?: boolean
-  callRegisterAsset?: boolean
   stepByStepProcessor?: string
   buildRaptorConfigFile?: string
 }
@@ -65,13 +64,10 @@ async function createStorageClient() {
 }
 
 export async function run(options: Options) {
+  process.env.AWS_SDK_JS_SUPPRESS_MAINTENANCE_MODE_MESSAGE = '1' // eslint-disable-line no-process-env
   if (options.compact !== undefined) {
     options.criticality = options.compact ? 'moderate' : 'low'
   }
-  if (options.callRegisterAsset) {
-    throw new Error(`callRegisterAsset has been retired and can no longer accept a truthy value`)
-  }
-  process.env.AWS_SDK_JS_SUPPRESS_MAINTENANCE_MODE_MESSAGE = '1' // eslint-disable-line no-process-env
   const t0 = Date.now()
 
   // Should be called as early as possible to secure the secret.
@@ -457,7 +453,6 @@ export function main() {
               tr === 'just-failing' || tr === 'tree' || tr === 'tree-just-failing' || tr === undefined
                 ? tr
                 : failMe(`unsupported value: ${tr}`),
-            callRegisterAsset: argv.registerAssets,
             stepByStepProcessor: argv.stepByStepProcessor,
             buildRaptorConfigFile: argv.configFile,
           })
@@ -487,7 +482,6 @@ export function main() {
             compact: argv.compact,
             criticality: stringToLoudness(argv.loudness),
             testCaching: argv.testCaching,
-            callRegisterAsset: argv.registerAssets,
             stepByStepProcessor: argv.stepByStepProcessor,
             buildRaptorConfigFile: argv.configFile,
           })
