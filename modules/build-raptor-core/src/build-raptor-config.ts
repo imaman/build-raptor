@@ -19,7 +19,7 @@ export const BuildRaptorConfig = z.object({
   tightFingerprints: z.boolean().optional(),
   /**
    * Name of the directory at which outputs of tasks will be placed (other than compilation outputs which are currently under dist).
-   * This directory is created in each module. Default to ".out".
+   * This directory is created in each module. Defaults to ".out".
    */
   outDirName: z.string().optional(),
 })
