@@ -294,11 +294,6 @@ export function main() {
         demandOption: false,
         default: [],
       })
-      .option('dir', {
-        alias: 'd',
-        describe: 'the path to the root dir of the repository',
-        type: 'string',
-      })
       .option('print-passing', {
         describe: 'whether to print the output of passing tasks to the terminal.',
         type: 'boolean',
