@@ -703,26 +703,34 @@ export class YarnRepoProtocol implements RepoProtocol {
   }
 
   private async getYarnInfo(rootDir: RepoRoot): Promise<YarnWorkspacesInfo> {
+    const copy: NodeJS.ProcessEnv = {}
+    // eslint-disable-next-line no-process-env
+    for (const [k, v] of Object.entries(process.env)) {
+      if (k === 'FORCE_COLOR') {
+        continue
+      }
+      copy[k] = v
+    }
     const p = await execa('yarn', ['--silent', 'workspaces', 'info', '--json'], {
       cwd: rootDir.resolve(),
       reject: false,
       encoding: 'utf-8',
       extendEnv: false,
-      env: {},
+      env: copy,
     })
     if (p.exitCode === 0) {
       let parsed: unknown
       try {
         parsed = JSON.parse(p.stdout)
       } catch (e) {
-        this.logger.info(`unparsable output of yarn workspaces info: <${p.stdout}>`)
+        this.logger.info(`unparsable output of yarn workspaces info:\n<${p.stdout}>`)
         throw new Error(`could not parse yarn workspaces info`)
       }
 
       return yarnWorkspacesInfoSchema.parse(parsed)
     }
 
-    this.logger.info(`running "yarn workspaces info" failed:\n${p.stderr}}`)
+    this.logger.info(`running "yarn workspaces info" failed:\n<${p.stderr}>`)
     throw new Error(`Failed to get yarn info for ${rootDir}`)
   }
 
