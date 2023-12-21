@@ -179,9 +179,6 @@ export class Engine {
       }
 
       const ret = await this.executePlan(plan, model)
-      if (ret.successful) {
-        await this.executeProgram()
-      }
       this.steps.push({ step: 'BUILD_RUN_ENDED' })
       await Promise.all([this.fingerprintLedger.close(), this.steps.close()])
       return ret
