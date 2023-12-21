@@ -27,6 +27,8 @@ import { getPrForCommit } from './get-pr-for-commit'
 
 type TestReporting = 'just-failing' | 'tree' | 'tree-just-failing'
 
+type Loudness = '0' | 's' | 'm' | 'l'
+
 interface Options {
   commands: ('build' | 'test' | 'pack' | 'publish-assets' | 'run')[]
   dir: string | undefined
@@ -37,6 +39,7 @@ interface Options {
   githubActions: boolean
   printPassing: boolean
   compact: boolean
+  loudness: Loudness
   buildOutputLocation: string[]
   concurrency: number
   testReporting?: TestReporting
@@ -365,6 +368,7 @@ export function main() {
             buildOutputLocation: argv.buildOutputLocations,
             concurrency: argv.concurrency,
             compact: argv.compact,
+            loudness: stringToLoudness(argv.loudness),
             stepByStepProcessor: argv.stepByStepProcessor,
             buildRaptorConfigFile: argv.configFile,
           })
@@ -387,6 +391,7 @@ export function main() {
             buildOutputLocation: argv.buildOutputLocations,
             concurrency: argv.concurrency,
             compact: argv.compact,
+            loudness: stringToLoudness(argv.loudness),
             testCaching: argv.testCaching,
             testReporting:
               tr === 'just-failing' || tr === 'tree' || tr === 'tree-just-failing' || tr === undefined
@@ -413,6 +418,7 @@ export function main() {
             buildOutputLocation: argv.buildOutputLocations,
             concurrency: argv.concurrency,
             compact: argv.compact,
+            loudness: stringToLoudness(argv.loudness),
             stepByStepProcessor: argv.stepByStepProcessor,
             buildRaptorConfigFile: argv.configFile,
           })
@@ -441,6 +447,7 @@ export function main() {
             buildOutputLocation: argv.buildOutputLocations,
             concurrency: argv.concurrency,
             compact: argv.compact,
+            loudness: stringToLoudness(argv.loudness),
             testCaching: argv.testCaching,
             testReporting:
               tr === 'just-failing' || tr === 'tree' || tr === 'tree-just-failing' || tr === undefined
@@ -475,6 +482,7 @@ export function main() {
             buildOutputLocation: argv.buildOutputLocations,
             concurrency: argv.concurrency,
             compact: argv.compact,
+            loudness: stringToLoudness(argv.loudness),
             testCaching: argv.testCaching,
             callRegisterAsset: argv.registerAssets,
             stepByStepProcessor: argv.stepByStepProcessor,
@@ -485,4 +493,12 @@ export function main() {
       .demandCommand(1)
       .parse()
   )
+}
+
+function stringToLoudness(s: string): Loudness {
+  if (s === 's' || s === 'm' || s === 'l' || s === '0') {
+    return s
+  }
+
+  throw new Error(`illegal loudness value: "${s}"`)
 }
