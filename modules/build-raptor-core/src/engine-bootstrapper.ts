@@ -120,6 +120,11 @@ export class EngineBootstrapper {
           const successful = tracker.successful
           this.logger.info(`tasks=${JSON.stringify(tracker.tasks(), null, 2)}`)
           this.logger.info(`performance report: ${JSON.stringify(tracker.getPerformanceReport(), null, 2)}`)
+
+          if (successful) {
+            await engine.executeProgram()
+          }
+
           return new Breakdown(
             successful ? 'OK' : 'FAIL',
             buildRunId,
