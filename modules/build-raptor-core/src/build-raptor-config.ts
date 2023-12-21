@@ -17,5 +17,10 @@ export const BuildRaptorConfig = z.object({
    * tasks that generates its inputs had to run (when this attribute is false).
    */
   tightFingerprints: z.boolean().optional(),
+  /**
+   * Name of the directory at which outputs of tasks will be placed (other than compilation outputs which are currently under dist).
+   * This directory is created in each module. Defaults to ".out".
+   */
+  outDirName: z.string().optional(),
 })
 export type BuildRaptorConfig = z.infer<typeof BuildRaptorConfig>

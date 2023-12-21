@@ -1,8 +1,8 @@
 import { Logger } from 'logger'
+import { StorageClient } from 'misc'
 import { z } from 'zod'
 
 import { Creds } from './creds'
-import { LambdaClient } from './lambda-client'
 import { S3StorageClient } from './s3-storage-client'
 
 const AwsAccessKey = z.object({
@@ -15,8 +15,6 @@ const AwsAccessKey = z.object({
   }),
 })
 type AwsAccessKey = z.infer<typeof AwsAccessKey>
-
-export type Result = { storageClient: S3StorageClient; lambdaClient?: LambdaClient }
 
 // TODO(imaman): cover
 export function getS3StorageClientFactory() {
@@ -40,15 +38,12 @@ export function getS3StorageClientFactory() {
       throw e
     }
 
-    return new Promise<Result>(res => {
+    return new Promise<StorageClient>(res => {
       const creds: Creds = {
         accessKeyId: awsAccessKey.AccessKey.AccessKeyId,
         secretAccessKey: awsAccessKey.AccessKey.SecretAccessKey,
       }
-      const ret: Result = {
-        storageClient: new S3StorageClient('moojo-dev-infra', 'build-raptor/cache-v1', creds, logger),
-        lambdaClient: new LambdaClient(creds, 'eu-central-1'),
-      }
+      const ret = new S3StorageClient('moojo-dev-infra', 'build-raptor/cache-v1', creds, logger)
       logger.info(`S3StorageClient created successfully`)
 
       setTimeout(() => res(ret), 1)

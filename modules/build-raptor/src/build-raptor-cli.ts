@@ -29,20 +29,16 @@ type TestReporting = 'just-failing' | 'tree' | 'tree-just-failing'
 
 interface Options {
   commands: ('build' | 'test' | 'pack' | 'publish-assets' | 'run')[]
-  dir: string | undefined
   units: string[]
   goals: string[]
   program?: string
   programArgs?: string[]
-  githubActions: boolean
   printPassing: boolean
   compact?: boolean
   criticality: Criticality
-  buildOutputLocation: string[]
   concurrency: number
   testReporting?: TestReporting
   testCaching?: boolean
-  callRegisterAsset?: boolean
   stepByStepProcessor?: string
   buildRaptorConfigFile?: string
 }
@@ -57,22 +53,16 @@ export function getEnv(envVarName: EnvVarName) {
 
 const GB = 1024 * 1024 * 1024
 async function createStorageClient() {
-  return {
-    storageClient: await FilesystemStorageClient.create(path.join(os.homedir(), '.build-raptor/storage'), {
-      triggerCleanupIfByteSizeExceeds: 2 * GB,
-    }),
-    lambdaClient: undefined,
-  }
+  return await FilesystemStorageClient.create(path.join(os.homedir(), '.build-raptor/storage'), {
+    triggerCleanupIfByteSizeExceeds: 2 * GB,
+  })
 }
 
 export async function run(options: Options) {
+  process.env.AWS_SDK_JS_SUPPRESS_MAINTENANCE_MODE_MESSAGE = '1' // eslint-disable-line no-process-env
   if (options.compact !== undefined) {
     options.criticality = options.compact ? 'moderate' : 'low'
   }
-  if (options.callRegisterAsset) {
-    throw new Error(`callRegisterAsset has been retired and can no longer accept a truthy value`)
-  }
-  process.env.AWS_SDK_JS_SUPPRESS_MAINTENANCE_MODE_MESSAGE = '1' // eslint-disable-line no-process-env
   const t0 = Date.now()
 
   // Should be called as early as possible to secure the secret.
@@ -117,8 +107,7 @@ export async function run(options: Options) {
   const buildRaptorDirTasks = path.join(buildRaptorDir, 'tasks')
   await fse.rm(buildRaptorDirTasks, { recursive: true, force: true })
 
-  const { storageClient, lambdaClient } = await storageClientFactory(logger)
-  logger.info(`(typeof lambdaClient)=${typeof lambdaClient}`)
+  const storageClient = await storageClientFactory(logger)
   const assetPublisher = new DefaultAssetPublisher(storageClient, logger)
   const repoProtocol = new YarnRepoProtocol(logger, assetPublisher)
   const bootstrapper = await EngineBootstrapper.create(
@@ -301,27 +290,10 @@ export function main() {
         demandOption: false,
         default: [],
       })
-      .option('dir', {
-        alias: 'd',
-        describe: 'the path to the root dir of the repository',
-        type: 'string',
-      })
       .option('print-passing', {
         describe: 'whether to print the output of passing tasks to the terminal.',
         type: 'boolean',
         default: false,
-      })
-      .option('github-actions', {
-        describe: 'whether to use the github-actions cache storage client',
-        type: 'boolean',
-        default: false,
-      })
-      .option('build-output-locations', {
-        describe: 'unit-relative path to files/directories where the output of the build step stored',
-        type: 'string',
-        array: true,
-        demandOption: false,
-        default: [],
       })
       .option('concurrency', {
         describe: 'a limit on the number of tasks to run concurrently',
@@ -368,13 +340,10 @@ export function main() {
         async rawArgv => {
           const argv = camelizeRecord(rawArgv)
           await run({
-            dir: argv.dir,
             commands: ['build'],
             units: argv.units,
             goals: argv.goals,
-            githubActions: argv.githubActions,
             printPassing: argv.printPassing,
-            buildOutputLocation: argv.buildOutputLocations,
             concurrency: argv.concurrency,
             compact: argv.compact,
             criticality: stringToLoudness(argv.loudness),
@@ -391,13 +360,10 @@ export function main() {
           const argv = camelizeRecord(rawArgv)
           const tr = argv.testReporting
           await run({
-            dir: argv.dir,
             commands: ['test'],
             units: argv.units,
             goals: argv.goals,
-            githubActions: argv.githubActions,
             printPassing: argv.printPassing,
-            buildOutputLocation: argv.buildOutputLocations,
             concurrency: argv.concurrency,
             compact: argv.compact,
             criticality: stringToLoudness(argv.loudness),
@@ -418,13 +384,10 @@ export function main() {
         async rawArgv => {
           const argv = camelizeRecord(rawArgv)
           await run({
-            dir: argv.dir,
             commands: ['pack'],
             units: argv.units,
             goals: argv.goals,
-            githubActions: argv.githubActions,
             printPassing: argv.printPassing,
-            buildOutputLocation: argv.buildOutputLocations,
             concurrency: argv.concurrency,
             compact: argv.compact,
             criticality: stringToLoudness(argv.loudness),
@@ -447,13 +410,10 @@ export function main() {
           const argv = camelizeRecord(rawArgv)
           const tr = argv.testReporting
           await run({
-            dir: argv.dir,
             commands: ['publish-assets', 'test'],
             units: argv.units,
             goals: argv.goals,
-            githubActions: argv.githubActions,
             printPassing: argv.printPassing,
-            buildOutputLocation: argv.buildOutputLocations,
             concurrency: argv.concurrency,
             compact: argv.compact,
             criticality: stringToLoudness(argv.loudness),
@@ -462,7 +422,6 @@ export function main() {
               tr === 'just-failing' || tr === 'tree' || tr === 'tree-just-failing' || tr === undefined
                 ? tr
                 : failMe(`unsupported value: ${tr}`),
-            callRegisterAsset: argv.registerAssets,
             stepByStepProcessor: argv.stepByStepProcessor,
             buildRaptorConfigFile: argv.configFile,
           })
@@ -479,21 +438,17 @@ export function main() {
         async rawArgv => {
           const argv = camelizeRecord(rawArgv)
           await run({
-            dir: argv.dir,
             commands: ['run'],
             units: argv.units,
             goals: argv.goals,
             program: rawArgv.program,
             // drop the command ("run") which yargs adds into the ._ array
             programArgs: rawArgv._.slice(1).map(at => String(at)),
-            githubActions: argv.githubActions,
             printPassing: argv.printPassing,
-            buildOutputLocation: argv.buildOutputLocations,
             concurrency: argv.concurrency,
             compact: argv.compact,
             criticality: stringToLoudness(argv.loudness),
             testCaching: argv.testCaching,
-            callRegisterAsset: argv.registerAssets,
             stepByStepProcessor: argv.stepByStepProcessor,
             buildRaptorConfigFile: argv.configFile,
           })
