@@ -53,12 +53,9 @@ export function getEnv(envVarName: EnvVarName) {
 
 const GB = 1024 * 1024 * 1024
 async function createStorageClient() {
-  return {
-    storageClient: await FilesystemStorageClient.create(path.join(os.homedir(), '.build-raptor/storage'), {
-      triggerCleanupIfByteSizeExceeds: 2 * GB,
-    }),
-    lambdaClient: undefined,
-  }
+  return await FilesystemStorageClient.create(path.join(os.homedir(), '.build-raptor/storage'), {
+    triggerCleanupIfByteSizeExceeds: 2 * GB,
+  })
 }
 
 export async function run(options: Options) {
@@ -110,8 +107,7 @@ export async function run(options: Options) {
   const buildRaptorDirTasks = path.join(buildRaptorDir, 'tasks')
   await fse.rm(buildRaptorDirTasks, { recursive: true, force: true })
 
-  const { storageClient, lambdaClient } = await storageClientFactory(logger)
-  logger.info(`(typeof lambdaClient)=${typeof lambdaClient}`)
+  const storageClient = await storageClientFactory(logger)
   const assetPublisher = new DefaultAssetPublisher(storageClient, logger)
   const repoProtocol = new YarnRepoProtocol(logger, assetPublisher)
   const bootstrapper = await EngineBootstrapper.create(
