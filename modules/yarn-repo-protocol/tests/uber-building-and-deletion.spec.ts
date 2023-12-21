@@ -6,13 +6,14 @@ import { YarnRepoProtocol } from '../src/yarn-repo-protocol'
 
 jest.setTimeout(240000)
 describe('uber-building-and-deletion', () => {
-  describe('uber-building', () => {
-    const logger = createNopLogger()
+  const logger = createNopLogger()
 
-    function newYarnRepoProtocol() {
-      return new YarnRepoProtocol(logger, new NopAssetPublisher())
-    }
-    const testName = () => expect.getState().currentTestName
+  function newYarnRepoProtocol() {
+    return new YarnRepoProtocol(logger, new NopAssetPublisher())
+  }
+  const testName = () => expect.getState().currentTestName
+
+  describe('uber-building', () => {
     test('the build output contains errors from all modules', async () => {
       const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
       const recipe = {
@@ -88,13 +89,6 @@ describe('uber-building-and-deletion', () => {
     })
   })
   describe('deletion', () => {
-    const logger = createNopLogger()
-
-    function newYarnRepoProtocol() {
-      return new YarnRepoProtocol(logger, new NopAssetPublisher())
-    }
-    const testName = () => expect.getState().currentTestName
-
     test('deletes dist/src/*.{js,d.ts} files that do not have a matching *.ts file under src/', async () => {
       const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
       const recipe = {
@@ -177,6 +171,30 @@ describe('uber-building-and-deletion', () => {
       expect(await myfile.exists()).toBe(false)
       await fork.run('OK', { taskKind: 'build' })
       expect(await myfile.lines()).toEqual(['brown fox'])
+    })
+  })
+  describe('chmoding', () => {
+    test('copies the mode of the source file to the output file', async () => {
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': driver.packageJson('a'),
+        'modules/a/src/a.ts': '// a',
+        'modules/a/src/b.ts': '// b',
+        'modules/a/tests/a.spec.ts': '//',
+      }
+
+      const fork = await driver.repo(recipe).fork()
+
+      fork.file('modules/a/src/a.ts').chmod(0o450)
+      fork.file('modules/a/src/b.ts').chmod(0o644)
+      fork.file('modules/a/tests/a.spec.ts').chmod(0o754)
+
+      await fork.run('OK', { taskKind: 'build' })
+
+      expect(fork.file('modules/a/dist/src/a.js').getMode().toString(8)).toEqual('450')
+      expect(fork.file('modules/a/dist/src/b.js').getMode().toString(8)).toEqual('644')
+      expect(fork.file('modules/a/dist/tests/a.spec.js').getMode().toString(8)).toEqual('754')
     })
   })
 })

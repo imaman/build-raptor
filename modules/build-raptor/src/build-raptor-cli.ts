@@ -67,7 +67,7 @@ async function createStorageClient() {
 
 export async function run(options: Options) {
   if (options.compact !== undefined) {
-    options.criticality = 'moderate'
+    options.criticality = options.compact ? 'moderate' : 'low'
   }
   if (options.callRegisterAsset) {
     throw new Error(`callRegisterAsset has been retired and can no longer accept a truthy value`)
