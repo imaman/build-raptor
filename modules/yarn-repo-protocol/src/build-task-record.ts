@@ -5,6 +5,7 @@ export const BuildTaskRecord = z.record(
   z.object({
     inputs: z.string().array(),
     outputs: z.string().array(),
+    labels: z.string().array().optional(),
   }),
 )
 export type BuildTaskRecord = z.infer<typeof BuildTaskRecord>

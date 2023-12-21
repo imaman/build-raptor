@@ -34,7 +34,6 @@ interface Options {
   goals: string[]
   program?: string
   programArgs?: string[]
-  githubActions: boolean
   printPassing: boolean
   compact?: boolean
   criticality: Criticality
@@ -372,7 +371,6 @@ export function main() {
             commands: ['build'],
             units: argv.units,
             goals: argv.goals,
-            githubActions: argv.githubActions,
             printPassing: argv.printPassing,
             buildOutputLocation: argv.buildOutputLocations,
             concurrency: argv.concurrency,
@@ -395,7 +393,6 @@ export function main() {
             commands: ['test'],
             units: argv.units,
             goals: argv.goals,
-            githubActions: argv.githubActions,
             printPassing: argv.printPassing,
             buildOutputLocation: argv.buildOutputLocations,
             concurrency: argv.concurrency,
@@ -422,7 +419,6 @@ export function main() {
             commands: ['pack'],
             units: argv.units,
             goals: argv.goals,
-            githubActions: argv.githubActions,
             printPassing: argv.printPassing,
             buildOutputLocation: argv.buildOutputLocations,
             concurrency: argv.concurrency,
@@ -451,7 +447,6 @@ export function main() {
             commands: ['publish-assets', 'test'],
             units: argv.units,
             goals: argv.goals,
-            githubActions: argv.githubActions,
             printPassing: argv.printPassing,
             buildOutputLocation: argv.buildOutputLocations,
             concurrency: argv.concurrency,
@@ -486,7 +481,6 @@ export function main() {
             program: rawArgv.program,
             // drop the command ("run") which yargs adds into the ._ array
             programArgs: rawArgv._.slice(1).map(at => String(at)),
-            githubActions: argv.githubActions,
             printPassing: argv.printPassing,
             buildOutputLocation: argv.buildOutputLocations,
             concurrency: argv.concurrency,
