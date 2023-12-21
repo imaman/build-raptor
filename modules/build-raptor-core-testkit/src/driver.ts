@@ -158,6 +158,14 @@ class File {
     await fse.remove(this.resolve())
   }
 
+  chmod(mode: fs.Mode) {
+    fs.chmodSync(this.resolve(), mode)
+  }
+
+  getMode() {
+    return fs.statSync(this.resolve()).mode & 0o777
+  }
+
   async lastChanged() {
     const st = await fse.stat(this.resolve())
     return st.mtime.getTime()
