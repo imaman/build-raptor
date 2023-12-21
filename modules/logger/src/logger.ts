@@ -43,7 +43,7 @@ export function createNopLogger() {
 
 export function createDefaultLogger(
   logFile: string,
-  criticalityLevel: Criticality,
+  pickiness: Criticality,
   logLevel?: Level,
   uiStream?: NodeJS.WritableStream,
 ): FileLogger {
@@ -51,16 +51,16 @@ export function createDefaultLogger(
   if (stat && stat.size > 0) {
     fs.rmSync(logFile, { force: true })
   }
-  return new FileLogger(logFile, criticalityLevel, logLevel, uiStream)
+  return new FileLogger(logFile, pickiness, logLevel, uiStream)
 }
 
 class FileLogger implements Logger {
   private readonly logger: winston.Logger
-  private readonly criticalityLevel
+  private readonly pickiness
 
   constructor(
     logFile: string,
-    criticalityLevel: Criticality,
+    pickinessLevel: Criticality,
     logLevel: Level = 'info',
     uiStream: NodeJS.WritableStream = process.stdout,
   ) {
@@ -68,12 +68,12 @@ class FileLogger implements Logger {
       throw new Error(`logDir must be absolute: ${logFile}`)
     }
     this.logger = newLogger(logFile, logLevel, uiStream)
-    this.criticalityLevel = criticalityLegend[criticalityLevel]
+    this.pickiness = criticalityLegend[pickinessLevel]
   }
 
   print(message: string, messageCriticality: Criticality = 'moderate') {
     const messageLevel = criticalityLegend[messageCriticality]
-    const doPrint = messageLevel <= this.criticalityLevel
+    const doPrint = messageLevel <= this.pickiness
     if (doPrint) {
       this.logger.info(message, { ui: true })
     }
