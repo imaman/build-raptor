@@ -324,7 +324,7 @@ export function main() {
         type: 'boolean',
         default: true,
       })
-      .options('progress', {
+      .options('loudness', {
         describe: 'how detailed should the progress report be',
         choices: ['none', 's', 'm', 'l'],
         default: 's',
