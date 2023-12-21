@@ -37,7 +37,6 @@ interface Options {
   printPassing: boolean
   compact?: boolean
   criticality: Criticality
-  buildOutputLocation: string[]
   concurrency: number
   testReporting?: TestReporting
   testCaching?: boolean
@@ -306,11 +305,6 @@ export function main() {
         type: 'boolean',
         default: false,
       })
-      .option('github-actions', {
-        describe: 'whether to use the github-actions cache storage client',
-        type: 'boolean',
-        default: false,
-      })
       .option('build-output-locations', {
         describe: 'unit-relative path to files/directories where the output of the build step stored',
         type: 'string',
@@ -368,7 +362,6 @@ export function main() {
             units: argv.units,
             goals: argv.goals,
             printPassing: argv.printPassing,
-            buildOutputLocation: argv.buildOutputLocations,
             concurrency: argv.concurrency,
             compact: argv.compact,
             criticality: stringToLoudness(argv.loudness),
@@ -390,7 +383,6 @@ export function main() {
             units: argv.units,
             goals: argv.goals,
             printPassing: argv.printPassing,
-            buildOutputLocation: argv.buildOutputLocations,
             concurrency: argv.concurrency,
             compact: argv.compact,
             criticality: stringToLoudness(argv.loudness),
@@ -416,7 +408,6 @@ export function main() {
             units: argv.units,
             goals: argv.goals,
             printPassing: argv.printPassing,
-            buildOutputLocation: argv.buildOutputLocations,
             concurrency: argv.concurrency,
             compact: argv.compact,
             criticality: stringToLoudness(argv.loudness),
@@ -444,7 +435,6 @@ export function main() {
             units: argv.units,
             goals: argv.goals,
             printPassing: argv.printPassing,
-            buildOutputLocation: argv.buildOutputLocations,
             concurrency: argv.concurrency,
             compact: argv.compact,
             criticality: stringToLoudness(argv.loudness),
@@ -477,7 +467,6 @@ export function main() {
             // drop the command ("run") which yargs adds into the ._ array
             programArgs: rawArgv._.slice(1).map(at => String(at)),
             printPassing: argv.printPassing,
-            buildOutputLocation: argv.buildOutputLocations,
             concurrency: argv.concurrency,
             compact: argv.compact,
             criticality: stringToLoudness(argv.loudness),
