@@ -295,13 +295,6 @@ export function main() {
         type: 'boolean',
         default: false,
       })
-      .option('build-output-locations', {
-        describe: 'unit-relative path to files/directories where the output of the build step stored',
-        type: 'string',
-        array: true,
-        demandOption: false,
-        default: [],
-      })
       .option('concurrency', {
         describe: 'a limit on the number of tasks to run concurrently',
         type: 'number',

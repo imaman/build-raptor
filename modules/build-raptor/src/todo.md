@@ -110,7 +110,6 @@
 - [ ] when trying to specify dist/tsbuildinfo.json as an output location (as oppopsed to just dist/) compilation becomes signfiicanlty slower (looks like no incremental comilation is happening, because build-raptor deletes it). dist/src+dist/tests is terribel because then there is a mismatch between tsbuildinfo and dist/src (or dist/tests) resulting in under compilation. using dist/ works, but then we can use dist/ for placing the outputs of other tasks (such as pack).
 - [ ] when there is a task which decalres output location 'dist' and another one which decalres output-location 'dist-foo' build-raptor emits an "output collision error". apparently we compares prefixes instead of comparing path-segments.
 - [ ] this error message is confusing: 'this build-raptor run has crashed due to an unexpected error Error: Output location <xdist-pack> does not exist (under </home/imaman/code/imaman/build-raptor/modules/build-failed-error>)'
-- [ ] get rid of the --build-output-locations flag
 - [ ] compute next version (with max on existing version) from npm reg
 - [ ] e2e tests for yarn-repo-protocol
 - [ ] trim size of log file, task output cache, fingerprinting audit log
@@ -151,7 +150,6 @@
 - tasks that always run
 - purge the local cache when it grows too large
 - output should indicate concurrency
-- stop calling lambda. dump a detailed JSON file so that user-code can then do whatever it wants with it.
 - task-store: two things which have the same content but where compiled at different times should have the same blobid.
 - rebuild when package.json changes
 - support other test runners
