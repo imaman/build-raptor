@@ -334,9 +334,12 @@ export function main() {
         type: 'boolean',
       })
       .options('loudness', {
-        describe: 'how detailed should the progress report be',
+        describe: `how detailed should the progress report be. Values are T-shirt sizes: 
+          s - just critical details/errors are printed
+          m - print names of executed tasks
+          l - print names of all tasks (including skipped ones)`,
         choices: ['s', 'm', 'l'],
-        default: 's',
+        default: 'm',
       })
       .options('step-by-step-processor', {
         describe: `name of a node module implementing build-raptor's step-by-step-processor protocol`,
