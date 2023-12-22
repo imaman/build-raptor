@@ -397,11 +397,25 @@ describe('yarn-repo-protocol.e2e', () => {
       }
 
       const fork = await driver.repo(recipe).fork()
+      const outGeorge = fork.file('modules/a/.out/george')
+      const outKramer = fork.file('modules/a/.out/kramer')
 
       await fork.run('OK', { taskKind: 'build', labels: ['g'] })
-      expect(await fork.file('modules/a/.out/george').lines()).toEqual(['marine biologist'])
-      expect(await fork.file('modules/a/.out/kramer').lines()).toBe(undefined)
+      expect(await outGeorge.lines()).toEqual(['marine biologist'])
+      expect(await outKramer.lines()).toBeUndefined()
+
+      await fork.file('modules/a/.out').rm()
+      await fork.run('OK', { taskKind: 'build', labels: ['k'] })
+      expect(await outGeorge.lines()).toBeUndefined()
+      expect(await outKramer.lines()).toEqual(['pretzels'])
+
+      await fork.file('modules/a/.out').rm()
+      await fork.run('OK', { taskKind: 'build', labels: ['seinfeld'] })
+      expect(await outGeorge.lines()).toEqual(['marine biologist'])
+      expect(await outKramer.lines()).toEqual(['pretzels'])
     })
+    test.todo('empty list of labels in the task')
+    test.todo('empty list of labels passed to build-raptor')
   })
   describe('goals', () => {
     test('when a goal is specified runs only the tasks that are needed to produce this goal', async () => {
