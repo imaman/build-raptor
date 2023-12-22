@@ -65,12 +65,10 @@ export class ExecutionPlan {
     })
     const matchesUnit =
       setOfUnitId.size === 0 && goals.length === 0 ? () => true : (t: Task) => setOfUnitId.has(t.unitId)
-    const matchesCommand =
-      commands.length === 0 && goals.length === 0 ? () => true : (t: Task) => commands.includes(t.kind)
     const matchesLabel = labels.length === 0 ? () => true : (t: Task) => labels.some(label => t.labels.includes(label))
     ret.push(
       ...this.tasks()
-        .filter(t => matchesUnit(t) && matchesCommand(t) && matchesLabel(t))
+        .filter(t => matchesUnit(t) && matchesLabel(t))
         .map(t => t.name),
     )
     ret.sort()
