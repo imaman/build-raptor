@@ -419,6 +419,9 @@ describe('yarn-repo-protocol.e2e', () => {
     test.todo('invokes a task without a matching label if it is needed by a task that does have a matching label')
     test.todo('creates the .out dir')
     test.todo('verifies that the .out dir is in .gitignore')
+    test.todo('input files from root dir')
+    test.todo('a special input which means "always"')
+    test.todo('globs in inputs/allow to say "all source files"')
   })
   describe('goals', () => {
     test('when a goal is specified runs only the tasks that are needed to produce this goal', async () => {
