@@ -422,6 +422,7 @@ describe('yarn-repo-protocol.e2e', () => {
     test.todo('input files from root dir')
     test.todo('a special input which means "always"')
     test.todo('globs in inputs/allow to say "all source files"')
+    test.todo('consolidate prepare-assets into build with label')
   })
   describe('goals', () => {
     test('when a goal is specified runs only the tasks that are needed to produce this goal', async () => {
