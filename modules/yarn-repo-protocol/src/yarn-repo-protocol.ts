@@ -889,6 +889,7 @@ export class YarnRepoProtocol implements RepoProtocol {
 
       ret.push({
         taskName: TaskName(u.id, TaskKind('build'), name),
+        labels: def.labels,
         inputs: [pj, ...def.inputs.map(at => dir.expand(at))],
         outputLocations: def.outputs.map(at => ({
           pathInRepo: dir.expand(at),

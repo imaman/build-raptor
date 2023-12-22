@@ -369,6 +369,40 @@ describe('yarn-repo-protocol.e2e', () => {
       expect(await fork.file('modules/a/.out/upper').lines()).toEqual(['PRETZELS'])
     })
   })
+  describe('labels', () => {
+    test('runs only the tasks that match the given labels', async () => {
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': {
+          ...driver.packageJson('a', undefined, {
+            'do-kramer': `(mkdir -p .out) && (echo "pretzels" > .out/kramer)`,
+            'do-george': `(mkdir -p .out) && (echo "marine biologist" > .out/george)`,
+          }),
+          buildTasks: {
+            'do-kramer': {
+              inputs: [],
+              outputs: ['.out/kramer'],
+              labels: ['k', 'seinfeld'],
+            },
+            'do-george': {
+              inputs: [],
+              outputs: ['.out/george'],
+              labels: ['g', 'seinfeld'],
+            },
+          },
+        },
+        'modules/a/src/a.ts': '// something',
+        'modules/a/tests/a.spec.ts': `test('a', () => {expect(1).toEqual(1)});`,
+      }
+
+      const fork = await driver.repo(recipe).fork()
+
+      await fork.run('OK', { taskKind: 'build', labels: ['g'] })
+      expect(await fork.file('modules/a/.out/george').lines()).toEqual(['marine biologist'])
+      expect(await fork.file('modules/a/.out/kramer').lines()).toBe(undefined)
+    })
+  })
   describe('goals', () => {
     test('when a goal is specified runs only the tasks that are needed to produce this goal', async () => {
       const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
