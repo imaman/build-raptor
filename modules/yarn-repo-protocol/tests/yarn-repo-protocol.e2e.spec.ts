@@ -275,7 +275,7 @@ describe('yarn-repo-protocol.e2e', () => {
       const recipe = {
         'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
         'modules/a/package.json': {
-          ...driver.packageJson('a', undefined, { 'do-abc': `(mkdir -p .out) && (echo "pretzels" > .out/p)` }),
+          ...driver.packageJson('a', undefined, { 'do-abc': `echo "pretzels" > .out/p` }),
           buildTasks: {
             'do-abc': {
               inputs: [],
@@ -344,7 +344,7 @@ describe('yarn-repo-protocol.e2e', () => {
         'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
         'modules/a/package.json': {
           ...driver.packageJson('a', undefined, {
-            'do-abc': `(mkdir -p .out) && (echo "pretzels" > .out/lower)`,
+            'do-abc': `echo "pretzels" > .out/lower`,
             'do-xyz': `cat .out/lower | tr [:lower:] [:upper:] > .out/upper`,
           }),
           buildTasks: {
@@ -376,8 +376,8 @@ describe('yarn-repo-protocol.e2e', () => {
         'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
         'modules/a/package.json': {
           ...driver.packageJson('a', undefined, {
-            'do-kramer': `(mkdir -p .out) && (echo "pretzels" > .out/kramer)`,
-            'do-george': `(mkdir -p .out) && (echo "marine biologist" > .out/george)`,
+            'do-kramer': `echo "pretzels" > .out/kramer`,
+            'do-george': `echo "marine biologist" > .out/george`,
           }),
           buildTasks: {
             'do-kramer': {
@@ -431,7 +431,7 @@ describe('yarn-repo-protocol.e2e', () => {
         'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
         'modules/a/package.json': {
           ...driver.packageJson('a', undefined, {
-            'do-abc': `(mkdir -p .out) && (echo "the sea was" > .out/marine-biologist)`,
+            'do-abc': `echo "the sea was" > .out/marine-biologist`,
           }),
           buildTasks: {
             'do-abc': {
@@ -444,7 +444,7 @@ describe('yarn-repo-protocol.e2e', () => {
         'modules/a/tests/index.spec.ts': `test('a', () => {expect(1).toEqual(1)});`,
         'modules/b/package.json': {
           ...driver.packageJson('b', undefined, {
-            'do-abc': `(mkdir -p .out) && (echo "angry that day, my friends" > .out/marine-biologist)`,
+            'do-abc': `echo "angry that day, my friends" > .out/marine-biologist`,
           }),
           buildTasks: {
             'do-abc': {
