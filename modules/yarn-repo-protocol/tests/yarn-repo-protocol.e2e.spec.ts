@@ -369,6 +369,31 @@ describe('yarn-repo-protocol.e2e', () => {
       expect(await fork.file('modules/a/.out/upper').lines()).toEqual(['PRETZELS'])
     })
   })
+  describe('out dir', () => {
+    test('the name of the created outdir is taken from the config file', async () => {
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        '.build-raptor.json': {
+          outDirName: 'asdfg',
+        },
+        'modules/a/package.json': driver.packageJson('a'),
+        'modules/a/src/a.ts': '// something',
+        'modules/a/tests/a.spec.ts': `test('a', () => {expect(1).toEqual(1)});`,
+        'modules/b/package.json': driver.packageJson('b'),
+        'modules/b/src/b.ts': '// something',
+        'modules/b/tests/b.spec.ts': `test('b', () => {expect(1).toEqual(1)});`,
+      }
+
+      const fork = await driver.repo(recipe).fork()
+
+      expect(await fork.file('modules/a/asdfg').exists()).toBe(false)
+      expect(await fork.file('modules/b/asdfg').exists()).toBe(false)
+      await fork.run('OK', { taskKind: 'build' })
+      expect(await fork.file('modules/a/asdfg').exists()).toBe(true)
+      expect(await fork.file('modules/b/asdfg').exists()).toBe(true)
+    })
+  })
   describe('labels', () => {
     test('runs only the tasks that match the given labels', async () => {
       const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
