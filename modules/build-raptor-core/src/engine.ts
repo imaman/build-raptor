@@ -165,7 +165,12 @@ export class Engine {
     this.steps.push({ step: 'BUILD_RUN_STARTED', buildRunId, commitHash: this.options.commitHash })
     fs.writeFileSync(path.join(this.options.buildRaptorDir, 'build-run-id'), buildRunId)
     await this.fingerprintLedger.updateRun(buildRunId)
-    await this.repoProtocol.initialize(this.rootDir, this.eventPublisher, this.options.config.repoProtocol)
+    await this.repoProtocol.initialize(
+      this.rootDir,
+      this.eventPublisher,
+      this.options.config.outDirName,
+      this.options.config.repoProtocol,
+    )
     try {
       const model = await this.loadModel(buildRunId)
 
@@ -267,6 +272,11 @@ export class Engine {
       const ignoresBuildRaptorDir = ig.ignores(d)
       if (!ignoresBuildRaptorDir) {
         throw new BuildFailedError(`the ${d} directory should be .gitignore-d`)
+      }
+
+      const outDirName = this.options.config.outDirName
+      if (outDirName && !ig.ignores(outDirName)) {
+        throw new BuildFailedError(`the out dir (${outDirName}) should be .gitignore-d`)
       }
     }
 

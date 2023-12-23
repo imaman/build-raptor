@@ -36,13 +36,13 @@ export interface RepoProtocol {
    *
    * @param rootDir
    * @param publisher
-   * @param outDirName - name of the output directory to create in each module
+   * @param outDirName - name of the output directory to create in each module. If undefined do not create one.
    * @param repoProtocolConfig
    */
   initialize(
     rootDir: RepoRoot,
     publisher: TypedPublisher<RepoProtocolEvent>,
-    outDirName: string,
+    outDirName: string | undefined,
     repoProtocolConfig?: unknown,
   ): Promise<void>
   execute(taskName: TaskName, outputFile: string, buildRunId: BuildRunId): Promise<ExitStatus>

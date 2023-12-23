@@ -128,6 +128,7 @@ export class YarnRepoProtocol implements RepoProtocol {
   async initialize(
     rootDir: RepoRoot,
     publisher: TypedPublisher<RepoProtocolEvent>,
+    outDirName: string | undefined,
     repoProtocolConfig?: unknown,
   ): Promise<void> {
     const yarnInfo = await this.getYarnInfo(rootDir)
@@ -135,7 +136,10 @@ export class YarnRepoProtocol implements RepoProtocol {
     const config = this.parseConfig(repoProtocolConfig)
     const allUnits = computeUnits(yarnInfo)
     const units = computeRealUnits(allUnits)
-    const packageByUnitId = await readPackages(rootDir, units)
+    const [packageByUnitId, _] = await Promise.all([
+      readPackages(rootDir, units),
+      createOutDirs(rootDir, units, outDirName),
+    ])
     const versionByPackageId = computeVersions([...packageByUnitId.values()])
 
     const violations: [UnitId, UnitId][] = []
@@ -969,6 +973,16 @@ async function readPackages(rootDir: RepoRoot, units: UnitMetadata[]) {
   })
 
   return ret
+}
+
+async function createOutDirs(rootDir: RepoRoot, units: UnitMetadata[], outDirName: string | undefined) {
+  if (!outDirName) {
+    return
+  }
+  await promises(units).forEach(20, async um => {
+    const p = rootDir.resolve(um.pathInRepo.expand(outDirName))
+    await fse.ensureDir(p)
+  })
 }
 
 function computeVersions(packages: PackageJson[]) {
