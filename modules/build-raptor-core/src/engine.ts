@@ -11,7 +11,7 @@ import * as path from 'path'
 import { RepoProtocol } from 'repo-protocol'
 import { TaskName } from 'task-name'
 
-import { BuildRaptorConfig, defaultBuildRaptorConfig } from './build-raptor-config'
+import { BuildRaptorConfig } from './build-raptor-config'
 import { EngineEventScheme } from './engine-event-scheme'
 import { ExecutionPlan } from './execution-plan'
 import { NopFingerprintLedger, PersistedFingerprintLedger } from './fingerprint-ledger'
@@ -101,7 +101,7 @@ export class Engine {
       fingerprintLedger: options.fingerprintLedger ?? false,
       testCaching: options.testCaching ?? true,
       commitHash: options.commitHash,
-      config: { ...defaultBuildRaptorConfig, ...options.config },
+      config: options.config,
       userDir,
       toRun: options.toRun ? { args: options.toRun.args, program: userDir.to(options.toRun.program) } : undefined,
     }

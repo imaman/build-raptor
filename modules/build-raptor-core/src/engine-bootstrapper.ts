@@ -11,7 +11,7 @@ import * as util from 'util'
 import * as uuid from 'uuid'
 
 import { Breakdown } from './breakdown'
-import { BuildRaptorConfig } from './build-raptor-config'
+import { BuildRaptorConfig, defaultBuildRaptorConfig } from './build-raptor-config'
 import { Engine, EngineOptions } from './engine'
 import { EngineEventScheme } from './engine-event-scheme'
 import { StepByStepTransmitter } from './step-by-step-transmitter'
@@ -37,12 +37,16 @@ export class EngineBootstrapper {
     units: string[],
     goals: string[],
     configFile: string | undefined,
-    options: EngineOptions,
+    optionsSansConfig: Omit<EngineOptions, 'config'>,
   ) {
     const taskOutputDir = (await Tmp.dir()).path
     this.logger.info(`rootDir is ${this.rootDir}`)
     this.logger.info(`The console outputs (stdout/stderr) of tasks are stored under ${taskOutputDir}`)
-    options.config = this.readConfigFile(PathInRepo(configFile ?? '.build-raptor.json'))
+
+    const options = {
+      ...optionsSansConfig,
+      config: this.readConfigFile(PathInRepo(configFile ?? '.build-raptor.json')),
+    }
 
     const taskStore = new TaskStore(this.rootDir, this.storageClient, this.logger, this.eventPublisher)
 
@@ -68,15 +72,15 @@ export class EngineBootstrapper {
     return engine
   }
 
-  private readConfigFile(pathToConfigFile: PathInRepo) {
+  private readConfigFile(pathToConfigFile: PathInRepo): Required<BuildRaptorConfig> {
     const p = this.rootDir.resolve(pathToConfigFile)
     try {
       if (!fs.existsSync(p)) {
-        return undefined
+        return defaultBuildRaptorConfig
       }
       const content = fs.readFileSync(p, 'utf-8')
       const parsed = JSON.parse(content)
-      return BuildRaptorConfig.parse(parsed)
+      return { ...defaultBuildRaptorConfig, ...BuildRaptorConfig.parse(parsed) }
     } catch (e) {
       throw new Error(`could not read repo config file ${p} - ${e}`)
     }
@@ -105,7 +109,7 @@ export class EngineBootstrapper {
     units: string[],
     goals: string[],
     configFile: string | undefined,
-    options: EngineOptions,
+    options: Omit<EngineOptions, 'config'>,
   ) {
     try {
       const t1 = Date.now()
