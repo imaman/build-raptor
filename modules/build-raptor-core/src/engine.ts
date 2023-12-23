@@ -86,6 +86,7 @@ export class Engine {
     private readonly commands: string[],
     private readonly units: string[],
     goals: string[],
+    private readonly labels: string[],
     private readonly eventPublisher: TypedPublisher<EngineEventScheme>,
     private readonly steps: StepByStepTransmitter,
     options: EngineOptions,
@@ -164,14 +165,19 @@ export class Engine {
     this.steps.push({ step: 'BUILD_RUN_STARTED', buildRunId, commitHash: this.options.commitHash })
     fs.writeFileSync(path.join(this.options.buildRaptorDir, 'build-run-id'), buildRunId)
     await this.fingerprintLedger.updateRun(buildRunId)
-    await this.repoProtocol.initialize(this.rootDir, this.eventPublisher, this.options.config.repoProtocol)
+    await this.repoProtocol.initialize(
+      this.rootDir,
+      this.eventPublisher,
+      this.options.config.outDirName,
+      this.options.config.repoProtocol,
+    )
     try {
       const model = await this.loadModel(buildRunId)
 
       const taskList = await this.repoProtocol.getTasks()
       this.logger.info(`catalog=\n${JSON.stringify(taskList, null, 2)}`)
       const plan = await new Planner(this.logger).computePlan(taskList, model)
-      const startingPoints = plan.apply(this.commands, this.units, this.goals)
+      const startingPoints = plan.apply(this.units, this.goals, [...this.commands, ...this.labels])
       if (startingPoints.length === 0) {
         throw new BuildFailedError(
           `No tasks to run in this build (command=<${this.commands}>, units=<${JSON.stringify(this.units)})>`,
@@ -266,6 +272,11 @@ export class Engine {
       const ignoresBuildRaptorDir = ig.ignores(d)
       if (!ignoresBuildRaptorDir) {
         throw new BuildFailedError(`the ${d} directory should be .gitignore-d`)
+      }
+
+      const outDirName = this.options.config.outDirName
+      if (outDirName && !ig.ignores(outDirName)) {
+        throw new BuildFailedError(`the out dir (${outDirName}) should be .gitignore-d`)
       }
     }
 

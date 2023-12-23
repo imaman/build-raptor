@@ -485,7 +485,7 @@ describe('yarn-repo-protocol', () => {
       })
 
       const yrp = newYarnRepoProtocol()
-      await yrp.initialize(d, p, { uberBuild: false })
+      await yrp.initialize(d, p, undefined, { uberBuild: false })
       const buildResult = await yrp.execute(TaskName(UnitId('a'), TaskKind('build')), '/dev/null', 'my-build-run-id')
       expect(buildResult).toEqual('OK')
       const actual = await DirectoryScanner.listPaths(d.resolve(PathInRepo('modules/a/dist')))

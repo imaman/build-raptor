@@ -275,7 +275,7 @@ describe('yarn-repo-protocol.e2e', () => {
       const recipe = {
         'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
         'modules/a/package.json': {
-          ...driver.packageJson('a', undefined, { 'do-abc': `(mkdir -p .out) && (echo "pretzels" > .out/p)` }),
+          ...driver.packageJson('a', undefined, { 'do-abc': `echo "pretzels" > .out/p` }),
           buildTasks: {
             'do-abc': {
               inputs: [],
@@ -344,7 +344,7 @@ describe('yarn-repo-protocol.e2e', () => {
         'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
         'modules/a/package.json': {
           ...driver.packageJson('a', undefined, {
-            'do-abc': `(mkdir -p .out) && (echo "pretzels" > .out/lower)`,
+            'do-abc': `echo "pretzels" > .out/lower`,
             'do-xyz': `cat .out/lower | tr [:lower:] [:upper:] > .out/upper`,
           }),
           buildTasks: {
@@ -369,6 +369,86 @@ describe('yarn-repo-protocol.e2e', () => {
       expect(await fork.file('modules/a/.out/upper').lines()).toEqual(['PRETZELS'])
     })
   })
+  describe('out dir', () => {
+    test('the name of the created outdir is taken from the config file', async () => {
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        '.build-raptor.json': {
+          outDirName: 'asdfg',
+        },
+        'modules/a/package.json': driver.packageJson('a'),
+        'modules/a/src/a.ts': '// something',
+        'modules/a/tests/a.spec.ts': `test('a', () => {expect(1).toEqual(1)});`,
+        'modules/b/package.json': driver.packageJson('b'),
+        'modules/b/src/b.ts': '// something',
+        'modules/b/tests/b.spec.ts': `test('b', () => {expect(1).toEqual(1)});`,
+      }
+
+      const fork = await driver.repo(recipe).fork()
+
+      expect(await fork.file('modules/a/asdfg').exists()).toBe(false)
+      expect(await fork.file('modules/b/asdfg').exists()).toBe(false)
+      await fork.run('OK', { taskKind: 'build' })
+      expect(await fork.file('modules/a/asdfg').exists()).toBe(true)
+      expect(await fork.file('modules/b/asdfg').exists()).toBe(true)
+    })
+  })
+  describe('labels', () => {
+    test('runs only the tasks that match the given labels', async () => {
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': {
+          ...driver.packageJson('a', undefined, {
+            'do-kramer': `echo "pretzels" > .out/kramer`,
+            'do-george': `echo "marine biologist" > .out/george`,
+          }),
+          buildTasks: {
+            'do-kramer': {
+              inputs: [],
+              outputs: ['.out/kramer'],
+              labels: ['k', 'seinfeld'],
+            },
+            'do-george': {
+              inputs: [],
+              outputs: ['.out/george'],
+              labels: ['g', 'seinfeld'],
+            },
+          },
+        },
+        'modules/a/src/a.ts': '// something',
+        'modules/a/tests/a.spec.ts': `test('a', () => {expect(1).toEqual(1)});`,
+      }
+
+      const fork = await driver.repo(recipe).fork()
+      const outGeorge = fork.file('modules/a/.out/george')
+      const outKramer = fork.file('modules/a/.out/kramer')
+
+      await fork.run('OK', { taskKind: 'build', labels: ['g'] })
+      expect(await outGeorge.lines()).toEqual(['marine biologist'])
+      expect(await outKramer.lines()).toBeUndefined()
+
+      await fork.file('modules/a/.out').rm()
+      await fork.run('OK', { taskKind: 'build', labels: ['k'] })
+      expect(await outGeorge.lines()).toBeUndefined()
+      expect(await outKramer.lines()).toEqual(['pretzels'])
+
+      await fork.file('modules/a/.out').rm()
+      await fork.run('OK', { taskKind: 'build', labels: ['seinfeld'] })
+      expect(await outGeorge.lines()).toEqual(['marine biologist'])
+      expect(await outKramer.lines()).toEqual(['pretzels'])
+    })
+    test.todo('empty list of labels in the task')
+    test.todo('empty list of labels passed to build-raptor')
+    test.todo('invokes a task without a matching label if it is needed by a task that does have a matching label')
+    test.todo('creates the .out dir')
+    test.todo('verifies that the .out dir is in .gitignore')
+    test.todo('input files from root dir')
+    test.todo('a special input which means "always"')
+    test.todo('globs in inputs/allow to say "all source files"')
+    test.todo('consolidate prepare-assets into build with label')
+  })
   describe('goals', () => {
     test('when a goal is specified runs only the tasks that are needed to produce this goal', async () => {
       const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
@@ -376,7 +456,7 @@ describe('yarn-repo-protocol.e2e', () => {
         'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
         'modules/a/package.json': {
           ...driver.packageJson('a', undefined, {
-            'do-abc': `(mkdir -p .out) && (echo "the sea was" > .out/marine-biologist)`,
+            'do-abc': `echo "the sea was" > .out/marine-biologist`,
           }),
           buildTasks: {
             'do-abc': {
@@ -389,7 +469,7 @@ describe('yarn-repo-protocol.e2e', () => {
         'modules/a/tests/index.spec.ts': `test('a', () => {expect(1).toEqual(1)});`,
         'modules/b/package.json': {
           ...driver.packageJson('b', undefined, {
-            'do-abc': `(mkdir -p .out) && (echo "angry that day, my friends" > .out/marine-biologist)`,
+            'do-abc': `echo "angry that day, my friends" > .out/marine-biologist`,
           }),
           buildTasks: {
             'do-abc': {

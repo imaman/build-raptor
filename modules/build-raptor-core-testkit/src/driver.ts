@@ -177,6 +177,7 @@ interface RunOptions {
   taskKind?: string | string[]
   subKind?: string
   goals?: string[]
+  labels?: string[]
   /**
    * The directory that build-ratpor was invoked at. If relative it is relative to the repo root. If absolute it must
    * point to a dir somewhere under the repo root.
@@ -211,6 +212,7 @@ class Fork {
     const commands = !options.taskKind ? [] : Array.isArray(options.taskKind) ? options.taskKind : [options.taskKind]
     const units = options.units ?? []
     const goals = options.goals ?? []
+    const labels = options.labels ?? []
     const concurrencyLevel = Int(options.concurrencyLevel ?? 10)
     const rp = this.repoProtocol
     const bootstrapper = await EngineBootstrapper.create(
@@ -223,7 +225,7 @@ class Fork {
     )
 
     await fse.mkdirp(this.buildRaptorDir)
-    const runner = await bootstrapper.makeRunner(commands, units, goals, undefined, {
+    const runner = await bootstrapper.makeRunner(commands, units, goals, labels, undefined, {
       checkGitIgnore: options.checkGitIgnore ?? false,
       concurrency: concurrencyLevel,
       buildRaptorDir: this.buildRaptorDir,
