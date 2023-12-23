@@ -33,9 +33,9 @@ export class ExecutionPlan {
     return taskNames.map(tn => this.getTask(tn))
   }
 
-  apply(commands: string[], units: string[], goals: PathInRepo[], labels: string[]) {
-    this.logger.info(`apply(${JSON.stringify(commands)}, ${JSON.stringify(units)}, ${JSON.stringify(goals)} called`)
-    const startingPoints = this.computeStartingPoints(commands, units, goals, labels)
+  apply(units: string[], goals: PathInRepo[], labels: string[]) {
+    this.logger.info(`apply(${JSON.stringify(units)}, ${JSON.stringify(goals)}) called`)
+    const startingPoints = this.computeStartingPoints(units, goals, labels)
     this.dropOutOfScope(startingPoints)
     this.logger.info(`computed these startingPoints: ${JSON.stringify(startingPoints)}`)
     return startingPoints
@@ -52,10 +52,9 @@ export class ExecutionPlan {
     this.logger.info(`Task graph (only in-scope):\n${this.taskGraph}`)
   }
 
-  private computeStartingPoints(commands: string[], units: string[], goals: PathInRepo[], labels: string[]) {
+  private computeStartingPoints(units: string[], goals: PathInRepo[], labels: string[]) {
     const setOfUnitId = new Set<string>(units)
     this.logger.info(`setOfUnitId=${[...setOfUnitId].join('; ')}`)
-    this.logger.info(`command=<${commands}>`)
     const ret = goals.map(ol => {
       const tn = this.registry.lookup(ol)
       if (!tn) {
