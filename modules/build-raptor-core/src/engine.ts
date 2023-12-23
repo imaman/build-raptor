@@ -37,7 +37,7 @@ export interface EngineOptions {
   testCaching?: boolean
   commitHash: string | undefined
   stepByStepProcessorModuleName?: string
-  config?: BuildRaptorConfig
+  config: Required<BuildRaptorConfig>
   toRun?: {
     program: string
     args: string[]
@@ -102,7 +102,7 @@ export class Engine {
       fingerprintLedger: options.fingerprintLedger ?? false,
       testCaching: options.testCaching ?? true,
       commitHash: options.commitHash,
-      config: options.config ?? {},
+      config: options.config,
       userDir,
       toRun: options.toRun ? { args: options.toRun.args, program: userDir.to(options.toRun.program) } : undefined,
     }
@@ -208,7 +208,7 @@ export class Engine {
       this.fingerprintLedger,
       this.purger,
       this.options.testCaching,
-      this.options.config.verbosePrintTasks ?? [],
+      this.options.config.verbosePrintTasks,
     )
 
     const workFunction = async (tn: TaskName) => {
