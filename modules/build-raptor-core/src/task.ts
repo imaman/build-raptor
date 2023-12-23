@@ -42,7 +42,7 @@ export class Task {
   }
 
   get kind() {
-    return TaskName().undo(this.name).taskKind
+    return TaskName().undo(this.name).taskKind_
   }
 
   changeStatus(status: 'RUNNING' | 'DONE', counter: SlotIndex) {

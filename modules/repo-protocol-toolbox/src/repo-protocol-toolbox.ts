@@ -90,7 +90,7 @@ export class TaskInfoGenerator {
   }
 
   private findDefinition(taskName: TaskName, defs?: readonly TaskDefinition[]): 'DEFAULT' | 'NONE' | TaskDefinition {
-    const { unitId, taskKind } = TaskName().undo(taskName)
+    const { unitId, taskKind_: taskKind } = TaskName().undo(taskName)
     if (!defs) {
       return 'DEFAULT'
     }

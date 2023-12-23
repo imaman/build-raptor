@@ -52,7 +52,7 @@ export class SimpleNodeRepoProtocol implements RepoProtocol {
   }
 
   async execute(taskName: TaskName, outputFile: string, _buildRunId: BuildRunId): Promise<ExitStatus> {
-    const { taskKind, unitId } = TaskName().undo(taskName)
+    const { taskKind_: taskKind, unitId } = TaskName().undo(taskName)
     const unit = this.units.find(u => u.id === unitId) ?? failMe(`unit not found (unit ID=${unitId})`)
     const dir = this.rootDir.resolve(unit.pathInRepo)
     const packageJson = await this.readPackageJsonAt(unit.pathInRepo)

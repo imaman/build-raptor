@@ -91,7 +91,7 @@ class SingleTaskExecutor {
     private readonly testCaching: boolean,
     private readonly shouldDiagnose?: boolean,
   ) {
-    this.isTest = TaskName().undo(this.taskName).taskKind === 'test'
+    this.isTest = TaskName().undo(this.taskName).taskKind_ === 'test'
   }
 
   private diagnose(message: string) {
