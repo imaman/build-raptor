@@ -5,3 +5,4 @@ build-raptor.log
 .build-raptor
 jest-output.json
 prepared-assets
+.out
