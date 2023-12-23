@@ -439,7 +439,7 @@ describe('yarn-repo-protocol.e2e', () => {
       expect(await outGeorge.lines()).toEqual(['marine biologist'])
       expect(await outKramer.lines()).toEqual(['pretzels'])
     })
-    test('empty list of labels means "none", a non empty list means "at-least-1', async () => {
+    test('empty list of labels means "none", a non empty list means "at-least-1"', async () => {
       const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
       const recipe = {
         'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
@@ -478,8 +478,30 @@ describe('yarn-repo-protocol.e2e', () => {
       expect(await outGeorge.lines()).toBeUndefined()
       expect(await outKramer.lines()).toBeUndefined()
     })
-    test.todo('empty list of labels in the task')
-    test.todo('empty list of labels passed to build-raptor')
+    test('a task with an empty list of labels cannot be matched by a label', async () => {
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': {
+          ...driver.packageJson('a', undefined, {
+            'do-kramer': `echo "pretzels" > .out/kramer`,
+          }),
+          buildTasks: {
+            'do-kramer': {
+              inputs: [],
+              outputs: ['.out/kramer'],
+              labels: [],
+            },
+          },
+        },
+        'modules/a/src/a.ts': '// something',
+        'modules/a/tests/a.spec.ts': `test('a', () => {expect(1).toEqual(1)});`,
+      }
+
+      const fork = await driver.repo(recipe).fork()
+      await fork.run('OK', { taskKind: 'build', labels: ['a1'] })
+      expect(await fork.file('modules/a/.out/kramer').lines()).toEqual(undefined)
+    })
     test.todo('invokes a task without a matching label if it is needed by a task that does have a matching label')
     test.todo('input files from root dir')
     test.todo('a special input which means "always"')

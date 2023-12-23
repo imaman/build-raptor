@@ -15,13 +15,12 @@ export class Task {
   private fingerprint: Fingerprint | undefined
   private readonly executionRecord: Mutable<ExecutionRecord>
   readonly inputs: readonly PathInRepo[]
-  readonly labels: readonly string[]
 
   constructor(
     private readonly buildRunId: string,
     readonly taskInfo: TaskInfo,
     inputs: PathInRepo[],
-    labels: string[],
+    readonly labels: readonly string[],
   ) {
     this.inputs = uniqueBy(
       sortBy(inputs, t => t.val),
@@ -36,8 +35,6 @@ export class Task {
       endedAt: SlotIndex(-1),
       phases: [],
     }
-
-    this.labels = labels.length === 0 ? [this.kind] : labels
   }
 
   get unitId() {
