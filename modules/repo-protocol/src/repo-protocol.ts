@@ -25,6 +25,19 @@ export interface RepoProtocolEvent {
 }
 
 export interface RepoProtocol {
+  /**
+   * Initializes the repo protocol for running a build at the given directory.
+   * All other methods will be called only after this call has returned. A close() call will be made before the next
+   * initialize() call is made.
+   *
+   * The repo protocol is expected to do the following (in addition to any implemetation-specific setup):
+   * - create an output directory at each module
+   * - report dependency violations
+   *
+   * @param rootDir
+   * @param publisher
+   * @param repoProtocolConfig
+   */
   initialize(
     rootDir: RepoRoot,
     publisher: TypedPublisher<RepoProtocolEvent>,
