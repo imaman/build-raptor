@@ -128,7 +128,7 @@ export class YarnRepoProtocol implements RepoProtocol {
   async initialize(
     rootDir: RepoRoot,
     publisher: TypedPublisher<RepoProtocolEvent>,
-    outDirName: string | undefined,
+    outDirName?: string,
     repoProtocolConfig?: unknown,
   ): Promise<void> {
     const yarnInfo = await this.getYarnInfo(rootDir)

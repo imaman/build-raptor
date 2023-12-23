@@ -436,6 +436,22 @@ describe('engine', () => {
     const r1 = await fork.run('FAIL')
     expect(r1.message).toMatch(/^Cyclic dependency detected/)
   })
+  test('the build fails if the out dir is not ignored', async () => {
+    const driver = new Driver(testName(), { repoProtocol: new SimpleNodeRepoProtocol(PathInRepo('modules')) })
+    const recipe = {
+      'package.json': { private: true, workspaces: ['modules/*'] },
+      '.gitignore': '.build-raptor',
+      '.build-raptor.json': { outDirName: '.qwerty' },
+      'modules/a/package.json': { name: 'a', version: '1.0.0', scripts: { build: 'exit 0', test: 'exit 0' } },
+    }
+
+    const fork = await driver.repo(recipe).fork()
+    const r1 = await fork.run('FAIL', { checkGitIgnore: true })
+    expect(r1.message).toEqual(`the out dir (.qwerty) should be .gitignore-d`)
+
+    await fork.file('.gitignore').write('.build-raptor\n.qwerty')
+    await fork.run('OK', { checkGitIgnore: true })
+  })
   test('the build fails if the .build-raptor directory is not ignored (controlled by a flag)', async () => {
     const driver = new Driver(testName(), { repoProtocol: new SimpleNodeRepoProtocol(PathInRepo('modules')) })
     const recipe = {
