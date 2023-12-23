@@ -24,3 +24,10 @@ export const BuildRaptorConfig = z.object({
   outDirName: z.string().optional(),
 })
 export type BuildRaptorConfig = z.infer<typeof BuildRaptorConfig>
+
+export const defaultBuildRaptorConfig: Required<BuildRaptorConfig> = {
+  outDirName: '.out',
+  repoProtocol: undefined,
+  tightFingerprints: false,
+  verbosePrintTasks: [],
+}
