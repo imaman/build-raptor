@@ -439,11 +439,48 @@ describe('yarn-repo-protocol.e2e', () => {
       expect(await outGeorge.lines()).toEqual(['marine biologist'])
       expect(await outKramer.lines()).toEqual(['pretzels'])
     })
+    test('empty list of labels means "none", a non empty list means "at-least-1', async () => {
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': {
+          ...driver.packageJson('a', undefined, {
+            'do-kramer': `echo "pretzels" > .out/kramer`,
+            'do-george': `echo "marine biologist" > .out/george`,
+          }),
+          buildTasks: {
+            'do-kramer': {
+              inputs: [],
+              outputs: ['.out/kramer'],
+              labels: ['k', 'seinfeld'],
+            },
+            'do-george': {
+              inputs: [],
+              outputs: ['.out/george'],
+              labels: ['g', 'seinfeld'],
+            },
+          },
+        },
+        'modules/a/src/a.ts': '// something',
+        'modules/a/tests/a.spec.ts': `test('a', () => {expect(1).toEqual(1)});`,
+      }
+
+      const fork = await driver.repo(recipe).fork()
+      const outGeorge = fork.file('modules/a/.out/george')
+      const outKramer = fork.file('modules/a/.out/kramer')
+
+      await fork.run('OK', { taskKind: 'build', labels: ['k', 'g'] })
+      expect(await outGeorge.lines()).toEqual(['marine biologist'])
+      expect(await outKramer.lines()).toEqual(['pretzels'])
+
+      await fork.file('modules/a/.out').rm()
+      await fork.run('OK', { taskKind: 'build', labels: [] })
+      expect(await outGeorge.lines()).toBeUndefined()
+      expect(await outKramer.lines()).toBeUndefined()
+    })
     test.todo('empty list of labels in the task')
     test.todo('empty list of labels passed to build-raptor')
     test.todo('invokes a task without a matching label if it is needed by a task that does have a matching label')
-    test.todo('creates the .out dir')
-    test.todo('verifies that the .out dir is in .gitignore')
     test.todo('input files from root dir')
     test.todo('a special input which means "always"')
     test.todo('globs in inputs/allow to say "all source files"')
