@@ -11,7 +11,7 @@ import * as path from 'path'
 import { RepoProtocol } from 'repo-protocol'
 import { TaskName } from 'task-name'
 
-import { BuildRaptorConfig } from './build-raptor-config'
+import { BuildRaptorConfig, defaultBuildRaptorConfig } from './build-raptor-config'
 import { EngineEventScheme } from './engine-event-scheme'
 import { ExecutionPlan } from './execution-plan'
 import { NopFingerprintLedger, PersistedFingerprintLedger } from './fingerprint-ledger'
@@ -37,7 +37,7 @@ export interface EngineOptions {
   testCaching?: boolean
   commitHash: string | undefined
   stepByStepProcessorModuleName?: string
-  config?: BuildRaptorConfig
+  config: Required<BuildRaptorConfig>
   toRun?: {
     program: string
     args: string[]
@@ -101,7 +101,7 @@ export class Engine {
       fingerprintLedger: options.fingerprintLedger ?? false,
       testCaching: options.testCaching ?? true,
       commitHash: options.commitHash,
-      config: options.config ?? {},
+      config: { ...defaultBuildRaptorConfig, ...options.config },
       userDir,
       toRun: options.toRun ? { args: options.toRun.args, program: userDir.to(options.toRun.program) } : undefined,
     }
@@ -202,7 +202,7 @@ export class Engine {
       this.fingerprintLedger,
       this.purger,
       this.options.testCaching,
-      this.options.config.verbosePrintTasks ?? [],
+      this.options.config.verbosePrintTasks,
     )
 
     const workFunction = async (tn: TaskName) => {
