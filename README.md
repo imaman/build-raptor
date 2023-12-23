@@ -13,6 +13,8 @@ Conceptually, a task definition looks as follows:
 - the command to run
 - labels: an optional list of string to allow flexibility in selecting the tasks to run (for instance, to separate between slow tests and fast running tests).
 
+### goals and labels
+
 ### Command line
 
 ### Caching
