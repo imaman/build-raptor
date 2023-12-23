@@ -142,11 +142,10 @@ export class Engine {
         throw new Error(`tracker is not set`)
       }
       const task = this.tracker?.getTask(e.taskName) ?? failMe(`Task not found (task name=${e.taskName})`)
-      const { taskKind_: taskKind, unitId } = TaskName().undo(e.taskName)
+      const { unitId } = TaskName().undo(e.taskName)
       this.steps.push({
         step: 'ASSET_PUBLISHED',
         taskName: e.taskName,
-        taskKind,
         unitId,
         fingerprint: task.getFingerprint(),
         casAddress: e.casAddress,

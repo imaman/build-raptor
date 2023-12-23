@@ -44,7 +44,7 @@ export const Step = z.discriminatedUnion('step', [
     step: z.literal('ASSET_PUBLISHED'),
     taskName: z.string(),
     unitId: z.string(),
-    taskKind: z.string(),
+    taskKind: z.unknown(),
     fingerprint: z.string(),
     casAddress: z.string(),
     file: z.string(),

@@ -41,10 +41,6 @@ export class Task {
     return TaskName().undo(this.name).unitId
   }
 
-  get kind() {
-    return TaskName().undo(this.name).taskKind_
-  }
-
   changeStatus(status: 'RUNNING' | 'DONE', counter: SlotIndex) {
     if (status === 'RUNNING') {
       this.executionRecord.startedAt = counter
