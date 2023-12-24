@@ -319,7 +319,7 @@ describe('engine', () => {
     const fork = await driver.repo(recipe).fork()
 
     const r1 = await fork.run('FAIL', { units: ['c'] })
-    expect(r1.message).toMatch(/^No tasks to run in this build/)
+    expect(r1.message).toEqual('No task that match the given goals/labels were found')
   })
   test('build output recording', async () => {
     const repoProtocol = new SimpleNodeRepoProtocol(PathInRepo('modules'), ['dist'], {

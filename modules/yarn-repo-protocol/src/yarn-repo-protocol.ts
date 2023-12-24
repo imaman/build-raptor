@@ -895,10 +895,15 @@ export class YarnRepoProtocol implements RepoProtocol {
         )
       }
 
+      const inputs =
+        def.inputs === '_ALWAYS_'
+          ? [PathInRepo('.build-raptor/build-run-id')]
+          : [pj, ...toArray(def.inputs).map(at => dir.expand(at))]
+
       ret.push({
         taskName: TaskName(u.id, TaskKind('build'), name),
         labels: toArray(def.labels ?? []),
-        inputs: [pj, ...toArray(def.inputs).map(at => dir.expand(at))],
+        inputs,
         outputLocations: toArray(def.outputs).map(at => ({
           pathInRepo: dir.expand(at),
           purge: 'ALWAYS',

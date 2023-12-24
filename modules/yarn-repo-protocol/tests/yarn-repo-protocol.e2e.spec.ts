@@ -302,7 +302,7 @@ describe('yarn-repo-protocol.e2e', () => {
           buildTasks: {
             'do-abc': {
               inputs: [],
-              outputs: 'la la la',
+              outputs: 555,
             },
           },
         },
