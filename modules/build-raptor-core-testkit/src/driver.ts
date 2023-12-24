@@ -227,7 +227,7 @@ class Fork {
     )
 
     await fse.mkdirp(this.buildRaptorDir)
-    const runner = await bootstrapper.makeRunner(units, goals, labels, undefined, {
+    const runner = await bootstrapper.makeRunner({ units, goals, labels }, undefined, {
       checkGitIgnore: options.checkGitIgnore ?? false,
       concurrency: concurrencyLevel,
       buildRaptorDir: this.buildRaptorDir,

@@ -12,6 +12,7 @@ import { RepoProtocol } from 'repo-protocol'
 import { TaskName } from 'task-name'
 
 import { BuildRaptorConfig } from './build-raptor-config'
+import { TaskSelector } from './engine-bootstrapper'
 import { EngineEventScheme } from './engine-event-scheme'
 import { ExecutionPlan } from './execution-plan'
 import { NopFingerprintLedger, PersistedFingerprintLedger } from './fingerprint-ledger'
@@ -83,9 +84,7 @@ export class Engine {
     private readonly repoProtocol: RepoProtocol,
     private readonly taskStore: TaskStore,
     private readonly taskOutputDir: string,
-    private readonly units: string[],
-    goals: string[],
-    private readonly labels: string[],
+    private readonly selector: TaskSelector,
     private readonly eventPublisher: TypedPublisher<EngineEventScheme>,
     private readonly steps: StepByStepTransmitter,
     options: EngineOptions,
@@ -105,8 +104,8 @@ export class Engine {
       userDir,
       toRun: options.toRun ? { args: options.toRun.args, program: userDir.to(options.toRun.program) } : undefined,
     }
-    this.goals = [...goals, options.toRun?.program].flatMap(g => (g ? [g] : [])).map(g => userDir.to(g))
-    this.logger.info(`goals=${JSON.stringify(goals)}`)
+    this.goals = [...selector.goals, options.toRun?.program].flatMap(g => (g ? [g] : [])).map(g => userDir.to(g))
+    this.logger.info(`this.goals=${JSON.stringify(this.goals)}`)
     const ledgerFile = path.join(this.options.buildRaptorDir, 'fingerprint-ledger.json')
     this.eventPublisher.on('taskStore', e => {
       const step =
@@ -176,7 +175,7 @@ export class Engine {
       const taskList = await this.repoProtocol.getTasks()
       this.logger.info(`catalog=\n${JSON.stringify(taskList, null, 2)}`)
       const plan = await new Planner(this.logger).computePlan(taskList, model)
-      const startingPoints = plan.apply(this.units, this.goals, this.labels)
+      const startingPoints = plan.apply(this.selector.units, this.goals, this.selector.labels)
       if (startingPoints.length === 0) {
         throw new BuildFailedError(`No task that match the given goals/labels were found`)
       }

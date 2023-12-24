@@ -1,4 +1,4 @@
-import { DefaultAssetPublisher, EngineBootstrapper, findRepoDir } from 'build-raptor-core'
+import { DefaultAssetPublisher, EngineBootstrapper, findRepoDir, TaskSelector } from 'build-raptor-core'
 import * as fse from 'fs-extra'
 import { createDefaultLogger, Criticality, Logger } from 'logger'
 import {
@@ -99,7 +99,7 @@ export async function run(options: Options) {
   }
 
   if (isCi) {
-    logger.print(
+    logger.info(
       `details:\n${JSON.stringify({ isCi, commitHash, pullRequest, startedAt: new Date(t0).toISOString() }, null, 2)}`,
     )
   }
@@ -167,28 +167,28 @@ export async function run(options: Options) {
     logger.print(`Task ${tn} succeeded earlier. Skipping.\n`, 'low')
   })
 
-  const runner = await bootstrapper.makeRunner(
-    options.units,
-    options.goals,
-    options.labels,
-    options.buildRaptorConfigFile,
-    {
-      stepByStepProcessorModuleName: options.stepByStepProcessor,
-      concurrency: Int(options.concurrency),
-      buildRaptorDir,
-      testCaching: options.testCaching ?? true,
-      commitHash,
-      userDir,
-      ...(options.program
-        ? {
-            toRun: {
-              program: options.program,
-              args: options.programArgs ?? [],
-            },
-          }
-        : {}),
-    },
-  )
+  const selector: TaskSelector = {
+    units: options.units,
+    goals: options.goals,
+    labels: options.labels,
+  }
+
+  const runner = await bootstrapper.makeRunner(selector, options.buildRaptorConfigFile, {
+    stepByStepProcessorModuleName: options.stepByStepProcessor,
+    concurrency: Int(options.concurrency),
+    buildRaptorDir,
+    testCaching: options.testCaching ?? true,
+    commitHash,
+    userDir,
+    ...(options.program
+      ? {
+          toRun: {
+            program: options.program,
+            args: options.programArgs ?? [],
+          },
+        }
+      : {}),
+  })
   const { exitCode } = await runner()
   // eslint-disable-next-line require-atomic-updates
   process.exitCode = exitCode
@@ -408,12 +408,7 @@ export function main() {
       .command(
         'publish-assets',
         `runs tests and builds assets (by running 'prepare-assets' run scripts)`,
-        yargs =>
-          yargs.option('register-assets', {
-            describe: 'whether to invoke the register-asset-endpoint with the details of each published asset',
-            type: 'boolean',
-            default: false,
-          }),
+        yargs => yargs,
         async rawArgv => {
           const argv = camelizeRecord(rawArgv)
           const tr = argv.testReporting
