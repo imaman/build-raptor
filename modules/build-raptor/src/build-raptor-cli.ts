@@ -99,7 +99,7 @@ export async function run(options: Options) {
   }
 
   if (isCi) {
-    logger.print(
+    logger.info(
       `details:\n${JSON.stringify({ isCi, commitHash, pullRequest, startedAt: new Date(t0).toISOString() }, null, 2)}`,
     )
   }
