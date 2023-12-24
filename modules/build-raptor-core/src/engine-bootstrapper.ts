@@ -19,6 +19,18 @@ import { Task } from './task'
 import { TaskStore } from './task-store'
 import { TaskSummary } from './task-summary'
 
+export interface TaskSelector {
+  /**
+   * units the units whose tasks are to be built. An empty array means "all units".
+   */
+  units: string[]
+  /**
+   * a list of output locations. The tasks that produce these outputs will be added to "tasks to run".
+   */
+  goals: string[]
+  labels: string[]
+}
+
 export class EngineBootstrapper {
   private readonly eventPublisher = new TypedPublisher<EngineEventScheme>()
   readonly rootDir
@@ -33,9 +45,7 @@ export class EngineBootstrapper {
   }
 
   private async makeEngine(
-    units: string[],
-    goals: string[],
-    labels: string[],
+    selector: TaskSelector,
     configFile: string | undefined,
     optionsSansConfig: Omit<EngineOptions, 'config'>,
   ) {
@@ -62,9 +72,7 @@ export class EngineBootstrapper {
       this.repoProtocol,
       taskStore,
       taskOutputDir,
-      units,
-      goals,
-      labels,
+      selector,
       this.eventPublisher,
       transmitter,
       options,
@@ -97,23 +105,15 @@ export class EngineBootstrapper {
   /**
    * Returns a "runner function". When the runner function is invoked, a build will run.
    *
-   * @param units the units whose tasks are to be built. An empty array means "all units".
-   * @param goals list of output locations. The tasks that produce these outputs will be added to "tasks to run".
    * @param configFile
    * @param options
    * @returns
    */
-  async makeRunner(
-    units: string[],
-    goals: string[],
-    labels: string[],
-    configFile: string | undefined,
-    options: Omit<EngineOptions, 'config'>,
-  ) {
+  async makeRunner(selector: TaskSelector, configFile: string | undefined, options: Omit<EngineOptions, 'config'>) {
     try {
       const t1 = Date.now()
-      this.logger.info(`Creating a runner for ${JSON.stringify({ units, goals, labels, options })}`)
-      const engine = await this.makeEngine(units, goals, labels, configFile, options)
+      this.logger.info(`Creating a runner for ${JSON.stringify({ selector, options })}`)
+      const engine = await this.makeEngine(selector, configFile, options)
       const buildRunId = this.newBuildRunId()
       return async () => {
         try {
