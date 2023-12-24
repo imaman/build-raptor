@@ -13,6 +13,43 @@ Conceptually, a task definition looks as follows:
 - the command to run
 - labels: an optional list of string to allow flexibility in selecting the tasks to run (for instance, to separate between slow tests and fast running tests).
 
+Here is an example for such a definition (in a `package.json` file):
+
+```
+{
+  "name": "my-module"
+  "author": "alice",
+  "license": "MIT",
+  "scripts": {
+    "do-kramer": "echo 'pretzels' > .out/kramer",
+  },
+  "buildTasks": {
+    "do-kramer": {
+      "inputs": [ "dist/george.js", "dist/elaine.js" ],
+      "outputs": [ ".out/kramer" ],
+      "labels": [ "seinfeld" ],
+    }
+  }
+}
+```
+
+This means that the `do-kremer` run script will be invoked after `dist/george.js` and `dist/elaine.js` have been built and their content is new (has not been seen in earlier runs).
+
+The specail value `'_ALWAYS_'` can be used (as the value of the `inputs` attribute) to define a task which always runs (i.e., has no inputs to wait for, always runs at the beginning of the build):
+
+```
+{
+  ...
+  "buildTasks": {
+    "do-kramer": {
+      "inputs": [],
+      "outputs": "_ALWAYS_",
+      "labels": [ "seinfeld" ],
+    }
+  }
+}
+```
+
 ### goals and labels
 
 ### Command line
