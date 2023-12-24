@@ -130,9 +130,11 @@ export async function run(options: Options) {
   })
 
   bootstrapper.subscribable.on('executionEnded', async arg => {
+    const { taskKind } = TaskName().undo(arg.taskName)
     // TODO(imaman): cover (output is indeed written in file structure)
-    await fse.ensureDir(buildRaptorDirTasks)
-    const fileName = path.join(buildRaptorDirTasks, toReasonableFileName(arg.taskName))
+    const d = path.join(buildRaptorDirTasks, arg.pathInRepo)
+    await fse.ensureDir(d)
+    const fileName = path.join(d, toReasonableFileName(taskKind))
     const stream = fse.createWriteStream(fileName)
     try {
       await dumpFile(arg.outputFile, stream)
