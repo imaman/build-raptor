@@ -33,7 +33,6 @@ export class EngineBootstrapper {
   }
 
   private async makeEngine(
-    commands: string[],
     units: string[],
     goals: string[],
     labels: string[],
@@ -63,7 +62,6 @@ export class EngineBootstrapper {
       this.repoProtocol,
       taskStore,
       taskOutputDir,
-      commands,
       units,
       goals,
       labels,
@@ -99,7 +97,6 @@ export class EngineBootstrapper {
   /**
    * Returns a "runner function". When the runner function is invoked, a build will run.
    *
-   * @param command the task kind to build. An empty string means "all tasks".
    * @param units the units whose tasks are to be built. An empty array means "all units".
    * @param goals list of output locations. The tasks that produce these outputs will be added to "tasks to run".
    * @param configFile
@@ -107,7 +104,6 @@ export class EngineBootstrapper {
    * @returns
    */
   async makeRunner(
-    commands: string[],
     units: string[],
     goals: string[],
     labels: string[],
@@ -116,8 +112,8 @@ export class EngineBootstrapper {
   ) {
     try {
       const t1 = Date.now()
-      this.logger.info(`Creating a runner for ${JSON.stringify({ commands, units, goals, labels, options })}`)
-      const engine = await this.makeEngine(commands, units, goals, labels, configFile, options)
+      this.logger.info(`Creating a runner for ${JSON.stringify({ units, goals, labels, options })}`)
+      const engine = await this.makeEngine(units, goals, labels, configFile, options)
       const buildRunId = this.newBuildRunId()
       return async () => {
         try {

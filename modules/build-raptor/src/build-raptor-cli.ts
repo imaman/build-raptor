@@ -168,7 +168,6 @@ export async function run(options: Options) {
   })
 
   const runner = await bootstrapper.makeRunner(
-    [],
     options.units,
     options.goals,
     options.labels,

@@ -209,10 +209,10 @@ class Fork {
   }
 
   async run(expectedStatus: 'OK' | 'FAIL' | 'CRASH', options: RunOptions = {}): Promise<Run> {
-    const commands = !options.taskKind ? [] : Array.isArray(options.taskKind) ? options.taskKind : [options.taskKind]
+    const kinds = !options.taskKind ? [] : Array.isArray(options.taskKind) ? options.taskKind : [options.taskKind]
     const units = options.units ?? []
     const goals = options.goals ?? []
-    const labels = options.labels ?? []
+    const labels = [...kinds, ...(options.labels ?? [])]
     const concurrencyLevel = Int(options.concurrencyLevel ?? 10)
     const rp = this.repoProtocol
     const bootstrapper = await EngineBootstrapper.create(
@@ -225,7 +225,7 @@ class Fork {
     )
 
     await fse.mkdirp(this.buildRaptorDir)
-    const runner = await bootstrapper.makeRunner(commands, units, goals, labels, undefined, {
+    const runner = await bootstrapper.makeRunner(units, goals, labels, undefined, {
       checkGitIgnore: options.checkGitIgnore ?? false,
       concurrency: concurrencyLevel,
       buildRaptorDir: this.buildRaptorDir,

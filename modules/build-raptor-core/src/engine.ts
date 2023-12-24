@@ -83,7 +83,6 @@ export class Engine {
     private readonly repoProtocol: RepoProtocol,
     private readonly taskStore: TaskStore,
     private readonly taskOutputDir: string,
-    private readonly commands: string[],
     private readonly units: string[],
     goals: string[],
     private readonly labels: string[],
@@ -177,11 +176,9 @@ export class Engine {
       const taskList = await this.repoProtocol.getTasks()
       this.logger.info(`catalog=\n${JSON.stringify(taskList, null, 2)}`)
       const plan = await new Planner(this.logger).computePlan(taskList, model)
-      const startingPoints = plan.apply(this.units, this.goals, [...this.commands, ...this.labels])
+      const startingPoints = plan.apply(this.units, this.goals, this.labels)
       if (startingPoints.length === 0) {
-        throw new BuildFailedError(
-          `No tasks to run in this build (command=<${this.commands}>, units=<${JSON.stringify(this.units)})>`,
-        )
+        throw new BuildFailedError(`No task that match the given goals/labels were found`)
       }
 
       const ret = await this.executePlan(plan, model)
