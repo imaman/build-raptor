@@ -15,6 +15,7 @@ export function generateTaskInfos(
     const buildTaskName = TaskName(u.id, TaskKind('build'))
 
     const build: TaskInfo = {
+      labels: ['build'],
       taskName: buildTaskName,
       inputs: [u.pathInRepo],
       outputLocations: buildOutputLocations.map(at => ({ pathInRepo: u.pathInRepo.expand(at), purge: 'NEVER' })),
@@ -23,6 +24,7 @@ export function generateTaskInfos(
 
     const testTaskName = TaskName(u.id, TaskKind('test'))
     const test: TaskInfo = {
+      labels: ['test'],
       taskName: testTaskName,
       inputs: [u.pathInRepo],
       deps: [build.taskName, ...depFunc(testTaskName)],

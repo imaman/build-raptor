@@ -806,6 +806,7 @@ export class YarnRepoProtocol implements RepoProtocol {
       .filter(at => at !== u.id)
       .map(at => this.unitOf(at).pathInRepo)
     const ret: TaskInfo = {
+      labels: ['build'],
       taskName: TaskName(u.id, TaskKind('build')),
       outputLocations: [{ pathInRepo: dir.expand(this.dist()), purge: 'NEVER' }],
       inputs: [
@@ -834,6 +835,7 @@ export class YarnRepoProtocol implements RepoProtocol {
       .filter(at => at !== u.id)
       .map(at => this.unitOf(at).pathInRepo)
     return {
+      labels: ['test'],
       taskName: TaskName(u.id, TaskKind('test')),
       outputLocations: [{ pathInRepo: dir.expand(JEST_OUTPUT_FILE), purge: 'ALWAYS' }],
       inputs: [
@@ -852,6 +854,7 @@ export class YarnRepoProtocol implements RepoProtocol {
       .filter(at => at !== u.id)
       .map(at => this.unitOf(at).pathInRepo)
     return {
+      labels: ['pack'],
       taskName: TaskName(u.id, TaskKind('pack')),
       outputLocations: [{ pathInRepo: dir.expand(PACK_DIR), purge: 'ALWAYS' }],
       inputs: [dir.expand(this.dist('s')), ...deps.map(d => d.expand(this.dist('s')))],
@@ -863,6 +866,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
     const dir = u.pathInRepo
     return {
+      labels: ['publish-assets'],
       taskName: TaskName(u.id, TaskKind('publish-assets')),
       outputLocations: [{ pathInRepo: dir.expand(PREPARED_ASSETS_DIR), purge: 'NEVER' }],
       inputs: [dir.expand('package.json'), dir.expand(this.dist('s'))],
