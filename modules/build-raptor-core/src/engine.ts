@@ -116,7 +116,7 @@ export class Engine {
           : e.opcode === 'RESTORED'
           ? 'TASK_STORE_GET'
           : shouldNeverHappen(e.opcode)
-      const { taskKind_: taskKind, unitId } = TaskName().undo(e.taskName)
+      const { taskKind: taskKind, unitId } = TaskName().undo(e.taskName)
       this.steps.push({
         blobId: e.blobId,
         taskName: e.taskName,

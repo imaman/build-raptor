@@ -16,13 +16,13 @@ class TaskNameUtils {
 
     return {
       unitId: UnitId(parts[0]),
-      taskKind_: TaskKind(parts[1]),
+      taskKind: TaskKind(parts[1]),
       subKind: parts.at(2) ?? '',
     }
   }
 
   parse(input: string) {
-    const { unitId, taskKind_: taskKind, subKind } = this.undoImpl(input)
+    const { unitId, taskKind: taskKind, subKind } = this.undoImpl(input)
     return TaskName(unitId, taskKind, subKind)
   }
 }
