@@ -897,9 +897,9 @@ export class YarnRepoProtocol implements RepoProtocol {
 
       ret.push({
         taskName: TaskName(u.id, TaskKind('build'), name),
-        labels: def.labels,
-        inputs: [pj, ...def.inputs.map(at => dir.expand(at))],
-        outputLocations: def.outputs.map(at => ({
+        labels: toArray(def.labels ?? []),
+        inputs: [pj, ...toArray(def.inputs).map(at => dir.expand(at))],
+        outputLocations: toArray(def.outputs).map(at => ({
           pathInRepo: dir.expand(at),
           purge: 'ALWAYS',
         })),
@@ -1027,3 +1027,7 @@ const installTaskName = TaskName(rootUnitId, TaskKind('install'))
 const emptyRerunList: RerunList = RerunList.parse([])
 
 type Includer = { include?: string[] }
+
+function toArray<T>(input: T | T[]) {
+  return Array.isArray(input) ? input : [input]
+}
