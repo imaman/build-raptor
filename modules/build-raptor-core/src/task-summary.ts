@@ -1,6 +1,6 @@
 import { TaskName } from 'task-name'
 
-import { ExecutionType } from './execution-record'
+import { ExecutionType } from './execution-type'
 import { SlotIndex } from './slot-index'
 
 export interface TaskSummary {

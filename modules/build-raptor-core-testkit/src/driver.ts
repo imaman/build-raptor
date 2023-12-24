@@ -1,6 +1,6 @@
 import { Step, StepByName, StepByStep, StepName } from 'build-raptor-api'
 import { BlobId, Breakdown, EngineBootstrapper, TaskStore } from 'build-raptor-core'
-import { ExecutionType } from 'build-raptor-core/src/execution-record'
+import { ExecutionType } from 'build-raptor-core'
 import { PathInRepo, RepoRoot } from 'core-types'
 import * as fs from 'fs'
 import * as fse from 'fs-extra'
