@@ -383,7 +383,7 @@ export class YarnRepoProtocol implements RepoProtocol {
       })
     }
 
-    const { taskKind: taskKind, unitId, subKind } = TaskName().undo(taskName)
+    const { taskKind, unitId, subKind } = TaskName().undo(taskName)
     const u = this.state.units.find(at => at.id === unitId) ?? failMe(`unit ID not found: ${unitId}`)
     const dir = this.state.rootDir.resolve(u.pathInRepo)
     if (taskKind === 'build' && subKind === '') {

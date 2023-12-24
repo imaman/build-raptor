@@ -131,7 +131,7 @@ export async function run(options: Options) {
   })
 
   bootstrapper.subscribable.on('executionEnded', async arg => {
-    const { taskKind: taskKind } = TaskName().undo(arg.taskName)
+    const { taskKind } = TaskName().undo(arg.taskName)
     // TODO(imaman): cover (output is indeed written in file structure)
     const d = path.join(buildRaptorDirTasks, arg.pathInRepo)
     await fse.ensureDir(d)

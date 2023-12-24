@@ -22,7 +22,7 @@ class TaskNameUtils {
   }
 
   parse(input: string) {
-    const { unitId, taskKind: taskKind, subKind } = this.undoImpl(input)
+    const { unitId, taskKind, subKind } = this.undoImpl(input)
     return TaskName(unitId, taskKind, subKind)
   }
 }
