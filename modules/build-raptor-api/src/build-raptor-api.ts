@@ -42,6 +42,7 @@ export const Step = z.discriminatedUnion('step', [
   }),
   z.object({
     step: z.literal('ASSET_PUBLISHED'),
+    labels: z.string().array(),
     taskName: z.string(),
     unitId: z.string(),
     taskKind: z.unknown(),

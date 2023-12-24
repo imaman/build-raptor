@@ -278,6 +278,7 @@ describe('yarn-repo-protocol.e2e', () => {
           ...driver.packageJson('a', undefined, { 'do-abc': `echo "pretzels" > .out/p` }),
           buildTasks: {
             'do-abc': {
+              labels: ['build'],
               inputs: [],
               outputs: ['.out/p'],
             },
@@ -349,10 +350,12 @@ describe('yarn-repo-protocol.e2e', () => {
           }),
           buildTasks: {
             'do-abc': {
+              labels: ['build'],
               inputs: [],
               outputs: ['.out/lower'],
             },
             'do-xyz': {
+              labels: ['build'],
               inputs: ['.out/lower'],
               outputs: ['.out/upper'],
             },

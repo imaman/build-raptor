@@ -145,6 +145,7 @@ export class Engine {
       const { unitId } = TaskName().undo(e.taskName)
       this.steps.push({
         step: 'ASSET_PUBLISHED',
+        labels: [...task.labels],
         taskName: e.taskName,
         unitId,
         fingerprint: task.getFingerprint(),
