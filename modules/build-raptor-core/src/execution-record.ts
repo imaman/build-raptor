@@ -1,7 +1,7 @@
 export type Verdict = 'UNKNOWN' | 'CRASH' | 'FAIL' | 'OK'
-export type ExecutionType = 'UNKNOWN' | 'EXECUTED' | 'CACHED' | 'CANNOT_START'
 import { TaskName } from 'task-name'
 
+import { ExecutionType } from './execution-type'
 import { Phase } from './phase'
 import { SlotIndex } from './slot-index'
 

@@ -302,7 +302,7 @@ describe('yarn-repo-protocol.e2e', () => {
           buildTasks: {
             'do-abc': {
               inputs: [],
-              outputs: 'la la la',
+              outputs: 555,
             },
           },
         },
@@ -370,6 +370,34 @@ describe('yarn-repo-protocol.e2e', () => {
       await fork.run('OK', { taskKind: 'build', subKind: 'do-xyz' })
       expect(await fork.file('modules/a/.out/lower').lines()).toEqual(['pretzels'])
       expect(await fork.file('modules/a/.out/upper').lines()).toEqual(['PRETZELS'])
+    })
+    test(`if a the inputs attribute is set to '_ALWAYS_' the task will always run`, async () => {
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': {
+          ...driver.packageJson('a', undefined, {
+            'do-kramer': `echo "pretzels" > .out/k`,
+          }),
+          buildTasks: {
+            'do-kramer': {
+              labels: 'build',
+              inputs: '_ALWAYS_',
+              outputs: '.out/k',
+            },
+          },
+        },
+        'modules/a/src/a.ts': '// something',
+        'modules/a/tests/a.spec.ts': `test('a', () => {expect(1).toEqual(1)});`,
+      }
+
+      const fork = await driver.repo(recipe).fork()
+
+      const run1 = await fork.run('OK', { taskKind: 'build' })
+      expect(run1.taskNames('EXECUTED')).toEqual(['a:build', 'a:build:do-kramer'])
+
+      const run2 = await fork.run('OK', { taskKind: 'build' })
+      expect(run2.taskNames('EXECUTED')).toEqual(['a:build:do-kramer'])
     })
   })
   describe('out dir', () => {

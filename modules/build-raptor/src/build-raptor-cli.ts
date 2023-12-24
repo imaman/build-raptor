@@ -28,7 +28,6 @@ import { getPrForCommit } from './get-pr-for-commit'
 type TestReporting = 'just-failing' | 'tree' | 'tree-just-failing'
 
 interface Options {
-  commands: ('build' | 'test' | 'pack' | 'publish-assets' | 'run')[]
   units: string[]
   goals: string[]
   labels: string[]
@@ -169,7 +168,6 @@ export async function run(options: Options) {
   })
 
   const runner = await bootstrapper.makeRunner(
-    options.commands,
     options.units,
     options.goals,
     options.labels,
@@ -350,10 +348,9 @@ export function main() {
         async rawArgv => {
           const argv = camelizeRecord(rawArgv)
           await run({
-            commands: ['build'],
             units: argv.units,
             goals: argv.goals,
-            labels: argv.labels,
+            labels: ['build', ...argv.labels],
             printPassing: argv.printPassing,
             concurrency: argv.concurrency,
             compact: argv.compact,
@@ -371,10 +368,9 @@ export function main() {
           const argv = camelizeRecord(rawArgv)
           const tr = argv.testReporting
           await run({
-            commands: ['test'],
             units: argv.units,
             goals: argv.goals,
-            labels: argv.labels,
+            labels: ['test', ...argv.labels],
             printPassing: argv.printPassing,
             concurrency: argv.concurrency,
             compact: argv.compact,
@@ -396,10 +392,9 @@ export function main() {
         async rawArgv => {
           const argv = camelizeRecord(rawArgv)
           await run({
-            commands: ['pack'],
             units: argv.units,
             goals: argv.goals,
-            labels: argv.labels,
+            labels: ['pack', ...argv.labels],
             printPassing: argv.printPassing,
             concurrency: argv.concurrency,
             compact: argv.compact,
@@ -423,10 +418,9 @@ export function main() {
           const argv = camelizeRecord(rawArgv)
           const tr = argv.testReporting
           await run({
-            commands: ['publish-assets', 'test'],
             units: argv.units,
             goals: argv.goals,
-            labels: argv.labels,
+            labels: ['publish-assets', 'test', ...argv.labels],
             printPassing: argv.printPassing,
             concurrency: argv.concurrency,
             compact: argv.compact,
@@ -452,10 +446,9 @@ export function main() {
         async rawArgv => {
           const argv = camelizeRecord(rawArgv)
           await run({
-            commands: ['run'],
             units: argv.units,
             goals: argv.goals,
-            labels: argv.labels,
+            labels: ['run', ...argv.labels],
             program: rawArgv.program,
             // drop the command ("run") which yargs adds into the ._ array
             programArgs: rawArgv._.slice(1).map(at => String(at)),

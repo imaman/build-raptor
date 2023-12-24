@@ -1,5 +1,6 @@
 import { Step, StepByName, StepByStep, StepName } from 'build-raptor-api'
 import { BlobId, Breakdown, EngineBootstrapper, TaskStore } from 'build-raptor-core'
+import { ExecutionType } from 'build-raptor-core'
 import { PathInRepo, RepoRoot } from 'core-types'
 import * as fs from 'fs'
 import * as fse from 'fs-extra'
@@ -41,9 +42,10 @@ export class Run {
     return ret
   }
 
-  taskNames() {
+  taskNames(which?: ExecutionType) {
+    const filtered = this.breakdown.getSummaries().filter(t => (which === undefined ? true : t.execution === which))
     return sortBy(
-      this.breakdown.getSummaries().map(s => s.taskName),
+      filtered.map(s => s.taskName),
       x => x,
     )
   }
@@ -209,10 +211,10 @@ class Fork {
   }
 
   async run(expectedStatus: 'OK' | 'FAIL' | 'CRASH', options: RunOptions = {}): Promise<Run> {
-    const commands = !options.taskKind ? [] : Array.isArray(options.taskKind) ? options.taskKind : [options.taskKind]
+    const kinds = !options.taskKind ? [] : Array.isArray(options.taskKind) ? options.taskKind : [options.taskKind]
     const units = options.units ?? []
     const goals = options.goals ?? []
-    const labels = options.labels ?? []
+    const labels = [...kinds, ...(options.labels ?? [])]
     const concurrencyLevel = Int(options.concurrencyLevel ?? 10)
     const rp = this.repoProtocol
     const bootstrapper = await EngineBootstrapper.create(
@@ -225,7 +227,7 @@ class Fork {
     )
 
     await fse.mkdirp(this.buildRaptorDir)
-    const runner = await bootstrapper.makeRunner(commands, units, goals, labels, undefined, {
+    const runner = await bootstrapper.makeRunner(units, goals, labels, undefined, {
       checkGitIgnore: options.checkGitIgnore ?? false,
       concurrency: concurrencyLevel,
       buildRaptorDir: this.buildRaptorDir,
