@@ -7,7 +7,7 @@ import { folderify } from 'misc'
 import { YarnRepoProtocol } from '../src/yarn-repo-protocol'
 
 jest.setTimeout(120000)
-describe('asset-publishing-and-packing', () => {
+describe('asset-publishing-and-packing-and-running', () => {
   const logger = createNopLogger()
 
   function newYarnRepoProtocol() {
@@ -79,7 +79,7 @@ describe('asset-publishing-and-packing', () => {
       expect(await run.outputOf('test', 'b')).toEqual(expect.arrayContaining(['    Expected: 21', '    Received: 20']))
       expect(run.taskNames()).toEqual(['a:build', 'a:publish-assets', 'a:test', 'b:build', 'b:test'])
     })
-    test('publish-assets publishes a blob and generates a matching ASSET_PUBLSIHED step with a fingerprint', async () => {
+    test('publish-assets publishes a blob and generates a matching ASSET_PUBLSIHED step', async () => {
       const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
       const recipe = {
         'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
@@ -94,8 +94,14 @@ describe('asset-publishing-and-packing', () => {
       const blobId = putSteps.find(at => at.taskName === 'a:publish-assets')?.blobId
       expect(await driver.slurpBlob(blobId)).toEqual({ 'modules/a/prepared-assets/x': 'a\n' })
 
-      const assetSteps = await fork.getSteps('ASSET_PUBLISHED')
-      expect(assetSteps.find(at => at.taskName === 'a:publish-assets')?.fingerprint).toHaveLength(56)
+      const found = (await fork.getSteps('ASSET_PUBLISHED')).find(at => at.taskName === 'a:publish-assets')
+      expect(found?.fingerprint).toHaveLength(56)
+      expect(found?.casAddress).toHaveLength(56)
+      expect(found).toMatchObject({
+        file: 'x',
+        labels: ['publish-assets'],
+        unitId: 'a',
+      })
     })
   })
 
