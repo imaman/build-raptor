@@ -55,12 +55,12 @@ export class ExecutionPlan {
   private computeStartingPoints(units: string[], goals: PathInRepo[], labels: string[]) {
     const setOfUnitId = new Set<string>(units)
     this.logger.info(`setOfUnitId=${[...setOfUnitId].join('; ')}`)
-    const ret = goals.map(ol => {
-      const tn = this.registry.lookup(ol)
-      if (!tn) {
+    const ret = goals.flatMap(ol => {
+      const tns = this.registry.wideLookup(ol)
+      if (tns.length === 0) {
         throw new BuildFailedError(`no task found for this output location: ${ol}`)
       }
-      return tn
+      return tns
     })
     const matchesUnit =
       setOfUnitId.size === 0 && goals.length === 0 ? () => true : (t: Task) => setOfUnitId.has(t.unitId)
