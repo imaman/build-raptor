@@ -1,14 +1,14 @@
 import { BuildFailedError } from 'build-failed-error'
-import { PathInRepo } from 'core-types'
 import { failMe, findDups, groupBy, hardGet, recordToPairs, sortBy } from 'misc'
-import * as path from 'path'
 import { TaskInfo } from 'repo-protocol'
 import { TaskName } from 'task-name'
+
+import { TaskOutputRegistry, UpdateableTaskOutputRegistry } from './updatable-task-output-registry'
 
 export function validateTaskInfos(infos: TaskInfo[]): TaskOutputRegistry {
   checkNameCollision(infos)
 
-  const ret = new TaskOutputRegistryImpl()
+  const ret = new UpdateableTaskOutputRegistry()
   checkOutputCollisions(infos, ret)
   return ret
 }
@@ -26,7 +26,7 @@ function checkNameCollision(infos: TaskInfo[]) {
   throw new BuildFailedError(`Task name collison: ${highest[0]} (${highest[1].length} occurrences)`)
 }
 
-function checkOutputCollisions(infos: TaskInfo[], reg: TaskOutputRegistryImpl) {
+function checkOutputCollisions(infos: TaskInfo[], reg: UpdateableTaskOutputRegistry) {
   const sorted = sortBy(infos, at => at.taskName)
   const taskNameByOutput = new Map<string, TaskName>()
   for (const info of sorted) {
@@ -59,33 +59,6 @@ function checkOutputCollisions(infos: TaskInfo[], reg: TaskOutputRegistryImpl) {
   for (const i of sorted) {
     for (const loc of i.outputLocations ?? []) {
       reg.add(i.taskName, loc.pathInRepo)
-    }
-  }
-}
-
-export interface TaskOutputRegistry {
-  lookup(outputLoc: PathInRepo): TaskName | undefined
-}
-
-class TaskOutputRegistryImpl implements TaskOutputRegistry {
-  private readonly map = new Map<string, TaskName>()
-  constructor() {}
-
-  add(taskName: TaskName, outputLoc: PathInRepo) {
-    this.map.set(outputLoc.val, taskName)
-  }
-
-  lookup(outputLoc: PathInRepo): TaskName | undefined {
-    let normed = outputLoc.val
-    while (true) {
-      if (normed === '.') {
-        return undefined
-      }
-      const tn = this.map.get(normed)
-      if (tn) {
-        return tn
-      }
-      normed = path.dirname(normed)
     }
   }
 }

@@ -5,7 +5,7 @@ import { Graph, hardGet } from 'misc'
 import { TaskName } from 'task-name'
 
 import { Task } from './task'
-import { TaskOutputRegistry } from './validate-task-infos'
+import { TaskOutputRegistry } from './updatable-task-output-registry'
 
 // TODO(imaman): rethink the name. It is not exactly a "Plan".
 export class ExecutionPlan {
