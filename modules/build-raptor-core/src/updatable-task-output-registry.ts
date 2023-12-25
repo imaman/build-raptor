@@ -43,6 +43,6 @@ export class UpdateableTaskOutputRegistry implements TaskOutputRegistry {
       }
     }
 
-    return ret
+    return ret.sort()
   }
 }

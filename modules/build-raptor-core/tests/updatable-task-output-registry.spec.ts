@@ -41,14 +41,15 @@ describe('updatable-task-output-registry', () => {
     })
   })
   describe('wideLookup', () => {
-    test('foo', () => {
+    test('returns the list of tasks that produce outputs under the given path', () => {
       const reg = new UpdateableTaskOutputRegistry()
 
       add(reg, 'luke:skywalker', 'a/w/x')
       add(reg, 'han:solo', 'a/w/y')
-      expect(wideLookup(reg, 'a/w/x')).toEqual(['luke:skywalker'])
-      expect(wideLookup(reg, 'a/w/y')).toEqual(['han:solo'])
-      expect(wideLookup(reg, 'a/w')).toEqual(['luke:skywalker', 'han:solo'])
+      add(reg, 'obi-wan:kenobi', 'a/u/y')
+      expect(wideLookup(reg, 'a/w')).toEqual(['han:solo', 'luke:skywalker'])
+      expect(wideLookup(reg, 'a/u')).toEqual(['obi-wan:kenobi'])
+      expect(wideLookup(reg, 'a')).toEqual(['han:solo', 'luke:skywalker', 'obi-wan:kenobi'])
     })
   })
 })
