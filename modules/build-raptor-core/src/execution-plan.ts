@@ -58,7 +58,7 @@ export class ExecutionPlan {
     const ret = goals.flatMap(ol => {
       const tns = this.registry.wideLookup(ol)
       if (tns.length === 0) {
-        throw new BuildFailedError(`no task found for this output location: ${ol}`)
+        throw new BuildFailedError(`no task found for goal "${ol}"`)
       }
       return tns
     })
