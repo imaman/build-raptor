@@ -623,22 +623,6 @@ describe('yarn-repo-protocol.e2e', () => {
       const run3 = await fork.run('FAIL', { goals: ['modules/a'], labels: ['foo'] })
       expect(run3.message).toEqual('No task that matches the given goals/labels was found')
     })
-    test('wtf', async () => {
-      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
-      const recipe = {
-        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
-        'modules/a/package.json': driver.packageJson('a'),
-        'modules/a/src/index.ts': '// something-a',
-        'modules/a/tests/index.spec.ts': `test('a', () => {expect(1).toEqual(1)});`,
-        'modules/b/package.json': driver.packageJson('b'),
-        'modules/b/src/index.ts': '// something-b',
-        'modules/b/tests/index.spec.ts': `test('b', () => {expect(1).toEqual(1)});`,
-      }
-
-      const fork = await driver.repo(recipe).fork()
-      const run1 = await fork.run('OK', { goals: ['modules/a'], labels: ['build'] })
-      expect(run1.taskNames()).toEqual(['a:build'])
-    })
     test('fails with a build error when no task is found for a goal', async () => {
       const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
       const recipe = {
