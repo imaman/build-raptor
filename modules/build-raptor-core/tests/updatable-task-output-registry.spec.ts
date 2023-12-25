@@ -20,5 +20,23 @@ describe('updatable-task-output-registry', () => {
       expect(lookup(reg, 'modules/a/out-dir/y')).toEqual('a:build:y')
       expect(lookup(reg, 'modules/a/out-dir/z')).toEqual('a:build:z')
     })
+    test('returns undefined if no task was found', () => {
+      const reg = new UpdateableTaskOutputRegistry()
+
+      expect(lookup(reg, 'modules/a/out-dir/x')).toBeUndefined()
+      add(reg, 'a:build:x', 'modules/a/out-dir/x')
+      expect(lookup(reg, 'modules/a/out-dir/x')).toEqual('a:build:x')
+      expect(lookup(reg, 'modules/a/out-dir/y')).toBeUndefined()
+    })
+    test(`can return the right task name even if the path is a (deep) sub-directory of the tasks's output location`, () => {
+      const reg = new UpdateableTaskOutputRegistry()
+
+      add(reg, 'luke:skywalker', 'some/out-dir')
+      add(reg, 'han:solo', 'a/different/out-dir')
+      expect(lookup(reg, 'some/out-dir/starwars')).toEqual('luke:skywalker')
+      expect(lookup(reg, 'some/out-dir/the-empire-strikes-back')).toEqual('luke:skywalker')
+      expect(lookup(reg, 'a/different/out-dir/starwars')).toEqual('han:solo')
+      expect(lookup(reg, 'a/different/out-dir/the-empire-strikes-back')).toEqual('han:solo')
+    })
   })
 })
