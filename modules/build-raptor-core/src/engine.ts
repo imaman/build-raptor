@@ -177,7 +177,7 @@ export class Engine {
       const plan = await new Planner(this.logger).computePlan(taskList, model)
       const startingPoints = plan.apply(this.selector.units, this.goals, this.selector.labels)
       if (startingPoints.length === 0) {
-        throw new BuildFailedError(`No task that match the given goals/labels were found`)
+        throw new BuildFailedError(`No task that matches the given goals/labels was found`)
       }
 
       const ret = await this.executePlan(plan, model)
