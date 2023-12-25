@@ -6,15 +6,7 @@ export interface TaskOutputRegistry {
   lookup(outputLoc: PathInRepo): TaskName | undefined
 }
 
-export interface UpdateableTaskOutputRegistry extends TaskOutputRegistry {
-  add(taskName: TaskName, outputLoc: PathInRepo): void
-}
-
-export function createTaskOutputRegistry() {
-  return new TaskOutputRegistryImpl()
-}
-
-class TaskOutputRegistryImpl implements UpdateableTaskOutputRegistry {
+export class UpdateableTaskOutputRegistry implements TaskOutputRegistry {
   private readonly map = new Map<string, TaskName>()
   constructor() {}
 
