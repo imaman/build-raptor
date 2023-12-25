@@ -7,7 +7,8 @@ import { TaskName } from 'task-name'
 import { ExecutionPlan } from './execution-plan'
 import { Model } from './model'
 import { Task } from './task'
-import { TaskOutputRegistry, validateTaskInfos } from './validate-task-infos'
+import { TaskOutputRegistry } from './task-output-registry'
+import { validateTaskInfos } from './validate-task-infos'
 
 export class Planner {
   private readonly taskGraph = new Graph<TaskName>(t => t)
