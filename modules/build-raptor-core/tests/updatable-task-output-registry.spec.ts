@@ -51,5 +51,15 @@ describe('updatable-task-output-registry', () => {
       expect(wideLookup(reg, 'a/u')).toEqual(['obi-wan:kenobi'])
       expect(wideLookup(reg, 'a')).toEqual(['han:solo', 'luke:skywalker', 'obi-wan:kenobi'])
     })
+    test(`just like lookup(), returns a single task if the path is (deep) sub-directory of a task's output location`, () => {
+      const reg = new UpdateableTaskOutputRegistry()
+
+      add(reg, 'luke:skywalker', 'a/w/x')
+      add(reg, 'han:solo', 'a/w/y')
+      add(reg, 'obi-wan:kenobi', 'a/u/y')
+      expect(wideLookup(reg, 'a/w')).toEqual(['han:solo', 'luke:skywalker'])
+      expect(wideLookup(reg, 'a/u')).toEqual(['obi-wan:kenobi'])
+      expect(wideLookup(reg, 'a')).toEqual(['han:solo', 'luke:skywalker', 'obi-wan:kenobi'])
+    })
   })
 })
