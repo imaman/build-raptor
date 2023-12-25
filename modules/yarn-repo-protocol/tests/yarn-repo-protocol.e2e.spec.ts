@@ -593,7 +593,7 @@ describe('yarn-repo-protocol.e2e', () => {
 
       const fork = await driver.repo(recipe).fork()
       const run = await fork.run('FAIL', { goals: ['modules/a/.out/mulligatawny'] })
-      expect(run.message).toEqual(`no task found for this output location: modules/a/.out/mulligatawny`)
+      expect(run.message).toEqual(`no task found for goal "modules/a/.out/mulligatawny"`)
     })
     test('the goal is interepreted as relative path from the user directory (cwd)', async () => {
       const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
