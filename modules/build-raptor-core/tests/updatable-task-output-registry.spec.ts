@@ -9,6 +9,7 @@ describe('updatable-task-output-registry', () => {
   }
 
   const lookup = (reg: TaskOutputRegistry, pathInRepo: string) => reg.lookup(PathInRepo(pathInRepo))
+  const wideLookup = (reg: TaskOutputRegistry, pathInRepo: string) => reg.wideLookup(PathInRepo(pathInRepo))
 
   describe('lookup', () => {
     test('returns the task name that generates the given output path', () => {
@@ -37,6 +38,17 @@ describe('updatable-task-output-registry', () => {
       expect(lookup(reg, 'some/out-dir/the-empire-strikes-back')).toEqual('luke:skywalker')
       expect(lookup(reg, 'a/different/out-dir/starwars')).toEqual('han:solo')
       expect(lookup(reg, 'a/different/out-dir/the-empire-strikes-back')).toEqual('han:solo')
+    })
+  })
+  describe('wideLookup', () => {
+    test('foo', () => {
+      const reg = new UpdateableTaskOutputRegistry()
+
+      add(reg, 'luke:skywalker', 'a/w/x')
+      add(reg, 'han:solo', 'a/w/y')
+      expect(wideLookup(reg, 'a/w/x')).toEqual(['luke:skywalker'])
+      expect(wideLookup(reg, 'a/w/y')).toEqual(['han:solo'])
+      expect(wideLookup(reg, 'a/w')).toEqual(['luke:skywalker', 'han:solo'])
     })
   })
 })

@@ -4,6 +4,7 @@ import { TaskName } from 'task-name'
 
 export interface TaskOutputRegistry {
   lookup(outputLoc: PathInRepo): TaskName | undefined
+  wideLookup(outputLoc: PathInRepo): TaskName[]
 }
 
 export class UpdateableTaskOutputRegistry implements TaskOutputRegistry {
@@ -26,5 +27,22 @@ export class UpdateableTaskOutputRegistry implements TaskOutputRegistry {
       }
       normed = path.dirname(normed)
     }
+  }
+
+  wideLookup(outputLoc: PathInRepo): TaskName[] {
+    const temp = this.lookup(outputLoc)
+    if (temp) {
+      return [temp]
+    }
+
+    const ret: TaskName[] = []
+    for (const [loc, tn] of this.map.entries()) {
+      const pir = PathInRepo(loc)
+      if (outputLoc.isPrefixOf(pir)) {
+        ret.push(tn)
+      }
+    }
+
+    return ret
   }
 }
