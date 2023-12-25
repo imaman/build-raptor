@@ -582,6 +582,47 @@ describe('yarn-repo-protocol.e2e', () => {
       expect(await fork2.file('modules/a/.out/marine-biologist').lines()).toBe(undefined)
       expect(await fork2.file('modules/b/.out/marine-biologist').lines()).toContain('angry that day, my friends')
     })
+    test('a goal can specify multiple tasks if it points to an ancestor direcory of the outputs of multiple tasks', async () => {
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': driver.packageJson('a'),
+        'modules/a/src/index.ts': '// something-a',
+        'modules/a/tests/index.spec.ts': `test('a', () => {expect(1).toEqual(1)});`,
+        'modules/b/package.json': driver.packageJson('b'),
+        'modules/b/src/index.ts': '// something-b',
+        'modules/b/tests/index.spec.ts': `test('b', () => {expect(1).toEqual(1)});`,
+      }
+
+      const fork = await driver.repo(recipe).fork()
+      const run1 = await fork.run('OK', { goals: ['modules/a/dist'] })
+      expect(run1.taskNames()).toEqual(['a:build'])
+
+      const run2 = await fork.run('OK', { goals: ['modules/a'] })
+      expect(run2.taskNames()).toEqual(['a:build', 'a:pack', 'a:test'])
+
+      const run3 = await fork.run('OK', { goals: ['modules'] })
+      expect(run3.taskNames()).toEqual(['a:build', 'a:pack', 'a:test', 'b:build', 'b:pack', 'b:test'])
+    })
+    test('filters the goal-prescribed task(s) with the given labels', async () => {
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': driver.packageJson('a'),
+        'modules/a/src/index.ts': '// something-a',
+        'modules/a/tests/index.spec.ts': `test('a', () => {expect(1).toEqual(1)});`,
+      }
+
+      const fork = await driver.repo(recipe).fork()
+      const run1 = await fork.run('OK', { goals: ['modules/a'], labels: ['build'] })
+      expect(run1.taskNames()).toEqual(['a:build'])
+
+      const run2 = await fork.run('OK', { goals: ['modules/a'], labels: ['build', 'pack'] })
+      expect(run2.taskNames()).toEqual(['a:build', 'a:pack'])
+
+      const run3 = await fork.run('FAIL', { goals: ['modules/a'], labels: ['foo'] })
+      expect(run3.message).toEqual('No task that matches the given goals/labels was found')
+    })
     test('fails with a build error when no task is found for a goal', async () => {
       const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
       const recipe = {

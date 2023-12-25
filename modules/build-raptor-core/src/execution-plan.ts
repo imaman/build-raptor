@@ -55,16 +55,18 @@ export class ExecutionPlan {
   private computeStartingPoints(units: string[], goals: PathInRepo[], labels: string[]) {
     const setOfUnitId = new Set<string>(units)
     this.logger.info(`setOfUnitId=${[...setOfUnitId].join('; ')}`)
+    const matchesUnit =
+      setOfUnitId.size === 0 && goals.length === 0 ? () => true : (t: Task) => setOfUnitId.has(t.unitId)
+    const matchesLabel = labels.length === 0 ? () => true : (t: Task) => labels.some(label => t.labels.includes(label))
+
     const ret = goals.flatMap(ol => {
       const tns = this.registry.wideLookup(ol)
       if (tns.length === 0) {
         throw new BuildFailedError(`no task found for goal "${ol}"`)
       }
-      return tns
+
+      return tns.filter(t => matchesLabel(this.getTask(t)))
     })
-    const matchesUnit =
-      setOfUnitId.size === 0 && goals.length === 0 ? () => true : (t: Task) => setOfUnitId.has(t.unitId)
-    const matchesLabel = labels.length === 0 ? () => true : (t: Task) => labels.some(label => t.labels.includes(label))
     ret.push(
       ...this.tasks()
         .filter(t => matchesUnit(t) && matchesLabel(t))
