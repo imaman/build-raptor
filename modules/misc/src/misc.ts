@@ -13,10 +13,10 @@ export function computeObjectHash(input: Record<string, Jsonable>): string {
 /**
  *
  * @param input buffer or string to hash
- * @returns a 224 bit hash, in "hex" encoding.
+ * @returns a hash, in "hex" encoding.
  */
-export function computeHash(input: Buffer | string): string {
-  const hasher = crypto.createHash('sha224')
+export function computeHash(input: Buffer | string, algo: 'sha224' | 'sha256' = 'sha224'): string {
+  const hasher = crypto.createHash(algo)
   return hasher.update(input).digest('hex')
 }
 
