@@ -42,7 +42,7 @@ export class S3StorageClient implements StorageClient {
   }
 
   async putContentAddressable(content: string | Buffer): Promise<string> {
-    const hash = computeHash(content)
+    const hash = computeHash(content, 'sha256')
     await this.putObjectImpl(this.hashToPath('cas', hash), hash, content)
     return hash
   }
