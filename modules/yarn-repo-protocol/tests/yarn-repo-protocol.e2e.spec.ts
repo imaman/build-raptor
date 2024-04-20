@@ -270,7 +270,7 @@ describe('yarn-repo-protocol.e2e', () => {
     expect(run3.executionTypeOf('a', 'build')).toEqual('CACHED')
   })
   describe('custom build tasks', () => {
-    test('is defined in the package.json file', async () => {
+    test('are defined in the package.json file', async () => {
       const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
       const recipe = {
         'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
@@ -398,6 +398,29 @@ describe('yarn-repo-protocol.e2e', () => {
 
       const run2 = await fork.run('OK', { taskKind: 'build' })
       expect(run2.taskNames('EXECUTED')).toEqual(['a:build:do-kramer'])
+    })
+    test('it can define outputs that are public', async () => {
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': {
+          ...driver.packageJson('a', undefined, { 'do-abc': `echo "pretzels" > .out/p` }),
+          buildTasks: {
+            'do-abc': {
+              labels: ['build'],
+              inputs: [],
+              outputs: ['.out/p'],
+            },
+          },
+        },
+        'modules/a/src/a.ts': '// something',
+        'modules/a/tests/a.spec.ts': `test('a', () => {expect(1).toEqual(1)});`,
+      }
+
+      const fork = await driver.repo(recipe).fork()
+
+      await fork.run('OK', { taskKind: 'build', subKind: 'do-abc' })
+      expect(await fork.file('modules/a/.out/p').lines()).toEqual(['pretzels'])
     })
   })
   describe('out dir', () => {

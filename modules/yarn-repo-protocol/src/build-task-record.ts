@@ -5,6 +5,11 @@ export const BuildTaskRecord = z.record(
   z.object({
     inputs: z.string().array().or(z.string()),
     outputs: z.string().array().or(z.string()),
+    /**
+     * additional outputs of the build tasks which will be stored separately, allowing other systems to read them
+     * directly.
+     */
+    publicOutputs: z.string().array().or(z.string()).default([]),
     labels: z.string().array().or(z.string()).optional(),
   }),
 )
