@@ -17,6 +17,8 @@ import { Fingerprint } from './fingerprint'
 import { TarStream } from './tar-stream'
 import { TaskStoreEvent } from './task-store-event'
 
+type OutputDescriptor = { pathInRepo: PathInRepo; publish: boolean }
+
 const pipeline = util.promisify(stream.pipeline)
 const unzip = util.promisify(zlib.unzip)
 
@@ -124,14 +126,13 @@ export class TaskStore {
     return ['UNKNOWN', blobIdOf(emptyBuffer())]
   }
 
-  private async bundle(outputs: PathInRepo[]) {
+  private async bundle(outputs: OutputDescriptor[]) {
     if (!outputs.length) {
       return emptyBuffer()
     }
 
     this.trace?.push(`bundling ${JSON.stringify(outputs)}`)
-
-    const m: Metadata = { outputs: outputs.map(o => o.val) }
+    const m: Metadata = { outputs: outputs.map(o => o.pathInRepo.val) }
     const metadataBuf = Buffer.from(JSON.stringify(Metadata.parse(m)), 'utf-8')
     if (metadataBuf.length > 100000) {
       // Just for sanity.
@@ -144,7 +145,8 @@ export class TaskStore {
 
     const pack = TarStream.pack()
     const scanner = new DirectoryScanner(this.repoRootDir.resolve())
-    for (const o of outputs) {
+    for (const curr of outputs) {
+      const o = curr.pathInRepo
       const exists = await fse.pathExists(this.repoRootDir.resolve(o))
       if (!exists) {
         // TODO(imaman): turn this into a user-build-error? move it out of this file?
@@ -223,6 +225,20 @@ export class TaskStore {
     outputs: PathInRepo[],
     verdict: 'OK' | 'FAIL',
   ): Promise<void> {
+    return await this.recordTask2(
+      taskName,
+      fingerprint,
+      outputs.map(o => ({ pathInRepo: o, publish: false })),
+      verdict,
+    )
+  }
+
+  async recordTask2(
+    taskName: TaskName,
+    fingerprint: Fingerprint,
+    outputs: OutputDescriptor[],
+    verdict: 'OK' | 'FAIL',
+  ): Promise<void> {
     const blobId = await this.recordBlob(taskName, outputs)
     this.putVerdict(taskName, fingerprint, verdict, blobId)
     this.publisher?.publish('taskStore', {
@@ -230,11 +246,11 @@ export class TaskStore {
       taskName,
       blobId,
       fingerprint,
-      files: [...outputs.map(o => o.val)],
+      files: [...outputs.map(o => o.pathInRepo.val)],
     })
   }
 
-  private async recordBlob(taskName: TaskName, outputs: PathInRepo[]) {
+  private async recordBlob(taskName: TaskName, outputs: OutputDescriptor[]) {
     const buf = await this.bundle(outputs)
     const blobId = await this.putBlob(buf, taskName)
     return blobId
