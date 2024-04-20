@@ -50,6 +50,18 @@ The specail value `'_ALWAYS_'` can be used (as the value of the `inputs` attribu
 }
 ```
 
+A task can define _public outputs_: these are files which will be stored as-is in the persistent storage using content hashing (AKA: content addressable storage). The hash of these files will be reflected in the step-by-step reporting. This will allow other system to access these outputs.
+
+```
+  "buildTasks": {
+    "do-kramer": {
+      "inputs": [ "dist/george.js", "dist/elaine.js" ],
+      "publicOutputs": [ ".out/kramer" ],
+      "labels": [ "seinfeld" ],
+    }
+  }
+```
+
 ### goals and labels
 
 ### Command line
