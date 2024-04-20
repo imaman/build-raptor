@@ -477,7 +477,7 @@ describe('yarn-repo-protocol.e2e', () => {
       expect(await fork.getPublicOutput('modules/a/.out/p')).toEqual('pretzels')
 
       await fork.run('OK', { taskKind: 'build', subKind: 'do-abc' })
-      expect(await fork.getPublicOutput('modules/a/.out/p')).toEqual('pretzels_')
+      expect(await fork.getPublicOutput('modules/a/.out/p')).toEqual('pretzels')
     })
   })
   describe('out dir', () => {

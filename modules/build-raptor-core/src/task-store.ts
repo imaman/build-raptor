@@ -220,7 +220,7 @@ export class TaskStore {
 
   private async unbundle(buf: Buffer) {
     if (buf.length === 0) {
-      return []
+      return { files: [], publicFiles: {} }
     }
     const metadataLen = buf.slice(0, LEN_BUF_SIZE).readInt32BE()
 
@@ -253,7 +253,7 @@ export class TaskStore {
       const buf = await this.client.getContentAddressable(hash)
       fs.writeFileSync(resolved, buf)
     })
-    return outputs
+    return { files: outputs, publicFiles: metadata.publicFiles }
   }
 
   async recordTask(
@@ -299,21 +299,24 @@ export class TaskStore {
 
   async restoreTask(taskName: TaskName, fingerprint: Fingerprint): Promise<'FAIL' | 'OK' | 'FLAKY' | 'UNKNOWN'> {
     const [verdict, blobId] = await this.getVerdict(taskName, fingerprint)
-    const files = await this.restoreBlob(blobId)
-    await this.publisher?.publish('taskStore', {
-      opcode: 'RESTORED',
-      taskName,
-      blobId,
-      fingerprint,
-      files: files.map(o => o.val),
-    })
+    const { files, publicFiles } = await this.restoreBlob(blobId)
+    await Promise.all([
+      this.publisher?.publish('taskStore', {
+        opcode: 'RESTORED',
+        taskName,
+        blobId,
+        fingerprint,
+        files: files.map(o => o.val),
+      }),
+      this.publisher?.publish('publicFiles', { taskName, publicFiles }),
+    ])
     return verdict
   }
 
   async restoreBlob(blobId: BlobId) {
     const buf = await this.getBlob(blobId)
-    const files = await this.unbundle(buf)
-    return files
+    const ret = await this.unbundle(buf)
+    return ret
   }
 
   async checkVerdict(taskName: TaskName, fingerprint: Fingerprint): Promise<'FAIL' | 'OK' | 'FLAKY' | 'UNKNOWN'> {
