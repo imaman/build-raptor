@@ -414,7 +414,6 @@ describe('yarn-repo-protocol.e2e', () => {
       }
 
       const fork = await driver.repo(recipe).fork()
-
       await fork.run('OK', { taskKind: 'build', subKind: 'do-abc' })
 
       const steps = await fork.getSteps('PUBLIC_FILES')
@@ -427,22 +426,14 @@ describe('yarn-repo-protocol.e2e', () => {
           },
         },
       ])
-      const content = await driver.storageClient.getContentAddressable(steps[0].publicFiles['modules/a/.out/p'])
-      expect(content.toString().trim()).toEqual('pretzels')
     })
-    test('the content of the public output file can be fetched via the storage client', async () => {
+    test('the content of the public output is persisted', async () => {
       const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
       const recipe = {
         'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
         'modules/a/package.json': {
           ...driver.packageJson('a', undefined, { 'do-abc': `echo "pretzels" > .out/p` }),
-          buildTasks: {
-            'do-abc': {
-              labels: ['build'],
-              inputs: [],
-              publicOutputs: ['.out/p'],
-            },
-          },
+          buildTasks: { 'do-abc': { labels: ['build'], inputs: [], publicOutputs: ['.out/p'] } },
         },
         'modules/a/src/a.ts': '// something',
         'modules/a/tests/a.spec.ts': `test('a', () => {expect(1).toEqual(1)});`,
