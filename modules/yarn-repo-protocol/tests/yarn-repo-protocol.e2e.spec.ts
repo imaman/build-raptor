@@ -423,7 +423,13 @@ describe('yarn-repo-protocol.e2e', () => {
       await fork.run('OK', { taskKind: 'build', subKind: 'do-abc' })
 
       const steps = await fork.getSteps('PUBLIC_FILES')
-      expect(steps).toHaveLength(8)
+      expect(steps).toEqual([{
+        step: 'PUBLIC_FILES',
+        publicFiles: {
+          'modules/a/.out/p': expect.stringMatching(/^[a-f0-9]{56}$/), 
+        },
+        taskName: 'a:build:do-abc'        
+      }])
     })
   })
   describe('out dir', () => {

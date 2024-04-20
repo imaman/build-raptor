@@ -84,7 +84,7 @@ export class Task {
     return this.executionRecord
   }
 
-  get outputLocations(): readonly OutputLocation[] {
+  get outputLocations(): OutputLocation[] {
     return this.taskInfo.outputLocations ?? []
   }
 

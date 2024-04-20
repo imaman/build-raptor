@@ -277,6 +277,7 @@ export class TaskStore {
     verdict: 'OK' | 'FAIL',
   ): Promise<void> {
     const { blobId, publicFiles } = await this.recordBlob(taskName, outputs)
+    this.logger.info(`task=${taskName}, outputs=${JSON.stringify(outputs)}, publicFiles=${JSON.stringify(publicFiles)}`)
     this.putVerdict(taskName, fingerprint, verdict, blobId)
     await Promise.all([
       this.publisher?.publish('taskStore', {

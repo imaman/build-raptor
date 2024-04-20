@@ -904,10 +904,15 @@ export class YarnRepoProtocol implements RepoProtocol {
         taskName: TaskName(u.id, TaskKind('build'), name),
         labels: toArray(def.labels ?? []),
         inputs,
-        outputLocations: toArray(def.outputs).map(at => ({
+        outputLocations: [...toArray(def.outputs ?? []).map(at => ({
           pathInRepo: dir.expand(at),
-          purge: 'ALWAYS',
-        })),
+          purge: 'ALWAYS' as const,
+          isPublic: false
+        })), ...toArray(def.publicOutputs ?? []).map(at => ({
+          pathInRepo: dir.expand(at),
+          purge: 'ALWAYS' as const,
+          isPublic: true
+        }))]
       })
     }
 
