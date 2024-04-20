@@ -322,18 +322,18 @@ class SingleTaskExecutor {
       throw new Error(`Task ${JSON.stringify(t.name)} crashed`)
     }
 
-    const outputs = t.outputLocations.map(at => ({isPublic: false, ...at}))
+    const outputs = t.outputLocations.map(at => ({ isPublic: false, ...at }))
     if (status === 'OK') {
       await this.validateOutputs()
       this.tracker.registerVerdict(t.name, status, outputFile)
-      await this.taskStore.recordTask2(t.name, this.fp, outputs, 'OK')
+      await this.taskStore.recordTask(t.name, this.fp, outputs, 'OK')
       return
     }
 
     if (status === 'FAIL') {
       this.tracker.registerVerdict(t.name, status, outputFile)
       // TODO(imaman): should not record outputs if task has failed.
-      await this.taskStore.recordTask2(t.name, this.fp, outputs, status)
+      await this.taskStore.recordTask(t.name, this.fp, outputs, status)
       return
     }
 

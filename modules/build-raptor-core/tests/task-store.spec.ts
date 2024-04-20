@@ -489,7 +489,7 @@ describe('task-store', () => {
           'qux/f2.txt': 'and seven years ago',
         }),
       )
-      await store.recordTask2(
+      await store.recordTask(
         taskNameFoo,
         Fingerprint('bar'),
         [
@@ -518,7 +518,7 @@ describe('task-store', () => {
         }),
       )
       await expect(
-        store.recordTask2(
+        store.recordTask(
           taskNameFoo,
           Fingerprint('bar'),
           [
