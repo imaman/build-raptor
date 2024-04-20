@@ -23,6 +23,26 @@ export function storageClientContract(create: () => Promise<StorageClient>) {
         expect(Buffer.compare(b, Buffer.from('Alice'))).toEqual(0)
       })
     })
+    describe('getContentAddressable()', () => {
+      test('retreves the content of an object using the "address" returned value of putContentAddressable()', async () => {
+        const sc = await create()
+        const h = await sc.putContentAddressable('abc')
+        expect((await sc.getContentAddressable(h)).toString()).toEqual('abc')
+      })
+      test('identical objects will have identical address', async () => {
+        const sc = await create()
+        const h1 = await sc.putContentAddressable('abc')
+        const h2 = await sc.putContentAddressable('abb')
+        const h3 = await sc.putContentAddressable('abc')
+        const h4 = await sc.putContentAddressable('abb')
+        expect(h1).toEqual(h3)
+        expect(h2).toEqual(h4)
+        expect(h1).not.toEqual(h2)
+
+        expect((await sc.getContentAddressable(h1)).toString()).toEqual('abc')
+        expect((await sc.getContentAddressable(h2)).toString()).toEqual('abb')
+      })
+    })
     test('objectExists() indicates whether an object with that key was put earlier', async () => {
       const sc = await create()
 

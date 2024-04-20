@@ -47,6 +47,11 @@ export class S3StorageClient implements StorageClient {
     return hash
   }
 
+  async getContentAddressable(hash: string): Promise<Buffer> {
+    const ret = this.getObjectImpl(this.hashToPath('cas', hash))
+    return ret
+  }
+
   async putObject(key: Key, content: string | Buffer): Promise<void> {
     await this.putObjectImpl(this.keyToPath(key), key, content)
   }
@@ -70,10 +75,24 @@ export class S3StorageClient implements StorageClient {
   getObject(key: Key, type: 'string'): Promise<string>
   getObject(key: Key, type: 'buffer'): Promise<Buffer>
   async getObject(key: Key, type?: 'string' | 'buffer'): Promise<string | Buffer> {
+    const p = this.keyToPath(key)
+    const buffer = await this.getObjectImpl(p)
+    if (type === 'buffer') {
+      return buffer
+    }
+
+    if (type === 'string' || type === undefined) {
+      return buffer.toString('utf-8')
+    }
+
+    shouldNeverHappen(type)
+  }
+
+  private async getObjectImpl(p: string) {
     const t0 = Date.now()
     let resp
     try {
-      resp = await this.s3.getObject({ Bucket: this.bucketName, Key: this.keyToPath(key) })
+      resp = await this.s3.getObject({ Bucket: this.bucketName, Key: p })
     } catch (e) {
       // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       const typed = e as { message?: string }
@@ -91,19 +110,12 @@ export class S3StorageClient implements StorageClient {
 
     const buffer = await streamTobuffer(body)
     this.logger.info(
-      `returning an object from key ${JSON.stringify(key)}, buffer length: ${buffer.length} bytes. time=${
+      `returning an object from key ${JSON.stringify(p)}, buffer length: ${buffer.length} bytes. time=${
         Date.now() - t0
       }ms`,
     )
-    if (type === 'buffer') {
-      return buffer
-    }
 
-    if (type === 'string' || type === undefined) {
-      return buffer.toString('utf-8')
-    }
-
-    shouldNeverHappen(type)
+    return buffer
   }
 
   async objectExists(key: Key): Promise<boolean> {

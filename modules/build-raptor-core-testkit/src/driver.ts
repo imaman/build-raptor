@@ -272,6 +272,21 @@ class Fork {
     return ret
   }
 
+  async getPublicOutput(pathInRepo: string) {
+    const steps = await this.getSteps('PUBLIC_FILES')
+    const filtered = steps.filter(s => Boolean(s.publicFiles[pathInRepo]))
+    if (filtered.length === 0) {
+      throw new Error(`public output not found "${pathInRepo}"`)
+    }
+    if (filtered.length > 1) {
+      throw new Error(`more than one task generated "${pathInRepo}"`)
+    }
+
+    const hash = filtered[0].publicFiles[pathInRepo]
+    const buf = await this.storageClient.getContentAddressable(hash)
+    return buf.toString('utf-8').trim()
+  }
+
   private static filterSteps<N extends StepName>(input: Step[], stepName: N) {
     // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     return input.flatMap(at => (at.step === stepName ? [at as StepByName<N>] : []))

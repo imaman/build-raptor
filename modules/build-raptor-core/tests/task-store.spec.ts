@@ -85,7 +85,7 @@ describe('task-store', () => {
     })
   })
   describe('recording/restoration of output locations', () => {
-    test('it can store an entire directory and the restore it at a given destination', async () => {
+    test('it can store an entire directory and then restore it at a given destination', async () => {
       const sc = new InMemoryStorageClient()
       const store = newTaskStore(
         sc,
@@ -467,6 +467,58 @@ describe('task-store', () => {
 
       expect(after.x1).toEqual(before.x1)
       expect(after.x2).toEqual(before.x2)
+    })
+  })
+  describe('recording/restoration of publishable output locations', () => {
+    test('can correctly restore a publishable location', async () => {
+      const sc = new InMemoryStorageClient()
+      const store = newTaskStore(
+        sc,
+        logger,
+        await folderify({
+          'qux/f1.txt': 'four scores',
+          'qux/f2.txt': 'and seven years ago',
+        }),
+      )
+      await store.recordTask2(
+        taskNameFoo,
+        Fingerprint('bar'),
+        [
+          { pathInRepo: PathInRepo('qux/f1.txt'), isPublic: true },
+          { pathInRepo: PathInRepo('qux/f2.txt'), isPublic: false },
+        ],
+        'OK',
+      )
+
+      const destination = newTaskStore(sc, logger)
+      await destination.restoreTask(taskNameFoo, Fingerprint('bar'))
+
+      expect(await slurp(destination.repoRootDir)).toEqual({
+        'qux/f1.txt': 'four scores',
+        'qux/f2.txt': 'and seven years ago',
+      })
+    })
+    test('errors if tries to publish a non file', async () => {
+      const sc = new InMemoryStorageClient()
+      const store = newTaskStore(
+        sc,
+        logger,
+        await folderify({
+          'x/y/f1.txt': 'abc',
+          'x/z/f2.txt': 'def',
+        }),
+      )
+      await expect(
+        store.recordTask2(
+          taskNameFoo,
+          Fingerprint('bar'),
+          [
+            { pathInRepo: PathInRepo('x/y/f1.txt'), isPublic: true },
+            { pathInRepo: PathInRepo('x/z'), isPublic: true },
+          ],
+          'OK',
+        ),
+      ).rejects.toThrowError('cannot publish an output location that is not a file: "x/z"')
     })
   })
 })

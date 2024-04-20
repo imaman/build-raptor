@@ -50,6 +50,11 @@ export const Step = z.discriminatedUnion('step', [
     casAddress: z.string(),
     file: z.string(),
   }),
+  z.object({
+    step: z.literal('PUBLIC_FILES'),
+    taskName: z.string(),
+    publicFiles: z.record(z.string(), z.string()),
+  }),
 ])
 
 export type Step = z.infer<typeof Step>

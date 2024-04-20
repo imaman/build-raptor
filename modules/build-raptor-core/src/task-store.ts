@@ -1,4 +1,5 @@
 import { Brand } from 'brand'
+import { BuildFailedError } from 'build-failed-error'
 import { PathInRepo, RepoRoot } from 'core-types'
 import * as fs from 'fs'
 import { createWriteStream } from 'fs'
@@ -17,10 +18,22 @@ import { Fingerprint } from './fingerprint'
 import { TarStream } from './tar-stream'
 import { TaskStoreEvent } from './task-store-event'
 
+type OutputDescriptor = { pathInRepo: PathInRepo; isPublic: boolean }
+
 const pipeline = util.promisify(stream.pipeline)
 const unzip = util.promisify(zlib.unzip)
 
-const Metadata = z.object({ outputs: z.string().array() })
+const Metadata = z.object({
+  /**
+   * An array of output locations (paths in repo)
+   */
+  outputs: z.string().array(),
+  /**
+   * A record that maps output locations (path in repo) to content hashes. Include output location that were defined in
+   * the TaskInfo with isPublic: true. This allows downloading the content from a content-addressable storage.
+   */
+  publicFiles: z.record(z.string(), z.string()).default({}),
+})
 type Metadata = z.infer<typeof Metadata>
 
 export type BlobId = Brand<string, 'BlobId'>
@@ -124,14 +137,27 @@ export class TaskStore {
     return ['UNKNOWN', blobIdOf(emptyBuffer())]
   }
 
-  private async bundle(outputs: PathInRepo[]) {
+  private async bundle(outputs: OutputDescriptor[]) {
     if (!outputs.length) {
-      return emptyBuffer()
+      return { buffer: emptyBuffer(), publicFiles: {} }
     }
 
     this.trace?.push(`bundling ${JSON.stringify(outputs)}`)
 
-    const m: Metadata = { outputs: outputs.map(o => o.val) }
+    const pairs = await promises(outputs.filter(o => o.isPublic))
+      .map(async o => {
+        const resolved = this.repoRootDir.resolve(o.pathInRepo)
+        const stat = fs.statSync(resolved)
+        if (!stat.isFile()) {
+          throw new BuildFailedError(`cannot publish an output location that is not a file: "${o.pathInRepo.val}"`)
+        }
+        const content = fs.readFileSync(resolved)
+        const h = await this.client.putContentAddressable(content)
+        return [o.pathInRepo.val, h] as const
+      })
+      .reify(STORAGE_CONCURRENCY)
+
+    const m: Metadata = { outputs: outputs.map(o => o.pathInRepo.val), publicFiles: Object.fromEntries(pairs) }
     const metadataBuf = Buffer.from(JSON.stringify(Metadata.parse(m)), 'utf-8')
     if (metadataBuf.length > 100000) {
       // Just for sanity.
@@ -144,7 +170,8 @@ export class TaskStore {
 
     const pack = TarStream.pack()
     const scanner = new DirectoryScanner(this.repoRootDir.resolve())
-    for (const o of outputs) {
+    for (const curr of outputs.filter(o => !o.isPublic)) {
+      const o = curr.pathInRepo
       const exists = await fse.pathExists(this.repoRootDir.resolve(o))
       if (!exists) {
         // TODO(imaman): turn this into a user-build-error? move it out of this file?
@@ -188,12 +215,12 @@ export class TaskStore {
 
     const ret = Buffer.concat([lenBuf, metadataBuf, gzipped])
     this.trace?.push(`bundling digest of ret is ${computeObjectHash({ data: ret.toString('hex') })}`)
-    return ret
+    return { buffer: ret, publicFiles: m.publicFiles }
   }
 
   private async unbundle(buf: Buffer) {
     if (buf.length === 0) {
-      return []
+      return { files: [], publicFiles: {} }
     }
     const metadataLen = buf.slice(0, LEN_BUF_SIZE).readInt32BE()
 
@@ -214,49 +241,85 @@ export class TaskStore {
     } catch (e) {
       throw new Error(`unbundling a buffer (${buf.length} bytes) has failed: ${e}`)
     }
-    return outputs
+
+    await promises(Object.keys(metadata.publicFiles)).forEach(STORAGE_CONCURRENCY, async pir => {
+      const pathInRepo = PathInRepo(pir)
+      const resolved = this.repoRootDir.resolve(pathInRepo)
+
+      const hash = metadata.publicFiles[pathInRepo.val]
+      if (!hash) {
+        throw new Error(`hash not found for "${pathInRepo}"`)
+      }
+      const buf = await this.client.getContentAddressable(hash)
+      fs.writeFileSync(resolved, buf)
+    })
+    return { files: outputs, publicFiles: metadata.publicFiles }
   }
 
+  /**
+   * @deprecated use recordTask2() instead
+   */
   async recordTask(
     taskName: TaskName,
     fingerprint: Fingerprint,
     outputs: PathInRepo[],
     verdict: 'OK' | 'FAIL',
   ): Promise<void> {
-    const blobId = await this.recordBlob(taskName, outputs)
-    this.putVerdict(taskName, fingerprint, verdict, blobId)
-    this.publisher?.publish('taskStore', {
-      opcode: 'RECORDED',
+    await this.recordTask2(
       taskName,
-      blobId,
       fingerprint,
-      files: [...outputs.map(o => o.val)],
-    })
+      outputs.map(o => ({ pathInRepo: o, isPublic: false })),
+      verdict,
+    )
   }
 
-  private async recordBlob(taskName: TaskName, outputs: PathInRepo[]) {
-    const buf = await this.bundle(outputs)
-    const blobId = await this.putBlob(buf, taskName)
-    return blobId
+  async recordTask2(
+    taskName: TaskName,
+    fingerprint: Fingerprint,
+    outputs: OutputDescriptor[],
+    verdict: 'OK' | 'FAIL',
+  ): Promise<void> {
+    const { blobId, publicFiles } = await this.recordBlob(taskName, outputs)
+    this.logger.info(`task=${taskName}, outputs=${JSON.stringify(outputs)}, publicFiles=${JSON.stringify(publicFiles)}`)
+    this.putVerdict(taskName, fingerprint, verdict, blobId)
+    await Promise.all([
+      this.publisher?.publish('taskStore', {
+        opcode: 'RECORDED',
+        taskName,
+        blobId,
+        fingerprint,
+        files: [...outputs.map(o => o.pathInRepo.val)],
+      }),
+      this.publisher?.publish('publicFiles', { taskName, publicFiles }),
+    ])
+  }
+
+  private async recordBlob(taskName: TaskName, outputs: OutputDescriptor[]) {
+    const { buffer, publicFiles } = await this.bundle(outputs)
+    const blobId = await this.putBlob(buffer, taskName)
+    return { blobId, publicFiles }
   }
 
   async restoreTask(taskName: TaskName, fingerprint: Fingerprint): Promise<'FAIL' | 'OK' | 'FLAKY' | 'UNKNOWN'> {
     const [verdict, blobId] = await this.getVerdict(taskName, fingerprint)
-    const files = await this.restoreBlob(blobId)
-    this.publisher?.publish('taskStore', {
-      opcode: 'RESTORED',
-      taskName,
-      blobId,
-      fingerprint,
-      files: files.map(o => o.val),
-    })
+    const { files, publicFiles } = await this.restoreBlob(blobId)
+    await Promise.all([
+      this.publisher?.publish('taskStore', {
+        opcode: 'RESTORED',
+        taskName,
+        blobId,
+        fingerprint,
+        files: files.map(o => o.val),
+      }),
+      this.publisher?.publish('publicFiles', { taskName, publicFiles }),
+    ])
     return verdict
   }
 
   async restoreBlob(blobId: BlobId) {
     const buf = await this.getBlob(blobId)
-    const files = await this.unbundle(buf)
-    return files
+    const ret = await this.unbundle(buf)
+    return ret
   }
 
   async checkVerdict(taskName: TaskName, fingerprint: Fingerprint): Promise<'FAIL' | 'OK' | 'FLAKY' | 'UNKNOWN'> {
@@ -274,3 +337,4 @@ function blobIdOf(buf: Buffer) {
 }
 
 const LEN_BUF_SIZE = 8
+const STORAGE_CONCURRENCY = 100

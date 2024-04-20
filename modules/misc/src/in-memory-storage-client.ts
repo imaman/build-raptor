@@ -28,9 +28,14 @@ export class InMemoryStorageClient implements StorageClient {
   }
 
   async putContentAddressable(content: string | Buffer): Promise<string> {
-    const ret = `cas/${computeHash(content)}`
-    this.putObjectImpl(ret, content)
+    const ret = computeHash(content)
+    const p = `cas/${ret}`
+    this.putObjectImpl(p, content)
     return ret
+  }
+
+  async getContentAddressable(hash: string): Promise<Buffer> {
+    return await this.getObjectImpl(`cas/${hash}`)
   }
 
   get byteCount() {
@@ -41,13 +46,16 @@ export class InMemoryStorageClient implements StorageClient {
   getObject(key: Key, type: 'string'): Promise<string>
   getObject(key: Key, type: 'buffer'): Promise<Buffer>
   async getObject(key: Key, type: 'string' | 'buffer' = 'string'): Promise<string | Buffer> {
-    const encoded = this.store.get(this.keyToString(key))
-    if (encoded === undefined) {
-      throw new Error(`No object with key ${JSON.stringify(key)}`)
-    }
-
-    const buf = Buffer.from(encoded, 'base64')
+    const buf = await this.getObjectImpl(this.keyToString(key))
     return type === 'string' ? buf.toString('utf-8') : type === 'buffer' ? buf : shouldNeverHappen(type)
+  }
+
+  private async getObjectImpl(p: string): Promise<Buffer> {
+    const encoded = this.store.get(p)
+    if (encoded === undefined) {
+      throw new Error(`No object with key ${JSON.stringify(p)}`)
+    }
+    return Buffer.from(encoded, 'base64')
   }
 
   async objectExists(key: Key): Promise<boolean> {

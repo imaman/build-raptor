@@ -38,7 +38,7 @@ export interface EngineOptions {
   testCaching?: boolean
   commitHash: string | undefined
   stepByStepProcessorModuleName?: string
-  config: Required<BuildRaptorConfig>
+  config: BuildRaptorConfig
   toRun?: {
     program: string
     args: string[]
@@ -149,6 +149,16 @@ export class Engine {
         fingerprint: task.getFingerprint(),
         casAddress: e.casAddress,
         file: e.file,
+      })
+    })
+    this.eventPublisher.on('publicFiles', e => {
+      if (Object.keys(e.publicFiles).length === 0) {
+        return
+      }
+      this.steps.push({
+        step: 'PUBLIC_FILES',
+        taskName: e.taskName,
+        publicFiles: e.publicFiles,
       })
     })
 
