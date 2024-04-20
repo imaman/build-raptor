@@ -142,7 +142,17 @@ export class TaskStore {
     }
 
     this.trace?.push(`bundling ${JSON.stringify(outputs)}`)
-    const m: Metadata = { outputs: outputs.map(o => o.pathInRepo.val), publishedAs: {} }
+
+    const pairs = await promises(outputs.filter(o => o.publish))
+      .map(async o => {
+        const resolved = this.repoRootDir.resolve(o.pathInRepo)
+        const content = fs.readFileSync(resolved)
+        const h = await this.client.putContentAddressable(content)
+        return [o.pathInRepo.val, h] as const
+      })
+      .reify(20)
+
+    const m: Metadata = { outputs: outputs.map(o => o.pathInRepo.val), publishedAs: Object.fromEntries(pairs) }
     const metadataBuf = Buffer.from(JSON.stringify(Metadata.parse(m)), 'utf-8')
     if (metadataBuf.length > 100000) {
       // Just for sanity.
