@@ -40,9 +40,15 @@ export class FilesystemStorageClient implements StorageClient {
   }
 
   async putContentAddressable(content: string | Buffer): Promise<string> {
-    const ret = this.hashToPath('cas', computeHash(content))
-    await fse.writeFile(ret, content)
+    const ret = computeHash(content)
+    const p = this.hashToPath('cas', ret)
+    await fse.writeFile(p, content)
     return ret
+  }
+
+  async getContentAddressable(hash: string): Promise<Buffer> {
+    const p = this.hashToPath('cas', hash)
+    return await fse.readFile(p)
   }
 
   getObject(key: Key): Promise<string>
