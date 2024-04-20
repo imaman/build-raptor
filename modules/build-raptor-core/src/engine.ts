@@ -151,6 +151,16 @@ export class Engine {
         file: e.file,
       })
     })
+    this.eventPublisher.on('publicFiles', e => {
+      if (Object.keys(e.publicFiles).length === 0) {
+        return
+      }
+      this.steps.push({
+        step: 'PUBLIC_FILES',
+        taskName: e.taskName,
+        publicFiles: e.publicFiles,
+      })
+    })
 
     this.fingerprintLedger = this.options.fingerprintLedger
       ? new PersistedFingerprintLedger(logger, ledgerFile)

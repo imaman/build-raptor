@@ -52,6 +52,8 @@ export const Step = z.discriminatedUnion('step', [
   }),
   z.object({
     step: z.literal('PUBLIC_FILES'),
+    taskName: z.string(),
+    publicFiles: z.record(z.string(), z.string()),
   }),
 ])
 
