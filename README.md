@@ -35,6 +35,25 @@ Here is an example for such a definition (in a `package.json` file):
 
 This means that the `do-kremer` run script will be invoked after `dist/george.js` and `dist/elaine.js` have been built and their content is new (has not been seen in earlier runs).
 
+A task can define _public outputs_: these are files which will be stored as-is in the persistent storage using content hashing (AKA: content addressable storage). The hash of these files will be reflected in the step-by-step reporting. This will allow other system to access these outputs.
+
+```
+{
+  "name": "my-module"
+  "author": "alice",
+  "license": "MIT",
+  "scripts": {
+    "do-kramer": "echo 'pretzels' > .out/kramer",
+  },
+  "buildTasks": {
+    "do-kramer": {
+      "inputs": [ "dist/george.js", "dist/elaine.js" ],
+      "publicOutputs": [ ".out/kramer" ],
+      "labels": [ "seinfeld" ],
+    }
+  }
+```
+
 The specail value `'_ALWAYS_'` can be used (as the value of the `inputs` attribute) to define a task which always runs (i.e., has no inputs to wait for, always runs at the beginning of the build):
 
 ```
@@ -48,18 +67,6 @@ The specail value `'_ALWAYS_'` can be used (as the value of the `inputs` attribu
     }
   }
 }
-```
-
-A task can define _public outputs_: these are files which will be stored as-is in the persistent storage using content hashing (AKA: content addressable storage). The hash of these files will be reflected in the step-by-step reporting. This will allow other system to access these outputs.
-
-```
-  "buildTasks": {
-    "do-kramer": {
-      "inputs": [ "dist/george.js", "dist/elaine.js" ],
-      "publicOutputs": [ ".out/kramer" ],
-      "labels": [ "seinfeld" ],
-    }
-  }
 ```
 
 ### goals and labels
