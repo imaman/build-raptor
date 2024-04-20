@@ -470,7 +470,7 @@ describe('task-store', () => {
     })
   })
   describe('recording/restoration of publishable output locations', () => {
-    test('foo', async () => {
+    test('can correctly restore a publishable location', async () => {
       const sc = new InMemoryStorageClient()
       const store = newTaskStore(
         sc,
@@ -497,6 +497,28 @@ describe('task-store', () => {
         'qux/f1.txt': 'four scores',
         'qux/f2.txt': 'and seven years ago',
       })
+    })
+    test('errors if tries to publish a non file', async () => {
+      const sc = new InMemoryStorageClient()
+      const store = newTaskStore(
+        sc,
+        logger,
+        await folderify({
+          'x/y/f1.txt': 'abc',
+          'x/z/f2.txt': 'def',
+        }),
+      )
+      await expect(
+        store.recordTask2(
+          taskNameFoo,
+          Fingerprint('bar'),
+          [
+            { pathInRepo: PathInRepo('x/y/f1.txt'), publish: true },
+            { pathInRepo: PathInRepo('x/z'), publish: true },
+          ],
+          'OK',
+        ),
+      ).rejects.toThrowError('cannot publish an output location that is not a file: "x/z"')
     })
   })
 })

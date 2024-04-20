@@ -148,8 +148,8 @@ export class TaskStore {
       .map(async o => {
         const resolved = this.repoRootDir.resolve(o.pathInRepo)
         const stat = fs.statSync(resolved)
-        if (!stat.isFile) {
-          throw new BuildFailedError(`cannot publish and output location "${o.pathInRepo.val}" that is not a file`)
+        if (!stat.isFile()) {
+          throw new BuildFailedError(`cannot publish an output location that is not a file: "${o.pathInRepo.val}"`)
         }
         const content = fs.readFileSync(resolved)
         const h = await this.client.putContentAddressable(content)
