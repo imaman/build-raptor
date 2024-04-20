@@ -399,19 +399,16 @@ describe('yarn-repo-protocol.e2e', () => {
       const run2 = await fork.run('OK', { taskKind: 'build' })
       expect(run2.taskNames('EXECUTED')).toEqual(['a:build:do-kramer'])
     })
-    test.only('it can define outputs that are public', async () => {
+  })
+  describe('public outputs', () => {
+    test('when a task defines a public output it is reflected in the reported steps', async () => {
       const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
       const recipe = {
         'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
         'modules/a/package.json': {
           ...driver.packageJson('a', undefined, { 'do-abc': `echo "pretzels" > .out/p` }),
           buildTasks: {
-            'do-abc': {
-              labels: ['build'],
-              inputs: [],
-              outputs: [],
-              publicOutputs: ['.out/p'],
-            },
+            'do-abc': { labels: ['build'], inputs: [], publicOutputs: ['.out/p'] },
           },
         },
         'modules/a/src/a.ts': '// something',
@@ -423,13 +420,39 @@ describe('yarn-repo-protocol.e2e', () => {
       await fork.run('OK', { taskKind: 'build', subKind: 'do-abc' })
 
       const steps = await fork.getSteps('PUBLIC_FILES')
-      expect(steps).toEqual([{
-        step: 'PUBLIC_FILES',
-        publicFiles: {
-          'modules/a/.out/p': expect.stringMatching(/^[a-f0-9]{56}$/), 
+      expect(steps).toEqual([
+        {
+          step: 'PUBLIC_FILES',
+          taskName: 'a:build:do-abc',
+          publicFiles: {
+            'modules/a/.out/p': expect.stringMatching(/^[a-f0-9]{56}$/),
+          },
         },
-        taskName: 'a:build:do-abc'        
-      }])
+      ])
+      const content = await driver.storageClient.getContentAddressable(steps[0].publicFiles['modules/a/.out/p'])
+      expect(content.toString().trim()).toEqual('pretzels')
+    })
+    test('the content of the public output file can be fetched via the storage client', async () => {
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': {
+          ...driver.packageJson('a', undefined, { 'do-abc': `echo "pretzels" > .out/p` }),
+          buildTasks: {
+            'do-abc': {
+              labels: ['build'],
+              inputs: [],
+              publicOutputs: ['.out/p'],
+            },
+          },
+        },
+        'modules/a/src/a.ts': '// something',
+        'modules/a/tests/a.spec.ts': `test('a', () => {expect(1).toEqual(1)});`,
+      }
+
+      const fork = await driver.repo(recipe).fork()
+      await fork.run('OK', { taskKind: 'build', subKind: 'do-abc' })
+      expect(await fork.getPublicOutput('modules/a/.out/p')).toEqual('pretzels')
     })
   })
   describe('out dir', () => {
