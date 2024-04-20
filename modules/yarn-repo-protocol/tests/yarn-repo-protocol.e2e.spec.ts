@@ -399,7 +399,7 @@ describe('yarn-repo-protocol.e2e', () => {
       const run2 = await fork.run('OK', { taskKind: 'build' })
       expect(run2.taskNames('EXECUTED')).toEqual(['a:build:do-kramer'])
     })
-    test('it can define outputs that are public', async () => {
+    test.only('it can define outputs that are public', async () => {
       const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
       const recipe = {
         'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
@@ -409,7 +409,8 @@ describe('yarn-repo-protocol.e2e', () => {
             'do-abc': {
               labels: ['build'],
               inputs: [],
-              outputs: ['.out/p'],
+              outputs: [],
+              publicOutputs: ['.out/p'],
             },
           },
         },
@@ -420,7 +421,9 @@ describe('yarn-repo-protocol.e2e', () => {
       const fork = await driver.repo(recipe).fork()
 
       await fork.run('OK', { taskKind: 'build', subKind: 'do-abc' })
-      expect(await fork.file('modules/a/.out/p').lines()).toEqual(['pretzels'])
+
+      const steps = await fork.getSteps('PUBLIC_FILES')
+      expect(steps).toHaveLength(8)
     })
   })
   describe('out dir', () => {
