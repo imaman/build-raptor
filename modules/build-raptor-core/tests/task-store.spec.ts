@@ -24,7 +24,7 @@ describe('task-store', () => {
     fingerprint: Fingerprint,
     locations: PathInRepo[],
     verdict: 'OK' | 'FAIL',
-  ) => store.recordTask(taskName, fingerprint, locations, verdict)
+  ) => store.recordTaskForTesting(taskName, fingerprint, locations, verdict)
 
   const logger = createNopLogger()
   async function recordVerdict(

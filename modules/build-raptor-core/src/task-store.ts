@@ -259,7 +259,7 @@ export class TaskStore {
   /**
    * @deprecated use recordTask2() instead
    */
-  async recordTask(
+  async recordTaskForTesting(
     taskName: TaskName,
     fingerprint: Fingerprint,
     outputs: PathInRepo[],
