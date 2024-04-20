@@ -22,7 +22,17 @@ type OutputDescriptor = { pathInRepo: PathInRepo; publish: boolean }
 const pipeline = util.promisify(stream.pipeline)
 const unzip = util.promisify(zlib.unzip)
 
-const Metadata = z.object({ outputs: z.string().array() })
+const Metadata = z.object({
+  /**
+   * An array of output locations (paths in repo)
+   */
+  outputs: z.string().array(),
+  /**
+   * A record that maps an output location (path in repo) to its content hash. This allows downloading the content from
+   * a content-addressable storage.
+   */
+  publishedAs: z.record(z.string(), z.string()).default({}),
+})
 type Metadata = z.infer<typeof Metadata>
 
 export type BlobId = Brand<string, 'BlobId'>
@@ -132,7 +142,7 @@ export class TaskStore {
     }
 
     this.trace?.push(`bundling ${JSON.stringify(outputs)}`)
-    const m: Metadata = { outputs: outputs.map(o => o.pathInRepo.val) }
+    const m: Metadata = { outputs: outputs.map(o => o.pathInRepo.val), publishedAs: {} }
     const metadataBuf = Buffer.from(JSON.stringify(Metadata.parse(m)), 'utf-8')
     if (metadataBuf.length > 100000) {
       // Just for sanity.
