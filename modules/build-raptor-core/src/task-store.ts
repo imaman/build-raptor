@@ -256,6 +256,9 @@ export class TaskStore {
     return { files: outputs, publicFiles: metadata.publicFiles }
   }
 
+  /**
+   * @deprecated use recordTask2() instead
+   */
   async recordTask(
     taskName: TaskName,
     fingerprint: Fingerprint,
