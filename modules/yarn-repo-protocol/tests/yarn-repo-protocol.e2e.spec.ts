@@ -401,7 +401,7 @@ describe('yarn-repo-protocol.e2e', () => {
     })
   })
   describe('public outputs', () => {
-    test('when a task defines a public output it is reflected in the reported steps', async () => {
+    test('are reflected in the reported steps', async () => {
       const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
       const recipe = {
         'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
@@ -416,8 +416,41 @@ describe('yarn-repo-protocol.e2e', () => {
       const fork = await driver.repo(recipe).fork()
       await fork.run('OK', { taskKind: 'build', subKind: 'do-abc' })
 
-      const steps = await fork.getSteps('PUBLIC_FILES')
-      expect(steps).toEqual([
+      expect(await fork.getSteps('PUBLIC_FILES')).toEqual([
+        {
+          step: 'PUBLIC_FILES',
+          taskName: 'a:build:do-abc',
+          publicFiles: {
+            'modules/a/.out/p': expect.stringMatching(/^[a-f0-9]{56}$/),
+          },
+        },
+      ])
+    })
+    test('are reflected in the reported steps even if the task did not run due to caching', async () => {
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': {
+          ...driver.packageJson('a', undefined, { 'do-abc': `echo "pretzels" > .out/p` }),
+          buildTasks: { 'do-abc': { labels: ['build'], inputs: [], publicOutputs: ['.out/p'] } },
+        },
+        'modules/a/src/a.ts': '// something',
+        'modules/a/tests/a.spec.ts': `test('a', () => {expect(1).toEqual(1)});`,
+      }
+
+      const fork = await driver.repo(recipe).fork()
+      await fork.run('OK', { taskKind: 'build', subKind: 'do-abc' })
+      expect(await fork.getSteps('PUBLIC_FILES')).toEqual([
+        {
+          step: 'PUBLIC_FILES',
+          taskName: 'a:build:do-abc',
+          publicFiles: {
+            'modules/a/.out/p': expect.stringMatching(/^[a-f0-9]{56}$/),
+          },
+        },
+      ])
+      await fork.run('OK', { taskKind: 'build', subKind: 'do-abc' })
+      expect(await fork.getSteps('PUBLIC_FILES')).toEqual([
         {
           step: 'PUBLIC_FILES',
           taskName: 'a:build:do-abc',
@@ -442,6 +475,9 @@ describe('yarn-repo-protocol.e2e', () => {
       const fork = await driver.repo(recipe).fork()
       await fork.run('OK', { taskKind: 'build', subKind: 'do-abc' })
       expect(await fork.getPublicOutput('modules/a/.out/p')).toEqual('pretzels')
+
+      await fork.run('OK', { taskKind: 'build', subKind: 'do-abc' })
+      expect(await fork.getPublicOutput('modules/a/.out/p')).toEqual('pretzels_')
     })
   })
   describe('out dir', () => {
