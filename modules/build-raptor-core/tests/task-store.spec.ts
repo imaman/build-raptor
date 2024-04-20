@@ -484,8 +484,8 @@ describe('task-store', () => {
         taskNameFoo,
         Fingerprint('bar'),
         [
-          { pathInRepo: PathInRepo('qux/f1.txt'), publish: true },
-          { pathInRepo: PathInRepo('qux/f2.txt'), publish: false },
+          { pathInRepo: PathInRepo('qux/f1.txt'), isPublic: true },
+          { pathInRepo: PathInRepo('qux/f2.txt'), isPublic: false },
         ],
         'OK',
       )
@@ -513,8 +513,8 @@ describe('task-store', () => {
           taskNameFoo,
           Fingerprint('bar'),
           [
-            { pathInRepo: PathInRepo('x/y/f1.txt'), publish: true },
-            { pathInRepo: PathInRepo('x/z'), publish: true },
+            { pathInRepo: PathInRepo('x/y/f1.txt'), isPublic: true },
+            { pathInRepo: PathInRepo('x/z'), isPublic: true },
           ],
           'OK',
         ),

@@ -18,7 +18,7 @@ import { Fingerprint } from './fingerprint'
 import { TarStream } from './tar-stream'
 import { TaskStoreEvent } from './task-store-event'
 
-type OutputDescriptor = { pathInRepo: PathInRepo; publish: boolean }
+type OutputDescriptor = { pathInRepo: PathInRepo; isPublic: boolean }
 
 const pipeline = util.promisify(stream.pipeline)
 const unzip = util.promisify(zlib.unzip)
@@ -144,7 +144,7 @@ export class TaskStore {
 
     this.trace?.push(`bundling ${JSON.stringify(outputs)}`)
 
-    const pairs = await promises(outputs.filter(o => o.publish))
+    const pairs = await promises(outputs.filter(o => o.isPublic))
       .map(async o => {
         const resolved = this.repoRootDir.resolve(o.pathInRepo)
         const stat = fs.statSync(resolved)
@@ -170,7 +170,7 @@ export class TaskStore {
 
     const pack = TarStream.pack()
     const scanner = new DirectoryScanner(this.repoRootDir.resolve())
-    for (const curr of outputs.filter(o => !o.publish)) {
+    for (const curr of outputs.filter(o => !o.isPublic)) {
       const o = curr.pathInRepo
       const exists = await fse.pathExists(this.repoRootDir.resolve(o))
       if (!exists) {
@@ -265,7 +265,7 @@ export class TaskStore {
     await this.recordTask2(
       taskName,
       fingerprint,
-      outputs.map(o => ({ pathInRepo: o, publish: false })),
+      outputs.map(o => ({ pathInRepo: o, isPublic: false })),
       verdict,
     )
   }
