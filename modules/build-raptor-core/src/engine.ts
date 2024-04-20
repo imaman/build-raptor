@@ -38,7 +38,7 @@ export interface EngineOptions {
   testCaching?: boolean
   commitHash: string | undefined
   stepByStepProcessorModuleName?: string
-  config: Required<BuildRaptorConfig>
+  config: BuildRaptorConfig
   toRun?: {
     program: string
     args: string[]

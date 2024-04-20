@@ -11,7 +11,7 @@ import * as util from 'util'
 import * as uuid from 'uuid'
 
 import { Breakdown } from './breakdown'
-import { BuildRaptorConfig, defaultBuildRaptorConfig } from './build-raptor-config'
+import { BuildRaptorConfig } from './build-raptor-config'
 import { Engine, EngineOptions } from './engine'
 import { EngineEventScheme } from './engine-event-scheme'
 import { StepByStepTransmitter } from './step-by-step-transmitter'
@@ -80,15 +80,15 @@ export class EngineBootstrapper {
     return engine
   }
 
-  private readConfigFile(pathToConfigFile: PathInRepo): Required<BuildRaptorConfig> {
+  private readConfigFile(pathToConfigFile: PathInRepo): BuildRaptorConfig {
     const p = this.rootDir.resolve(pathToConfigFile)
     try {
       if (!fs.existsSync(p)) {
-        return defaultBuildRaptorConfig
+        return BuildRaptorConfig.parse({})
       }
       const content = fs.readFileSync(p, 'utf-8')
       const parsed = JSON.parse(content)
-      return { ...defaultBuildRaptorConfig, ...BuildRaptorConfig.parse(parsed) }
+      return BuildRaptorConfig.parse(parsed)
     } catch (e) {
       throw new Error(`could not read repo config file ${p} - ${e}`)
     }

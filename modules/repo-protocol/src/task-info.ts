@@ -1,7 +1,7 @@
 import { PathInRepo } from 'core-types'
 import { TaskName } from 'task-name'
 
-export type OutputLocation = { pathInRepo: PathInRepo; purge: 'ALWAYS' | 'NEVER' }
+export type OutputLocation = { pathInRepo: PathInRepo; purge: 'ALWAYS' | 'NEVER'; publish?: boolean }
 
 export type TaskInfo = {
   readonly taskName: TaskName
