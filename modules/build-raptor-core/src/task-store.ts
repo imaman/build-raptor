@@ -257,15 +257,15 @@ export class TaskStore {
   }
 
   /**
-   * @deprecated use recordTask2() instead
+   * Use only from tests
    */
-  async recordTask(
+  async recordTaskForTesting(
     taskName: TaskName,
     fingerprint: Fingerprint,
     outputs: PathInRepo[],
     verdict: 'OK' | 'FAIL',
   ): Promise<void> {
-    await this.recordTask2(
+    await this.recordTask(
       taskName,
       fingerprint,
       outputs.map(o => ({ pathInRepo: o, isPublic: false })),
@@ -273,7 +273,7 @@ export class TaskStore {
     )
   }
 
-  async recordTask2(
+  async recordTask(
     taskName: TaskName,
     fingerprint: Fingerprint,
     outputs: OutputDescriptor[],

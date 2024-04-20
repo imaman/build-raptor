@@ -53,6 +53,9 @@ export const Step = z.discriminatedUnion('step', [
   z.object({
     step: z.literal('PUBLIC_FILES'),
     taskName: z.string(),
+    /**
+     * Maps path-in-repo (of "public output" files) to the hash of the contnet of the file.
+     */
     publicFiles: z.record(z.string(), z.string()),
   }),
 ])
