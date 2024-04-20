@@ -29,10 +29,10 @@ const Metadata = z.object({
    */
   outputs: z.string().array(),
   /**
-   * A record that maps an output location (path in repo) to its content hash. This allows downloading the content from
-   * a content-addressable storage.
+   * A record that maps output locations (path in repo) to content hashes. Include output location that were defined in
+   * the TaskInfo with isPublic: true. This allows downloading the content from a content-addressable storage.
    */
-  publishedAs: z.record(z.string(), z.string()).default({}),
+  publicFiles: z.record(z.string(), z.string()).default({}),
 })
 type Metadata = z.infer<typeof Metadata>
 
@@ -139,7 +139,7 @@ export class TaskStore {
 
   private async bundle(outputs: OutputDescriptor[]) {
     if (!outputs.length) {
-      return emptyBuffer()
+      return { buffer: emptyBuffer(), publicFiles: {} }
     }
 
     this.trace?.push(`bundling ${JSON.stringify(outputs)}`)
@@ -157,7 +157,7 @@ export class TaskStore {
       })
       .reify(STORAGE_CONCURRENCY)
 
-    const m: Metadata = { outputs: outputs.map(o => o.pathInRepo.val), publishedAs: Object.fromEntries(pairs) }
+    const m: Metadata = { outputs: outputs.map(o => o.pathInRepo.val), publicFiles: Object.fromEntries(pairs) }
     const metadataBuf = Buffer.from(JSON.stringify(Metadata.parse(m)), 'utf-8')
     if (metadataBuf.length > 100000) {
       // Just for sanity.
@@ -215,7 +215,7 @@ export class TaskStore {
 
     const ret = Buffer.concat([lenBuf, metadataBuf, gzipped])
     this.trace?.push(`bundling digest of ret is ${computeObjectHash({ data: ret.toString('hex') })}`)
-    return ret
+    return { buffer: ret, publicFiles: m.publicFiles }
   }
 
   private async unbundle(buf: Buffer) {
@@ -242,11 +242,11 @@ export class TaskStore {
       throw new Error(`unbundling a buffer (${buf.length} bytes) has failed: ${e}`)
     }
 
-    await promises(Object.keys(metadata.publishedAs)).forEach(STORAGE_CONCURRENCY, async pir => {
+    await promises(Object.keys(metadata.publicFiles)).forEach(STORAGE_CONCURRENCY, async pir => {
       const pathInRepo = PathInRepo(pir)
       const resolved = this.repoRootDir.resolve(pathInRepo)
 
-      const hash = metadata.publishedAs[pathInRepo.val]
+      const hash = metadata.publicFiles[pathInRepo.val]
       if (!hash) {
         throw new Error(`hash not found for "${pathInRepo}"`)
       }
@@ -262,7 +262,7 @@ export class TaskStore {
     outputs: PathInRepo[],
     verdict: 'OK' | 'FAIL',
   ): Promise<void> {
-    return await this.recordTask2(
+    await this.recordTask2(
       taskName,
       fingerprint,
       outputs.map(o => ({ pathInRepo: o, publish: false })),
@@ -276,27 +276,30 @@ export class TaskStore {
     outputs: OutputDescriptor[],
     verdict: 'OK' | 'FAIL',
   ): Promise<void> {
-    const blobId = await this.recordBlob(taskName, outputs)
+    const { blobId, publicFiles } = await this.recordBlob(taskName, outputs)
     this.putVerdict(taskName, fingerprint, verdict, blobId)
-    this.publisher?.publish('taskStore', {
-      opcode: 'RECORDED',
-      taskName,
-      blobId,
-      fingerprint,
-      files: [...outputs.map(o => o.pathInRepo.val)],
-    })
+    await Promise.all([
+      this.publisher?.publish('taskStore', {
+        opcode: 'RECORDED',
+        taskName,
+        blobId,
+        fingerprint,
+        files: [...outputs.map(o => o.pathInRepo.val)],
+      }),
+      this.publisher?.publish('publicFiles', { taskName, publicFiles }),
+    ])
   }
 
   private async recordBlob(taskName: TaskName, outputs: OutputDescriptor[]) {
-    const buf = await this.bundle(outputs)
-    const blobId = await this.putBlob(buf, taskName)
-    return blobId
+    const { buffer, publicFiles } = await this.bundle(outputs)
+    const blobId = await this.putBlob(buffer, taskName)
+    return { blobId, publicFiles }
   }
 
   async restoreTask(taskName: TaskName, fingerprint: Fingerprint): Promise<'FAIL' | 'OK' | 'FLAKY' | 'UNKNOWN'> {
     const [verdict, blobId] = await this.getVerdict(taskName, fingerprint)
     const files = await this.restoreBlob(blobId)
-    this.publisher?.publish('taskStore', {
+    await this.publisher?.publish('taskStore', {
       opcode: 'RESTORED',
       taskName,
       blobId,
