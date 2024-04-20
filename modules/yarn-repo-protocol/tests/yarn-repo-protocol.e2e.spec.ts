@@ -407,9 +407,7 @@ describe('yarn-repo-protocol.e2e', () => {
         'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
         'modules/a/package.json': {
           ...driver.packageJson('a', undefined, { 'do-abc': `echo "pretzels" > .out/p` }),
-          buildTasks: {
-            'do-abc': { labels: ['build'], inputs: [], publicOutputs: ['.out/p'] },
-          },
+          buildTasks: { 'do-abc': { labels: ['build'], inputs: [], publicOutputs: ['.out/p'] } },
         },
         'modules/a/src/a.ts': '// something',
         'modules/a/tests/a.spec.ts': `test('a', () => {expect(1).toEqual(1)});`,
