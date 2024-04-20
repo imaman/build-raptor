@@ -1,4 +1,5 @@
 import { Brand } from 'brand'
+import { BuildFailedError } from 'build-failed-error'
 import { PathInRepo, RepoRoot } from 'core-types'
 import * as fs from 'fs'
 import { createWriteStream } from 'fs'
@@ -146,11 +147,15 @@ export class TaskStore {
     const pairs = await promises(outputs.filter(o => o.publish))
       .map(async o => {
         const resolved = this.repoRootDir.resolve(o.pathInRepo)
+        const stat = fs.statSync(resolved)
+        if (!stat.isFile) {
+          throw new BuildFailedError(`cannot publish and output location "${o.pathInRepo.val}" that is not a file`)
+        }
         const content = fs.readFileSync(resolved)
         const h = await this.client.putContentAddressable(content)
         return [o.pathInRepo.val, h] as const
       })
-      .reify(20)
+      .reify(STORAGE_CONCURRENCY)
 
     const m: Metadata = { outputs: outputs.map(o => o.pathInRepo.val), publishedAs: Object.fromEntries(pairs) }
     const metadataBuf = Buffer.from(JSON.stringify(Metadata.parse(m)), 'utf-8')
@@ -165,7 +170,7 @@ export class TaskStore {
 
     const pack = TarStream.pack()
     const scanner = new DirectoryScanner(this.repoRootDir.resolve())
-    for (const curr of outputs) {
+    for (const curr of outputs.filter(o => !o.publish)) {
       const o = curr.pathInRepo
       const exists = await fse.pathExists(this.repoRootDir.resolve(o))
       if (!exists) {
@@ -236,6 +241,18 @@ export class TaskStore {
     } catch (e) {
       throw new Error(`unbundling a buffer (${buf.length} bytes) has failed: ${e}`)
     }
+
+    await promises(Object.keys(metadata.publishedAs)).forEach(STORAGE_CONCURRENCY, async pir => {
+      const pathInRepo = PathInRepo(pir)
+      const resolved = this.repoRootDir.resolve(pathInRepo)
+
+      const hash = metadata.publishedAs[pathInRepo.val]
+      if (!hash) {
+        throw new Error(`hash not found for "${pathInRepo}"`)
+      }
+      const buf = await this.client.getContentAddressable(hash)
+      fs.writeFileSync(resolved, buf)
+    })
     return outputs
   }
 
@@ -310,3 +327,4 @@ function blobIdOf(buf: Buffer) {
 }
 
 const LEN_BUF_SIZE = 8
+const STORAGE_CONCURRENCY = 100
