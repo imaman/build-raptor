@@ -17,6 +17,15 @@ async function slurp(d: RepoRoot) {
 describe('task-store', () => {
   const newTaskStore = (sc: StorageClient, logger: Logger, dir?: string) =>
     new TaskStore(RepoRoot(dir ?? TmpSync.dirSync().name), sc, logger)
+
+  const record = (
+    store: TaskStore,
+    taskName: TaskName,
+    fingerprint: Fingerprint,
+    locations: PathInRepo[],
+    verdict: 'OK' | 'FAIL',
+  ) => store.recordTask(taskName, fingerprint, locations, verdict)
+
   const logger = createNopLogger()
   async function recordVerdict(
     store: TaskStore,
@@ -24,7 +33,7 @@ describe('task-store', () => {
     fingerprint: string,
     verdict: 'OK' | 'FAIL',
   ): Promise<void> {
-    return store.recordTask(taskName, Fingerprint(fingerprint), [], verdict)
+    return record(store, taskName, Fingerprint(fingerprint), [], verdict)
   }
 
   const taskNameFoo = TaskName(UnitId('a'), TaskKind('foo'))
@@ -95,7 +104,7 @@ describe('task-store', () => {
           'qux/f2.txt': 'and seven years ago',
         }),
       )
-      await store.recordTask(taskNameFoo, Fingerprint('bar'), [PathInRepo('qux')], 'OK')
+      await record(store, taskNameFoo, Fingerprint('bar'), [PathInRepo('qux')], 'OK')
 
       const destination = newTaskStore(sc, logger)
       await destination.restoreTask(taskNameFoo, Fingerprint('bar'))
@@ -115,7 +124,7 @@ describe('task-store', () => {
           'qux/f2.txt': 'and seven years ago',
         }),
       )
-      await store.recordTask(taskNameFoo, Fingerprint('bar'), [PathInRepo('qux')], 'OK')
+      await record(store, taskNameFoo, Fingerprint('bar'), [PathInRepo('qux')], 'OK')
 
       const destination = newTaskStore(
         sc,
@@ -142,7 +151,7 @@ describe('task-store', () => {
           'qux/f2.txt': 'and seven years ago',
         }),
       )
-      await store.recordTask(taskNameFoo, Fingerprint('bar'), [PathInRepo('qux')], 'OK')
+      await record(store, taskNameFoo, Fingerprint('bar'), [PathInRepo('qux')], 'OK')
 
       const destination = newTaskStore(
         sc,
@@ -174,7 +183,7 @@ describe('task-store', () => {
           'starwars/iii': 'Revenge of the Sith',
         }),
       )
-      await store.recordTask(taskNameFoo, Fingerprint('bar'), [PathInRepo('bourne')], 'OK')
+      await record(store, taskNameFoo, Fingerprint('bar'), [PathInRepo('bourne')], 'OK')
 
       const destination = newTaskStore(
         sc,
@@ -207,9 +216,9 @@ describe('task-store', () => {
           'thegodfather/i': 'Al Pacino',
         }),
       )
-      await store.recordTask(taskNameA, Fingerprint('fp-1'), [PathInRepo('bourne')], 'OK')
-      await store.recordTask(taskNameB, Fingerprint('fp-1'), [PathInRepo('starwars')], 'OK')
-      await store.recordTask(taskNameC, Fingerprint('fp-1'), [PathInRepo('thegodfather')], 'OK')
+      await record(store, taskNameA, Fingerprint('fp-1'), [PathInRepo('bourne')], 'OK')
+      await record(store, taskNameB, Fingerprint('fp-1'), [PathInRepo('starwars')], 'OK')
+      await record(store, taskNameC, Fingerprint('fp-1'), [PathInRepo('thegodfather')], 'OK')
 
       const destination = newTaskStore(sc, logger)
 
@@ -237,9 +246,9 @@ describe('task-store', () => {
       const store2 = newTaskStore(sc, logger, await folderify({ 'year/heat': '1995' }))
       const store3 = newTaskStore(sc, logger, await folderify({ 'year/prestige': '2006' }))
 
-      await store1.recordTask(taskNameA, Fingerprint('FP-1'), [PathInRepo('year')], 'OK')
-      await store2.recordTask(taskNameA, Fingerprint('FP-2'), [PathInRepo('year')], 'OK')
-      await store3.recordTask(taskNameA, Fingerprint('FP-3'), [PathInRepo('year')], 'OK')
+      await record(store1, taskNameA, Fingerprint('FP-1'), [PathInRepo('year')], 'OK')
+      await record(store2, taskNameA, Fingerprint('FP-2'), [PathInRepo('year')], 'OK')
+      await record(store3, taskNameA, Fingerprint('FP-3'), [PathInRepo('year')], 'OK')
 
       const dest1 = newTaskStore(sc, logger)
       await dest1.restoreTask(taskNameA, Fingerprint('FP-2'))
@@ -255,7 +264,7 @@ describe('task-store', () => {
     test('outputs can be files and not just folders', async () => {
       const sc = new InMemoryStorageClient()
       const store = newTaskStore(sc, logger, await folderify({ 'a.txt': 'foo' }))
-      await store.recordTask(taskNameA, Fingerprint('fp'), [PathInRepo('a.txt')], 'OK')
+      await record(store, taskNameA, Fingerprint('fp'), [PathInRepo('a.txt')], 'OK')
 
       const destination = newTaskStore(sc, logger)
       await destination.restoreTask(taskNameA, Fingerprint('fp'))
@@ -272,7 +281,7 @@ describe('task-store', () => {
           'a/b/index.js': 'goo',
         }),
       )
-      await store.recordTask(taskNameA, Fingerprint('fp'), [PathInRepo('a/b/c')], 'OK')
+      await record(store, taskNameA, Fingerprint('fp'), [PathInRepo('a/b/c')], 'OK')
 
       const destination = newTaskStore(
         sc,
@@ -299,7 +308,7 @@ describe('task-store', () => {
           'a/bbc': 'me neither',
         }),
       )
-      await store.recordTask(taskNameA, Fingerprint('fp'), [PathInRepo('a/b')], 'OK')
+      await record(store, taskNameA, Fingerprint('fp'), [PathInRepo('a/b')], 'OK')
 
       const destination = newTaskStore(sc, logger)
       await destination.restoreTask(taskNameA, Fingerprint('fp'))
@@ -323,7 +332,7 @@ describe('task-store', () => {
       await fse.utimes(dir.resolve(PathInRepo('a/f2')), new Date(0), new Date(2000))
       await fse.utimes(dir.resolve(PathInRepo('a/f3')), new Date(0), new Date(3000))
 
-      await store.recordTask(taskNameA, Fingerprint('fp'), [PathInRepo('a')], 'OK')
+      await record(store, taskNameA, Fingerprint('fp'), [PathInRepo('a')], 'OK')
 
       const destination = newTaskStore(sc, logger)
       await destination.restoreTask(taskNameA, Fingerprint('fp'))
@@ -352,7 +361,7 @@ describe('task-store', () => {
           'a/b/s/x2.txt': 'this is s/x2',
         }),
       )
-      await store.recordTask(taskNameA, Fingerprint('fp'), [PathInRepo('a/b/q'), PathInRepo('a/b/r')], 'OK')
+      await record(store, taskNameA, Fingerprint('fp'), [PathInRepo('a/b/q'), PathInRepo('a/b/r')], 'OK')
       const destination = newTaskStore(
         sc,
         logger,
@@ -375,7 +384,7 @@ describe('task-store', () => {
       const sc = new InMemoryStorageClient()
       const store = newTaskStore(sc, logger)
 
-      await expect(store.recordTask(taskNameA, Fingerprint('fp'), [PathInRepo('a')], 'OK')).rejects.toThrow(
+      await expect(record(store, taskNameA, Fingerprint('fp'), [PathInRepo('a')], 'OK')).rejects.toThrow(
         'Output location <a> does not exist (under',
       )
     })
@@ -389,7 +398,7 @@ describe('task-store', () => {
           'a/b/c/d/e/f/x2.txt': 'this is x2',
         }),
       )
-      await store.recordTask(taskNameA, Fingerprint('fp'), [PathInRepo('a/b/c/d')], 'OK')
+      await record(store, taskNameA, Fingerprint('fp'), [PathInRepo('a/b/c/d')], 'OK')
 
       const destination = newTaskStore(sc, logger)
       await destination.restoreTask(taskNameA, Fingerprint('fp'))
@@ -411,10 +420,10 @@ describe('task-store', () => {
       )
 
       expect(sc.byteCount).toEqual(0)
-      await store.recordTask(taskNameA, Fingerprint('fp-1'), [PathInRepo('x')], 'OK')
+      await record(store, taskNameA, Fingerprint('fp-1'), [PathInRepo('x')], 'OK')
       const c0 = sc.byteCount
       expect(c0).toBeGreaterThanOrEqual(10000)
-      await store.recordTask(taskNameA, Fingerprint('fp-2'), [PathInRepo('x')], 'OK')
+      await record(store, taskNameA, Fingerprint('fp-2'), [PathInRepo('x')], 'OK')
       const c1 = sc.byteCount
       expect(c1 - c0).toBeLessThan(500)
     })
@@ -431,13 +440,13 @@ describe('task-store', () => {
       )
 
       expect(sc.byteCount).toEqual(0)
-      await store.recordTask(taskNameA, Fingerprint('fp-1'), [PathInRepo('x')], 'OK')
+      await record(store, taskNameA, Fingerprint('fp-1'), [PathInRepo('x')], 'OK')
       expect(sc.byteCount).toBeLessThan(500)
     })
     test('yells when output location is "a/b" but "a" is file', async () => {
       const sc = new InMemoryStorageClient()
       const store = newTaskStore(sc, logger, await folderify({ a: 'this is a' }))
-      await expect(store.recordTask(taskNameA, Fingerprint('fp'), [PathInRepo('a/b')], 'OK')).rejects.toThrow(
+      await expect(record(store, taskNameA, Fingerprint('fp'), [PathInRepo('a/b')], 'OK')).rejects.toThrow(
         'Output location <a/b> does not exist',
       )
     })
@@ -459,7 +468,7 @@ describe('task-store', () => {
       }
 
       const before = await takeSanpshot(store.repoRootDir)
-      await store.recordTask(taskNameA, Fingerprint('fp'), [PathInRepo('a')], 'OK')
+      await record(store, taskNameA, Fingerprint('fp'), [PathInRepo('a')], 'OK')
 
       const dest = newTaskStore(sc, logger)
       await dest.restoreTask(taskNameA, Fingerprint('fp'))
