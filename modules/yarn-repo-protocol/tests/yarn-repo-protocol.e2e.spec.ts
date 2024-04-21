@@ -481,7 +481,7 @@ describe('yarn-repo-protocol.e2e', () => {
     })
   })
   describe('test-runs.json', () => {
-    test.skip('produces a test-runs.json: a public output with details about each test case', async () => {
+    test('produces a test-runs.json: a public output with details about each test case', async () => {
       const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
       const recipe = {
         'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
