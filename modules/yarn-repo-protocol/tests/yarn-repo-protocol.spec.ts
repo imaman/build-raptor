@@ -25,6 +25,8 @@ describe('yarn-repo-protocol', () => {
     return new YarnRepoProtocol(logger, new NopAssetPublisher())
   }
 
+  const out = '.out'
+
   describe('initialize()', () => {
     test('rejects repos with inconsistent versions of out-of-repo deps', async () => {
       const d = await makeFolder({
@@ -34,7 +36,9 @@ describe('yarn-repo-protocol', () => {
       })
 
       const yrp = newYarnRepoProtocol()
-      await expect(yrp.initialize(d, p)).rejects.toThrow('Inconsistent version for depenedency "foo": 3.20.0, 3.20.1')
+      await expect(yrp.initialize(d, p, out)).rejects.toThrow(
+        'Inconsistent version for depenedency "foo": 3.20.0, 3.20.1',
+      )
     })
     test('detects versions inconsistencies that happen between a dependency and a dev-depenedency', async () => {
       const d = await makeFolder({
@@ -44,7 +48,9 @@ describe('yarn-repo-protocol', () => {
       })
 
       const yrp = newYarnRepoProtocol()
-      await expect(yrp.initialize(d, p)).rejects.toThrow('Inconsistent version for depenedency "boo": 4.20.0, 4.20.1')
+      await expect(yrp.initialize(d, p, out)).rejects.toThrow(
+        'Inconsistent version for depenedency "boo": 4.20.0, 4.20.1',
+      )
     })
     test('does not yell if the versions are consistent', async () => {
       const d = await makeFolder({
@@ -57,7 +63,7 @@ describe('yarn-repo-protocol', () => {
       })
 
       const yrp = newYarnRepoProtocol()
-      expect(await yrp.initialize(d, p)).toBeUndefined()
+      expect(await yrp.initialize(d, p, out)).toBeUndefined()
     })
     test('rejects repos with a version mismatch on an in-repo dep', async () => {
       const d = await makeFolder({
@@ -67,7 +73,9 @@ describe('yarn-repo-protocol', () => {
       })
 
       const yrp = newYarnRepoProtocol()
-      await expect(yrp.initialize(d, p)).rejects.toThrow('Version mismatch for dependency "b" of "a": 1.0.1 vs. 1.0.0')
+      await expect(yrp.initialize(d, p, out)).rejects.toThrow(
+        'Version mismatch for dependency "b" of "a": 1.0.1 vs. 1.0.0',
+      )
     })
   })
   describe('computePackingPackageJson', () => {
@@ -86,7 +94,7 @@ describe('yarn-repo-protocol', () => {
       })
 
       const yrp = newYarnRepoProtocol()
-      await yrp.initialize(d, p)
+      await yrp.initialize(d, p, out)
 
       const actual = await yrp.computePackingPackageJson(UnitId('a'))
       expect(actual).toEqual({
@@ -106,7 +114,7 @@ describe('yarn-repo-protocol', () => {
       })
 
       const yrp = newYarnRepoProtocol()
-      await yrp.initialize(d, p)
+      await yrp.initialize(d, p, out)
 
       expect(await getPackingDeps(yrp, UnitId('a'))).toMatchObject({
         dependencies: {
@@ -126,7 +134,7 @@ describe('yarn-repo-protocol', () => {
       })
 
       const yrp = newYarnRepoProtocol()
-      await yrp.initialize(d, p)
+      await yrp.initialize(d, p, out)
 
       expect(await getPackingDeps(yrp, UnitId('a'))).toEqual({
         dependencies: { x: '100.1.0' },
@@ -150,7 +158,7 @@ describe('yarn-repo-protocol', () => {
       })
 
       const yrp = newYarnRepoProtocol()
-      await yrp.initialize(d, p)
+      await yrp.initialize(d, p, out)
 
       const actual = await yrp.computePackingPackageJson(UnitId('a'))
       expect(actual.dependencies).toEqual({ x: '100.1.0' })
@@ -165,7 +173,7 @@ describe('yarn-repo-protocol', () => {
       })
 
       const yrp = newYarnRepoProtocol()
-      await yrp.initialize(d, p)
+      await yrp.initialize(d, p, out)
 
       const actual = await yrp.computePackingPackageJson(UnitId('a'))
       expect(actual.dependencies).toEqual({})
@@ -178,7 +186,7 @@ describe('yarn-repo-protocol', () => {
       })
 
       const yrp = newYarnRepoProtocol()
-      await yrp.initialize(d, p)
+      await yrp.initialize(d, p, out)
 
       const actual = await yrp.computePackingPackageJson(UnitId('a'))
       expect(actual.scripts).toEqual({
@@ -196,7 +204,7 @@ describe('yarn-repo-protocol', () => {
       })
 
       const yrp = newYarnRepoProtocol()
-      await yrp.initialize(d, p)
+      await yrp.initialize(d, p, out)
 
       const actual = await slurp(d)
       expect(JSON.parse(actual['modules/a/tsconfig.json'])).toEqual({
@@ -218,7 +226,7 @@ describe('yarn-repo-protocol', () => {
       })
 
       const yrp = newYarnRepoProtocol()
-      await yrp.initialize(d, p)
+      await yrp.initialize(d, p, out)
 
       const actual = await slurp(d)
       expect(JSON.parse(actual['libs/a/tsconfig.json']).extends).toEqual('./tsconfig-base.json')
@@ -236,7 +244,7 @@ describe('yarn-repo-protocol', () => {
       })
 
       const yrp = newYarnRepoProtocol()
-      await yrp.initialize(d, p)
+      await yrp.initialize(d, p, out)
 
       const actual = await slurp(d)
       const parsed = JSON.parse(actual['modules/a/tsconfig.json'])
@@ -255,7 +263,7 @@ describe('yarn-repo-protocol', () => {
       })
 
       const yrp = newYarnRepoProtocol()
-      await yrp.initialize(d, p)
+      await yrp.initialize(d, p, out)
 
       const actual = await slurp(d)
       const parsed = JSON.parse(actual['modules/a/tsconfig.json'])
@@ -280,7 +288,7 @@ describe('yarn-repo-protocol', () => {
       })
 
       const yrp = newYarnRepoProtocol()
-      await yrp.initialize(d, p)
+      await yrp.initialize(d, p, out)
 
       const actual = await slurp(d)
       expect(JSON.parse(actual['libs/a/tsconfig.json']).extends).toEqual('../../tsconfig-base.json')
@@ -298,7 +306,7 @@ describe('yarn-repo-protocol', () => {
       })
 
       const yrp = newYarnRepoProtocol()
-      await yrp.initialize(d, p)
+      await yrp.initialize(d, p, out)
 
       const actual = await slurp(d)
       const expectedTsConfigJson = {
@@ -342,7 +350,7 @@ describe('yarn-repo-protocol', () => {
         })
 
         const yrp = newYarnRepoProtocol()
-        await yrp.initialize(d, p)
+        await yrp.initialize(d, p, out)
 
         const actual = await slurp(d)
         expect(JSON.parse(actual['modules/a/tsconfig.json'])).toEqual({
@@ -369,7 +377,7 @@ describe('yarn-repo-protocol', () => {
         })
 
         const yrp = newYarnRepoProtocol()
-        await yrp.initialize(d, p)
+        await yrp.initialize(d, p, out)
 
         const actual = await slurp(d)
         expect(JSON.parse(actual['modules/web/fullstack/a/tsconfig.json']).references).toEqual([
@@ -389,7 +397,7 @@ describe('yarn-repo-protocol', () => {
         })
 
         const yrp = newYarnRepoProtocol()
-        await yrp.initialize(d, p)
+        await yrp.initialize(d, p, out)
 
         const actual = await slurp(d)
         expect(JSON.parse(actual['modules/a/tsconfig.json']).references).toEqual([{ path: '../b' }])
@@ -403,7 +411,7 @@ describe('yarn-repo-protocol', () => {
         })
 
         const yrp = newYarnRepoProtocol()
-        await yrp.initialize(d, p)
+        await yrp.initialize(d, p, out)
 
         const actual = await slurp(d)
         expect(JSON.parse(actual['modules/a/tsconfig.json']).references).toEqual([{ path: '../b' }])
@@ -419,7 +427,7 @@ describe('yarn-repo-protocol', () => {
         })
 
         const yrp = newYarnRepoProtocol()
-        await yrp.initialize(d, p)
+        await yrp.initialize(d, p, out)
 
         const actual = await slurp(d)
         expect(JSON.parse(actual['modules/a/tsconfig.json']).references).toEqual([{ path: '../c' }])
@@ -441,7 +449,7 @@ describe('yarn-repo-protocol', () => {
         })
 
         const yrp = newYarnRepoProtocol()
-        await yrp.initialize(d, p)
+        await yrp.initialize(d, p, out)
 
         const actual = await slurp(d)
         expect(JSON.parse(actual['modules/a/tsconfig.json'])).toEqual({
@@ -457,13 +465,13 @@ describe('yarn-repo-protocol', () => {
         })
 
         const yrpA = newYarnRepoProtocol()
-        await yrpA.initialize(d, p)
+        await yrpA.initialize(d, p, out)
 
         const tsconfigPath = d.resolve(PathInRepo('modules/a/tsconfig.json'))
         const statA = await fse.stat(tsconfigPath)
 
         const yrpB = newYarnRepoProtocol()
-        await yrpB.initialize(d, p)
+        await yrpB.initialize(d, p, out)
 
         const statB = await fse.stat(tsconfigPath)
         expect(statB.mtimeMs).toEqual(statA.mtimeMs)
@@ -485,7 +493,7 @@ describe('yarn-repo-protocol', () => {
       })
 
       const yrp = newYarnRepoProtocol()
-      await yrp.initialize(d, p, undefined, { uberBuild: false })
+      await yrp.initialize(d, p, out, { uberBuild: false })
       const buildResult = await yrp.execute(TaskName(UnitId('a'), TaskKind('build')), '/dev/null', 'my-build-run-id')
       expect(buildResult).toEqual('OK')
       const actual = await DirectoryScanner.listPaths(d.resolve(PathInRepo('modules/a/dist')))

@@ -480,6 +480,44 @@ describe('yarn-repo-protocol.e2e', () => {
       expect(await fork.getPublicOutput('modules/a/.out/p')).toEqual('pretzels')
     })
   })
+  describe('test-runs.json', () => {
+    test('produces a test-runs.json: a public output with details about each test case', async () => {
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/m1/package.json': driver.packageJson('m1'),
+        'modules/m1/src/a.ts': '// something',
+        'modules/m1/tests/a.spec.ts': `describe('m1', () => { 
+          test('t1', () => expect(1).toEqual(1)); 
+          test('t2', () => expect('the quick').toEqual('brown fox')); 
+        })`,
+      }
+
+      const fork = await driver.repo(recipe).fork()
+      await fork.run('FAIL', { taskKind: 'test' })
+      const content = JSON.parse(await fork.getPublicOutput('modules/m1/.out/test-runs.json'))
+      expect(content).toEqual({
+        testRuns: [
+          {
+            durationInMillis: expect.any(Number),
+            message: '',
+            testCasePath: ['m1', 't1'],
+            testFile: 'modules/m1/dist/tests/a.spec.js',
+            verdict: 'passed',
+          },
+          {
+            durationInMillis: expect.any(Number),
+            testCasePath: ['m1', 't2'],
+            testFile: 'modules/m1/dist/tests/a.spec.js',
+            verdict: 'failed',
+            message: expect.stringMatching(
+              /Expected: "brown fox"\nReceived: "the quick"\n.*repo-root\/modules\/m1\/tests\/a.spec.ts:3:48/,
+            ),
+          },
+        ],
+      })
+    })
+  })
   describe('out dir', () => {
     test('the name of the created outdir is taken from the config file', async () => {
       const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })

@@ -35,6 +35,7 @@ import { UnitId, UnitMetadata } from 'unit-metadata'
 import { z } from 'zod'
 
 import { BuildTaskRecord } from './build-task-record'
+import { generateTestRunSummary } from './generate-test-run-summary'
 import { RerunList } from './rerun-list'
 import { YarnRepoProtocolConfig } from './yarn-repo-protocol-config'
 
@@ -57,6 +58,7 @@ interface State {
   readonly versionByPackageId: Map<string, string>
   readonly publisher: TypedPublisher<RepoProtocolEvent>
   readonly config: YarnRepoProtocolConfig
+  readonly outDirName: string
   uberBuildPromise?: Promise<ExitStatus>
 }
 
@@ -108,6 +110,10 @@ export class YarnRepoProtocol implements RepoProtocol {
     return this.state_ ?? failMe('state was not set')
   }
 
+  private get testRunSummaryFile() {
+    return path.join(this.state.outDirName, 'test-runs.json')
+  }
+
   private hasRunScript(unitId: UnitId, runScript: string) {
     const pj = this.getPackageJson(unitId)
     const runScripts = Object.keys(pj.scripts ?? {})
@@ -128,7 +134,7 @@ export class YarnRepoProtocol implements RepoProtocol {
   async initialize(
     rootDir: RepoRoot,
     publisher: TypedPublisher<RepoProtocolEvent>,
-    outDirName?: string,
+    outDirName: string,
     repoProtocolConfig?: unknown,
   ): Promise<void> {
     const yarnInfo = await this.getYarnInfo(rootDir)
@@ -173,7 +179,17 @@ export class YarnRepoProtocol implements RepoProtocol {
     await this.generateTsConfigFiles(rootDir, units, graph)
 
     await this.generateSymlinksToPackages(rootDir, units)
-    this.state_ = { yarnInfo, graph, rootDir, units: allUnits, packageByUnitId, versionByPackageId, publisher, config }
+    this.state_ = {
+      yarnInfo,
+      graph,
+      rootDir,
+      units: allUnits,
+      packageByUnitId,
+      versionByPackageId,
+      publisher,
+      config,
+      outDirName,
+    }
   }
 
   private async generateSymlinksToPackages(rootDir: RepoRoot, units: UnitMetadata[]) {
@@ -477,6 +493,12 @@ export class YarnRepoProtocol implements RepoProtocol {
   }
 
   private async runJest(dir: string, taskName: TaskName, outputFile: string): Promise<ExitStatus> {
+    const dirInRepo = this.state.rootDir.unresolve(dir)
+    // file path resolution here is ugly. it's probably better to change dir (parameter of this function) to be
+    // PathInRepo
+    const resolvedSummaryFile = this.state.rootDir.resolve(dirInRepo.expand(this.testRunSummaryFile))
+    fs.writeFileSync(resolvedSummaryFile, JSON.stringify({}))
+
     const jof = path.join(dir, JEST_OUTPUT_FILE)
     const testsToRun = await this.computeTestsToRun(jof)
     const reporterOutputFile = (await Tmp.file()).path
@@ -548,6 +570,9 @@ export class YarnRepoProtocol implements RepoProtocol {
         })
       }
     })
+
+    const summary = generateTestRunSummary(this.state.rootDir, reporterOutput)
+    fs.writeFileSync(resolvedSummaryFile, JSON.stringify(summary))
 
     const failingCases = reporterOutput.cases.filter(at =>
       switchOn(at.status, {
@@ -837,7 +862,10 @@ export class YarnRepoProtocol implements RepoProtocol {
     return {
       labels: ['test'],
       taskName: TaskName(u.id, TaskKind('test')),
-      outputLocations: [{ pathInRepo: dir.expand(JEST_OUTPUT_FILE), purge: 'ALWAYS' }],
+      outputLocations: [
+        { pathInRepo: dir.expand(JEST_OUTPUT_FILE), purge: 'ALWAYS' },
+        { pathInRepo: dir.expand(this.testRunSummaryFile), purge: 'ALWAYS', isPublic: true },
+      ],
       inputs: [
         dir.expand(this.dist('s')),
         dir.expand(this.dist('t')),
@@ -904,15 +932,18 @@ export class YarnRepoProtocol implements RepoProtocol {
         taskName: TaskName(u.id, TaskKind('build'), name),
         labels: toArray(def.labels ?? []),
         inputs,
-        outputLocations: [...toArray(def.outputs ?? []).map(at => ({
-          pathInRepo: dir.expand(at),
-          purge: 'ALWAYS' as const,
-          isPublic: false
-        })), ...toArray(def.publicOutputs ?? []).map(at => ({
-          pathInRepo: dir.expand(at),
-          purge: 'ALWAYS' as const,
-          isPublic: true
-        }))]
+        outputLocations: [
+          ...toArray(def.outputs ?? []).map(at => ({
+            pathInRepo: dir.expand(at),
+            purge: 'ALWAYS' as const,
+            isPublic: false,
+          })),
+          ...toArray(def.publicOutputs ?? []).map(at => ({
+            pathInRepo: dir.expand(at),
+            purge: 'ALWAYS' as const,
+            isPublic: true,
+          })),
+        ],
       })
     }
 
