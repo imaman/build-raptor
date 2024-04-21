@@ -497,6 +497,8 @@ export class YarnRepoProtocol implements RepoProtocol {
     // file path resolution here is ugly. it's probably better to change dir (parameter of this function) to be
     // PathInRepo
     const resolvedSummaryFile = this.state.rootDir.resolve(dirInRepo.expand(this.testRunSummaryFile))
+    // We must create the file (empty) such that even if the task fails there is still an output (to keep the invariant
+    // that all outputs must be produced by a task when it runs).
     fs.writeFileSync(resolvedSummaryFile, JSON.stringify({}))
 
     const jof = path.join(dir, JEST_OUTPUT_FILE)
