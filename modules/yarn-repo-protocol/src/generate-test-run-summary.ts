@@ -11,13 +11,14 @@ export function generateTestRunSummary(repoRoot: RepoRoot, reporterOutput: Repor
           return undefined
         }
         return {
-          durationInMillis: at.duration ?? 0,
-          testCasePath: [...at.ancestorTitles, at.title],
           testFile: repoRoot.unresolve(at.fileName).val,
+          testCasePath: [...at.ancestorTitles, at.title],
           verdict: switchOn(at.status, {
             failed: () => 'failed' as const,
             passed: () => 'passed' as const,
           }),
+          durationInMillis: at.duration ?? 0,
+          message: at.message,
         }
       })
       .flatMap(at => (at ? [at] : [])),

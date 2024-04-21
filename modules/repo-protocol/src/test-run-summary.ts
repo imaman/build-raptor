@@ -19,6 +19,10 @@ export const TestRunSummary = z.object({
        * how long it took the test to run. Not always reported by the underlying test runner (in which case it is unset).
        */
       durationInMillis: z.number().optional(),
+      /**
+       * an additional message associated with this run. Typically, the error message emitted for a failing test.
+       */
+      message: z.string().optional(),
     })
     .array(),
 })

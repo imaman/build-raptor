@@ -16,6 +16,7 @@ export const ReporterOutput = z.object({
         z.literal('disabled'),
       ]),
       duration: z.number().optional(),
+      message: z.string().optional(),
     })
     .array(),
 })
