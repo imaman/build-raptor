@@ -25,6 +25,7 @@ module.exports = class BuildRaptorJestReporter {
       title: at.testCaseResult.title,
       status: at.testCaseResult.status,
       duration: at.testCaseResult.duration ?? undefined,
+      message: at.testCaseResult.failureMessages?.join('\n'),
     }))
     const output = { cases }
     fs.writeFileSync(this.file, JSON.stringify(output))
