@@ -24,7 +24,8 @@ export const TestRunSummary = z.object({
        */
       message: z.string().optional(),
     })
-    .array(),
+    .array()
+    .default([]),
 })
 
 export type TestRunSummary = z.infer<typeof TestRunSummary>

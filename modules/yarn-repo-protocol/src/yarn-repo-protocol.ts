@@ -493,6 +493,12 @@ export class YarnRepoProtocol implements RepoProtocol {
   }
 
   private async runJest(dir: string, taskName: TaskName, outputFile: string): Promise<ExitStatus> {
+    const dirInRepo = this.state.rootDir.unresolve(dir)
+    // file path resolution here is ugly. it's probably better to change dir (parameter of this function) to be
+    // PathInRepo
+    const resolvedSummaryFile = this.state.rootDir.resolve(dirInRepo.expand(this.testRunSummaryFile))
+    fs.writeFileSync(resolvedSummaryFile, JSON.stringify({}))
+
     const jof = path.join(dir, JEST_OUTPUT_FILE)
     const testsToRun = await this.computeTestsToRun(jof)
     const reporterOutputFile = (await Tmp.file()).path
@@ -566,10 +572,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     })
 
     const summary = generateTestRunSummary(this.state.rootDir, reporterOutput)
-    const dirInRepo = this.state.rootDir.unresolve(dir)
-    // file path resolution here is ugly. it's probably better to change dir (parameter of this function) to be
-    // PathInRepo
-    fs.writeFileSync(this.state.rootDir.resolve(dirInRepo.expand(this.testRunSummaryFile)), JSON.stringify(summary))
+    fs.writeFileSync(resolvedSummaryFile, JSON.stringify(summary))
 
     const failingCases = reporterOutput.cases.filter(at =>
       switchOn(at.status, {
