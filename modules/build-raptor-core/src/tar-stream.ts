@@ -176,7 +176,9 @@ export class TarStream {
       fs.mkdirSync(path.dirname(resolved), { recursive: true })
       const c = content.toString('utf-8')
       fs.symlinkSync(c, resolved)
-      updateStats(info)
+      if (!path.isAbsolute(c)) {
+        updateStats(info)
+      }
     }
   }
 }
