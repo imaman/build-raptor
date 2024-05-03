@@ -49,7 +49,8 @@ export class TarStream {
   private checkPaths(...paths: string[]) {
     for (const at of paths) {
       if (path.isAbsolute(at)) {
-        throw new Error(`path must be relative (got: ${at})`)
+        continue
+        // throw new Error(`path must be relative (got: ${at})`)
       }
 
       const fakeRoot = '/fake-root'
@@ -76,7 +77,9 @@ export class TarStream {
 
   symlink(inf: { from: string; to: string; mtime: Date }) {
     this.checkPaths(inf.from, inf.to)
-    const content = Buffer.from(path.normalize(path.relative(path.dirname(inf.from), inf.to)))
+    const content = Buffer.from(
+      path.isAbsolute(inf.to) ? inf.to : path.normalize(path.relative(path.dirname(inf.from), inf.to)),
+    )
     const info: Info = {
       path: inf.from,
       contentLen: content.length,
@@ -116,6 +119,9 @@ export class TarStream {
 
     const updateStats = (parsedInfo: Info) => {
       const resolved = resolve(parsedInfo)
+      if (path.isAbsolute(resolved)) {
+        return
+      }
       const date = new Date(Number(parsedInfo.mtime))
       try {
         fs.utimesSync(resolved, date, date)
@@ -168,7 +174,8 @@ export class TarStream {
     for (const { info, content } of symlinks) {
       const resolved = resolve(info)
       fs.mkdirSync(path.dirname(resolved), { recursive: true })
-      fs.symlinkSync(content.toString('utf-8'), resolved)
+      const c = content.toString('utf-8')
+      fs.symlinkSync(c, resolved)
       updateStats(info)
     }
   }
