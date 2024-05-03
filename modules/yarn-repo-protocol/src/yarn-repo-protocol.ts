@@ -396,9 +396,8 @@ export class YarnRepoProtocol implements RepoProtocol {
           return ret
         },
         on: async () => {
-          this.logger.print(`running yarn --frozen-lockfile ...`)
+          this.logger.print(`Installing dependencies...`)
           const ret = await this.run('yarn', ['--frozen-lockfile'], this.state.rootDir.resolve(), outputFile)
-          this.logger.print(`...and we're done`)
           return ret
         },
       })

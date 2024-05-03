@@ -83,9 +83,8 @@ export class TarStream {
   symlink(inf: { from: string; to: string; mtime: Date }) {
     this.checkPaths('disallow', inf.from)
     this.checkPaths('allow', inf.to)
-    const content = Buffer.from(
-      path.isAbsolute(inf.to) ? inf.to : path.normalize(path.relative(path.dirname(inf.from), inf.to)),
-    )
+    const linkTarget = path.isAbsolute(inf.to) ? inf.to : path.normalize(path.relative(path.dirname(inf.from), inf.to))
+    const content = Buffer.from(linkTarget)
     const info: Info = {
       path: inf.from,
       contentLen: content.length,
@@ -177,9 +176,9 @@ export class TarStream {
     for (const { info, content } of symlinks) {
       const resolved = resolve(info)
       fs.mkdirSync(path.dirname(resolved), { recursive: true })
-      const c = content.toString('utf-8')
-      fs.symlinkSync(c, resolved)
-      if (!path.isAbsolute(c)) {
+      const linkTarget = content.toString('utf-8')
+      fs.symlinkSync(linkTarget, resolved)
+      if (!path.isAbsolute(linkTarget)) {
         updateStats(info)
       }
     }
