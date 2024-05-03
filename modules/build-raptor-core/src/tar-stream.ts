@@ -1,5 +1,6 @@
 import * as fs from 'fs'
 import { Logger } from 'logger'
+import { shouldNeverHappen } from 'misc'
 import * as path from 'path'
 import { z } from 'zod'
 
@@ -46,11 +47,15 @@ export class TarStream {
     return new TarStream()
   }
 
-  private checkPaths(...paths: string[]) {
+  private checkPaths(absolute: 'allow' | 'disallow', ...paths: string[]) {
     for (const at of paths) {
       if (path.isAbsolute(at)) {
-        continue
-        // throw new Error(`path must be relative (got: ${at})`)
+        if (absolute === 'allow') {
+          continue
+        } else if (absolute === 'disallow') {
+          throw new Error(`path must be relative (got: ${at})`)
+        }
+        shouldNeverHappen(absolute)
       }
 
       const fakeRoot = '/fake-root'
@@ -64,7 +69,7 @@ export class TarStream {
   }
 
   entry(inf: { path: string; mode: number; mtime: Date; atime: Date; ctime: Date }, content: Buffer) {
-    this.checkPaths(inf.path)
+    this.checkPaths('disallow', inf.path)
     const info: Info = {
       path: inf.path,
       contentLen: content.length,
@@ -76,7 +81,8 @@ export class TarStream {
   }
 
   symlink(inf: { from: string; to: string; mtime: Date }) {
-    this.checkPaths(inf.from, inf.to)
+    this.checkPaths('disallow', inf.from)
+    this.checkPaths('allow', inf.to)
     const content = Buffer.from(
       path.isAbsolute(inf.to) ? inf.to : path.normalize(path.relative(path.dirname(inf.from), inf.to)),
     )
@@ -119,9 +125,6 @@ export class TarStream {
 
     const updateStats = (parsedInfo: Info) => {
       const resolved = resolve(parsedInfo)
-      if (path.isAbsolute(resolved)) {
-        return
-      }
       const date = new Date(Number(parsedInfo.mtime))
       try {
         fs.utimesSync(resolved, date, date)
