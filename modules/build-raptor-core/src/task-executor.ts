@@ -318,6 +318,7 @@ class SingleTaskExecutor {
     const outputFile = path.join(this.taskOutputDir, `${t.id}.stdout`)
     const status = await this.repoProtocol.execute(t.name, outputFile, this.model.buildRunId)
     await this.postProcess(status, outputFile, Date.now() - t0)
+    this.diagnose(`status=${status}`)
     if (status === 'CRASH') {
       throw new Error(`Task ${JSON.stringify(t.name)} crashed`)
     }
@@ -325,8 +326,11 @@ class SingleTaskExecutor {
     const outputs = t.outputLocations.map(at => ({ isPublic: false, ...at }))
     if (status === 'OK') {
       await this.validateOutputs()
+      this.diagnose(`registering verdict`)
       this.tracker.registerVerdict(t.name, status, outputFile)
+      this.diagnose(`recording outputs: ${JSON.stringify(outputs)}`)
       await this.taskStore.recordTask(t.name, this.fp, outputs, 'OK')
+      this.diagnose(`...outputs recorded`)
       return
     }
 
