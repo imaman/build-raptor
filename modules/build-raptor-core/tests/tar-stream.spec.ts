@@ -1,6 +1,6 @@
 import * as fs from 'fs'
 import { createNopLogger } from 'logger'
-import { slurpDir } from 'misc'
+import { folderify, slurpDir } from 'misc'
 import * as os from 'os'
 import * as path from 'path'
 
@@ -139,10 +139,17 @@ describe('tar-stream', () => {
       ts.entry({ path: 'q/r/../../../a', mtime: d, mode: 0, atime: d, ctime: d }, Buffer.from('x')),
     ).toThrowError('path to a file outside of the subtree (got: q/r/../../../a)')
   })
-  test(`a symlink's target cannot be an absolute path`, () => {
+  test(`a symlink's target can be an absolute path`, async () => {
+    const pathToA = path.join(await folderify({ a: 'foo' }), 'a')
+    expect(path.isAbsolute(pathToA)).toBe(true)
     const ts = TarStream.pack()
     const d = new Date('2023-04-05T11:00:00.000Z')
-    expect(() => ts.symlink({ from: 'a', mtime: d, to: '/x/y' })).toThrowError('path must be relative (got: /x/y)')
+    ts.symlink({ from: 'xyz', mtime: d, to: pathToA })
+
+    const dir = tempDir()
+    await TarStream.extract(ts.toBuffer(), dir, createNopLogger())
+
+    expect(fs.readlinkSync(path.join(dir, 'xyz'))).toEqual(pathToA)
   })
   test(`a symlink's source cannot be an absolute path`, () => {
     const ts = TarStream.pack()

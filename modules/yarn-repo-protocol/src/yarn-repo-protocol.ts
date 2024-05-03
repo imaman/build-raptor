@@ -395,7 +395,11 @@ export class YarnRepoProtocol implements RepoProtocol {
           const ret: ExitStatus = 'OK'
           return ret
         },
-        on: async () => await this.run('yarn', ['--frozen-lockfile'], this.state.rootDir.resolve(), outputFile),
+        on: async () => {
+          this.logger.print(`Installing dependencies...`)
+          const ret = await this.run('yarn', ['--frozen-lockfile'], this.state.rootDir.resolve(), outputFile)
+          return ret
+        },
       })
     }
 
