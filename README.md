@@ -1,6 +1,8 @@
 # build-raptor
 
-## Usage
+## User Manual
+
+### Build Tasks
 
 build-raptor super-efficiently builds monorepos by caching build outputs from earlier runs. At its core it manages a list of _tasks_. A task is executed only if its outputs are not found in cache, that is: only if its input where never "seen" before (at earlier runs).
 
@@ -35,7 +37,7 @@ Here is an example for such a definition (in a `package.json` file):
 
 This means that the `do-kremer` run script will be invoked after `dist/george.js` and `dist/elaine.js` have been built and their content is new (has not been seen in earlier runs).
 
-A task can define _public outputs_: these are files which will be stored as-is in the persistent storage using content hashing (AKA: content addressable storage). The hash of these files will be reflected in the step-by-step reporting. This will allow other system to access these outputs.
+A task can define _public outputs_: these are files which will be stored as-is in the persistent storage using content hashing (AKA: content addressable storage). The hash of these files will be reflected in the [step-by-step reporting](#step-by-step-reporting). This will allow other system to access these outputs.
 
 ```
 {
@@ -68,6 +70,30 @@ The specail value `'_ALWAYS_'` can be used (as the value of the `inputs` attribu
   }
 }
 ```
+
+### Configuration
+When a build statrs build-raptor loads its configuraiton from a `.build-raptor.json` file located at the root directory. This location can be changed via the `--config-file` command line option. The zod-schema of this file can be found at [build-raptor-config.ts](modules/build-raptor-core/src/build-raptor-config.ts).
+
+### Log, outputs
+when a build run starts, build raptor creates a `.build-raptor` directory at the root directory. All log messages produced by build-raptor itself will be placed in the `.build-raptor/main.log` file in that directory.
+
+Additionally, there are outputs produced by the different build tasks that were executed during that build runs (compiler outputs, test runner outputs, etc.). These are placed in per-task files which are saved at  `.build-raptor/tasks` directory.
+
+### Step-by-Step reporting
+As build raptor is running it produces JSON object describing various build events. The zod-schema of these JSON objects can be found in [build-raptor-api.ts](modules/build-raptor-api/src/build-raptor-api.ts). This allows other tools to get a details view of the build run, interact with outputs that were produced, etc.
+
+To get these events in real-time (while the build is running) one should define a node module (e.g., `my-processor`) and pass the name of that module to the `--step-by-step-processor` command (i.e., `--step-by-step-processor=my-processor`) line option. This module should look as follows:
+
+```typescript
+import {Step, StepByStepProcessor} from 'build-raptor-api'
+export const processor: StepByStepProcessor = (s: Step) => {
+  // place your own custom logic here...
+  console.log(`received: ${JSON.stringify(s)})
+}
+```
+
+The `processor` definition is mandatory: build-raptor expects that module to export a function called `processor` - the build will fail to start if that's not case. 
+
 
 ### goals and labels
 
