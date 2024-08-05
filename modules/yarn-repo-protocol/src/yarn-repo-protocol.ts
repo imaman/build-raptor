@@ -920,6 +920,13 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
     const btr = parseResult.data
 
+    const computeOutputLocation = (buildTaskName: string, s: string) => {
+      try {
+        return dir.to(s)
+      } catch (e) {
+        throw new BuildFailedError(`build task ${buildTaskName} in ${pj} specifies an illegal input: ${e}`)
+      }
+    }
     const ret: TaskInfo[] = []
     for (const name of Object.keys(btr)) {
       const def = btr[name]
@@ -932,7 +939,7 @@ export class YarnRepoProtocol implements RepoProtocol {
       const inputs =
         def.inputs === '_ALWAYS_'
           ? [PathInRepo('.build-raptor/build-run-id')]
-          : [pj, ...toArray(def.inputs).map(at => dir.expand(at))]
+          : [pj, ...toArray(def.inputs).map(at => computeOutputLocation(name, at))]
 
       ret.push({
         taskName: TaskName(u.id, TaskKind('build'), name),

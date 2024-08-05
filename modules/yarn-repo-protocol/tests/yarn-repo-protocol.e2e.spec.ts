@@ -339,6 +339,25 @@ describe('yarn-repo-protocol.e2e', () => {
         `found a build task named "do-xyz" but no run script with that name is defined in modules/a/package.json`,
       )
     })
+    test('emits a build error if an input outside of the repo is specified', async () => {
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': {
+          ...driver.packageJson('a', undefined, { abc: `#` }),
+          buildTasks: { abc: { inputs: ['../../../foo-dir'], outputs: [] } },
+        },
+        'modules/a/src/a.ts': '// something',
+        'modules/a/tests/a.spec.ts': `test('a', () => {expect(1).toEqual(1)});`,
+      }
+
+      const fork = await driver.repo(recipe).fork()
+
+      const run = await fork.run('FAIL', { taskKind: 'build', subKind: 'do-abc' })
+      expect(run.message).toContain(
+        `build task abc in modules/a/package.json specifies an illegal input: Error: cannot go up outside of the repo (got: '../foo-dir')`,
+      )
+    })
     test('runs dependencies before running the custom task', async () => {
       const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
       const recipe = {
