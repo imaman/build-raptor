@@ -131,6 +131,9 @@
 - transitive: do not run build in dep if is due to run at dependent
 - separate tests build from application build
 - [ ] log files - sliding window of last <N> invocations.
+- [ ] when fine grained fingerprinting is "on" custom test tasks will not trigger if the code of deep transitive dependency changed (it triggers only if direct dependency changed)
+- [ ] custom tasks always appear as "<module-name>:build:<task-name>"
+      
 
 * task-name
 
