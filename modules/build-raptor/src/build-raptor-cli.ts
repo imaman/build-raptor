@@ -23,8 +23,6 @@ import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import { YarnRepoProtocol } from 'yarn-repo-protocol'
 
-import { getPrForCommit } from './get-pr-for-commit'
-
 type TestReporting = 'just-failing' | 'tree' | 'tree-just-failing'
 
 interface Options {
@@ -84,9 +82,7 @@ export async function run(options: Options) {
   logger.print(`logging to ${logFile}`)
   const isCi = getEnv('CI') === 'true'
 
-  let pullRequest: number | undefined
   const commitHash = getEnv('GITHUB_SHA')
-
   if (commitHash) {
     const repoName = getEnv('GITHUB_REPOSITORY')
     const gitToken = getEnv('GITHUB_TOKEN')
@@ -94,14 +90,10 @@ export async function run(options: Options) {
     if (!repoName || !gitToken) {
       throw new Error('Required git environment variable(s) missing or invalid.')
     }
-
-    pullRequest = await getPrForCommit(commitHash, repoName, gitToken)
   }
 
   if (isCi) {
-    logger.info(
-      `details:\n${JSON.stringify({ isCi, commitHash, pullRequest, startedAt: new Date(t0).toISOString() }, null, 2)}`,
-    )
+    logger.info(`details:\n${JSON.stringify({ isCi, commitHash, startedAt: new Date(t0).toISOString() }, null, 2)}`)
   }
 
   const buildRaptorDirTasks = path.join(buildRaptorDir, 'tasks')
