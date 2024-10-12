@@ -200,6 +200,7 @@ export class Engine {
   }
 
   async executePlan(plan: ExecutionPlan, model: Model) {
+    this.steps.push({ step: 'PLAN_PREPARED', taskNames: plan.tasks().map(at => at.name) })
     this.logger.info(`plan.taskGraph=${plan.taskGraph}`)
     const taskTracker = new TaskTracker(plan)
     this.tracker = taskTracker

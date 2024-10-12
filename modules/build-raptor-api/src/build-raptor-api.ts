@@ -51,6 +51,10 @@ export const Step = z.discriminatedUnion('step', [
     file: z.string(),
   }),
   z.object({
+    step: z.literal('PLAN_PREPARED'),
+    taskNames: z.string().array(),
+  }),
+  z.object({
     step: z.literal('PUBLIC_FILES'),
     taskName: z.string(),
     /**
