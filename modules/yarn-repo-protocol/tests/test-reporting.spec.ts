@@ -28,7 +28,7 @@ describe('test-reporting', () => {
     const fork = await driver.repo(recipe).fork()
 
     await fork.run('FAIL', { taskKind: 'test' })
-    const steps = await fork.readStepByStepFile()
+    const steps = fork.readStepByStepFile()
     expect(steps.filter(at => at.step === 'TEST_ENDED')).toEqual([
       expect.objectContaining({
         step: 'TEST_ENDED',

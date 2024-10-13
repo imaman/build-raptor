@@ -219,7 +219,7 @@ describe('engine', () => {
     const fork = await driver.repo(recipe).fork()
 
     const { buildRunId } = await fork.run('OK', { taskKind: 'build' })
-    const stepByStep = await fork.readStepByStepFile()
+    const stepByStep = fork.readStepByStepFile()
     expect(stepByStep[0]).toMatchObject({ step: 'BUILD_RUN_STARTED', buildRunId })
     expect(stepByStep[1]).toMatchObject({ step: 'TASK_STORE_PUT', taskName: 'b:build', files: ['modules/b/dist'] })
     expect(stepByStep[2]).toMatchObject({ step: 'TASK_STORE_PUT', taskName: 'a:build', files: ['modules/a/dist'] })
@@ -246,7 +246,7 @@ describe('engine', () => {
     const fork = await driver.repo(recipe).fork()
 
     const r1 = await fork.run('OK', { taskKind: 'build' })
-    const steps1 = await fork.readStepByStepFile()
+    const steps1 = fork.readStepByStepFile()
     expect(steps1[0]).toMatchObject({ step: 'BUILD_RUN_STARTED', buildRunId: r1.buildRunId })
     expect(steps1[1]).toMatchObject({ step: 'TASK_STORE_PUT', taskName: 'b:build' })
     expect(steps1[2]).toMatchObject({ step: 'TASK_STORE_PUT', taskName: 'a:build' })
@@ -255,7 +255,7 @@ describe('engine', () => {
 
     const r2 = await fork.run('OK', { taskKind: 'build' })
     expect(r2.buildRunId).not.toEqual(r1.buildRunId)
-    const steps2 = await fork.readStepByStepFile()
+    const steps2 = fork.readStepByStepFile()
     expect(steps2[0]).toMatchObject({ step: 'BUILD_RUN_STARTED', buildRunId: r2.buildRunId })
     expect(steps2[1]).toMatchObject({ step: 'TASK_STORE_GET', taskName: 'b:build' })
     expect(steps2[2]).toMatchObject({ step: 'TASK_STORE_GET', taskName: 'a:build' })

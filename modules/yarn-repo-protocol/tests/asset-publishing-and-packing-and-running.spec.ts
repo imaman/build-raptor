@@ -117,9 +117,15 @@ describe('asset-publishing-and-packing-and-running', () => {
     const fork = await driver.repo(recipe).fork()
 
     const readBlob = async (taskName: string) => {
-      const steps = await fork.readStepByStepFile()
+      const steps = fork.readStepByStepFile()
       const blobId: string | undefined = steps
-        .filter(at => at.step !== 'BUILD_RUN_STARTED' && at.step !== 'BUILD_RUN_ENDED' && at.step !== 'PUBLIC_FILES' && at.taskName === taskName)
+        .filter(
+          at =>
+            at.step !== 'BUILD_RUN_STARTED' &&
+            at.step !== 'BUILD_RUN_ENDED' &&
+            at.step !== 'PUBLIC_FILES' &&
+            at.taskName === taskName,
+        )
         .flatMap(at => (at.step === 'TASK_STORE_GET' || at.step === 'TASK_STORE_PUT' ? [at] : []))
         .find(Boolean)?.blobId
       return await driver.slurpBlob(blobId)

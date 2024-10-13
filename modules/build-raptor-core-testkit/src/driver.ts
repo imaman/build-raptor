@@ -260,14 +260,13 @@ class Fork {
     return this.file(BUILD_RAPTOR_DIR_NAME)
   }
 
-  // TODO(imaman): can be made sync
-  async readStepByStepFile() {
+  readStepByStepFile(): StepByStep {
     const unparsed = this.getBuildRaptorDir().to('step-by-step.json').readJson()
     return StepByStep.parse(unparsed)
   }
 
   async getSteps<N extends StepName>(stepName: N): Promise<StepByName<N>[]> {
-    const parsed = await this.readStepByStepFile()
+    const parsed = this.readStepByStepFile()
     const ret = Fork.filterSteps<N>(parsed, stepName)
     return ret
   }
