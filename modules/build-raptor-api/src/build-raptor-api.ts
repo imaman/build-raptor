@@ -52,7 +52,7 @@ export const Step = z.discriminatedUnion('step', [
   }),
   z.object({
     /**
-     * This step is reported once in every build run before execution of tasks start.
+     * Indicates the planning phase is complete. This step occurs once per build, before task execution begins.
      */
     step: z.literal('PLAN_PREPARED'),
     /**
