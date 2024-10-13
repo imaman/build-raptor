@@ -226,7 +226,7 @@ describe('engine', () => {
     expect(stepByStep[2]).toMatchObject({ step: 'TASK_STORE_PUT', taskName: 'b:build', files: ['modules/b/dist'] })
     expect(stepByStep[3]).toMatchObject({ step: 'TASK_STORE_PUT', taskName: 'a:build', files: ['modules/a/dist'] })
     expect(stepByStep[4]).toMatchObject({ step: 'BUILD_RUN_ENDED' })
-    expect(stepByStep).toHaveLength(4)
+    expect(stepByStep).toHaveLength(5)
   })
   test('the step-by-step is overwritten at the next build run', async () => {
     const driver = new Driver(testName())
@@ -254,7 +254,7 @@ describe('engine', () => {
     expect(steps1[2]).toMatchObject({ step: 'TASK_STORE_PUT', taskName: 'b:build' })
     expect(steps1[3]).toMatchObject({ step: 'TASK_STORE_PUT', taskName: 'a:build' })
     expect(steps1[4]).toMatchObject({ step: 'BUILD_RUN_ENDED' })
-    expect(steps1).toHaveLength(4)
+    expect(steps1).toHaveLength(5)
 
     const r2 = await fork.run('OK', { taskKind: 'build' })
     expect(r2.buildRunId).not.toEqual(r1.buildRunId)
@@ -264,7 +264,7 @@ describe('engine', () => {
     expect(steps2[2]).toMatchObject({ step: 'TASK_STORE_GET', taskName: 'b:build' })
     expect(steps2[3]).toMatchObject({ step: 'TASK_STORE_GET', taskName: 'a:build' })
     expect(steps2[4]).toMatchObject({ step: 'BUILD_RUN_ENDED' })
-    expect(steps2).toHaveLength(4)
+    expect(steps2).toHaveLength(5)
   })
   test('builds only the units that were specified', async () => {
     const driver = new Driver(testName())
