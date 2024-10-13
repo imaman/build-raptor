@@ -222,7 +222,6 @@ describe('engine', () => {
     const stepByStep = fork.readStepByStepFile()
     expect(stepByStep[0]).toMatchObject({ step: 'BUILD_RUN_STARTED', buildRunId })
     expect(stepByStep[1]).toMatchObject({ step: 'PLAN_PREPARED' })
-    expect(stepByStep[1]).toMatchObject({ step: 'TASK_STORE_PUT', taskName: 'b:build', files: ['modules/b/dist'] })
     expect(stepByStep[2]).toMatchObject({ step: 'TASK_STORE_PUT', taskName: 'b:build', files: ['modules/b/dist'] })
     expect(stepByStep[3]).toMatchObject({ step: 'TASK_STORE_PUT', taskName: 'a:build', files: ['modules/a/dist'] })
     expect(stepByStep[4]).toMatchObject({ step: 'BUILD_RUN_ENDED' })
