@@ -20,16 +20,27 @@ describe('task-and-test-reporting', () => {
       'modules/a/package.json': driver.packageJson('a'),
       'modules/a/src/a.ts': `//`,
       'modules/a/tests/a.spec.ts': `test('a', () => {expect(1).toEqual(1)});`,
+      'modules/b/package.json': driver.packageJson('b'),
+      'modules/b/src/b.ts': `//`,
+      'modules/b/tests/b.spec.ts': `test('b', () => {expect(1).toEqual(1)});`,
     }
 
     const fork = await driver.repo(recipe).fork()
 
     await fork.run('OK', { taskKind: 'test' })
-    expect(fork.getSteps('PLAN_PREPARED')).toEqual([{ step: 'PLAN_PREPARED', taskNames: ['a:build', 'a:test'] }])
+    expect(fork.getSteps('PLAN_PREPARED')).toEqual([
+      { step: 'PLAN_PREPARED', taskNames: ['a:build', 'a:test', 'b:build', 'b:test'] },
+    ])
 
-    // The reported plan stays the same in subsequent runs
+    // The reported plan stays the same in subsequent (cached) runs
     await fork.run('OK', { taskKind: 'test' })
-    expect(fork.getSteps('PLAN_PREPARED')).toEqual([{ step: 'PLAN_PREPARED', taskNames: ['a:build', 'a:test'] }])
+    expect(fork.getSteps('PLAN_PREPARED')).toEqual([
+      { step: 'PLAN_PREPARED', taskNames: ['a:build', 'a:test', 'b:build', 'b:test'] },
+    ])
+
+    // The reported plan reflects the scope of the build run
+    await fork.run('OK', { taskKind: 'test', goals: ['modules/b'] })
+    expect(fork.getSteps('PLAN_PREPARED')).toEqual([{ step: 'PLAN_PREPARED', taskNames: ['b:build', 'b:test'] }])
   })
   test('publishes test events', async () => {
     const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
