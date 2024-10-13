@@ -51,6 +51,19 @@ export const Step = z.discriminatedUnion('step', [
     file: z.string(),
   }),
   z.object({
+    /**
+     * Indicates the planning phase is complete. This step occurs once per build, before task execution begins.
+     */
+    step: z.literal('PLAN_PREPARED'),
+    /**
+     * List of all task names within the current build scope. The scope is determined by the goals or labels provided to build-raptor.
+     * This list:
+     * - Includes tasks that may be skipped due to caching
+     * - Excludes tasks from modules not included in this build scope.
+     */
+    taskNames: z.string().array(),
+  }),
+  z.object({
     step: z.literal('PUBLIC_FILES'),
     taskName: z.string(),
     /**

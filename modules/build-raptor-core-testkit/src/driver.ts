@@ -260,20 +260,19 @@ class Fork {
     return this.file(BUILD_RAPTOR_DIR_NAME)
   }
 
-  // TODO(imaman): can be made sync
-  async readStepByStepFile() {
+  readStepByStepFile(): StepByStep {
     const unparsed = this.getBuildRaptorDir().to('step-by-step.json').readJson()
     return StepByStep.parse(unparsed)
   }
 
-  async getSteps<N extends StepName>(stepName: N): Promise<StepByName<N>[]> {
-    const parsed = await this.readStepByStepFile()
+  getSteps<N extends StepName>(stepName: N): StepByName<N>[] {
+    const parsed = this.readStepByStepFile()
     const ret = Fork.filterSteps<N>(parsed, stepName)
     return ret
   }
 
   async getPublicOutput(pathInRepo: string) {
-    const steps = await this.getSteps('PUBLIC_FILES')
+    const steps = this.getSteps('PUBLIC_FILES')
     const filtered = steps.filter(s => Boolean(s.publicFiles[pathInRepo]))
     if (filtered.length === 0) {
       throw new Error(`public output not found "${pathInRepo}"`)

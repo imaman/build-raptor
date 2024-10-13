@@ -5,13 +5,43 @@ import { createNopLogger } from 'logger'
 import { YarnRepoProtocol } from '../src/yarn-repo-protocol'
 
 jest.setTimeout(90000)
-describe('test-reporting', () => {
+describe('task-and-test-reporting', () => {
   const logger = createNopLogger()
 
   function newYarnRepoProtocol() {
     return new YarnRepoProtocol(logger, new NopAssetPublisher())
   }
   const testName = () => expect.getState().currentTestName
+
+  test('publishes task names', async () => {
+    const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+    const recipe = {
+      'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+      'modules/a/package.json': driver.packageJson('a'),
+      'modules/a/src/a.ts': `//`,
+      'modules/a/tests/a.spec.ts': `test('a', () => {expect(1).toEqual(1)});`,
+      'modules/b/package.json': driver.packageJson('b'),
+      'modules/b/src/b.ts': `//`,
+      'modules/b/tests/b.spec.ts': `test('b', () => {expect(1).toEqual(1)});`,
+    }
+
+    const fork = await driver.repo(recipe).fork()
+
+    await fork.run('OK', { taskKind: 'test' })
+    expect(fork.getSteps('PLAN_PREPARED')).toEqual([
+      { step: 'PLAN_PREPARED', taskNames: ['a:build', 'a:test', 'b:build', 'b:test'] },
+    ])
+
+    // The reported plan stays the same in subsequent (cached) runs
+    await fork.run('OK', { taskKind: 'test' })
+    expect(fork.getSteps('PLAN_PREPARED')).toEqual([
+      { step: 'PLAN_PREPARED', taskNames: ['a:build', 'a:test', 'b:build', 'b:test'] },
+    ])
+
+    // The reported plan reflects the scope of the build run
+    await fork.run('OK', { taskKind: 'test', goals: ['modules/b'] })
+    expect(fork.getSteps('PLAN_PREPARED')).toEqual([{ step: 'PLAN_PREPARED', taskNames: ['b:build', 'b:test'] }])
+  })
   test('publishes test events', async () => {
     const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
     const recipe = {
@@ -28,7 +58,7 @@ describe('test-reporting', () => {
     const fork = await driver.repo(recipe).fork()
 
     await fork.run('FAIL', { taskKind: 'test' })
-    const steps = await fork.readStepByStepFile()
+    const steps = fork.readStepByStepFile()
     expect(steps.filter(at => at.step === 'TEST_ENDED')).toEqual([
       expect.objectContaining({
         step: 'TEST_ENDED',

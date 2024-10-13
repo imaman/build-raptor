@@ -90,11 +90,11 @@ describe('asset-publishing-and-packing-and-running', () => {
 
       const fork = await driver.repo(recipe).fork()
       await fork.run('OK', { taskKind: 'publish-assets' })
-      const putSteps = await fork.getSteps('TASK_STORE_PUT')
+      const putSteps = fork.getSteps('TASK_STORE_PUT')
       const blobId = putSteps.find(at => at.taskName === 'a:publish-assets')?.blobId
       expect(await driver.slurpBlob(blobId)).toEqual({ 'modules/a/prepared-assets/x': 'a\n' })
 
-      const found = (await fork.getSteps('ASSET_PUBLISHED')).find(at => at.taskName === 'a:publish-assets')
+      const found = fork.getSteps('ASSET_PUBLISHED').find(at => at.taskName === 'a:publish-assets')
       expect(found?.fingerprint).toHaveLength(56)
       expect(found?.casAddress).toHaveLength(56)
       expect(found).toMatchObject({
@@ -117,9 +117,16 @@ describe('asset-publishing-and-packing-and-running', () => {
     const fork = await driver.repo(recipe).fork()
 
     const readBlob = async (taskName: string) => {
-      const steps = await fork.readStepByStepFile()
+      const steps = fork.readStepByStepFile()
       const blobId: string | undefined = steps
-        .filter(at => at.step !== 'BUILD_RUN_STARTED' && at.step !== 'BUILD_RUN_ENDED' && at.step !== 'PUBLIC_FILES' && at.taskName === taskName)
+        .filter(
+          at =>
+            at.step !== 'BUILD_RUN_STARTED' &&
+            at.step !== 'BUILD_RUN_ENDED' &&
+            at.step !== 'PUBLIC_FILES' &&
+            at.step !== 'PLAN_PREPARED' &&
+            at.taskName === taskName,
+        )
         .flatMap(at => (at.step === 'TASK_STORE_GET' || at.step === 'TASK_STORE_PUT' ? [at] : []))
         .find(Boolean)?.blobId
       return await driver.slurpBlob(blobId)

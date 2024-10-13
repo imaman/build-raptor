@@ -435,7 +435,7 @@ describe('yarn-repo-protocol.e2e', () => {
       const fork = await driver.repo(recipe).fork()
       await fork.run('OK', { taskKind: 'build', subKind: 'do-abc' })
 
-      expect(await fork.getSteps('PUBLIC_FILES')).toEqual([
+      expect(fork.getSteps('PUBLIC_FILES')).toEqual([
         {
           step: 'PUBLIC_FILES',
           taskName: 'a:build:do-abc',
@@ -459,7 +459,7 @@ describe('yarn-repo-protocol.e2e', () => {
 
       const fork = await driver.repo(recipe).fork()
       await fork.run('OK', { taskKind: 'build', subKind: 'do-abc' })
-      expect(await fork.getSteps('PUBLIC_FILES')).toEqual([
+      expect(fork.getSteps('PUBLIC_FILES')).toEqual([
         {
           step: 'PUBLIC_FILES',
           taskName: 'a:build:do-abc',
@@ -469,7 +469,7 @@ describe('yarn-repo-protocol.e2e', () => {
         },
       ])
       await fork.run('OK', { taskKind: 'build', subKind: 'do-abc' })
-      expect(await fork.getSteps('PUBLIC_FILES')).toEqual([
+      expect(fork.getSteps('PUBLIC_FILES')).toEqual([
         {
           step: 'PUBLIC_FILES',
           taskName: 'a:build:do-abc',

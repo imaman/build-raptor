@@ -189,6 +189,7 @@ export class Engine {
       if (startingPoints.length === 0) {
         throw new BuildFailedError(`No task that matches the given goals/labels was found`)
       }
+      this.steps.push({ step: 'PLAN_PREPARED', taskNames: plan.tasks().map(at => at.name) })
 
       const ret = await this.executePlan(plan, model)
       this.steps.push({ step: 'BUILD_RUN_ENDED' })
