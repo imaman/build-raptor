@@ -26,6 +26,10 @@ describe('task-and-test-reporting', () => {
 
     await fork.run('OK', { taskKind: 'test' })
     expect(fork.getSteps('PLAN_PREPARED')).toEqual([{ step: 'PLAN_PREPARED', taskNames: ['a:build', 'a:test'] }])
+
+    // The reported plan stays the same in subsequent runs
+    await fork.run('OK', { taskKind: 'test' })
+    expect(fork.getSteps('PLAN_PREPARED')).toEqual([{ step: 'PLAN_PREPARED', taskNames: ['a:build', 'a:test'] }])
   })
   test('publishes test events', async () => {
     const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
