@@ -56,9 +56,10 @@ export const Step = z.discriminatedUnion('step', [
      */
     step: z.literal('PLAN_PREPARED'),
     /**
-     * Names of all tasks that are part of this run's scope. The run's scope is defined by the goals/labels passed to
-     * build-raptor. Hence, this list excludes tasks that belong to modules which were not asked to be built. But, it
-     * does include tasks that will not be executed due to caching.
+     * List of all task names within the current build scope. The scope is determined by the goals or labels provided to build-raptor.
+     * This list:
+     * - Includes tasks that may be skipped due to caching
+     * - Excludes tasks from modules not included in this build scope.
      */
     taskNames: z.string().array(),
   }),
