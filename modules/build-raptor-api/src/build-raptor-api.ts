@@ -51,7 +51,15 @@ export const Step = z.discriminatedUnion('step', [
     file: z.string(),
   }),
   z.object({
+    /**
+     * This step is reported once in every build run before execution of tasks start.
+     */
     step: z.literal('PLAN_PREPARED'),
+    /**
+     * Names of all tasks that are part of this run's scope. The run's scope is defined by the goals/labels passed to
+     * build-raptor. Hence, this list excludes tasks that belong to modules which were not asked to be built. But, it
+     * does include tasks that will not be executed due to caching.
+     */
     taskNames: z.string().array(),
   }),
   z.object({
