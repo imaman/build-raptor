@@ -90,11 +90,11 @@ describe('asset-publishing-and-packing-and-running', () => {
 
       const fork = await driver.repo(recipe).fork()
       await fork.run('OK', { taskKind: 'publish-assets' })
-      const putSteps = await fork.getSteps('TASK_STORE_PUT')
+      const putSteps = fork.getSteps('TASK_STORE_PUT')
       const blobId = putSteps.find(at => at.taskName === 'a:publish-assets')?.blobId
       expect(await driver.slurpBlob(blobId)).toEqual({ 'modules/a/prepared-assets/x': 'a\n' })
 
-      const found = (await fork.getSteps('ASSET_PUBLISHED')).find(at => at.taskName === 'a:publish-assets')
+      const found = fork.getSteps('ASSET_PUBLISHED').find(at => at.taskName === 'a:publish-assets')
       expect(found?.fingerprint).toHaveLength(56)
       expect(found?.casAddress).toHaveLength(56)
       expect(found).toMatchObject({
