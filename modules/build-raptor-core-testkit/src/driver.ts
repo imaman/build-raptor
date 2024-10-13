@@ -265,14 +265,14 @@ class Fork {
     return StepByStep.parse(unparsed)
   }
 
-  async getSteps<N extends StepName>(stepName: N): Promise<StepByName<N>[]> {
+  getSteps<N extends StepName>(stepName: N): StepByName<N>[] {
     const parsed = this.readStepByStepFile()
     const ret = Fork.filterSteps<N>(parsed, stepName)
     return ret
   }
 
   async getPublicOutput(pathInRepo: string) {
-    const steps = await this.getSteps('PUBLIC_FILES')
+    const steps = this.getSteps('PUBLIC_FILES')
     const filtered = steps.filter(s => Boolean(s.publicFiles[pathInRepo]))
     if (filtered.length === 0) {
       throw new Error(`public output not found "${pathInRepo}"`)
