@@ -4,10 +4,9 @@ import { Step } from './build-raptor-api'
  * StepByStepProcessor is a function type for processing build steps in real-time.
  *
  * To use with build-raptor:
- * 1. Create a Node.js module that exports a function of this type.
- * 2. Import the necessary types from 'build-raptor-api'.
- * 3. Implement the processing logic.
- * 4. Export the function as 'processor'.
+ * 1. Create a Node.js file that imports the necessary types from 'build-raptor-api'
+ * 2. Implement a function of this type (StepByStepProcessor) that implements your custom processing logic.
+ * 3. Export the function as 'processor'.
  *
  * Example implementation:
  * ```typescript
