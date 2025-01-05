@@ -1,8 +1,7 @@
-import { Int, shouldNeverHappen, switchOn, TypedPublisher } from 'misc'
+import { Int, shouldNeverHappen, switchOn } from 'misc'
 import { ExitStatus } from 'repo-protocol'
 import { TaskName } from 'task-name'
 
-import { EngineEventScheme } from './engine-event-scheme'
 import { ExecutionPlan } from './execution-plan'
 import { KnownExecutionType } from './execution-type'
 import { PerformanceReport } from './performance-report'
@@ -15,10 +14,7 @@ export class TaskTracker {
   private numExecuted = 0
   private counter: SlotIndex = SlotIndex(0)
 
-  constructor(
-    private readonly plan: ExecutionPlan,
-    private readonly eventPublisher: TypedPublisher<EngineEventScheme>,
-  ) {}
+  constructor(private readonly plan: ExecutionPlan) {}
 
   tasks() {
     return this.plan.tasks()
@@ -65,16 +61,16 @@ export class TaskTracker {
     shouldNeverHappen(status)
   }
 
-  async registerCachedVerdict(taskName: TaskName, cachedVerdict: 'OK' | 'FLAKY' | 'FAIL') {
+  registerCachedVerdict(taskName: TaskName, cachedVerdict: 'OK' | 'FLAKY' | 'FAIL') {
     const task = this.getTask(taskName)
 
     if (cachedVerdict === 'OK' || cachedVerdict === 'FLAKY') {
-      await this.assignVerdictToTask(task, 'OK', 'CACHED')
+      this.assignVerdictToTask(task, 'OK', 'CACHED')
       return
     }
 
     if (cachedVerdict == 'FAIL') {
-      await this.assignVerdictToTask(task, 'FAIL', 'CACHED')
+      this.assignVerdictToTask(task, 'FAIL', 'CACHED')
       this.propagateFailure(taskName)
       return
     }
@@ -82,9 +78,9 @@ export class TaskTracker {
     shouldNeverHappen(cachedVerdict)
   }
 
-  async registerVerdict(taskName: TaskName, status: ExitStatus, outputFile: string) {
+  registerVerdict(taskName: TaskName, status: ExitStatus, outputFile: string) {
     const task = this.getTask(taskName)
-    await this.assignVerdictToTask(task, status, 'EXECUTED')
+    this.assignVerdictToTask(task, status, 'EXECUTED')
 
     switchOn(status, {
       CRASH: () => {},
@@ -99,12 +95,7 @@ export class TaskTracker {
     })
   }
 
-  private async assignVerdictToTask(
-    t: Task,
-    status: ExitStatus,
-    executionType: KnownExecutionType,
-    rootCause?: TaskName,
-  ) {
+  private assignVerdictToTask(t: Task, status: ExitStatus, executionType: KnownExecutionType, rootCause?: TaskName) {
     t.assignVerdict(status, executionType, rootCause)
   }
 
