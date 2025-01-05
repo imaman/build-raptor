@@ -6,7 +6,7 @@ import * as fs from 'fs'
 import * as fse from 'fs-extra'
 import ignore from 'ignore'
 import { Logger } from 'logger'
-import { DirectoryScanner, failMe, Int, shouldNeverHappen, TypedPublisher } from 'misc'
+import { DirectoryScanner, failMe, Int, shouldNeverHappen, switchOn, TypedPublisher } from 'misc'
 import * as path from 'path'
 import { RepoProtocol } from 'repo-protocol'
 import { TaskName } from 'task-name'
@@ -159,6 +159,24 @@ export class Engine {
         step: 'PUBLIC_FILES',
         taskName: e.taskName,
         publicFiles: e.publicFiles,
+      })
+    })
+    this.eventPublisher.on('executionEnded', e => {
+      this.steps.push({
+        step: 'TASK_ENDED',
+        taskName: e.taskName,
+        status: switchOn(e.status, {
+          CRASH: () => 'CRASHED',
+          FAIL: () => 'FAILED',
+          OK: () => 'OK',
+        }),
+      })
+    })
+    this.eventPublisher.on('executionSkipped', e => {
+      this.steps.push({
+        step: 'TASK_ENDED',
+        taskName: e,
+        status: 'SKIPPED',
       })
     })
 

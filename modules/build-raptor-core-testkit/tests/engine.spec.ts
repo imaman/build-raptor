@@ -220,12 +220,15 @@ describe('engine', () => {
 
     const { buildRunId } = await fork.run('OK', { taskKind: 'build' })
     const stepByStep = fork.readStepByStepFile()
-    expect(stepByStep[0]).toMatchObject({ step: 'BUILD_RUN_STARTED', buildRunId })
-    expect(stepByStep[1]).toMatchObject({ step: 'PLAN_PREPARED' })
-    expect(stepByStep[2]).toMatchObject({ step: 'TASK_STORE_PUT', taskName: 'b:build', files: ['modules/b/dist'] })
-    expect(stepByStep[3]).toMatchObject({ step: 'TASK_STORE_PUT', taskName: 'a:build', files: ['modules/a/dist'] })
-    expect(stepByStep[4]).toMatchObject({ step: 'BUILD_RUN_ENDED' })
-    expect(stepByStep).toHaveLength(5)
+    expect(stepByStep).toMatchObject([
+      { step: 'BUILD_RUN_STARTED', buildRunId },
+      { step: 'PLAN_PREPARED' },
+      { step: 'TASK_ENDED', taskName: 'b:build' },
+      { step: 'TASK_STORE_PUT', taskName: 'b:build', files: ['modules/b/dist'] },
+      { step: 'TASK_ENDED', taskName: 'a:build' },
+      { step: 'TASK_STORE_PUT', taskName: 'a:build', files: ['modules/a/dist'] },
+      { step: 'BUILD_RUN_ENDED' },
+    ])
   })
   test('the step-by-step is overwritten at the next build run', async () => {
     const driver = new Driver(testName())
@@ -248,22 +251,28 @@ describe('engine', () => {
 
     const r1 = await fork.run('OK', { taskKind: 'build' })
     const steps1 = fork.readStepByStepFile()
-    expect(steps1[0]).toMatchObject({ step: 'BUILD_RUN_STARTED', buildRunId: r1.buildRunId })
-    expect(steps1[1]).toMatchObject({ step: 'PLAN_PREPARED' })
-    expect(steps1[2]).toMatchObject({ step: 'TASK_STORE_PUT', taskName: 'b:build' })
-    expect(steps1[3]).toMatchObject({ step: 'TASK_STORE_PUT', taskName: 'a:build' })
-    expect(steps1[4]).toMatchObject({ step: 'BUILD_RUN_ENDED' })
-    expect(steps1).toHaveLength(5)
+    expect(steps1).toMatchObject([
+      { step: 'BUILD_RUN_STARTED', buildRunId: r1.buildRunId },
+      { step: 'PLAN_PREPARED' },
+      { step: 'TASK_ENDED', taskName: 'b:build' },
+      { step: 'TASK_STORE_PUT', taskName: 'b:build' },
+      { step: 'TASK_ENDED', taskName: 'a:build' },
+      { step: 'TASK_STORE_PUT', taskName: 'a:build' },
+      { step: 'BUILD_RUN_ENDED' },
+    ])
 
     const r2 = await fork.run('OK', { taskKind: 'build' })
     expect(r2.buildRunId).not.toEqual(r1.buildRunId)
     const steps2 = fork.readStepByStepFile()
-    expect(steps2[0]).toMatchObject({ step: 'BUILD_RUN_STARTED', buildRunId: r2.buildRunId })
-    expect(steps2[1]).toMatchObject({ step: 'PLAN_PREPARED' })
-    expect(steps2[2]).toMatchObject({ step: 'TASK_STORE_GET', taskName: 'b:build' })
-    expect(steps2[3]).toMatchObject({ step: 'TASK_STORE_GET', taskName: 'a:build' })
-    expect(steps2[4]).toMatchObject({ step: 'BUILD_RUN_ENDED' })
-    expect(steps2).toHaveLength(5)
+    expect(steps2).toMatchObject([
+      { step: 'BUILD_RUN_STARTED', buildRunId: r2.buildRunId },
+      { step: 'PLAN_PREPARED' },
+      { step: 'TASK_STORE_GET', taskName: 'b:build' },
+      { step: 'TASK_ENDED', taskName: 'b:build' },
+      { step: 'TASK_STORE_GET', taskName: 'a:build' },
+      { step: 'TASK_ENDED', taskName: 'a:build' },
+      { step: 'BUILD_RUN_ENDED' },
+    ])
   })
   test('builds only the units that were specified', async () => {
     const driver = new Driver(testName())
