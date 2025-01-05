@@ -314,7 +314,7 @@ describe('engine', () => {
       'here/d/package.json': { name: 'd', version: '1.0.0', scripts: { build: 'exit 0' } },
     }
 
-    const fork = await driver.repo(recipe).fork()
+    const fork = await driver.repo(recipe).fork() //1
     await fork.run('FAIL', { taskKind: 'build' })
     expect(fork.readStepByStepFile().filter(at => at.step === 'TASK_ENDED')).toMatchObject([
       { step: 'TASK_ENDED', taskName: 'd:build', status: 'OK' },
