@@ -298,23 +298,6 @@ describe('engine', () => {
       { step: 'TASK_ENDED', taskName: 'a:test', status: 'FAILED' },
     ])
   })
-  test(`chained!`, async () => {
-    const driver = new Driver(testName(), { repoProtocol: new SimpleNodeRepoProtocol(PathInRepo('here')) })
-    const recipe = {
-      'package.json': { private: true, workspaces: ['here/*'] },
-      ...mod('here', 'a', { build: 'exit 0' }, 'b'),
-      ...mod('here', 'b', { build: 'exit 0' }, 'c'),
-      ...mod('here', 'c', { build: 'exit 1' }, 'd'),
-      ...mod('here', 'd', { build: 'exit 0' }),
-    }
-    const fork = await driver.repo(recipe).fork()
-
-    await fork.run('FAIL', { taskKind: 'build' })
-    expect(fork.readStepByStepFile().filter(at => at.step === 'TASK_ENDED')).toMatchObject([
-      { step: 'TASK_ENDED', taskName: 'd:build', status: 'OK' },
-      { step: 'TASK_ENDED', taskName: 'c:build', status: 'FAILED' },
-    ])
-  })
   test(`in TASK_ENDED step previously successful tasks get a SKIPPED status`, async () => {
     const driver = new Driver(testName())
     const recipe = {
@@ -349,20 +332,21 @@ describe('engine', () => {
       { step: 'TASK_ENDED', taskName: 'a:build', status: 'SKIPPED' },
     ])
   })
-  test.skip('status CRASHED in TASK_ENDED', async () => {
-    const failingDriver = new Driver(testName(), { storageClient: new FailingStorageClient() })
-    const fork = await failingDriver
-      .repo({
-        'package.json': { private: true, workspaces: ['modules/*'] },
-        'modules/a/package.json': { name: 'a', version: '1.0.0' },
-      })
-      .fork()
-    await fork.run('CRASH')
-    expect(fork.readStepByStepFile()).toMatchObject([
-      { step: 'TASK_ENDED', taskName: 'b:build', status: 'OK' },
-      { step: 'TASK_ENDED', taskName: 'a:build', status: 'FAILED' },
-      { step: 'TASK_ENDED', taskName: 'b:test', status: 'OK' },
-      { step: 'TASK_ENDED', taskName: 'a:test', status: 'CRASHED' },
+  test(`chained!`, async () => {
+    const driver = new Driver(testName(), { repoProtocol: new SimpleNodeRepoProtocol(PathInRepo('here')) })
+    const recipe = {
+      'package.json': { private: true, workspaces: ['here/*'] },
+      ...mod('here', 'a', { build: 'exit 0' }, 'b'),
+      ...mod('here', 'b', { build: 'exit 0' }, 'c'),
+      ...mod('here', 'c', { build: 'exit 1' }, 'd'),
+      ...mod('here', 'd', { build: 'exit 0' }),
+    }
+    const fork = await driver.repo(recipe).fork()
+
+    await fork.run('FAIL', { taskKind: 'build' })
+    expect(fork.readStepByStepFile().filter(at => at.step === 'TASK_ENDED')).toMatchObject([
+      { step: 'TASK_ENDED', taskName: 'd:build', status: 'OK' },
+      { step: 'TASK_ENDED', taskName: 'c:build', status: 'FAILED' },
     ])
   })
   test('builds only the units that were specified', async () => {
