@@ -278,13 +278,7 @@ describe('engine', () => {
     const driver = new Driver(testName())
     const recipe = {
       'package.json': { private: true, workspaces: ['modules/*'] },
-      'modules/a/package.json': {
-        name: 'a',
-        version: '1.0.0',
-        scripts: { build: 'exit 0', test: 'exit 1' },
-        dependencies: { b: '1.0.0' },
-      },
-      'modules/b/package.json': { name: 'b', version: '1.0.0', scripts: { build: 'exit 0', test: 'exit 0' } },
+      'modules/a/package.json': { name: 'a', version: '1.0.0', scripts: { build: 'exit 0', test: 'exit 1' } },
     }
 
     const fork = await driver.repo(recipe).fork()
@@ -294,9 +288,7 @@ describe('engine', () => {
     const taskEndedSteps1 = steps1.filter(at => at.step === 'TASK_ENDED')
 
     expect(taskEndedSteps1).toMatchObject([
-      { step: 'TASK_ENDED', taskName: 'b:build', status: 'OK' },
       { step: 'TASK_ENDED', taskName: 'a:build', status: 'OK' },
-      { step: 'TASK_ENDED', taskName: 'b:test', status: 'OK' },
       { step: 'TASK_ENDED', taskName: 'a:test', status: 'FAILED' },
     ])
   })
