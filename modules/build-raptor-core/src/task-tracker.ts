@@ -3,7 +3,6 @@ import { ExitStatus } from 'repo-protocol'
 import { TaskName } from 'task-name'
 
 import { ExecutionPlan } from './execution-plan'
-import { KnownExecutionType } from './execution-type'
 import { PerformanceReport } from './performance-report'
 import { SlotIndex } from './slot-index'
 import { Task } from './task'
@@ -65,12 +64,12 @@ export class TaskTracker {
     const task = this.getTask(taskName)
 
     if (cachedVerdict === 'OK' || cachedVerdict === 'FLAKY') {
-      this.assignVerdictToTask(task, 'OK', 'CACHED')
+      task.assignVerdict('OK', 'CACHED')
       return
     }
 
     if (cachedVerdict == 'FAIL') {
-      this.assignVerdictToTask(task, 'FAIL', 'CACHED')
+      task.assignVerdict('FAIL', 'CACHED')
       this.propagateFailure(taskName)
       return
     }
@@ -80,7 +79,7 @@ export class TaskTracker {
 
   registerVerdict(taskName: TaskName, status: ExitStatus, outputFile: string) {
     const task = this.getTask(taskName)
-    this.assignVerdictToTask(task, status, 'EXECUTED')
+    task.assignVerdict(status, 'EXECUTED')
 
     switchOn(status, {
       CRASH: () => {},
@@ -93,10 +92,6 @@ export class TaskTracker {
       FAIL: () => this.propagateFailure(taskName),
       OK: () => {},
     })
-  }
-
-  private assignVerdictToTask(t: Task, status: ExitStatus, executionType: KnownExecutionType, rootCause?: TaskName) {
-    t.assignVerdict(status, executionType, rootCause)
   }
 
   getTask(tn: TaskName): Task {
@@ -115,7 +110,7 @@ export class TaskTracker {
         continue
       }
       const r = this.getTask(t)
-      this.assignVerdictToTask(r, 'FAIL', 'CANNOT_START', taskName)
+      r.assignVerdict('FAIL', 'CANNOT_START', taskName)
     }
   }
 }
