@@ -7,7 +7,7 @@ import { Step } from './build-raptor-api'
  * To use with build-raptor:
  * 1. Create a file that imports the necessary types from 'build-raptor-api'
  * 2. Implement and export a function called `processor` matching the `StepByStepProcessor` type
- * 3. The function can be async or sync and should handle the Step object according to your needs
+ * 3. The function can be async or sync and should handle the `Step` object according to your needs
  *
  * ## Example Implementation (my-step-processor.ts)
  * ```typescript
