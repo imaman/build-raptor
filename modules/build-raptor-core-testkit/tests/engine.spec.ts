@@ -212,17 +212,8 @@ describe('engine', () => {
     const driver = new Driver(testName(), { repoProtocol: new SimpleNodeRepoProtocol(PathInRepo('modules'), ['dist']) })
     const recipe = {
       'package.json': { private: true, workspaces: ['modules/*'] },
-      'modules/a/package.json': {
-        name: 'a',
-        version: '1.0.0',
-        scripts: { build: 'mkdir -p dist/src && echo "A" > dist/src/a.o' },
-        dependencies: { b: '1.0.0' },
-      },
-      'modules/b/package.json': {
-        name: 'b',
-        version: '1.0.0',
-        scripts: { build: 'mkdir -p dist/src && echo "B" > dist/src/b.o' },
-      },
+      ...mod('modules', 'a', { build: 'mkdir -p dist/src && echo "A" > dist/src/a.o' }, 'b'),
+      ...mod('modules', 'b', { build: 'mkdir -p dist/src && echo "B" > dist/src/b.o' }),
     }
 
     const fork = await driver.repo(recipe).fork()
@@ -243,17 +234,8 @@ describe('engine', () => {
     const driver = new Driver(testName())
     const recipe = {
       'package.json': { private: true, workspaces: ['modules/*'] },
-      'modules/a/package.json': {
-        name: 'a',
-        version: '1.0.0',
-        scripts: { build: 'exit 0', test: 'echo "A" > o' },
-        dependencies: { b: '1.0.0' },
-      },
-      'modules/b/package.json': {
-        name: 'b',
-        version: '1.0.0',
-        scripts: { build: 'exit 0', test: 'echo "B" > o' },
-      },
+      ...mod('modules', 'a', { build: 'exit 0', test: 'echo "A" > o' }, 'b'),
+      ...mod('modules', 'b', { build: 'exit 0', test: 'echo "B" > o' }),
     }
 
     const fork = await driver.repo(recipe).fork()
@@ -302,17 +284,8 @@ describe('engine', () => {
     const driver = new Driver(testName())
     const recipe = {
       'package.json': { private: true, workspaces: ['modules/*'] },
-      'modules/a/package.json': {
-        name: 'a',
-        version: '1.0.0',
-        scripts: { build: 'exit 0', test: 'echo "A" > o' },
-        dependencies: { b: '1.0.0' },
-      },
-      'modules/b/package.json': {
-        name: 'b',
-        version: '1.0.0',
-        scripts: { build: 'exit 0', test: 'echo "B" > o' },
-      },
+      ...mod('modules', 'a', { build: 'exit 0', test: 'echo "A" > o' }, 'b'),
+      ...mod('modules', 'b', { build: 'exit 0', test: 'echo "B" > o' }),
     }
 
     const fork = await driver.repo(recipe).fork()
