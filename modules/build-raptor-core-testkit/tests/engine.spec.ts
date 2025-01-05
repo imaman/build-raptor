@@ -284,31 +284,42 @@ describe('engine', () => {
     const fork = await driver.repo(recipe).fork()
 
     await fork.run('FAIL')
-    const steps1 = fork.readStepByStepFile()
-    const taskEndedSteps1 = steps1.filter(at => at.step === 'TASK_ENDED')
-
-    expect(taskEndedSteps1).toMatchObject([
+    expect(fork.readStepByStepFile().filter(at => at.step === 'TASK_ENDED')).toMatchObject([
       { step: 'TASK_ENDED', taskName: 'a:build', status: 'OK' },
       { step: 'TASK_ENDED', taskName: 'a:test', status: 'FAILED' },
     ])
   })
-  test.skip(`chained`, async () => {
-    const driver = new Driver(testName())
+  test(`chained!`, async () => {
+    const driver = new Driver(testName(), { repoProtocol: new SimpleNodeRepoProtocol(PathInRepo('here')) })
     const recipe = {
-      'package.json': { private: true, workspaces: ['modules/*'] },
-      'modules/a/package.json': {
+      'package.json': { private: true, workspaces: ['here/*'] },
+      'here/a/package.json': {
         name: 'a',
         version: '1.0.0',
-        scripts: { build: 'exit 0', test: 'exit 1' },
+        scripts: { build: 'exit 0' },
         dependencies: { b: '1.0.0' },
       },
-      'modules/b/package.json': { name: 'b', version: '1.0.0', scripts: { build: 'exit 1', test: 'exit 0' } },
+      'here/b/package.json': {
+        name: 'b',
+        version: '1.0.0',
+        scripts: { build: 'exit 0' },
+        dependencies: { c: '1.0.0' },
+      },
+      'here/c/package.json': {
+        name: 'c',
+        version: '1.0.0',
+        scripts: { build: 'exit 1' },
+        dependencies: { d: '1.0.0' },
+      },
+      'here/d/package.json': { name: 'd', version: '1.0.0', scripts: { build: 'exit 0' } },
     }
 
     const fork = await driver.repo(recipe).fork()
-
-    await fork.run('FAIL')
-    expect(fork.readStepByStepFile()).toMatchObject([{ x: 1 }])
+    await fork.run('FAIL', { taskKind: 'build' })
+    expect(fork.readStepByStepFile().filter(at => at.step === 'TASK_ENDED')).toMatchObject([
+      { step: 'TASK_ENDED', taskName: 'd:build', status: 'OK' },
+      { step: 'TASK_ENDED', taskName: 'c:build', status: 'FAILED' },
+    ])
   })
   test(`in TASK_ENDED step previously successful tasks get a SKIPPED status`, async () => {
     const driver = new Driver(testName())
