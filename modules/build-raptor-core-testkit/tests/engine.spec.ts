@@ -300,6 +300,24 @@ describe('engine', () => {
       { step: 'TASK_ENDED', taskName: 'a:test', status: 'FAILED' },
     ])
   })
+  test.skip(`chained`, async () => {
+    const driver = new Driver(testName())
+    const recipe = {
+      'package.json': { private: true, workspaces: ['modules/*'] },
+      'modules/a/package.json': {
+        name: 'a',
+        version: '1.0.0',
+        scripts: { build: 'exit 0', test: 'exit 1' },
+        dependencies: { b: '1.0.0' },
+      },
+      'modules/b/package.json': { name: 'b', version: '1.0.0', scripts: { build: 'exit 1', test: 'exit 0' } },
+    }
+
+    const fork = await driver.repo(recipe).fork()
+
+    await fork.run('FAIL')
+    expect(fork.readStepByStepFile()).toMatchObject([{ x: 1 }])
+  })
   test(`in TASK_ENDED step previously successful tasks get a SKIPPED status`, async () => {
     const driver = new Driver(testName())
     const recipe = {
