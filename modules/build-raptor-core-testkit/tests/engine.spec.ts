@@ -35,11 +35,11 @@ describe('engine', () => {
   const testName = () => expect.getState().currentTestName
 
   const mod = (folder: string, name: string, scripts: Record<string, string>, dependsOn?: string) => ({
-    [`${folder}/a/package.json`]: {
+    [`${folder}/${name}/package.json`]: {
       name,
       version: '1.0.0',
-      ...scripts,
-      ...(dependsOn ? { dependencies: { dependsOn: '1.0.0' } } : {}),
+      scripts,
+      ...(dependsOn ? { dependencies: { [dependsOn]: '1.0.0' } } : {}),
     },
   })
 
