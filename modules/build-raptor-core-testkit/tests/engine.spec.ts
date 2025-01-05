@@ -274,7 +274,7 @@ describe('engine', () => {
       { step: 'BUILD_RUN_ENDED' },
     ])
   })
-  test(`in TASK_ENDED step, the status reflects the successfulness of an executed task`, async () => {
+  test(`TASK_ENDED status reflects task execution result`, async () => {
     const driver = new Driver(testName())
     const recipe = {
       'package.json': { private: true, workspaces: ['modules/*'] },
