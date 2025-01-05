@@ -34,6 +34,15 @@ jest.setTimeout(30000)
 describe('engine', () => {
   const testName = () => expect.getState().currentTestName
 
+  const mod = (folder: string, name: string, scripts: Record<string, string>, dependsOn?: string) => ({
+    [`${folder}/a/package.json`]: {
+      name,
+      version: '1.0.0',
+      ...scripts,
+      ...(dependsOn ? { dependencies: { dependsOn: '1.0.0' } } : {}),
+    },
+  })
+
   test('stores build run ID in a file', async () => {
     const driver = new Driver(testName())
     const recipe = {
@@ -293,28 +302,13 @@ describe('engine', () => {
     const driver = new Driver(testName(), { repoProtocol: new SimpleNodeRepoProtocol(PathInRepo('here')) })
     const recipe = {
       'package.json': { private: true, workspaces: ['here/*'] },
-      'here/a/package.json': {
-        name: 'a',
-        version: '1.0.0',
-        scripts: { build: 'exit 0' },
-        dependencies: { b: '1.0.0' },
-      },
-      'here/b/package.json': {
-        name: 'b',
-        version: '1.0.0',
-        scripts: { build: 'exit 0' },
-        dependencies: { c: '1.0.0' },
-      },
-      'here/c/package.json': {
-        name: 'c',
-        version: '1.0.0',
-        scripts: { build: 'exit 1' },
-        dependencies: { d: '1.0.0' },
-      },
-      'here/d/package.json': { name: 'd', version: '1.0.0', scripts: { build: 'exit 0' } },
+      ...mod('here', 'a', { build: 'exit 0' }, 'b'),
+      ...mod('here', 'b', { build: 'exit 0' }, 'c'),
+      ...mod('here', 'c', { build: 'exit 1' }, 'd'),
+      ...mod('here', 'd', { build: 'exit 0' }),
     }
+    const fork = await driver.repo(recipe).fork()
 
-    const fork = await driver.repo(recipe).fork() //1
     await fork.run('FAIL', { taskKind: 'build' })
     expect(fork.readStepByStepFile().filter(at => at.step === 'TASK_ENDED')).toMatchObject([
       { step: 'TASK_ENDED', taskName: 'd:build', status: 'OK' },
