@@ -254,9 +254,9 @@ describe('engine', () => {
     expect(steps1).toMatchObject([
       { step: 'BUILD_RUN_STARTED', buildRunId: r1.buildRunId },
       { step: 'PLAN_PREPARED' },
-      { step: 'TASK_ENDED', taskName: 'b:build', status: 'OK' },
+      { step: 'TASK_ENDED', taskName: 'b:build' },
       { step: 'TASK_STORE_PUT', taskName: 'b:build' },
-      { step: 'TASK_ENDED', taskName: 'a:build', status: 'OK' },
+      { step: 'TASK_ENDED', taskName: 'a:build' },
       { step: 'TASK_STORE_PUT', taskName: 'a:build' },
       { step: 'BUILD_RUN_ENDED' },
     ])
@@ -268,10 +268,44 @@ describe('engine', () => {
       { step: 'BUILD_RUN_STARTED', buildRunId: r2.buildRunId },
       { step: 'PLAN_PREPARED' },
       { step: 'TASK_STORE_GET', taskName: 'b:build' },
-      { step: 'TASK_ENDED', taskName: 'b:build', status: 'SKIPPED' },
+      { step: 'TASK_ENDED', taskName: 'b:build' },
       { step: 'TASK_STORE_GET', taskName: 'a:build' },
-      { step: 'TASK_ENDED', taskName: 'a:build', status: 'SKIPPED' },
+      { step: 'TASK_ENDED', taskName: 'a:build' },
       { step: 'BUILD_RUN_ENDED' },
+    ])
+  })
+  test(`the TASK_ENDED step reflects the task's status`, async () => {
+    const driver = new Driver(testName())
+    const recipe = {
+      'package.json': { private: true, workspaces: ['modules/*'] },
+      'modules/a/package.json': {
+        name: 'a',
+        version: '1.0.0',
+        scripts: { build: 'exit 0', test: 'echo "A" > o' },
+        dependencies: { b: '1.0.0' },
+      },
+      'modules/b/package.json': {
+        name: 'b',
+        version: '1.0.0',
+        scripts: { build: 'exit 0', test: 'echo "B" > o' },
+      },
+    }
+
+    const fork = await driver.repo(recipe).fork()
+
+    const r1 = await fork.run('OK', { taskKind: 'build' })
+    const steps1 = fork.readStepByStepFile()
+    expect(steps1.filter(at => at.step === 'TASK_ENDED')).toMatchObject([
+      { step: 'TASK_ENDED', taskName: 'b:build', status: 'OK' },
+      { step: 'TASK_ENDED', taskName: 'a:build', status: 'OK' },
+    ])
+
+    const r2 = await fork.run('OK', { taskKind: 'build' })
+    expect(r2.buildRunId).not.toEqual(r1.buildRunId)
+    const steps2 = fork.readStepByStepFile()
+    expect(steps2.filter(at => at.step === 'TASK_ENDED')).toMatchObject([
+      { step: 'TASK_ENDED', taskName: 'b:build', status: 'SKIPPED' },
+      { step: 'TASK_ENDED', taskName: 'a:build', status: 'SKIPPED' },
     ])
   })
   test('builds only the units that were specified', async () => {
