@@ -274,7 +274,7 @@ describe('engine', () => {
       { step: 'BUILD_RUN_ENDED' },
     ])
   })
-  test(`the TASK_ENDED step reflects the task's status`, async () => {
+  test(`in TASK_ENDED step previously successful tasks get a SKIPPED status`, async () => {
     const driver = new Driver(testName())
     const recipe = {
       'package.json': { private: true, workspaces: ['modules/*'] },
@@ -306,6 +306,48 @@ describe('engine', () => {
     expect(steps2.filter(at => at.step === 'TASK_ENDED')).toMatchObject([
       { step: 'TASK_ENDED', taskName: 'b:build', status: 'SKIPPED' },
       { step: 'TASK_ENDED', taskName: 'a:build', status: 'SKIPPED' },
+    ])
+  })
+  test(`in TASK_ENDED step, the status reflects the successfulness of an executed task`, async () => {
+    const driver = new Driver(testName())
+    const recipe = {
+      'package.json': { private: true, workspaces: ['modules/*'] },
+      'modules/a/package.json': {
+        name: 'a',
+        version: '1.0.0',
+        scripts: { build: 'exit 0', test: 'exit 1' },
+        dependencies: { b: '1.0.0' },
+      },
+      'modules/b/package.json': { name: 'b', version: '1.0.0', scripts: { build: 'exit 0', test: 'exit 0' } },
+    }
+
+    const fork = await driver.repo(recipe).fork()
+
+    await fork.run('FAIL')
+    const steps1 = fork.readStepByStepFile()
+    const taskEndedSteps1 = steps1.filter(at => at.step === 'TASK_ENDED')
+
+    expect(taskEndedSteps1).toMatchObject([
+      { step: 'TASK_ENDED', taskName: 'b:build', status: 'OK' },
+      { step: 'TASK_ENDED', taskName: 'a:build', status: 'OK' },
+      { step: 'TASK_ENDED', taskName: 'b:test', status: 'OK' },
+      { step: 'TASK_ENDED', taskName: 'a:test', status: 'FAILED' },
+    ])
+  })
+  test.skip('status CRASHED in TASK_ENDED', async () => {
+    const failingDriver = new Driver(testName(), { storageClient: new FailingStorageClient() })
+    const fork = await failingDriver
+      .repo({
+        'package.json': { private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': { name: 'a', version: '1.0.0' },
+      })
+      .fork()
+    await fork.run('CRASH')
+    expect(fork.readStepByStepFile()).toMatchObject([
+      { step: 'TASK_ENDED', taskName: 'b:build', status: 'OK' },
+      { step: 'TASK_ENDED', taskName: 'a:build', status: 'FAILED' },
+      { step: 'TASK_ENDED', taskName: 'b:test', status: 'OK' },
+      { step: 'TASK_ENDED', taskName: 'a:test', status: 'CRASHED' },
     ])
   })
   test('builds only the units that were specified', async () => {
