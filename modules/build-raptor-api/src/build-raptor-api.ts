@@ -45,7 +45,7 @@ export const Step = z.discriminatedUnion('step', [
     ]),
   }),
   /**
-   * Represents the completion of a build task. This step is emitted when a task either completes execution or is
+   * Indicates the completion of a build task. This step is emitted when a task either completes execution or is
    * determined to be skippable due to caching.
    *
    * @example
