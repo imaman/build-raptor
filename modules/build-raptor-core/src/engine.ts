@@ -161,24 +161,6 @@ export class Engine {
         publicFiles: e.publicFiles,
       })
     })
-    this.eventPublisher.on('executionEnded', e => {
-      this.steps.push({
-        step: 'TASK_ENDED',
-        taskName: e.taskName,
-        status: switchOn(e.status, {
-          CRASH: () => 'CRASHED',
-          FAIL: () => 'FAILED',
-          OK: () => 'OK',
-        }),
-      })
-    })
-    this.eventPublisher.on('executionSkipped', e => {
-      this.steps.push({
-        step: 'TASK_ENDED',
-        taskName: e,
-        status: 'SKIPPED',
-      })
-    })
 
     this.fingerprintLedger = this.options.fingerprintLedger
       ? new PersistedFingerprintLedger(logger, ledgerFile)
@@ -242,8 +224,30 @@ export class Engine {
           ? taskTracker.getTask(tn).taskInfo.deps ?? []
           : plan.taskGraph.neighborsOf(tn)
         await taskExecutor.executeTask(tn, deps)
+        const rec = taskTracker.getTask(tn).record
+        if (rec.verdict !== 'UNKNOWN' && (rec.executionType === 'CACHED' || rec.executionType === 'EXECUTED')) {
+          this.steps.push({
+            step: 'TASK_ENDED',
+            taskName: tn,
+            status:
+              rec.executionType === 'EXECUTED'
+                ? switchOn(rec.verdict, {
+                    CRASH: () => 'CRASHED',
+                    FAIL: () => 'FAILED',
+                    OK: () => 'OK',
+                  })
+                : rec.executionType === 'CACHED'
+                ? 'SKIPPED'
+                : shouldNeverHappen(rec.executionType),
+          })
+        }
       } catch (e) {
         this.logger.info(`crashed while running ${tn}`)
+        this.steps.push({
+          step: 'TASK_ENDED',
+          taskName: tn,
+          status: 'CRASHED',
+        })
         throw e
       } finally {
         taskTracker.changeStatus(tn, 'DONE')
