@@ -305,7 +305,7 @@ describe('engine', () => {
       { step: 'TASK_ENDED', taskName: 'a:build', status: 'SKIPPED' },
     ])
   })
-  test(`chained!`, async () => {
+  test(`taskEnded not emitted when a task cannot run due to failures`, async () => {
     const driver = new Driver(testName(), { repoProtocol: new SimpleNodeRepoProtocol(PathInRepo('here')) })
     const recipe = {
       'package.json': { private: true, workspaces: ['here/*'] },
