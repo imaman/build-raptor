@@ -223,10 +223,10 @@ describe('engine', () => {
     expect(stepByStep).toMatchObject([
       { step: 'BUILD_RUN_STARTED', buildRunId },
       { step: 'PLAN_PREPARED' },
-      { step: 'TASK_ENDED', taskName: 'b:build', status: 'OK' },
       { step: 'TASK_STORE_PUT', taskName: 'b:build', files: ['modules/b/dist'] },
-      { step: 'TASK_ENDED', taskName: 'a:build', status: 'OK' },
+      { step: 'TASK_ENDED', taskName: 'b:build', status: 'OK' },
       { step: 'TASK_STORE_PUT', taskName: 'a:build', files: ['modules/a/dist'] },
+      { step: 'TASK_ENDED', taskName: 'a:build', status: 'OK' },
       { step: 'BUILD_RUN_ENDED' },
     ])
   })
@@ -245,10 +245,10 @@ describe('engine', () => {
     expect(steps1).toMatchObject([
       { step: 'BUILD_RUN_STARTED', buildRunId: r1.buildRunId },
       { step: 'PLAN_PREPARED' },
-      { step: 'TASK_ENDED', taskName: 'b:build' },
       { step: 'TASK_STORE_PUT', taskName: 'b:build' },
-      { step: 'TASK_ENDED', taskName: 'a:build' },
+      { step: 'TASK_ENDED', taskName: 'b:build' },
       { step: 'TASK_STORE_PUT', taskName: 'a:build' },
+      { step: 'TASK_ENDED', taskName: 'a:build' },
       { step: 'BUILD_RUN_ENDED' },
     ])
 
