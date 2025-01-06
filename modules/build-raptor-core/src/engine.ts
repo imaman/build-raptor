@@ -220,7 +220,7 @@ export class Engine {
 
   async executePlan(plan: ExecutionPlan, model: Model) {
     this.logger.info(`plan.taskGraph=${plan.taskGraph}`)
-    const taskTracker = new TaskTracker(plan)
+    const taskTracker = new TaskTracker(plan, this.eventPublisher)
     this.tracker = taskTracker
     const taskExecutor = new TaskExecutor(
       model,

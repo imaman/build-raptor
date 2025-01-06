@@ -1,7 +1,8 @@
-import { Int, shouldNeverHappen, switchOn } from 'misc'
+import { Int, shouldNeverHappen, switchOn, TypedPublisher } from 'misc'
 import { ExitStatus } from 'repo-protocol'
 import { TaskName } from 'task-name'
 
+import { EngineEventScheme } from './engine-event-scheme'
 import { ExecutionPlan } from './execution-plan'
 import { PerformanceReport } from './performance-report'
 import { SlotIndex } from './slot-index'
@@ -13,7 +14,10 @@ export class TaskTracker {
   private numExecuted = 0
   private counter: SlotIndex = SlotIndex(0)
 
-  constructor(private readonly plan: ExecutionPlan) {}
+  constructor(
+    private readonly plan: ExecutionPlan,
+    private readonly eventPublisher: TypedPublisher<EngineEventScheme>,
+  ) {}
 
   tasks() {
     return this.plan.tasks()
