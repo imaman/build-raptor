@@ -230,7 +230,7 @@ describe('engine', () => {
       { step: 'BUILD_RUN_ENDED' },
     ])
   })
-  test('the step-by-step is overwritten at the next build run', async () => {
+  test('the step-by-step file is overwritten at the next build run', async () => {
     const driver = new Driver(testName())
     const recipe = {
       'package.json': { private: true, workspaces: ['modules/*'] },
