@@ -82,7 +82,7 @@ export class TaskTracker {
     shouldNeverHappen(cachedVerdict)
   }
 
-  private setVerdictOfTask(t: Task, v: 'OK' | 'FAIL', et: KnownExecutionType, rootCasue?: TaskName) {
+  private setVerdictOfTask(t: Task, v: 'OK' | 'FAIL' | 'CRASH', et: KnownExecutionType, rootCasue?: TaskName) {
     t.assignVerdict(v, et, rootCasue)
   }
 
