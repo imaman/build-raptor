@@ -34,6 +34,15 @@ jest.setTimeout(30000)
 describe('engine', () => {
   const testName = () => expect.getState().currentTestName
 
+  const mod = (folder: string, name: string, scripts: Record<string, string>, dependsOn?: string) => ({
+    [`${folder}/${name}/package.json`]: {
+      name,
+      version: '1.0.0',
+      scripts,
+      ...(dependsOn ? { dependencies: { [dependsOn]: '1.0.0' } } : {}),
+    },
+  })
+
   test('stores build run ID in a file', async () => {
     const driver = new Driver(testName())
     const recipe = {
@@ -203,67 +212,115 @@ describe('engine', () => {
     const driver = new Driver(testName(), { repoProtocol: new SimpleNodeRepoProtocol(PathInRepo('modules'), ['dist']) })
     const recipe = {
       'package.json': { private: true, workspaces: ['modules/*'] },
-      'modules/a/package.json': {
-        name: 'a',
-        version: '1.0.0',
-        scripts: { build: 'mkdir -p dist/src && echo "A" > dist/src/a.o' },
-        dependencies: { b: '1.0.0' },
-      },
-      'modules/b/package.json': {
-        name: 'b',
-        version: '1.0.0',
-        scripts: { build: 'mkdir -p dist/src && echo "B" > dist/src/b.o' },
-      },
+      ...mod('modules', 'a', { build: 'mkdir -p dist/src && echo "A" > dist/src/a.o' }, 'b'),
+      ...mod('modules', 'b', { build: 'mkdir -p dist/src && echo "B" > dist/src/b.o' }),
     }
 
     const fork = await driver.repo(recipe).fork()
 
     const { buildRunId } = await fork.run('OK', { taskKind: 'build' })
     const stepByStep = fork.readStepByStepFile()
-    expect(stepByStep[0]).toMatchObject({ step: 'BUILD_RUN_STARTED', buildRunId })
-    expect(stepByStep[1]).toMatchObject({ step: 'PLAN_PREPARED' })
-    expect(stepByStep[2]).toMatchObject({ step: 'TASK_STORE_PUT', taskName: 'b:build', files: ['modules/b/dist'] })
-    expect(stepByStep[3]).toMatchObject({ step: 'TASK_STORE_PUT', taskName: 'a:build', files: ['modules/a/dist'] })
-    expect(stepByStep[4]).toMatchObject({ step: 'BUILD_RUN_ENDED' })
-    expect(stepByStep).toHaveLength(5)
+    expect(stepByStep).toMatchObject([
+      { step: 'BUILD_RUN_STARTED', buildRunId },
+      { step: 'PLAN_PREPARED' },
+      { step: 'TASK_ENDED', taskName: 'b:build', status: 'OK' },
+      { step: 'TASK_STORE_PUT', taskName: 'b:build', files: ['modules/b/dist'] },
+      { step: 'TASK_ENDED', taskName: 'a:build', status: 'OK' },
+      { step: 'TASK_STORE_PUT', taskName: 'a:build', files: ['modules/a/dist'] },
+      { step: 'BUILD_RUN_ENDED' },
+    ])
   })
-  test('the step-by-step is overwritten at the next build run', async () => {
+  test('the step-by-step file is overwritten at the next build run', async () => {
     const driver = new Driver(testName())
     const recipe = {
       'package.json': { private: true, workspaces: ['modules/*'] },
-      'modules/a/package.json': {
-        name: 'a',
-        version: '1.0.0',
-        scripts: { build: 'exit 0', test: 'echo "A" > o' },
-        dependencies: { b: '1.0.0' },
-      },
-      'modules/b/package.json': {
-        name: 'b',
-        version: '1.0.0',
-        scripts: { build: 'exit 0', test: 'echo "B" > o' },
-      },
+      ...mod('modules', 'a', { build: 'exit 0', test: 'echo "A" > o' }, 'b'),
+      ...mod('modules', 'b', { build: 'exit 0', test: 'echo "B" > o' }),
     }
 
     const fork = await driver.repo(recipe).fork()
 
     const r1 = await fork.run('OK', { taskKind: 'build' })
     const steps1 = fork.readStepByStepFile()
-    expect(steps1[0]).toMatchObject({ step: 'BUILD_RUN_STARTED', buildRunId: r1.buildRunId })
-    expect(steps1[1]).toMatchObject({ step: 'PLAN_PREPARED' })
-    expect(steps1[2]).toMatchObject({ step: 'TASK_STORE_PUT', taskName: 'b:build' })
-    expect(steps1[3]).toMatchObject({ step: 'TASK_STORE_PUT', taskName: 'a:build' })
-    expect(steps1[4]).toMatchObject({ step: 'BUILD_RUN_ENDED' })
-    expect(steps1).toHaveLength(5)
+    expect(steps1).toMatchObject([
+      { step: 'BUILD_RUN_STARTED', buildRunId: r1.buildRunId },
+      { step: 'PLAN_PREPARED' },
+      { step: 'TASK_ENDED', taskName: 'b:build' },
+      { step: 'TASK_STORE_PUT', taskName: 'b:build' },
+      { step: 'TASK_ENDED', taskName: 'a:build' },
+      { step: 'TASK_STORE_PUT', taskName: 'a:build' },
+      { step: 'BUILD_RUN_ENDED' },
+    ])
 
     const r2 = await fork.run('OK', { taskKind: 'build' })
     expect(r2.buildRunId).not.toEqual(r1.buildRunId)
     const steps2 = fork.readStepByStepFile()
-    expect(steps2[0]).toMatchObject({ step: 'BUILD_RUN_STARTED', buildRunId: r2.buildRunId })
-    expect(steps2[1]).toMatchObject({ step: 'PLAN_PREPARED' })
-    expect(steps2[2]).toMatchObject({ step: 'TASK_STORE_GET', taskName: 'b:build' })
-    expect(steps2[3]).toMatchObject({ step: 'TASK_STORE_GET', taskName: 'a:build' })
-    expect(steps2[4]).toMatchObject({ step: 'BUILD_RUN_ENDED' })
-    expect(steps2).toHaveLength(5)
+    expect(steps2).toMatchObject([
+      { step: 'BUILD_RUN_STARTED', buildRunId: r2.buildRunId },
+      { step: 'PLAN_PREPARED' },
+      { step: 'TASK_STORE_GET', taskName: 'b:build' },
+      { step: 'TASK_ENDED', taskName: 'b:build' },
+      { step: 'TASK_STORE_GET', taskName: 'a:build' },
+      { step: 'TASK_ENDED', taskName: 'a:build' },
+      { step: 'BUILD_RUN_ENDED' },
+    ])
+  })
+  test(`TASK_ENDED status reflects task execution result`, async () => {
+    const driver = new Driver(testName())
+    const recipe = {
+      'package.json': { private: true, workspaces: ['modules/*'] },
+      'modules/a/package.json': { name: 'a', version: '1.0.0', scripts: { build: 'exit 0', test: 'exit 1' } },
+    }
+
+    const fork = await driver.repo(recipe).fork()
+
+    await fork.run('FAIL')
+    expect(fork.readStepByStepFile().filter(at => at.step === 'TASK_ENDED')).toMatchObject([
+      { step: 'TASK_ENDED', taskName: 'a:build', status: 'OK' },
+      { step: 'TASK_ENDED', taskName: 'a:test', status: 'FAILED' },
+    ])
+  })
+  test(`in TASK_ENDED step previously successful tasks get a SKIPPED status`, async () => {
+    const driver = new Driver(testName())
+    const recipe = {
+      'package.json': { private: true, workspaces: ['modules/*'] },
+      ...mod('modules', 'a', { build: 'exit 0', test: 'echo "A" > o' }, 'b'),
+      ...mod('modules', 'b', { build: 'exit 0', test: 'echo "B" > o' }),
+    }
+
+    const fork = await driver.repo(recipe).fork()
+
+    const r1 = await fork.run('OK', { taskKind: 'build' })
+    const steps1 = fork.readStepByStepFile()
+    expect(steps1.filter(at => at.step === 'TASK_ENDED')).toMatchObject([
+      { step: 'TASK_ENDED', taskName: 'b:build', status: 'OK' },
+      { step: 'TASK_ENDED', taskName: 'a:build', status: 'OK' },
+    ])
+
+    const r2 = await fork.run('OK', { taskKind: 'build' })
+    expect(r2.buildRunId).not.toEqual(r1.buildRunId)
+    const steps2 = fork.readStepByStepFile()
+    expect(steps2.filter(at => at.step === 'TASK_ENDED')).toMatchObject([
+      { step: 'TASK_ENDED', taskName: 'b:build', status: 'SKIPPED' },
+      { step: 'TASK_ENDED', taskName: 'a:build', status: 'SKIPPED' },
+    ])
+  })
+  test(`taskEnded not emitted when a task cannot run due to failures`, async () => {
+    const driver = new Driver(testName(), { repoProtocol: new SimpleNodeRepoProtocol(PathInRepo('here')) })
+    const recipe = {
+      'package.json': { private: true, workspaces: ['here/*'] },
+      ...mod('here', 'a', { build: 'exit 0' }, 'b'),
+      ...mod('here', 'b', { build: 'exit 0' }, 'c'),
+      ...mod('here', 'c', { build: 'exit 1' }, 'd'),
+      ...mod('here', 'd', { build: 'exit 0' }),
+    }
+    const fork = await driver.repo(recipe).fork()
+
+    await fork.run('FAIL', { taskKind: 'build' })
+    expect(fork.readStepByStepFile().filter(at => at.step === 'TASK_ENDED')).toMatchObject([
+      { step: 'TASK_ENDED', taskName: 'd:build', status: 'OK' },
+      { step: 'TASK_ENDED', taskName: 'c:build', status: 'FAILED' },
+    ])
   })
   test('builds only the units that were specified', async () => {
     const driver = new Driver(testName())

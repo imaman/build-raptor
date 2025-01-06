@@ -1,5 +1,9 @@
 import { z } from 'zod'
 
+/**
+ * Represents a union of possible build step types, discriminated by the 'step' field.
+ * Each step type contains specific information about different phases of the build process.
+ */
 export const Step = z.discriminatedUnion('step', [
   z.object({
     step: z.literal('BUILD_RUN_STARTED'),
@@ -38,6 +42,41 @@ export const Step = z.discriminatedUnion('step', [
       z.literal('TEST_FAILED'),
       z.literal('TEST_CRASHED'),
       z.literal('TEST_TIMEDOUT'),
+    ]),
+  }),
+  /**
+   * Indicates the completion of a build task. This step is emitted when a task either completes execution or is
+   * determined to be skippable due to caching.
+   *
+   * @example
+   * // Example of a successfully executed task
+   * {
+   *   step: 'TASK_ENDED',
+   *   taskName: 'webapp:build',
+   *   status: 'OK'
+   * }
+   *
+   * // Example of a skipped task due to cache hit
+   * {
+   *   step: 'TASK_ENDED',
+   *   taskName: 'webapp:test',
+   *   status: 'SKIPPED'
+   * }
+   */
+  z.object({
+    step: z.literal('TASK_ENDED'),
+    /** The fully qualified name of the task (e.g., 'moduleA:build') */
+    taskName: z.string(),
+    /** Status indicating how the task completed */
+    status: z.union([
+      /** Task executed and completed successfully */
+      z.literal('OK'),
+      /** Task executed but failed with an error code */
+      z.literal('FAILED'),
+      /** Task execution terminated unexpectedly (e.g., ran out of memory) */
+      z.literal('CRASHED'),
+      /** Task execution was skipped due to cache hit */
+      z.literal('SKIPPED'),
     ]),
   }),
   z.object({

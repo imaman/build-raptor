@@ -1,1 +1,2 @@
-export type ExecutionType = 'UNKNOWN' | 'EXECUTED' | 'CACHED' | 'CANNOT_START'
+export type KnownExecutionType = 'EXECUTED' | 'CACHED' | 'CANNOT_START'
+export type ExecutionType = 'UNKNOWN' | KnownExecutionType
