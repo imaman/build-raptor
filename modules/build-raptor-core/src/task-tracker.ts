@@ -4,6 +4,7 @@ import { TaskName } from 'task-name'
 
 import { EngineEventScheme } from './engine-event-scheme'
 import { ExecutionPlan } from './execution-plan'
+import { KnownExecutionType } from './execution-type'
 import { PerformanceReport } from './performance-report'
 import { SlotIndex } from './slot-index'
 import { Task } from './task'
@@ -68,12 +69,12 @@ export class TaskTracker {
     const task = this.getTask(taskName)
 
     if (cachedVerdict === 'OK' || cachedVerdict === 'FLAKY') {
-      task.assignVerdict('OK', 'CACHED')
+      this.setVerdictOfTask(task, 'OK', 'CACHED')
       return
     }
 
     if (cachedVerdict == 'FAIL') {
-      task.assignVerdict('FAIL', 'CACHED')
+      this.setVerdictOfTask(task, 'FAIL', 'CACHED')
       this.propagateFailure(taskName)
       return
     }
@@ -81,9 +82,13 @@ export class TaskTracker {
     shouldNeverHappen(cachedVerdict)
   }
 
+  private setVerdictOfTask(t: Task, v: 'OK' | 'FAIL', et: KnownExecutionType) {
+    t.assignVerdict(v, et)
+  }
+
   registerVerdict(taskName: TaskName, status: ExitStatus, outputFile: string) {
     const task = this.getTask(taskName)
-    task.assignVerdict(status, 'EXECUTED')
+    this.setVerdictOfTask(task, status, 'EXECUTED')
 
     switchOn(status, {
       CRASH: () => {},
