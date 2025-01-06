@@ -82,8 +82,8 @@ export class TaskTracker {
     shouldNeverHappen(cachedVerdict)
   }
 
-  private setVerdictOfTask(t: Task, v: 'OK' | 'FAIL', et: KnownExecutionType) {
-    t.assignVerdict(v, et)
+  private setVerdictOfTask(t: Task, v: 'OK' | 'FAIL', et: KnownExecutionType, rootCasue?: TaskName) {
+    t.assignVerdict(v, et, rootCasue)
   }
 
   registerVerdict(taskName: TaskName, status: ExitStatus, outputFile: string) {
@@ -119,7 +119,7 @@ export class TaskTracker {
         continue
       }
       const r = this.getTask(t)
-      r.assignVerdict('FAIL', 'CANNOT_START', taskName)
+      this.setVerdictOfTask(r, 'FAIL', 'CANNOT_START', taskName)
     }
   }
 }
