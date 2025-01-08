@@ -29,7 +29,7 @@ export class Task {
     this.name = taskInfo.taskName
     this.id = computeObjectHash({ buildRunId: this.buildRunId, name: this.name })
     this.executionRecord = {
-      verdict: 'UNKNOWN',
+      verdict: 'OK',
       executionType: 'UNKNOWN',
       startedAt: SlotIndex(-1),
       endedAt: SlotIndex(-1),

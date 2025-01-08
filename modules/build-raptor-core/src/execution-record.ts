@@ -1,4 +1,4 @@
-export type Verdict = 'UNKNOWN' | 'CRASH' | 'FAIL' | 'OK'
+export type Verdict = 'CRASH' | 'FAIL' | 'OK'
 import { TaskName } from 'task-name'
 
 import { ExecutionType } from './execution-type'
