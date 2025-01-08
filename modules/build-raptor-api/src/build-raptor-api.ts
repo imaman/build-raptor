@@ -53,14 +53,16 @@ export const Step = z.discriminatedUnion('step', [
    * {
    *   step: 'TASK_ENDED',
    *   taskName: 'webapp:build',
-   *   status: 'OK'
+   *   verdict: 'OK',
+   *   executionType: 'EXECUTED'
    * }
    *
    * // Example of a skipped task due to cache hit
    * {
    *   step: 'TASK_ENDED',
    *   taskName: 'webapp:test',
-   *   status: 'SKIPPED'
+   *   verdict: 'OK',
+   *   executionType: 'CACHED'
    * }
    */
   z.object({
