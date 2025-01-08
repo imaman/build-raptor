@@ -23,6 +23,8 @@ import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import { YarnRepoProtocol } from 'yarn-repo-protocol'
 
+import { TaskExecutionVisualizer } from './task-execution-visualizer'
+
 type TestReporting = 'just-failing' | 'tree' | 'tree-just-failing'
 
 interface Options {
@@ -39,6 +41,7 @@ interface Options {
   testCaching?: boolean
   stepByStepProcessor?: string
   buildRaptorConfigFile?: string
+  taskProgressOutput?: boolean
 }
 
 type TestEndedEvent = RepoProtocolEvent['testEnded']
@@ -113,15 +116,33 @@ export async function run(options: Options) {
   )
 
   const testOutput = new Map<TaskName, TestEndedEvent[]>()
+  const visualizer = new TaskExecutionVisualizer()
   bootstrapper.subscribable.on('testEnded', arg => {
     assigningGet(testOutput, arg.taskName, () => []).push(arg)
   })
 
   bootstrapper.subscribable.on('executionStarted', arg => {
-    logger.print(`=============================== ${arg} =================================`)
+    if (options.taskProgressOutput) {
+      logger.print(visualizer.begin(arg))
+    } else {
+      logger.print(`=============================== ${arg} =================================`)
+    }
   })
 
   bootstrapper.subscribable.on('executionEnded', async arg => {
+    if (options.taskProgressOutput) {
+      logger.print(
+        visualizer.ended(
+          arg.taskName,
+          switchOn(arg.status, {
+            OK: () => '🏁',
+            FAIL: () => '🏁',
+            CRASH: () => '🏁',
+          }),
+        ),
+      )
+    }
+
     // TODO(imaman): cover (output is indeed written in file structure)
     await fse.ensureDir(buildRaptorDirTasks)
     const fileName = path.join(buildRaptorDirTasks, toReasonableFileName(arg.taskName))
@@ -331,6 +352,11 @@ export function main() {
         type: 'boolean',
         default: true,
       })
+      .option('task-progress-output', {
+        describe: 'whether to print number of tasks ended/started',
+        type: 'boolean',
+        default: false,
+      })
       .command(
         'build',
         'build the code',
@@ -347,6 +373,7 @@ export function main() {
             criticality: stringToLoudness(argv.loudness),
             stepByStepProcessor: argv.stepByStepProcessor,
             buildRaptorConfigFile: argv.configFile,
+            taskProgressOutput: argv.taskProgressOutput,
           })
         },
       )
@@ -372,6 +399,7 @@ export function main() {
                 : failMe(`unsupported value: ${tr}`),
             stepByStepProcessor: argv.stepByStepProcessor,
             buildRaptorConfigFile: argv.configFile,
+            taskProgressOutput: argv.taskProgressOutput,
           })
         },
       )
@@ -391,6 +419,7 @@ export function main() {
             criticality: stringToLoudness(argv.loudness),
             stepByStepProcessor: argv.stepByStepProcessor,
             buildRaptorConfigFile: argv.configFile,
+            taskProgressOutput: argv.taskProgressOutput,
           })
         },
       )
@@ -417,6 +446,7 @@ export function main() {
                 : failMe(`unsupported value: ${tr}`),
             stepByStepProcessor: argv.stepByStepProcessor,
             buildRaptorConfigFile: argv.configFile,
+            taskProgressOutput: argv.taskProgressOutput,
           })
         },
       )
@@ -444,6 +474,7 @@ export function main() {
             testCaching: argv.testCaching,
             stepByStepProcessor: argv.stepByStepProcessor,
             buildRaptorConfigFile: argv.configFile,
+            taskProgressOutput: argv.taskProgressOutput,
           })
         },
       )
