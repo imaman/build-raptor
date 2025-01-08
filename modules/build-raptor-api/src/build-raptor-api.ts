@@ -72,11 +72,11 @@ export const Step = z.discriminatedUnion('step', [
       /** Task executed and completed successfully */
       z.literal('OK'),
       /** Task executed but failed with an error code */
-      z.literal('FAILED'),
+      z.literal('FAIL'),
       /** Task execution terminated unexpectedly (e.g., ran out of memory) */
-      z.literal('CRASHED'),
-      /** Task execution was skipped due to cache hit */
-      z.literal('SKIPPED'),
+      z.literal('CRASH'),
+      /** Task execution terminated unexpectedly (e.g., ran out of memory) */
+      z.literal('UNKNOWN'),
     ]),
     executionType: z.union([
       z.literal('EXECUTED'),
