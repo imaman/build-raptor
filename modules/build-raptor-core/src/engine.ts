@@ -229,7 +229,7 @@ export class Engine {
           step: 'TASK_ENDED',
           taskName: tn,
           executionType: rec.executionType,
-          status: switchOn(rec.verdict, {
+          verdict: switchOn(rec.verdict, {
             UNKNOWN: () => 'UNKNOWN',
             CRASH: () => 'CRASH',
             FAIL: () => 'FAIL',
@@ -243,7 +243,7 @@ export class Engine {
           step: 'TASK_ENDED',
           taskName: tn,
           executionType: rec.executionType,
-          status: 'CRASH',
+          verdict: 'CRASH',
         })
         throw e
       } finally {

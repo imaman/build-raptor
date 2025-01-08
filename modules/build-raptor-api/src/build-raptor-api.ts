@@ -68,7 +68,7 @@ export const Step = z.discriminatedUnion('step', [
     /** The fully qualified name of the task (e.g., 'moduleA:build') */
     taskName: z.string(),
     /** Status indicating how the task completed */
-    status: z.union([
+    verdict: z.union([
       /** Task executed and completed successfully */
       z.literal('OK'),
       /** Task executed but failed with an error code */

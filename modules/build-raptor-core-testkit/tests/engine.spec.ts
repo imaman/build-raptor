@@ -224,9 +224,9 @@ describe('engine', () => {
       { step: 'BUILD_RUN_STARTED', buildRunId },
       { step: 'PLAN_PREPARED' },
       { step: 'TASK_STORE_PUT', taskName: 'b:build', files: ['modules/b/dist'] },
-      { step: 'TASK_ENDED', taskName: 'b:build', status: 'OK' },
+      { step: 'TASK_ENDED', taskName: 'b:build' },
       { step: 'TASK_STORE_PUT', taskName: 'a:build', files: ['modules/a/dist'] },
-      { step: 'TASK_ENDED', taskName: 'a:build', status: 'OK' },
+      { step: 'TASK_ENDED', taskName: 'a:build' },
       { step: 'BUILD_RUN_ENDED' },
     ])
   })
@@ -277,8 +277,8 @@ describe('engine', () => {
 
       await fork.run('FAIL')
       expect(fork.readStepByStepFile().filter(at => at.step === 'TASK_ENDED')).toMatchObject([
-        { step: 'TASK_ENDED', taskName: 'a:build', status: 'OK', executionType: 'EXECUTED' },
-        { step: 'TASK_ENDED', taskName: 'a:test', status: 'FAILED', executionType: 'EXECUTED' },
+        { step: 'TASK_ENDED', taskName: 'a:build', verdict: 'OK', executionType: 'EXECUTED' },
+        { step: 'TASK_ENDED', taskName: 'a:test', verdict: 'FAIL', executionType: 'EXECUTED' },
       ])
     })
     test(`executionType is EXECUTED if the task was executed and CACHED if the task was a cache hit`, async () => {
@@ -294,15 +294,15 @@ describe('engine', () => {
       await fork.run('FAIL', { taskKind: 'build' })
       const steps1 = fork.readStepByStepFile()
       expect(steps1.filter(at => at.step === 'TASK_ENDED')).toMatchObject([
-        { step: 'TASK_ENDED', taskName: 'b:build', status: 'OK', executionType: 'EXECUTED' },
-        { step: 'TASK_ENDED', taskName: 'a:build', status: 'FAILED', executionType: 'EXECUTED' },
+        { step: 'TASK_ENDED', taskName: 'b:build', verdict: 'OK', executionType: 'EXECUTED' },
+        { step: 'TASK_ENDED', taskName: 'a:build', verdict: 'FAIL', executionType: 'EXECUTED' },
       ])
 
       await fork.run('FAIL', { taskKind: 'build' })
       const steps2 = fork.readStepByStepFile()
       expect(steps2.filter(at => at.step === 'TASK_ENDED')).toMatchObject([
-        { step: 'TASK_ENDED', taskName: 'b:build', status: 'OK', executionType: 'CACHED' },
-        { step: 'TASK_ENDED', taskName: 'a:build', status: 'FAILED', executionType: 'EXECUTED' },
+        { step: 'TASK_ENDED', taskName: 'b:build', verdict: 'OK', executionType: 'CACHED' },
+        { step: 'TASK_ENDED', taskName: 'a:build', verdict: 'FAIL', executionType: 'EXECUTED' },
       ])
     })
     test(`executionType is CANNOT_START if the task was skipped due to failure of dependencies`, async () => {
@@ -318,10 +318,10 @@ describe('engine', () => {
 
       await fork.run('FAIL', { taskKind: 'build' })
       expect(fork.readStepByStepFile().filter(at => at.step === 'TASK_ENDED')).toMatchObject([
-        { step: 'TASK_ENDED', taskName: 'd:build', status: 'OK', executionType: 'EXECUTED' },
-        { step: 'TASK_ENDED', taskName: 'c:build', status: 'FAILED', executionType: 'EXECUTED' },
-        { step: 'TASK_ENDED', taskName: 'b:build', status: 'FAILED', executionType: 'CANNOT_START' },
-        { step: 'TASK_ENDED', taskName: 'a:build', status: 'FAILED', executionType: 'CANNOT_START' },
+        { step: 'TASK_ENDED', taskName: 'd:build', verdict: 'OK', executionType: 'EXECUTED' },
+        { step: 'TASK_ENDED', taskName: 'c:build', verdict: 'FAIL', executionType: 'EXECUTED' },
+        { step: 'TASK_ENDED', taskName: 'b:build', verdict: 'FAIL', executionType: 'CANNOT_START' },
+        { step: 'TASK_ENDED', taskName: 'a:build', verdict: 'FAIL', executionType: 'CANNOT_START' },
       ])
     })
   })
