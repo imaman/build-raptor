@@ -180,7 +180,7 @@ class SingleTaskExecutor {
   async executeTask(): Promise<void> {
     try {
       const t = this.task
-      if (this.tracker.hasVerdict(t.name)) {
+      if (this.tracker.hasVerdict_(t.name)) {
         return
       }
 

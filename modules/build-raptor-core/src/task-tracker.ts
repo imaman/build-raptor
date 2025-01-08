@@ -23,7 +23,7 @@ export class TaskTracker {
     return this.plan.taskGraph.neighborsOf(tn).map(tn => this.getTask(tn))
   }
 
-  hasVerdict(taskName: TaskName) {
+  hasVerdict_(taskName: TaskName) {
     return switchOn(this.getTask(taskName).record.verdict, {
       W_THE_POOH: () => false,
       OK: () => true,
