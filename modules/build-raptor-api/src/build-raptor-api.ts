@@ -53,30 +53,43 @@ export const Step = z.discriminatedUnion('step', [
    * {
    *   step: 'TASK_ENDED',
    *   taskName: 'webapp:build',
-   *   status: 'OK'
+   *   verdict: 'OK',
+   *   executionType: 'EXECUTED'
    * }
    *
    * // Example of a skipped task due to cache hit
    * {
    *   step: 'TASK_ENDED',
    *   taskName: 'webapp:test',
-   *   status: 'SKIPPED'
+   *   verdict: 'OK',
+   *   executionType: 'CACHED'
    * }
    */
   z.object({
     step: z.literal('TASK_ENDED'),
-    /** The fully qualified name of the task (e.g., 'moduleA:build') */
+    /** The fully qualified name of the task (e.g., 'my-module:build') */
     taskName: z.string(),
-    /** Status indicating how the task completed */
-    status: z.union([
+    /** The final verdict that represents whether the task succeeded or failed */
+    verdict: z.union([
       /** Task executed and completed successfully */
       z.literal('OK'),
       /** Task executed but failed with an error code */
-      z.literal('FAILED'),
+      z.literal('FAIL'),
       /** Task execution terminated unexpectedly (e.g., ran out of memory) */
-      z.literal('CRASHED'),
-      /** Task execution was skipped due to cache hit */
-      z.literal('SKIPPED'),
+      z.literal('CRASH'),
+      /** Task verdict is indeterminate due to an unexpected failure of the build system */
+      z.literal('UNKNOWN'),
+    ]),
+    /** Indicates how the task was processed during the build run */
+    executionType: z.union([
+      /** Task was executed in this build run */
+      z.literal('EXECUTED'),
+      /** Task outputs were retrieved from cache without execution */
+      z.literal('CACHED'),
+      /** Task could not be started (typically due to a 'FAIL' verdict in a dependency task) */
+      z.literal('CANNOT_START'),
+      /** Execution type is indeterminate due to an unexpected failure of the build system */
+      z.literal('UNKNOWN'),
     ]),
   }),
   z.object({
@@ -106,7 +119,7 @@ export const Step = z.discriminatedUnion('step', [
     step: z.literal('PUBLIC_FILES'),
     taskName: z.string(),
     /**
-     * Maps path-in-repo (of "public output" files) to the hash of the contnet of the file.
+     * Maps path-in-repo (of "public output" files) to the hash of the content of the file.
      */
     publicFiles: z.record(z.string(), z.string()),
   }),
