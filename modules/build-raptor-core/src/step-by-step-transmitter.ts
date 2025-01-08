@@ -14,7 +14,7 @@ export class StepByStepTransmitter {
     private readonly logger: Logger,
   ) {}
 
-  push(step: Step) {
+  transmit(step: Step) {
     const parsed = Step.parse(step)
     this.steps.push(parsed)
 

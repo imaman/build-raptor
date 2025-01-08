@@ -115,7 +115,7 @@ export class Engine {
           ? 'TASK_STORE_GET'
           : shouldNeverHappen(e.opcode)
       const { taskKind, unitId } = TaskName().undo(e.taskName)
-      this.steps.push({
+      this.steps.transmit({
         blobId: e.blobId,
         taskName: e.taskName,
         taskKind,
@@ -126,7 +126,7 @@ export class Engine {
       })
     })
     this.eventPublisher.on('testEnded', e => {
-      this.steps.push({
+      this.steps.transmit({
         step: 'TEST_ENDED',
         taskName: e.taskName,
         fileName: e.fileName,
@@ -141,7 +141,7 @@ export class Engine {
       }
       const task = this.tracker?.getTask(e.taskName) ?? failMe(`Task not found (task name=${e.taskName})`)
       const { unitId } = TaskName().undo(e.taskName)
-      this.steps.push({
+      this.steps.transmit({
         step: 'ASSET_PUBLISHED',
         labels: [...task.labels],
         taskName: e.taskName,
@@ -155,7 +155,7 @@ export class Engine {
       if (Object.keys(e.publicFiles).length === 0) {
         return
       }
-      this.steps.push({
+      this.steps.transmit({
         step: 'PUBLIC_FILES',
         taskName: e.taskName,
         publicFiles: e.publicFiles,
@@ -170,7 +170,7 @@ export class Engine {
   }
 
   async run(buildRunId: BuildRunId) {
-    this.steps.push({ step: 'BUILD_RUN_STARTED', buildRunId, commitHash: this.options.commitHash })
+    this.steps.transmit({ step: 'BUILD_RUN_STARTED', buildRunId, commitHash: this.options.commitHash })
     fs.writeFileSync(path.join(this.options.buildRaptorDir, 'build-run-id'), buildRunId)
     await this.fingerprintLedger.updateRun(buildRunId)
     await this.repoProtocol.initialize(
@@ -189,10 +189,10 @@ export class Engine {
       if (startingPoints.length === 0) {
         throw new BuildFailedError(`No task that matches the given goals/labels was found`)
       }
-      this.steps.push({ step: 'PLAN_PREPARED', taskNames: plan.tasks().map(at => at.name) })
+      this.steps.transmit({ step: 'PLAN_PREPARED', taskNames: plan.tasks().map(at => at.name) })
 
       const ret = await this.executePlan(plan, model)
-      this.steps.push({ step: 'BUILD_RUN_ENDED' })
+      this.steps.transmit({ step: 'BUILD_RUN_ENDED' })
       await Promise.all([this.fingerprintLedger.close(), this.steps.close()])
       return ret
     } finally {
@@ -225,7 +225,7 @@ export class Engine {
           : plan.taskGraph.neighborsOf(tn)
         await taskExecutor.executeTask(tn, deps)
         const rec = taskTracker.getTask(tn).record
-        this.steps.push({
+        this.steps.transmit({
           step: 'TASK_ENDED',
           taskName: tn,
           executionType: rec.executionType,
@@ -239,7 +239,7 @@ export class Engine {
       } catch (e) {
         const rec = taskTracker.getTask(tn).record
         this.logger.info(`crashed while running ${tn}`)
-        this.steps.push({
+        this.steps.transmit({
           step: 'TASK_ENDED',
           taskName: tn,
           executionType: rec.executionType,
