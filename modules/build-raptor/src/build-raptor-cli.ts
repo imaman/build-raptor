@@ -124,6 +124,8 @@ export async function run(options: Options) {
   bootstrapper.subscribable.on('executionStarted', arg => {
     if (options.buildRaptorConfigFile) {
       logger.print(visualizer.begin(arg))
+    } else {
+      logger.print(`=============================== ${arg} =================================`)
     }
   })
 
