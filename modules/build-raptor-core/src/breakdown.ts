@@ -27,7 +27,7 @@ export class Breakdown {
     })
   }
 
-  getSummaries(): readonly TaskSummary[] {
+  getSummaries_(): readonly TaskSummary[] {
     return this.summaries
   }
 
