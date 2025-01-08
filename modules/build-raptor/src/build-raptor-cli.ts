@@ -23,6 +23,8 @@ import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import { YarnRepoProtocol } from 'yarn-repo-protocol'
 
+import { TaskExecutionVisualizer } from './task-execution-visualizer'
+
 type TestReporting = 'just-failing' | 'tree' | 'tree-just-failing'
 
 interface Options {
@@ -113,15 +115,18 @@ export async function run(options: Options) {
   )
 
   const testOutput = new Map<TaskName, TestEndedEvent[]>()
+  const visualizer = new TaskExecutionVisualizer()
   bootstrapper.subscribable.on('testEnded', arg => {
     assigningGet(testOutput, arg.taskName, () => []).push(arg)
   })
 
   bootstrapper.subscribable.on('executionStarted', arg => {
-    logger.print(`=============================== ${arg} =================================`)
+    logger.print(visualizer.begin(arg))
   })
 
   bootstrapper.subscribable.on('executionEnded', async arg => {
+    logger.print(visualizer.ended(arg.taskName, arg.status))
+
     // TODO(imaman): cover (output is indeed written in file structure)
     await fse.ensureDir(buildRaptorDirTasks)
     const fileName = path.join(buildRaptorDirTasks, toReasonableFileName(arg.taskName))
