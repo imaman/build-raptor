@@ -24,7 +24,7 @@ export class TaskTracker {
   }
 
   hasVerdict(taskName: TaskName) {
-    return switchOn(this.getTask(taskName).record.verdict ?? 'UNKNOWN', {
+    return switchOn(this.getTask(taskName).record.verdict, {
       UNKNOWN: () => false,
       OK: () => true,
       FAIL: () => true,

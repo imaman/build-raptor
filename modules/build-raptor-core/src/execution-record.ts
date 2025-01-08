@@ -6,7 +6,7 @@ import { Phase } from './phase'
 import { SlotIndex } from './slot-index'
 
 export interface ExecutionRecord {
-  readonly verdict?: Verdict
+  readonly verdict: Verdict
   readonly outputFile?: string
   readonly executionType: ExecutionType
   readonly startedAt: SlotIndex
