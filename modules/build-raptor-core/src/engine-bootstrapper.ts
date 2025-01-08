@@ -189,7 +189,7 @@ function summarizeTask(t: Task): TaskSummary {
   return {
     outputFile: t.record.outputFile,
     taskName: t.name,
-    verdict: t.record.verdict,
+    verdict: t.record.verdict ?? 'UNKNOWN',
     execution: t.record.executionType,
     startedAt: t.record.startedAt,
     endedAt: t.record.endedAt,
