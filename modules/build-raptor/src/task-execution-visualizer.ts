@@ -22,13 +22,13 @@ export class TaskExecutionVisualizer {
       }
 
       if (task === undefined || text === undefined) {
-        parts.push('')
+        parts.push(' ')
         continue
       }
 
       parts.push('|')
     }
-    return parts.join(this.INDENTATION_STEP)
+    return parts.join(this.INDENTATION_STEP).trimEnd()
   }
 
   private activeIndents(): number[] {
