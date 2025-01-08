@@ -35,7 +35,7 @@ export class Run {
 
   getSummary(unitId: string, taskKind: string) {
     const tn = TaskName(UnitId(unitId), TaskKind(taskKind))
-    const ret = this.breakdown.getSummaries_().find(s => s.taskName === tn)
+    const ret = this.breakdown.getSummaries().find(s => s.taskName === tn)
     if (!ret) {
       throw new Error(`Task ${unitId}/${taskKind} not found`)
     }
@@ -43,7 +43,7 @@ export class Run {
   }
 
   taskNames(which?: ExecutionType) {
-    const filtered = this.breakdown.getSummaries_().filter(t => (which === undefined ? true : t.execution === which))
+    const filtered = this.breakdown.getSummaries().filter(t => (which === undefined ? true : t.execution === which))
     return sortBy(
       filtered.map(s => s.taskName),
       x => x,
@@ -95,7 +95,7 @@ export class Run {
 
   toString() {
     return `message=${this.message} exitCode=${this.exitCode}, summaries=${JSON.stringify(
-      this.breakdown.getSummaries_(),
+      this.breakdown.getSummaries(),
     )}`
   }
 }
@@ -246,7 +246,7 @@ class Fork {
     }
 
     const m = output
-      .getSummaries_()
+      .getSummaries()
       .map(s => `${s.taskName} -> ${s.verdict}`)
       .join('\n')
     throw new Error(`Expected ${expectedStatus}, but got ${output.overallVerdict} ${output.message ?? ''}\n${m}`)

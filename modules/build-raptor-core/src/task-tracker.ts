@@ -23,9 +23,9 @@ export class TaskTracker {
     return this.plan.taskGraph.neighborsOf(tn).map(tn => this.getTask(tn))
   }
 
-  hasVerdict_(taskName: TaskName) {
+  hasVerdict(taskName: TaskName) {
     return switchOn(this.getTask(taskName).record.verdict, {
-      W_THE_POOH: () => false,
+      UNKNOWN: () => false,
       OK: () => true,
       FAIL: () => true,
       CRASH: () => true,
