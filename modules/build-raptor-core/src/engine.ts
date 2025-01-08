@@ -225,27 +225,24 @@ export class Engine {
           : plan.taskGraph.neighborsOf(tn)
         await taskExecutor.executeTask(tn, deps)
         const rec = taskTracker.getTask(tn).record
-        if (rec.verdict !== 'UNKNOWN' && (rec.executionType === 'CACHED' || rec.executionType === 'EXECUTED')) {
-          this.steps.push({
-            step: 'TASK_ENDED',
-            taskName: tn,
-            status:
-              rec.executionType === 'EXECUTED'
-                ? switchOn(rec.verdict, {
-                    CRASH: () => 'CRASHED',
-                    FAIL: () => 'FAILED',
-                    OK: () => 'OK',
-                  })
-                : rec.executionType === 'CACHED'
-                ? 'SKIPPED'
-                : shouldNeverHappen(rec.executionType),
-          })
-        }
+        this.steps.push({
+          step: 'TASK_ENDED',
+          taskName: tn,
+          executionType: rec.executionType,
+          status: switchOn(rec.verdict, {
+            UNKNOWN: () => 'CRASHED',
+            CRASH: () => 'CRASHED',
+            FAIL: () => 'FAILED',
+            OK: () => 'OK',
+          }),
+        })
       } catch (e) {
+        const rec = taskTracker.getTask(tn).record
         this.logger.info(`crashed while running ${tn}`)
         this.steps.push({
           step: 'TASK_ENDED',
           taskName: tn,
+          executionType: rec.executionType,
           status: 'CRASHED',
         })
         throw e

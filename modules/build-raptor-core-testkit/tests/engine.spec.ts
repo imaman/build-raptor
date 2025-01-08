@@ -265,62 +265,65 @@ describe('engine', () => {
       { step: 'BUILD_RUN_ENDED' },
     ])
   })
-  test(`TASK_ENDED status reflects task execution result`, async () => {
-    const driver = new Driver(testName())
-    const recipe = {
-      'package.json': { private: true, workspaces: ['modules/*'] },
-      'modules/a/package.json': { name: 'a', version: '1.0.0', scripts: { build: 'exit 0', test: 'exit 1' } },
-    }
+  describe('TASK_ENDED step', () => {
+    test(`status reflects the task's execution result`, async () => {
+      const driver = new Driver(testName())
+      const recipe = {
+        'package.json': { private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': { name: 'a', version: '1.0.0', scripts: { build: 'exit 0', test: 'exit 1' } },
+      }
 
-    const fork = await driver.repo(recipe).fork()
+      const fork = await driver.repo(recipe).fork()
 
-    await fork.run('FAIL')
-    expect(fork.readStepByStepFile().filter(at => at.step === 'TASK_ENDED')).toMatchObject([
-      { step: 'TASK_ENDED', taskName: 'a:build', status: 'OK' },
-      { step: 'TASK_ENDED', taskName: 'a:test', status: 'FAILED' },
-    ])
-  })
-  test(`in TASK_ENDED step previously successful tasks get a SKIPPED status`, async () => {
-    const driver = new Driver(testName())
-    const recipe = {
-      'package.json': { private: true, workspaces: ['modules/*'] },
-      ...mod('modules', 'a', { build: 'exit 0', test: 'echo "A" > o' }, 'b'),
-      ...mod('modules', 'b', { build: 'exit 0', test: 'echo "B" > o' }),
-    }
+      await fork.run('FAIL')
+      expect(fork.readStepByStepFile().filter(at => at.step === 'TASK_ENDED')).toMatchObject([
+        { step: 'TASK_ENDED', taskName: 'a:build', status: 'OK', executionType: 'EXECUTED' },
+        { step: 'TASK_ENDED', taskName: 'a:test', status: 'FAILED', executionType: 'EXECUTED' },
+      ])
+    })
+    test(`executionType is EXECUTED if the task was executed and CACHED if the task was a cache hit`, async () => {
+      const driver = new Driver(testName())
+      const recipe = {
+        'package.json': { private: true, workspaces: ['modules/*'] },
+        ...mod('modules', 'a', { build: 'exit 1' }, 'b'),
+        ...mod('modules', 'b', { build: 'exit 0' }),
+      }
 
-    const fork = await driver.repo(recipe).fork()
+      const fork = await driver.repo(recipe).fork()
 
-    const r1 = await fork.run('OK', { taskKind: 'build' })
-    const steps1 = fork.readStepByStepFile()
-    expect(steps1.filter(at => at.step === 'TASK_ENDED')).toMatchObject([
-      { step: 'TASK_ENDED', taskName: 'b:build', status: 'OK' },
-      { step: 'TASK_ENDED', taskName: 'a:build', status: 'OK' },
-    ])
+      await fork.run('FAIL', { taskKind: 'build' })
+      const steps1 = fork.readStepByStepFile()
+      expect(steps1.filter(at => at.step === 'TASK_ENDED')).toMatchObject([
+        { step: 'TASK_ENDED', taskName: 'b:build', status: 'OK', executionType: 'EXECUTED' },
+        { step: 'TASK_ENDED', taskName: 'a:build', status: 'FAILED', executionType: 'EXECUTED' },
+      ])
 
-    const r2 = await fork.run('OK', { taskKind: 'build' })
-    expect(r2.buildRunId).not.toEqual(r1.buildRunId)
-    const steps2 = fork.readStepByStepFile()
-    expect(steps2.filter(at => at.step === 'TASK_ENDED')).toMatchObject([
-      { step: 'TASK_ENDED', taskName: 'b:build', status: 'SKIPPED' },
-      { step: 'TASK_ENDED', taskName: 'a:build', status: 'SKIPPED' },
-    ])
-  })
-  test(`taskEnded not emitted when a task cannot run due to failures`, async () => {
-    const driver = new Driver(testName(), { repoProtocol: new SimpleNodeRepoProtocol(PathInRepo('here')) })
-    const recipe = {
-      'package.json': { private: true, workspaces: ['here/*'] },
-      ...mod('here', 'a', { build: 'exit 0' }, 'b'),
-      ...mod('here', 'b', { build: 'exit 0' }, 'c'),
-      ...mod('here', 'c', { build: 'exit 1' }, 'd'),
-      ...mod('here', 'd', { build: 'exit 0' }),
-    }
-    const fork = await driver.repo(recipe).fork()
+      await fork.run('FAIL', { taskKind: 'build' })
+      const steps2 = fork.readStepByStepFile()
+      expect(steps2.filter(at => at.step === 'TASK_ENDED')).toMatchObject([
+        { step: 'TASK_ENDED', taskName: 'b:build', status: 'OK', executionType: 'CACHED' },
+        { step: 'TASK_ENDED', taskName: 'a:build', status: 'FAILED', executionType: 'EXECUTED' },
+      ])
+    })
+    test(`executionType is CANNOT_START if the task was skipped due to failure of dependencies`, async () => {
+      const driver = new Driver(testName(), { repoProtocol: new SimpleNodeRepoProtocol(PathInRepo('here')) })
+      const recipe = {
+        'package.json': { private: true, workspaces: ['here/*'] },
+        ...mod('here', 'a', { build: 'exit 0' }, 'b'),
+        ...mod('here', 'b', { build: 'exit 0' }, 'c'),
+        ...mod('here', 'c', { build: 'exit 1' }, 'd'),
+        ...mod('here', 'd', { build: 'exit 0' }),
+      }
+      const fork = await driver.repo(recipe).fork()
 
-    await fork.run('FAIL', { taskKind: 'build' })
-    expect(fork.readStepByStepFile().filter(at => at.step === 'TASK_ENDED')).toMatchObject([
-      { step: 'TASK_ENDED', taskName: 'd:build', status: 'OK' },
-      { step: 'TASK_ENDED', taskName: 'c:build', status: 'FAILED' },
-    ])
+      await fork.run('FAIL', { taskKind: 'build' })
+      expect(fork.readStepByStepFile().filter(at => at.step === 'TASK_ENDED')).toMatchObject([
+        { step: 'TASK_ENDED', taskName: 'd:build', status: 'OK', executionType: 'EXECUTED' },
+        { step: 'TASK_ENDED', taskName: 'c:build', status: 'FAILED', executionType: 'EXECUTED' },
+        { step: 'TASK_ENDED', taskName: 'b:build', status: 'FAILED', executionType: 'CANNOT_START' },
+        { step: 'TASK_ENDED', taskName: 'a:build', status: 'FAILED', executionType: 'CANNOT_START' },
+      ])
+    })
   })
   test('builds only the units that were specified', async () => {
     const driver = new Driver(testName())

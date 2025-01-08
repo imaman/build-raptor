@@ -78,6 +78,12 @@ export const Step = z.discriminatedUnion('step', [
       /** Task execution was skipped due to cache hit */
       z.literal('SKIPPED'),
     ]),
+    executionType: z.union([
+      z.literal('EXECUTED'),
+      z.literal('CACHED'),
+      z.literal('UNKNOWN'),
+      z.literal('CANNOT_START'),
+    ]),
   }),
   z.object({
     step: z.literal('ASSET_PUBLISHED'),
