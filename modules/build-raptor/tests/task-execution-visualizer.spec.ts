@@ -9,21 +9,21 @@ describe('TaskExecutionVisualizer', () => {
 
   it('shows single task execution', () => {
     expect(visualizer.begin('taskA')).toBe('taskA')
-    expect(visualizer.ended('taskA', 'OK')).toBe('_taskA [OK]')
+    expect(visualizer.ended('taskA', 'OK')).toBe('_')
   })
 
   it('shows two sequential tasks', () => {
     expect(visualizer.begin('taskA')).toBe('taskA')
-    expect(visualizer.ended('taskA', 'OK')).toBe('_taskA [OK]')
+    expect(visualizer.ended('taskA', 'OK')).toBe('_')
     expect(visualizer.begin('taskB')).toBe('taskB')
-    expect(visualizer.ended('taskB', 'OK')).toBe('_taskB [OK]')
+    expect(visualizer.ended('taskB', 'OK')).toBe('_')
   })
 
   it('shows nested task execution', () => {
     expect(visualizer.begin('taskA')).toBe('taskA')
     expect(visualizer.begin('taskB')).toBe('|   taskB')
-    expect(visualizer.ended('taskB', 'OK')).toBe('|   _taskB [OK]')
-    expect(visualizer.ended('taskA', 'OK')).toBe('_taskA [OK]')
+    expect(visualizer.ended('taskB', 'OK')).toBe('|   _')
+    expect(visualizer.ended('taskA', 'OK')).toBe('_')
   })
 
   it('handles complex nested execution pattern', () => {
