@@ -122,7 +122,7 @@ export async function run(options: Options) {
   })
 
   bootstrapper.subscribable.on('executionStarted', arg => {
-    if (options.buildRaptorConfigFile) {
+    if (options.taskProgressOutput) {
       logger.print(visualizer.begin(arg))
     } else {
       logger.print(`=============================== ${arg} =================================`)
@@ -130,7 +130,7 @@ export async function run(options: Options) {
   })
 
   bootstrapper.subscribable.on('executionEnded', async arg => {
-    if (options.buildRaptorConfigFile) {
+    if (options.taskProgressOutput) {
       logger.print(
         visualizer.ended(
           arg.taskName,
@@ -355,7 +355,7 @@ export function main() {
       .option('task-progress-output', {
         describe: 'whether to print number of tasks ended/started',
         type: 'boolean',
-        default: true,
+        default: false,
       })
       .command(
         'build',
@@ -399,6 +399,7 @@ export function main() {
                 : failMe(`unsupported value: ${tr}`),
             stepByStepProcessor: argv.stepByStepProcessor,
             buildRaptorConfigFile: argv.configFile,
+            taskProgressOutput: argv.taskProgressOutput,
           })
         },
       )
@@ -418,6 +419,7 @@ export function main() {
             criticality: stringToLoudness(argv.loudness),
             stepByStepProcessor: argv.stepByStepProcessor,
             buildRaptorConfigFile: argv.configFile,
+            taskProgressOutput: argv.taskProgressOutput,
           })
         },
       )
@@ -444,6 +446,7 @@ export function main() {
                 : failMe(`unsupported value: ${tr}`),
             stepByStepProcessor: argv.stepByStepProcessor,
             buildRaptorConfigFile: argv.configFile,
+            taskProgressOutput: argv.taskProgressOutput,
           })
         },
       )
@@ -471,6 +474,7 @@ export function main() {
             testCaching: argv.testCaching,
             stepByStepProcessor: argv.stepByStepProcessor,
             buildRaptorConfigFile: argv.configFile,
+            taskProgressOutput: argv.taskProgressOutput,
           })
         },
       )
