@@ -1,60 +1,60 @@
 import { TaskExecutionVisualizer } from '../src/task-execution-visualizer'
 
 describe('TaskExecutionVisualizer', () => {
-  it('shows single task execution', () => {
+  test('shows single task execution', () => {
     const visualizer = new TaskExecutionVisualizer()
     expect(visualizer.begin('taskA')).toBe('taskA')
-    expect(visualizer.ended('taskA', 'OK')).toBe('_')
+    expect(visualizer.ended('taskA', 'V')).toBe('V')
   })
 
-  it('shows two sequential tasks', () => {
+  test('shows two sequential tasks', () => {
     const visualizer = new TaskExecutionVisualizer()
     expect(visualizer.begin('taskA')).toBe('taskA')
-    expect(visualizer.ended('taskA', 'OK')).toBe('_')
+    expect(visualizer.ended('taskA', '✅')).toBe('✅')
     expect(visualizer.begin('taskB')).toBe('taskB')
-    expect(visualizer.ended('taskB', 'OK')).toBe('_')
+    expect(visualizer.ended('taskB', '✅')).toBe('✅')
   })
 
-  it('shows nested task execution', () => {
+  test('shows nested task execution', () => {
     const visualizer = new TaskExecutionVisualizer()
     expect(visualizer.begin('taskA')).toBe('taskA')
     expect(visualizer.begin('taskB')).toBe('     taskB')
-    expect(visualizer.ended('taskB', 'OK')).toBe('|    _')
-    expect(visualizer.ended('taskA', 'OK')).toBe('_')
+    expect(visualizer.ended('taskB', '✅')).toBe('|    ✅')
+    expect(visualizer.ended('taskA', '✅')).toBe('✅')
   })
 
-  it('handles complex nested execution pattern', () => {
+  test('handles complex nested execution pattern', () => {
     const visualizer = new TaskExecutionVisualizer()
     expect(visualizer.begin('A')).toBe('A')
     expect(visualizer.begin('B')).toBe('     B')
     expect(visualizer.begin('C')).toBe('          C')
-    expect(visualizer.ended('B', 'OK')).toBe('|    _    |')
+    expect(visualizer.ended('B', '✅')).toBe('|    ✅    |')
     expect(visualizer.begin('D')).toBe('     D')
-    expect(visualizer.ended('C', 'OK')).toBe('|    |    _')
+    expect(visualizer.ended('C', '✅')).toBe('|    |    ✅')
     expect(visualizer.begin('E')).toBe('          E')
     expect(visualizer.begin('F')).toBe('               F')
-    expect(visualizer.ended('A', 'OK')).toBe('_    |    |    |')
-    expect(visualizer.ended('D', 'OK')).toBe('     _    |    |')
-    expect(visualizer.ended('F', 'OK')).toBe('          |    _')
-    expect(visualizer.ended('E', 'OK')).toBe('          _')
+    expect(visualizer.ended('A', '✅')).toBe('✅    |    |    |')
+    expect(visualizer.ended('D', '✅')).toBe('     ✅    |    |')
+    expect(visualizer.ended('F', '✅')).toBe('          |    ✅')
+    expect(visualizer.ended('E', '✅')).toBe('          ✅')
   })
 
-  it('handles task completion in different order than start', () => {
+  test('handles task completion in different order than start', () => {
     const visualizer = new TaskExecutionVisualizer()
     expect(visualizer.begin('taskA')).toBe('taskA')
     expect(visualizer.begin('taskB')).toBe('     taskB')
     expect(visualizer.begin('taskC')).toBe('          taskC')
-    expect(visualizer.ended('taskB', 'OK')).toBe('|    _    |')
-    expect(visualizer.ended('taskC', 'OK')).toBe('|         _')
-    expect(visualizer.ended('taskA', 'OK')).toBe('_')
+    expect(visualizer.ended('taskB', 'V')).toBe('|    V    |')
+    expect(visualizer.ended('taskC', 'V')).toBe('|         V')
+    expect(visualizer.ended('taskA', 'V')).toBe('V')
   })
 
-  it('handles different verdict types', () => {
+  test('handles different verdict types', () => {
     const visualizer = new TaskExecutionVisualizer()
     expect(visualizer.begin('task')).toBe('task')
-    expect(visualizer.ended('task', 'FAIL')).toBe('_')
+    expect(visualizer.ended('task', 'X')).toBe('X')
 
     expect(visualizer.begin('task2')).toBe('task2')
-    expect(visualizer.ended('task2', 'CRASH')).toBe('_')
+    expect(visualizer.ended('task2', '#')).toBe('#')
   })
 })

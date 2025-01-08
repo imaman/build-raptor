@@ -54,8 +54,8 @@ export class TaskExecutionVisualizer {
     return this.getLine(taskName)
   }
 
-  ended(taskName: string, _verdict: string): string {
-    const ret = this.getLine(taskName, '_')
+  ended(taskName: string, verdict: string): string {
+    const ret = this.getLine(taskName, verdict)
     this.runningTasks.delete(taskName)
     return ret
   }

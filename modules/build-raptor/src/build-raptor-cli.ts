@@ -125,7 +125,16 @@ export async function run(options: Options) {
   })
 
   bootstrapper.subscribable.on('executionEnded', async arg => {
-    logger.print(visualizer.ended(arg.taskName, arg.status))
+    logger.print(
+      visualizer.ended(
+        arg.taskName,
+        switchOn(arg.status, {
+          OK: () => '🏁',
+          FAIL: () => '🏁',
+          CRASH: () => '🏁',
+        }),
+      ),
+    )
 
     // TODO(imaman): cover (output is indeed written in file structure)
     await fse.ensureDir(buildRaptorDirTasks)
