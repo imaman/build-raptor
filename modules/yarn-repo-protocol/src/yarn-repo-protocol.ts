@@ -982,7 +982,10 @@ export class YarnRepoProtocol implements RepoProtocol {
       return ret
     }
 
-    throw new Error(`double resolution is not supported (${p})`)
+    // If ret is a string, it points to another JSON file - resolve it recursively
+    const pointerDir = path.dirname(pointer)
+    const nextPointer = path.join(pointerDir, ret)
+    return this.resolveBuildTasks(dir, name, nextPointer)
   }
 
   private async computeTestsToRun(resolved: string): Promise<string[]> {
