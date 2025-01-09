@@ -335,6 +335,29 @@ describe('yarn-repo-protocol.e2e', () => {
         await fork.run('OK', { taskKind: 'build' })
         expect(await fork.file('modules/a/.out/p').lines()).toEqual(['pretzels'])
       })
+      test('fails when build task definition contains circular JSON references', async () => {
+        const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+        const recipe = {
+          'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+          'aux/1.json': { 'do-abc': '2.json' },
+          'aux/2.json': { 'do-abc': '3.json' },
+          'aux/3.json': { 'do-abc': '1.json' }, // Creates a circular reference back to 1.json
+          'modules/a/package.json': {
+            ...driver.packageJson('a', undefined, { 'do-abc': `echo "pretzels" > .out/p` }),
+            buildTasks: {
+              'do-abc': '../../aux/1.json',
+            },
+          },
+          'modules/a/src/a.ts': '// something',
+          'modules/a/tests/a.spec.ts': `test('a', () => {expect(1).toEqual(1)});`,
+        }
+
+        const fork = await driver.repo(recipe).fork()
+        const run = await fork.run('FAIL', { taskKind: 'build' })
+        expect(run.message).toContain(
+          `Circular reference detected in build task definition: aux/1.json -> aux/2.json -> aux/3.json -> aux/1.json`,
+        )
+      })
     })
     test('emits a build error if the buildTask object (the package.json file) is not well formed', async () => {
       const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })

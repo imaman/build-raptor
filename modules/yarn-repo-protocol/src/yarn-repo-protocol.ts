@@ -966,20 +966,32 @@ export class YarnRepoProtocol implements RepoProtocol {
 
   private resolveBuildTasks(dir: PathInRepo, name: string, pointer: string): ResolvedBuildTaskDefinition {
     let where = dir.to(pointer)
-    // let currentPointer = pointer;
+    const absPathToIndex = new Map<string, number>() // Maps file path to its position in the chain
 
     while (true) {
-      const p = this.state.rootDir.resolve(where)
-      const unparsed = JSON.parse(fs.readFileSync(p, 'utf-8'))
+      const fileToRead = this.state.rootDir.resolve(where)
+      const cycleStart = absPathToIndex.get(fileToRead)
+      if (cycleStart !== undefined) {
+        const cycle = sortBy([...absPathToIndex.entries()], ([_, index]) => index)
+          .slice(cycleStart)
+          .map(([abs]) => this.state.rootDir.unresolve(abs))
+        cycle.push(where) // Complete the cycle
+        throw new BuildFailedError(`Circular reference detected in build task definition: ${cycle.join(' -> ')}`)
+      }
+      absPathToIndex.set(fileToRead, absPathToIndex.size)
+
+      const unparsed = JSON.parse(fs.readFileSync(fileToRead, 'utf-8'))
       const parseResult = BuildTaskRecord.safeParse(unparsed)
       if (!parseResult.success) {
-        throw new BuildFailedError(`buildTask object (in ${p}) is not well formed: ${parseResult.error.message}`)
+        throw new BuildFailedError(
+          `buildTask object (in ${fileToRead}) is not well formed: ${parseResult.error.message}`,
+        )
       }
 
       const parsed = parseResult.data
       const ret = parsed[name]
       if (!ret) {
-        throw new BuildFailedError(`could not find buildTask "${name}" in ${p}`)
+        throw new BuildFailedError(`could not find buildTask "${name}" in ${fileToRead}`)
       }
 
       if (typeof ret === 'object') {
