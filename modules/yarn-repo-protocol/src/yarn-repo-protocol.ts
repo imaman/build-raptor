@@ -930,7 +930,8 @@ export class YarnRepoProtocol implements RepoProtocol {
     const ret: TaskInfo[] = []
     for (const name of Object.keys(btr)) {
       const unresolvedDef = btr[name]
-      const def = typeof unresolvedDef === 'string' ? this.resolveBuildTasks(dir, name, unresolvedDef) : unresolvedDef
+      const def =
+        typeof unresolvedDef === 'string' ? this.resolveBuildTasks(dir, name, unresolvedDef, pj) : unresolvedDef
       if (!this.hasRunScript(u.id, name)) {
         throw new BuildFailedError(
           `found a build task named "${name}" but no run script with that name is defined in ${pj}`,
@@ -964,7 +965,12 @@ export class YarnRepoProtocol implements RepoProtocol {
     return ret
   }
 
-  private resolveBuildTasks(dir: PathInRepo, name: string, pointer: string): ResolvedBuildTaskDefinition {
+  private resolveBuildTasks(
+    dir: PathInRepo,
+    name: string,
+    pointer: string,
+    originatingFrom: PathInRepo,
+  ): ResolvedBuildTaskDefinition {
     let where = dir.to(pointer)
     const absPathToIndex = new Map<string, number>() // Maps file path to its position in the chain
 
@@ -980,6 +986,11 @@ export class YarnRepoProtocol implements RepoProtocol {
       }
       absPathToIndex.set(fileToRead, absPathToIndex.size)
 
+      if (!fs.existsSync(fileToRead)) {
+        throw new BuildFailedError(
+          `Could no find file ${where} while resolving build task "${name}" from ${originatingFrom}`,
+        )
+      }
       const unparsed = JSON.parse(fs.readFileSync(fileToRead, 'utf-8'))
       const parseResult = BuildTaskRecord.safeParse(unparsed)
       if (!parseResult.success) {

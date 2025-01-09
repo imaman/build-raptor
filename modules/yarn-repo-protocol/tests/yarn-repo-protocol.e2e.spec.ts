@@ -358,6 +358,47 @@ describe('yarn-repo-protocol.e2e', () => {
           `Circular reference detected in build task definition: aux/1.json -> aux/2.json -> aux/3.json -> aux/1.json`,
         )
       })
+      test('fails when referenced JSON file does not contain the requested task', async () => {
+        const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+        const recipe = {
+          'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+          'aux/1.json': { 'do-abc': '2.json' },
+          'aux/2.json': { 'do-xyz': 'blah blah blah' }, // This file doesn't have 'do-abc'
+          'modules/a/package.json': {
+            ...driver.packageJson('a', undefined, { 'do-abc': `echo "pretzels" > .out/p` }),
+            buildTasks: {
+              'do-abc': '../../aux/1.json',
+            },
+          },
+          'modules/a/src/a.ts': '// something',
+          'modules/a/tests/a.spec.ts': `test('a', () => {expect(1).toEqual(1)});`,
+        }
+
+        const fork = await driver.repo(recipe).fork()
+        const run = await fork.run('FAIL', { taskKind: 'build' })
+        expect(run.message).toMatch(/could not find buildTask "do-abc" in .*repo-root\/aux\/2.json/)
+      })
+      test('fails when referenced JSON file does not exist', async () => {
+        const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+        const recipe = {
+          'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+          'aux/1.json': { 'do-abc': 'non-existent.json' },
+          'modules/a/package.json': {
+            ...driver.packageJson('a', undefined, { 'do-abc': `echo "pretzels" > .out/p` }),
+            buildTasks: {
+              'do-abc': '../../aux/1.json',
+            },
+          },
+          'modules/a/src/a.ts': '// something',
+          'modules/a/tests/a.spec.ts': `test('a', () => {expect(1).toEqual(1)});`,
+        }
+
+        const fork = await driver.repo(recipe).fork()
+        const run = await fork.run('FAIL', { taskKind: 'build' })
+        expect(run.message).toMatch(
+          /Could no find file aux\/non-existent.json while resolving build task "do-abc" from modules\/a\/package.json/,
+        )
+      })
     })
     test('emits a build error if the buildTask object (the package.json file) is not well formed', async () => {
       const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
