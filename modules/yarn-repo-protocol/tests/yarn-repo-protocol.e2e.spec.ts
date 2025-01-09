@@ -270,7 +270,7 @@ describe('yarn-repo-protocol.e2e', () => {
     expect(run3.executionTypeOf('a', 'build')).toEqual('CACHED')
   })
   describe('custom build tasks', () => {
-    test.only('are defined in the package.json file', async () => {
+    test('are defined in the package.json file', async () => {
       const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
       const recipe = {
         'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
@@ -293,7 +293,7 @@ describe('yarn-repo-protocol.e2e', () => {
       await fork.run('OK', { taskKind: 'build' })
       expect(await fork.file('modules/a/.out/p').lines()).toEqual(['pretzels'])
     })
-    test('can point to a definition from another JSON file', async () => {
+    test.only('can point to a definition from another JSON file', async () => {
       const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
       const recipe = {
         'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
