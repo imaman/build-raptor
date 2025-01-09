@@ -313,7 +313,7 @@ describe('yarn-repo-protocol.e2e', () => {
         await fork.run('OK', { taskKind: 'build' })
         expect(await fork.file('modules/a/.out/p').lines()).toEqual(['pretzels'])
       })
-      test('resolves the definition through several hops', async () => {
+      test('resolves a build task definition through a chain of JSON references', async () => {
         const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
         const recipe = {
           'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
