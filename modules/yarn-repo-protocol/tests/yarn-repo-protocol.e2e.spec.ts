@@ -293,31 +293,45 @@ describe('yarn-repo-protocol.e2e', () => {
       await fork.run('OK', { taskKind: 'build' })
       expect(await fork.file('modules/a/.out/p').lines()).toEqual(['pretzels'])
     })
-    test.only('can point to a definition from another JSON file', async () => {
-      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
-      const recipe = {
-        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
-        'aux/foo.json': {
-          'do-abc': {
-            labels: ['build'],
-            inputs: [],
-            outputs: ['.out/p'],
+    describe('reuse', () => {
+      test('can point to a definition from another JSON file', async () => {
+        const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+        const recipe = {
+          'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+          'aux/foo.json': { 'do-abc': { labels: ['build'], inputs: [], outputs: ['.out/p'] } },
+          'modules/a/package.json': {
+            ...driver.packageJson('a', undefined, { 'do-abc': `echo "pretzels" > .out/p` }),
+            buildTasks: {
+              'do-abc': '../../aux/foo.json',
+            },
           },
-        },
-        'modules/a/package.json': {
-          ...driver.packageJson('a', undefined, { 'do-abc': `echo "pretzels" > .out/p` }),
-          buildTasks: {
-            'do-abc': "../../aux/foo.json",
+          'modules/a/src/a.ts': '// something',
+          'modules/a/tests/a.spec.ts': `test('a', () => {expect(1).toEqual(1)});`,
+        }
+
+        const fork = await driver.repo(recipe).fork()
+        await fork.run('OK', { taskKind: 'build' })
+        expect(await fork.file('modules/a/.out/p').lines()).toEqual(['pretzels'])
+      })
+      test('_can point to a definition from another JSON file', async () => {
+        const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+        const recipe = {
+          'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+          'aux/foo.json': { 'do-abc': { labels: ['build'], inputs: [], outputs: ['.out/p'] } },
+          'modules/a/package.json': {
+            ...driver.packageJson('a', undefined, { 'do-abc': `echo "pretzels" > .out/p` }),
+            buildTasks: {
+              'do-abc': '../../aux/foo.json',
+            },
           },
-        },
-        'modules/a/src/a.ts': '// something',
-        'modules/a/tests/a.spec.ts': `test('a', () => {expect(1).toEqual(1)});`,
-      }
+          'modules/a/src/a.ts': '// something',
+          'modules/a/tests/a.spec.ts': `test('a', () => {expect(1).toEqual(1)});`,
+        }
 
-      const fork = await driver.repo(recipe).fork()
-
-      await fork.run('OK', { taskKind: 'build' })
-      expect(await fork.file('modules/a/.out/p').lines()).toEqual(['pretzels'])
+        const fork = await driver.repo(recipe).fork()
+        await fork.run('OK', { taskKind: 'build' })
+        expect(await fork.file('modules/a/.out/p').lines()).toEqual(['pretzels'])
+      })
     })
     test('emits a build error if the buildTask object (the package.json file) is not well formed', async () => {
       const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
