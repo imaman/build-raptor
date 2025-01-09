@@ -965,27 +965,29 @@ export class YarnRepoProtocol implements RepoProtocol {
   }
 
   private resolveBuildTasks(dir: PathInRepo, name: string, pointer: string): ResolvedBuildTaskDefinition {
-    const p = this.state.rootDir.resolve(dir.to(pointer))
-    const unparsed = JSON.parse(fs.readFileSync(p, 'utf-8'))
-    const parseResult = BuildTaskRecord.safeParse(unparsed)
-    if (!parseResult.success) {
-      throw new BuildFailedError(`buildTask object (in ${p}) is not well formed: ${parseResult.error.message}`)
-    }
+    let where = dir.to(pointer)
+    // let currentPointer = pointer;
 
-    const parsed = parseResult.data
-    const ret = parsed[name]
-    if (!ret) {
-      throw new BuildFailedError(`could not find buildTask "${name}" in ${p}`)
-    }
+    while (true) {
+      const p = this.state.rootDir.resolve(where)
+      const unparsed = JSON.parse(fs.readFileSync(p, 'utf-8'))
+      const parseResult = BuildTaskRecord.safeParse(unparsed)
+      if (!parseResult.success) {
+        throw new BuildFailedError(`buildTask object (in ${p}) is not well formed: ${parseResult.error.message}`)
+      }
 
-    if (typeof ret === 'object') {
-      return ret
-    }
+      const parsed = parseResult.data
+      const ret = parsed[name]
+      if (!ret) {
+        throw new BuildFailedError(`could not find buildTask "${name}" in ${p}`)
+      }
 
-    // If ret is a string, it points to another JSON file - resolve it recursively
-    const pointerDir = path.dirname(pointer)
-    const nextPointer = path.join(pointerDir, ret)
-    return this.resolveBuildTasks(dir, name, nextPointer)
+      if (typeof ret === 'object') {
+        return ret
+      }
+
+      where = PathInRepo(path.dirname(where.val)).to(ret)
+    }
   }
 
   private async computeTestsToRun(resolved: string): Promise<string[]> {
