@@ -34,7 +34,7 @@ import { PackageJson, TsConfigJson } from 'type-fest'
 import { UnitId, UnitMetadata } from 'unit-metadata'
 import { z } from 'zod'
 
-import { BuildTaskRecord } from './build-task-record'
+import { BuildTaskRecord, ResolvedBuildTaskDefinition } from './build-task-record'
 import { generateTestRunSummary } from './generate-test-run-summary'
 import { RerunList } from './rerun-list'
 import { YarnRepoProtocolConfig } from './yarn-repo-protocol-config'
@@ -929,7 +929,9 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
     const ret: TaskInfo[] = []
     for (const name of Object.keys(btr)) {
-      const def = btr[name]
+      const unresolvedDef = btr[name]
+      const def =
+        typeof unresolvedDef === 'string' ? this.resolveBuildTasks(dir, name, unresolvedDef, pj) : unresolvedDef
       if (!this.hasRunScript(u.id, name)) {
         throw new BuildFailedError(
           `found a build task named "${name}" but no run script with that name is defined in ${pj}`,
@@ -961,6 +963,54 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
 
     return ret
+  }
+
+  private resolveBuildTasks(
+    dir: PathInRepo,
+    name: string,
+    pointer: string,
+    originatingFrom: PathInRepo,
+  ): ResolvedBuildTaskDefinition {
+    let where = dir.to(pointer)
+    const absPathToIndex = new Map<string, number>() // Maps file path to its position in the chain
+
+    while (true) {
+      const fileToRead = this.state.rootDir.resolve(where)
+      const cycleStart = absPathToIndex.get(fileToRead)
+      if (cycleStart !== undefined) {
+        const cycle = sortBy([...absPathToIndex.entries()], ([_, index]) => index)
+          .slice(cycleStart)
+          .map(([abs]) => this.state.rootDir.unresolve(abs))
+        cycle.push(where) // Complete the cycle
+        throw new BuildFailedError(`Circular reference detected in build task definition: ${cycle.join(' -> ')}`)
+      }
+      absPathToIndex.set(fileToRead, absPathToIndex.size)
+
+      if (!fs.existsSync(fileToRead)) {
+        throw new BuildFailedError(
+          `Could no find file ${where} while resolving build task "${name}" from ${originatingFrom}`,
+        )
+      }
+      const unparsed = JSON.parse(fs.readFileSync(fileToRead, 'utf-8'))
+      const parseResult = BuildTaskRecord.safeParse(unparsed)
+      if (!parseResult.success) {
+        throw new BuildFailedError(
+          `buildTask object (in ${fileToRead}) is not well formed: ${parseResult.error.message}`,
+        )
+      }
+
+      const parsed = parseResult.data
+      const ret = parsed[name]
+      if (!ret) {
+        throw new BuildFailedError(`could not find buildTask "${name}" in ${fileToRead}`)
+      }
+
+      if (typeof ret === 'object') {
+        return ret
+      }
+
+      where = PathInRepo(path.dirname(where.val)).to(ret)
+    }
   }
 
   private async computeTestsToRun(resolved: string): Promise<string[]> {
