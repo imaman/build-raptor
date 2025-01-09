@@ -838,6 +838,7 @@ export class YarnRepoProtocol implements RepoProtocol {
       .map(at => this.unitOf(at).pathInRepo)
     const ret: TaskInfo = {
       labels: ['build'],
+      useCaching: false,
       taskName: TaskName(u.id, TaskKind('build')),
       outputLocations: [{ pathInRepo: dir.expand(this.dist()), purge: 'NEVER' }],
       inputs: [

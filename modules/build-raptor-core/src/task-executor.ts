@@ -261,7 +261,8 @@ class SingleTaskExecutor {
     if (phase === 'POSSIBLY_RESTORE_OUTPUTS') {
       const earlierVerdict = await this.getVerdict()
       this.diagnose(`earlierVerdict is ${earlierVerdict}`)
-      if (earlierVerdict === 'UNKNOWN' || (this.isTest && !this.testCaching)) {
+      const useCaching = this.task.taskInfo.useCaching ?? true
+      if (earlierVerdict === 'UNKNOWN' || (this.isTest && !this.testCaching) || !useCaching) {
         await this.purgeOutputs(false)
         return 'RUN_IT'
       }
