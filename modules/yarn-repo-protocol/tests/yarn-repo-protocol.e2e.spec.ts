@@ -313,15 +313,18 @@ describe('yarn-repo-protocol.e2e', () => {
         await fork.run('OK', { taskKind: 'build' })
         expect(await fork.file('modules/a/.out/p').lines()).toEqual(['pretzels'])
       })
-      test('_can point to a definition from another JSON file', async () => {
+      test('resolves the definition through several hops', async () => {
         const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
         const recipe = {
           'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
-          'aux/foo.json': { 'do-abc': { labels: ['build'], inputs: [], outputs: ['.out/p'] } },
+          'aux/1.json': { 'do-abc': '2.json' },
+          'aux/2.json': { 'do-abc': '3.json' },
+          'aux/3.json': { 'do-abc': '4.json' },
+          'aux/4.json': { 'do-abc': { labels: ['build'], inputs: [], outputs: ['.out/p'] } },
           'modules/a/package.json': {
             ...driver.packageJson('a', undefined, { 'do-abc': `echo "pretzels" > .out/p` }),
             buildTasks: {
-              'do-abc': '../../aux/foo.json',
+              'do-abc': '../../aux/1.json',
             },
           },
           'modules/a/src/a.ts': '// something',
