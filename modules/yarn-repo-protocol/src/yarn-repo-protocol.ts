@@ -34,7 +34,7 @@ import { PackageJson, TsConfigJson } from 'type-fest'
 import { UnitId, UnitMetadata } from 'unit-metadata'
 import { z } from 'zod'
 
-import { BuildTaskRecord } from './build-task-record'
+import { BuildTaskRecord, ResolvedBuildTaskDefinition } from './build-task-record'
 import { generateTestRunSummary } from './generate-test-run-summary'
 import { RerunList } from './rerun-list'
 import { YarnRepoProtocolConfig } from './yarn-repo-protocol-config'
@@ -929,7 +929,8 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
     const ret: TaskInfo[] = []
     for (const name of Object.keys(btr)) {
-      const def = btr[name]
+      const unresolvedDef = btr[name]
+      const def = typeof unresolvedDef === 'string' ? this.resolveBuildTasks(dir, name, unresolvedDef) : unresolvedDef
       if (!this.hasRunScript(u.id, name)) {
         throw new BuildFailedError(
           `found a build task named "${name}" but no run script with that name is defined in ${pj}`,
@@ -961,6 +962,27 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
 
     return ret
+  }
+
+  private resolveBuildTasks(dir: PathInRepo, name: string, pointer: string): ResolvedBuildTaskDefinition {
+    const p = this.state.rootDir.resolve(dir.to(pointer))
+    const unparsed = JSON.parse(fs.readFileSync(p, 'utf-8'))
+    const parseResult = BuildTaskRecord.safeParse(unparsed)
+    if (!parseResult.success) {
+      throw new BuildFailedError(`buildTask object (in ${p}) is not well formed: ${parseResult.error.message}`)
+    }
+
+    const parsed = parseResult.data
+    const ret = parsed[name]
+    if (!ret) {
+      throw new BuildFailedError(`could not find buildTask "${name}" in ${p}`)
+    }
+
+    if (typeof ret === 'object') {
+      return ret
+    }
+
+    throw new Error(`double resolution is not supported (${p})`)
   }
 
   private async computeTestsToRun(resolved: string): Promise<string[]> {
