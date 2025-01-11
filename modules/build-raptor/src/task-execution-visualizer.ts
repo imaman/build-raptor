@@ -5,6 +5,7 @@ export class TaskExecutionVisualizer {
   private numEnded = 0
   private numBlocked = 0
   private numFailed = 0
+  private numExectuted = 0
   private numCached = 0
   private all = 0
   private runningTasks: string[] = []
@@ -55,7 +56,10 @@ export class TaskExecutionVisualizer {
         ++this.numCached
         return '🗃️ '
       },
-      EXECUTED: () => '󠀠✨',
+      EXECUTED: () => {
+        ++this.numExectuted
+        return '󠀠✨'
+      },
     })
 
     const verdictIndicator = switchOn(verdict, {
@@ -78,12 +82,16 @@ export class TaskExecutionVisualizer {
     }`
   }
 
-  summary(_durationInMillis: number) {
+  summary(durationInMillis: number) {
     return [
+      `.`,
+      ``,
+      `Let's wrap it up (${(durationInMillis / 1000).toFixed(1)}s):`,
+      ``,
       `✅ Succeeded: ${this.numEnded}/${this.all}`,
       `❌ Failed: ${this.numFailed}/${this.all}`,
+      `🗃️  Cache hit: ${this.numCached}/${this.all} (${((100 * this.numCached) / this.all).toFixed(1)}%)`,
       `⛔ Could not start: ${this.numBlocked}/${this.all}`,
-      `🗃️ Cache hit: ${this.numCached}/${this.all}`,
     ].join('\n')
   }
 }

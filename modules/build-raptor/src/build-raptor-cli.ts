@@ -244,6 +244,7 @@ function reportTests(logger: Logger, arr: TestEndedEvent[], tr: TestReporting) {
   } else {
     shouldNeverHappen(tr)
   }
+  printPassing = false
 
   function indent(prevKey: string[], key: string[]) {
     let indent = '|    '
