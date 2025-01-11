@@ -88,13 +88,8 @@ export class TaskExecutionVisualizer {
 
   summary(durationInMillis: number) {
     const tried = this.numExectuted + this.numCached
-    const width = Math.max(
-      this.numSucceeded.toString().length,
-      this.numFailed.toString().length,
-      this.numBlocked.toString().length,
-      this.numExectuted.toString().length,
-      this.numCached.toString().length,
-    )
+    const width = this.all.toString().length
+
     return [
       `.`,
       ``,
