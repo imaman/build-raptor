@@ -116,33 +116,59 @@ export async function run(options: Options) {
   )
 
   const testOutput = new Map<TaskName, TestEndedEvent[]>()
-  const visualizer = new TaskExecutionVisualizer()
+  const visualizer = options.taskProgressOutput ? new TaskExecutionVisualizer() : undefined
+
+  bootstrapper.transmitter.addProcessor(s => {
+    if (
+      s.step === 'ASSET_PUBLISHED' ||
+      s.step === 'BUILD_RUN_STARTED' ||
+      s.step === 'PUBLIC_FILES' ||
+      s.step === 'TASK_STORE_GET' ||
+      s.step === 'TASK_STORE_PUT' ||
+      s.step === 'TEST_ENDED'
+    ) {
+      return
+    }
+
+    if (s.step === 'PLAN_PREPARED') {
+      visualizer?.addTasks(s.taskNames)
+      return
+    }
+
+    if (s.step === 'TASK_ENDED') {
+      if (visualizer) {
+        const line = visualizer.ended(s.taskName, s.verdict, s.executionType)
+        if (line) {
+          logger.print(line)
+        }
+      }
+      return
+    }
+
+    if (s.step === 'BUILD_RUN_ENDED') {
+      const line = visualizer?.summary(Date.now() - t0)
+      if (line) {
+        logger.print(line)
+      }
+      return
+    }
+
+    shouldNeverHappen(s)
+  })
+
   bootstrapper.subscribable.on('testEnded', arg => {
     assigningGet(testOutput, arg.taskName, () => []).push(arg)
   })
 
   bootstrapper.subscribable.on('executionStarted', arg => {
-    if (options.taskProgressOutput) {
-      logger.print(visualizer.begin(arg))
+    if (visualizer) {
+      visualizer.begin(arg)
     } else {
       logger.print(`=============================== ${arg} =================================`)
     }
   })
 
   bootstrapper.subscribable.on('executionEnded', async arg => {
-    if (options.taskProgressOutput) {
-      logger.print(
-        visualizer.ended(
-          arg.taskName,
-          switchOn(arg.status, {
-            OK: () => '🏁',
-            FAIL: () => '🏁',
-            CRASH: () => '🏁',
-          }),
-        ),
-      )
-    }
-
     // TODO(imaman): cover (output is indeed written in file structure)
     await fse.ensureDir(buildRaptorDirTasks)
     const fileName = path.join(buildRaptorDirTasks, toReasonableFileName(arg.taskName))
