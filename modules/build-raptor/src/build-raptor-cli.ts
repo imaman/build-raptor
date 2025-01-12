@@ -1,4 +1,5 @@
 import { DefaultAssetPublisher, EngineBootstrapper, findRepoDir, TaskSelector } from 'build-raptor-core'
+import fs from 'fs'
 import * as fse from 'fs-extra'
 import { createDefaultLogger, Criticality, Logger } from 'logger'
 import {
@@ -118,6 +119,10 @@ export async function run(options: Options) {
   const testOutput = new Map<TaskName, TestEndedEvent[]>()
   const visualizer = options.taskProgressOutput ? new TaskExecutionVisualizer() : undefined
 
+  // TODO(imaman): use a writable stream?
+  const allTasksFile = path.join(buildRaptorDir, 'all-tests')
+  fs.writeFileSync(allTasksFile, '')
+
   bootstrapper.transmitter.addProcessor(s => {
     if (
       s.step === 'ASSET_PUBLISHED' ||
@@ -182,7 +187,7 @@ export async function run(options: Options) {
       stream.end()
     }
 
-    reportTests(logger, testOutput.get(arg.taskName) ?? [], options.testReporting ?? 'tree-all')
+    reportTests(logger, testOutput.get(arg.taskName) ?? [], options.testReporting ?? 'tree-all', allTasksFile)
 
     const dumpTaskOutputToTerminal =
       options.printPassing ||
@@ -191,13 +196,12 @@ export async function run(options: Options) {
         OK: () => false,
         FAIL: () => true,
       })
-    if (!dumpTaskOutputToTerminal) {
-      return
+    if (dumpTaskOutputToTerminal) {
+      await dumpFile(arg.outputFile, process.stdout)
+      logger.print(`\n\n`)
     }
-
-    await dumpFile(arg.outputFile, process.stdout)
+    fs.appendFileSync(allTasksFile, fs.readFileSync(arg.outputFile) + '\n')
     logger.info(`output of ${arg.taskName} dumped`)
-    logger.print(`\n\n`)
   })
 
   bootstrapper.subscribable.on('executionSkipped', tn => {
@@ -231,7 +235,7 @@ export async function run(options: Options) {
   process.exitCode = exitCode
 }
 
-function reportTests(logger: Logger, arr: TestEndedEvent[], tr: TestReporting) {
+function reportTests(logger: Logger, arr: TestEndedEvent[], tr: TestReporting, allTasksFile: string) {
   //     "build": "build-raptor build --compact",
   //      "test": "export NODE_OPTIONS=--no-experimental-fetch && build-raptor test --compact --test-reporting=tree"
 
@@ -288,7 +292,10 @@ function reportTests(logger: Logger, arr: TestEndedEvent[], tr: TestReporting) {
       })
 
       const duration = at.durationMillis === undefined ? '' : ` (${at.durationMillis} ms)`
-      logger.print(`${spaces}${v} ${at.testPath.at(-1)}${duration}`, 'high')
+      const message = `${spaces}${v} ${at.testPath.at(-1)}${duration}`
+      // TODO(imaman): create a dedicate logger that write to the allTasksFile
+      logger.print(message, 'high')
+      fs.appendFileSync(allTasksFile, message + '\n')
 
       prev = k
     }
@@ -297,12 +304,15 @@ function reportTests(logger: Logger, arr: TestEndedEvent[], tr: TestReporting) {
   const list = Object.entries(groupBy(arr, at => at.fileName)).map(([fileName, tests]) => ({ fileName, tests }))
   const sorted = sortBy(list, at => at.fileName)
   const passing = sorted.filter(at => isPassing(at.tests))
-  if (renderPassingTests) {
-    for (const at of passing) {
-      logger.print(`✅ PASSED ${at.fileName}`, 'high')
+  for (const at of passing) {
+    const message = `✅ PASSED ${at.fileName}`
+    fs.appendFileSync(allTasksFile, message + '\n')
+    if (renderPassingTests) {
+      logger.print(message, 'high')
     }
   }
   for (const at of sorted.filter(at => !isPassing(at.tests))) {
+    fs.appendFileSync(allTasksFile, at.fileName + '\n')
     logger.print(at.fileName, 'high')
     printTests(at.tests)
   }
