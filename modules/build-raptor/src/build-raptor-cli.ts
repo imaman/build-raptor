@@ -25,7 +25,7 @@ import { YarnRepoProtocol } from 'yarn-repo-protocol'
 
 import { TaskExecutionVisualizer } from './task-execution-visualizer'
 
-type TestReporting = 'tree' | 'tree-just-failing'
+type TestReporting = 'tree-all' | 'tree-just-failing'
 
 interface Options {
   units: string[]
@@ -182,7 +182,7 @@ export async function run(options: Options) {
       stream.end()
     }
 
-    reportTests(logger, testOutput.get(arg.taskName) ?? [], options.testReporting ?? 'tree')
+    reportTests(logger, testOutput.get(arg.taskName) ?? [], options.testReporting ?? 'tree-all')
 
     const dumpTaskOutputToTerminal =
       options.printPassing ||
@@ -236,7 +236,7 @@ function reportTests(logger: Logger, arr: TestEndedEvent[], tr: TestReporting) {
   //      "test": "export NODE_OPTIONS=--no-experimental-fetch && build-raptor test --compact --test-reporting=tree"
 
   let renderPassingTests
-  if (tr === 'tree') {
+  if (tr === 'tree-all') {
     renderPassingTests = true
   } else if (tr === 'tree-just-failing') {
     renderPassingTests = false
@@ -369,7 +369,7 @@ export function main() {
         demandOption: false,
       })
       .option('test-reporting', {
-        choices: ['tree', 'tree-just-failing'],
+        choices: ['tree-all', 'tree-just-failing'],
         describe: 'test reporing policy',
         default: 'tree',
       })
@@ -420,7 +420,9 @@ export function main() {
             criticality: stringToLoudness(argv.loudness),
             testCaching: argv.testCaching,
             testReporting:
-              tr === 'tree' || tr === 'tree-just-failing' || tr === undefined ? tr : failMe(`unsupported value: ${tr}`),
+              tr === 'tree-all' || tr === 'tree-just-failing' || tr === undefined
+                ? tr
+                : failMe(`unsupported value: ${tr}`),
             stepByStepProcessor: argv.stepByStepProcessor,
             buildRaptorConfigFile: argv.configFile,
             taskProgressOutput: argv.taskProgressOutput,
@@ -465,7 +467,9 @@ export function main() {
             criticality: stringToLoudness(argv.loudness),
             testCaching: argv.testCaching,
             testReporting:
-              tr === 'tree' || tr === 'tree-just-failing' || tr === undefined ? tr : failMe(`unsupported value: ${tr}`),
+              tr === 'tree-all' || tr === 'tree-just-failing' || tr === undefined
+                ? tr
+                : failMe(`unsupported value: ${tr}`),
             stepByStepProcessor: argv.stepByStepProcessor,
             buildRaptorConfigFile: argv.configFile,
             taskProgressOutput: argv.taskProgressOutput,
