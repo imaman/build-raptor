@@ -367,6 +367,7 @@ export function main() {
         demandOption: false,
         default: 8,
       })
+      // TODO(imaman): seems like --compact, --loudness can be replaced by --task-progress-output
       .options('compact', {
         describe: 'whether to list only executing tasks (i.e., do not print skipped tasks)',
         type: 'boolean',
