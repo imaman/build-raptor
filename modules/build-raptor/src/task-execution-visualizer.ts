@@ -9,7 +9,6 @@ export class TaskExecutionVisualizer {
   private numExectuted = 0
   private numCached = 0
   private all = 0
-  private runningTasks: string[] = []
 
   addTasks(names: string[]) {
     this.all += names.length
@@ -25,7 +24,6 @@ export class TaskExecutionVisualizer {
 
   begin(taskName: string): string {
     ++this.numStarted
-    this.runningTasks.push(taskName)
     return this.getLine(taskName)
   }
 
@@ -43,10 +41,6 @@ export class TaskExecutionVisualizer {
     }
 
     ++this.numEnded
-    const index = this.runningTasks.indexOf(taskName)
-    if (index >= 0) {
-      this.runningTasks.splice(index, 1)
-    }
     const cacheIndicator = switchOn(executionType, {
       CACHED: () => {
         ++this.numCached
