@@ -1,6 +1,3 @@
-//     "build": "build-raptor build --compact",
-//      "test": "export NODE_OPTIONS=--no-experimental-fetch && build-raptor test --compact --test-reporting=tree"
-
 import { DefaultAssetPublisher, EngineBootstrapper, findRepoDir, TaskSelector } from 'build-raptor-core'
 import * as fse from 'fs-extra'
 import { createDefaultLogger, Criticality, Logger } from 'logger'
@@ -187,14 +184,14 @@ export async function run(options: Options) {
 
     reportTests(logger, testOutput.get(arg.taskName) ?? [], options.testReporting ?? 'tree')
 
-    const doPrint =
+    const dumpTaskOutputToTerminal =
       options.printPassing ||
       switchOn(arg.status, {
         CRASH: () => false,
         OK: () => false,
         FAIL: () => true,
       })
-    if (!doPrint) {
+    if (!dumpTaskOutputToTerminal) {
       return
     }
 
@@ -238,6 +235,9 @@ function reportTests(logger: Logger, arr: TestEndedEvent[], tr: TestReporting) {
   if (tr === 'just-failing') {
     return
   }
+
+  //     "build": "build-raptor build --compact",
+  //      "test": "export NODE_OPTIONS=--no-experimental-fetch && build-raptor test --compact --test-reporting=tree"
 
   let renderPassngTests
   if (tr === 'tree') {
@@ -340,7 +340,7 @@ export function main() {
         default: [],
       })
       .option('print-passing', {
-        describe: 'whether to print the output of passing tasks to the terminal.',
+        describe: 'whether to dump the output of passing tasks to the terminal.',
         type: 'boolean',
         default: false,
       })
