@@ -120,8 +120,10 @@ export async function run(options: Options) {
   const visualizer = options.taskProgressOutput ? new TaskExecutionVisualizer() : undefined
 
   // TODO(imaman): use a writable stream?
-  const allTasksFile = path.join(buildRaptorDir, 'all-tests')
-  fs.writeFileSync(allTasksFile, '')
+  const allTestsFile = path.join(buildRaptorDir, 'all-tests')
+  fs.writeFileSync(allTestsFile, '')
+
+  let atLeastOneTest = false
 
   bootstrapper.transmitter.addProcessor(s => {
     if (
@@ -129,9 +131,13 @@ export async function run(options: Options) {
       s.step === 'BUILD_RUN_STARTED' ||
       s.step === 'PUBLIC_FILES' ||
       s.step === 'TASK_STORE_GET' ||
-      s.step === 'TASK_STORE_PUT' ||
-      s.step === 'TEST_ENDED'
+      s.step === 'TASK_STORE_PUT'
     ) {
+      return
+    }
+
+    if (s.step === 'TEST_ENDED') {
+      atLeastOneTest = true
       return
     }
 
@@ -152,8 +158,10 @@ export async function run(options: Options) {
 
     if (s.step === 'BUILD_RUN_ENDED') {
       const line = visualizer?.summary(Date.now() - t0)
-      if (line) {
-        logger.print(line)
+      if (atLeastOneTest) {
+        logger.print(`.\n.\n.\nAll test logs were written to ${allTestsFile}\n\n${line ?? ''}`)
+      } else if (line) {
+        logger.print(`.\n.\n.\n${line}`)
       }
       return
     }
@@ -187,7 +195,7 @@ export async function run(options: Options) {
       stream.end()
     }
 
-    reportTests(logger, testOutput.get(arg.taskName) ?? [], options.testReporting ?? 'tree-all', allTasksFile)
+    reportTests(logger, testOutput.get(arg.taskName) ?? [], options.testReporting ?? 'tree-all', allTestsFile)
 
     const dumpTaskOutputToTerminal =
       options.printPassing ||
@@ -200,7 +208,7 @@ export async function run(options: Options) {
       await dumpFile(arg.outputFile, process.stdout)
       logger.print(`\n\n`)
     }
-    fs.appendFileSync(allTasksFile, fs.readFileSync(arg.outputFile) + '\n')
+    fs.appendFileSync(allTestsFile, fs.readFileSync(arg.outputFile) + '\n')
     logger.info(`output of ${arg.taskName} dumped`)
   })
 

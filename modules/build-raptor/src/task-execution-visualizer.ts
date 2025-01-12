@@ -91,9 +91,6 @@ export class TaskExecutionVisualizer {
     const width = this.all.toString().length
 
     return [
-      `.`,
-      ``,
-      ``,
       `Build Summary (${(durationInMillis / 1000).toFixed(1)}s):`,
       `✅ Succeeded:       ${this.numSucceeded.toString().padStart(width)}/${this.all}`,
       this.numFailed > 0 ? `❌ Failed:          ${this.numFailed.toString().padStart(width)}/${this.all}` : undefined,
