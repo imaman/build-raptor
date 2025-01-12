@@ -371,7 +371,7 @@ export function main() {
       .option('test-reporting', {
         choices: ['tree-all', 'tree-just-failing'],
         describe: 'test reporing policy',
-        default: 'tree',
+        default: 'tree-just-failing',
       })
       .option('test-caching', {
         describe: 'whether to skip running tests that have already passed',
