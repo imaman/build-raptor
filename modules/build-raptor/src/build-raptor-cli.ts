@@ -157,11 +157,14 @@ export async function run(options: Options) {
     }
 
     if (s.step === 'BUILD_RUN_ENDED') {
-      const line = visualizer?.summary(Date.now() - t0)
-      if (atLeastOneTest) {
-        logger.print(`.\n.\n.\nAll test logs were written to ${allTestsFile}\n\n${line ?? ''}`)
-      } else if (line) {
-        logger.print(`.\n.\n.\n${line}`)
+      // If there are no tests, don't print the message asbout the location of the all-test-logs file.
+      // If there is no summary message, do not print it.
+      // If one of them is printed, add a prefix of three blank lines
+      const line = visualizer?.summary(Date.now() - t0) ?? ''
+      const whereIsTheLogMessage = atLeastOneTest ? `All test logs were written to ${allTestsFile}\n\n` : ``
+      if (whereIsTheLogMessage || line) {
+        // The logger does .trim() on the message so we use "." instead of a "pure" blank line
+        logger.print(`.\n.\n.\n${whereIsTheLogMessage}${line}`)
       }
       return
     }
