@@ -121,6 +121,8 @@ export async function run(options: Options) {
 
   // TODO(imaman): use a writable stream?
   const allTestsFile = path.join(buildRaptorDir, 'all-tests')
+
+  // Wipe out the file
   fs.writeFileSync(allTestsFile, '')
 
   let atLeastOneTest = false
@@ -247,9 +249,6 @@ export async function run(options: Options) {
 }
 
 function reportTests(logger: Logger, arr: TestEndedEvent[], tr: TestReporting, allTasksFile: string) {
-  //     "build": "build-raptor build --compact",
-  //      "test": "export NODE_OPTIONS=--no-experimental-fetch && build-raptor test --compact --test-reporting=tree"
-
   let renderPassingTests
   if (tr === 'tree-all') {
     renderPassingTests = true
@@ -258,7 +257,6 @@ function reportTests(logger: Logger, arr: TestEndedEvent[], tr: TestReporting, a
   } else {
     shouldNeverHappen(tr)
   }
-  // printPassing = false
 
   function indent(prevKey: string[], key: string[]) {
     let indent = '|    '
