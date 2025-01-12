@@ -25,7 +25,7 @@ import { YarnRepoProtocol } from 'yarn-repo-protocol'
 
 import { TaskExecutionVisualizer } from './task-execution-visualizer'
 
-type TestReporting = 'just-failing' | 'tree' | 'tree-just-failing'
+type TestReporting = 'tree' | 'tree-just-failing'
 
 interface Options {
   units: string[]
@@ -232,10 +232,6 @@ export async function run(options: Options) {
 }
 
 function reportTests(logger: Logger, arr: TestEndedEvent[], tr: TestReporting) {
-  if (tr === 'just-failing') {
-    return
-  }
-
   //     "build": "build-raptor build --compact",
   //      "test": "export NODE_OPTIONS=--no-experimental-fetch && build-raptor test --compact --test-reporting=tree"
 
@@ -373,7 +369,7 @@ export function main() {
         demandOption: false,
       })
       .option('test-reporting', {
-        choices: ['just-failing', 'tree', 'tree-just-failing'],
+        choices: ['tree', 'tree-just-failing'],
         describe: 'test reporing policy',
         default: 'tree',
       })
@@ -424,9 +420,7 @@ export function main() {
             criticality: stringToLoudness(argv.loudness),
             testCaching: argv.testCaching,
             testReporting:
-              tr === 'just-failing' || tr === 'tree' || tr === 'tree-just-failing' || tr === undefined
-                ? tr
-                : failMe(`unsupported value: ${tr}`),
+              tr === 'tree' || tr === 'tree-just-failing' || tr === undefined ? tr : failMe(`unsupported value: ${tr}`),
             stepByStepProcessor: argv.stepByStepProcessor,
             buildRaptorConfigFile: argv.configFile,
             taskProgressOutput: argv.taskProgressOutput,
@@ -471,9 +465,7 @@ export function main() {
             criticality: stringToLoudness(argv.loudness),
             testCaching: argv.testCaching,
             testReporting:
-              tr === 'just-failing' || tr === 'tree' || tr === 'tree-just-failing' || tr === undefined
-                ? tr
-                : failMe(`unsupported value: ${tr}`),
+              tr === 'tree' || tr === 'tree-just-failing' || tr === undefined ? tr : failMe(`unsupported value: ${tr}`),
             stepByStepProcessor: argv.stepByStepProcessor,
             buildRaptorConfigFile: argv.configFile,
             taskProgressOutput: argv.taskProgressOutput,
