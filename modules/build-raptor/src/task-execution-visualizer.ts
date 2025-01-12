@@ -35,6 +35,9 @@ export class TaskExecutionVisualizer {
     executionType: 'EXECUTED' | 'CACHED' | 'UNKNOWN' | 'CANNOT_START',
   ): string | undefined {
     if (executionType === 'CANNOT_START' || executionType === 'UNKNOWN') {
+      // It looks like UNKNOWN cannot really happen once the task is started, so we ignore it.
+      // CANNOT_START can happen but it clutters the output: after a (single) task that failed to build, there can be
+      // long chain of dependent tasks that will be CANNOT_START. printing these tasks will distract the user.
       ++this.numBlocked
       return undefined
     }
@@ -44,14 +47,6 @@ export class TaskExecutionVisualizer {
     if (index >= 0) {
       this.runningTasks.splice(index, 1)
     }
-    const secondLine = ''
-    // if (this.runningTasks.length) {
-    //   secondLine = `Currently running: ${this.runningTasks[0]}`
-    //   if (this.runningTasks.length >= 2) {
-    //     secondLine += ` (and ${this.runningTasks.length - 1} more)`
-    //   }
-    // }
-
     const cacheIndicator = switchOn(executionType, {
       CACHED: () => {
         ++this.numCached
@@ -81,9 +76,7 @@ export class TaskExecutionVisualizer {
 
     const full = `[${this.all}/${this.all}]`.length
     const progress = `[${this.numEnded}/${this.all}]`
-    return `${progress.padStart(full, '.')} ${verdictIndicator} ${cacheIndicator} ${taskName}${
-      secondLine ? '\n' + ' '.repeat(4 + full) + secondLine : ''
-    }`
+    return `${progress.padStart(full, '.')} ${verdictIndicator} ${cacheIndicator} ${taskName}`
   }
 
   summary(durationInMillis: number) {
