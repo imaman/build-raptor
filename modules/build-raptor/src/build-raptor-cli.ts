@@ -239,11 +239,11 @@ function reportTests(logger: Logger, arr: TestEndedEvent[], tr: TestReporting) {
   //     "build": "build-raptor build --compact",
   //      "test": "export NODE_OPTIONS=--no-experimental-fetch && build-raptor test --compact --test-reporting=tree"
 
-  let renderPassngTests
+  let renderPassingTests
   if (tr === 'tree') {
-    renderPassngTests = true
+    renderPassingTests = true
   } else if (tr === 'tree-just-failing') {
-    renderPassngTests = false
+    renderPassingTests = false
   } else {
     shouldNeverHappen(tr)
   }
@@ -301,7 +301,7 @@ function reportTests(logger: Logger, arr: TestEndedEvent[], tr: TestReporting) {
   const list = Object.entries(groupBy(arr, at => at.fileName)).map(([fileName, tests]) => ({ fileName, tests }))
   const sorted = sortBy(list, at => at.fileName)
   const passing = sorted.filter(at => isPassing(at.tests))
-  if (renderPassngTests) {
+  if (renderPassingTests) {
     for (const at of passing) {
       logger.print(`✅ PASSED ${at.fileName}`, 'high')
     }
