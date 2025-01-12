@@ -400,7 +400,7 @@ export function main() {
         default: true,
       })
       .option('task-progress-output', {
-        describe: 'whether to print number of tasks ended/started',
+        describe: 'whether to print a line indicating verdict/execution-type for each task',
         type: 'boolean',
         default: false,
       })
