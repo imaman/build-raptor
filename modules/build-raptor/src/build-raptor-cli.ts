@@ -1,3 +1,6 @@
+//     "build": "build-raptor build --compact",
+//      "test": "export NODE_OPTIONS=--no-experimental-fetch && build-raptor test --compact --test-reporting=tree"
+
 import { DefaultAssetPublisher, EngineBootstrapper, findRepoDir, TaskSelector } from 'build-raptor-core'
 import * as fse from 'fs-extra'
 import { createDefaultLogger, Criticality, Logger } from 'logger'
