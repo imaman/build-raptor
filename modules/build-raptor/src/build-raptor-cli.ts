@@ -239,15 +239,15 @@ function reportTests(logger: Logger, arr: TestEndedEvent[], tr: TestReporting) {
     return
   }
 
-  let printPassing
+  let renderPassngTests
   if (tr === 'tree') {
-    printPassing = true
+    renderPassngTests = true
   } else if (tr === 'tree-just-failing') {
-    printPassing = false
+    renderPassngTests = false
   } else {
     shouldNeverHappen(tr)
   }
-  printPassing = false
+  // printPassing = false
 
   function indent(prevKey: string[], key: string[]) {
     let indent = '|    '
@@ -301,7 +301,7 @@ function reportTests(logger: Logger, arr: TestEndedEvent[], tr: TestReporting) {
   const list = Object.entries(groupBy(arr, at => at.fileName)).map(([fileName, tests]) => ({ fileName, tests }))
   const sorted = sortBy(list, at => at.fileName)
   const passing = sorted.filter(at => isPassing(at.tests))
-  if (printPassing) {
+  if (renderPassngTests) {
     for (const at of passing) {
       logger.print(`✅ PASSED ${at.fileName}`, 'high')
     }
