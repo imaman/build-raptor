@@ -69,7 +69,7 @@ jobs:
           yarn --version
       - name: install
         run: yarn --frozen-lockfile
-      - name: build and test
+      - name: BUILD & TEST
         run: |
           yarn test --concurrency 4
         env:

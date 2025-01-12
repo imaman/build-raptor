@@ -1,4 +1,5 @@
 import { DefaultAssetPublisher, EngineBootstrapper, findRepoDir, TaskSelector } from 'build-raptor-core'
+import fs from 'fs'
 import * as fse from 'fs-extra'
 import { createDefaultLogger, Criticality, Logger } from 'logger'
 import {
@@ -25,7 +26,7 @@ import { YarnRepoProtocol } from 'yarn-repo-protocol'
 
 import { TaskExecutionVisualizer } from './task-execution-visualizer'
 
-type TestReporting = 'just-failing' | 'tree' | 'tree-just-failing'
+type TestReporting = 'tree-all' | 'tree-just-failing'
 
 interface Options {
   units: string[]
@@ -116,33 +117,76 @@ export async function run(options: Options) {
   )
 
   const testOutput = new Map<TaskName, TestEndedEvent[]>()
-  const visualizer = new TaskExecutionVisualizer()
+  const visualizer = options.taskProgressOutput ? new TaskExecutionVisualizer() : undefined
+
+  // TODO(imaman): use a writable stream?
+  const allTestsFile = path.join(buildRaptorDir, 'all-tests')
+
+  // Wipe out the file
+  fs.writeFileSync(allTestsFile, '')
+
+  let atLeastOneTest = false
+
+  bootstrapper.transmitter.addProcessor(s => {
+    if (
+      s.step === 'ASSET_PUBLISHED' ||
+      s.step === 'BUILD_RUN_STARTED' ||
+      s.step === 'PUBLIC_FILES' ||
+      s.step === 'TASK_STORE_GET' ||
+      s.step === 'TASK_STORE_PUT'
+    ) {
+      return
+    }
+
+    if (s.step === 'TEST_ENDED') {
+      atLeastOneTest = true
+      return
+    }
+
+    if (s.step === 'PLAN_PREPARED') {
+      visualizer?.addTasks(s.taskNames)
+      return
+    }
+
+    if (s.step === 'TASK_ENDED') {
+      if (visualizer) {
+        const line = visualizer.ended(s.taskName, s.verdict, s.executionType)
+        if (line) {
+          logger.print(line)
+        }
+      }
+      return
+    }
+
+    if (s.step === 'BUILD_RUN_ENDED') {
+      // If there are no tests, don't print the message asbout the location of the all-test-logs file.
+      // If there is no summary message, do not print it.
+      // If one of them is printed, add a prefix of three blank lines
+      const line = visualizer?.summary(Date.now() - t0) ?? ''
+      const whereIsTheLogMessage = atLeastOneTest ? `All test logs were written to ${allTestsFile}\n\n` : ``
+      if (whereIsTheLogMessage || line) {
+        // The logger does .trim() on the message so we use "." instead of a "pure" blank line
+        logger.print(`.\n.\n.\n${whereIsTheLogMessage}${line}`)
+      }
+      return
+    }
+
+    shouldNeverHappen(s)
+  })
+
   bootstrapper.subscribable.on('testEnded', arg => {
     assigningGet(testOutput, arg.taskName, () => []).push(arg)
   })
 
   bootstrapper.subscribable.on('executionStarted', arg => {
-    if (options.taskProgressOutput) {
-      logger.print(visualizer.begin(arg))
+    if (visualizer) {
+      visualizer.begin(arg)
     } else {
       logger.print(`=============================== ${arg} =================================`)
     }
   })
 
   bootstrapper.subscribable.on('executionEnded', async arg => {
-    if (options.taskProgressOutput) {
-      logger.print(
-        visualizer.ended(
-          arg.taskName,
-          switchOn(arg.status, {
-            OK: () => '🏁',
-            FAIL: () => '🏁',
-            CRASH: () => '🏁',
-          }),
-        ),
-      )
-    }
-
     // TODO(imaman): cover (output is indeed written in file structure)
     await fse.ensureDir(buildRaptorDirTasks)
     const fileName = path.join(buildRaptorDirTasks, toReasonableFileName(arg.taskName))
@@ -156,22 +200,21 @@ export async function run(options: Options) {
       stream.end()
     }
 
-    reportTests(logger, testOutput.get(arg.taskName) ?? [], options.testReporting ?? 'tree')
+    reportTests(logger, testOutput.get(arg.taskName) ?? [], options.testReporting ?? 'tree-all', allTestsFile)
 
-    const doPrint =
+    const dumpTaskOutputToTerminal =
       options.printPassing ||
       switchOn(arg.status, {
         CRASH: () => false,
         OK: () => false,
         FAIL: () => true,
       })
-    if (!doPrint) {
-      return
+    if (dumpTaskOutputToTerminal) {
+      await dumpFile(arg.outputFile, process.stdout)
+      logger.print(`\n\n`)
     }
-
-    await dumpFile(arg.outputFile, process.stdout)
+    fs.appendFileSync(allTestsFile, fs.readFileSync(arg.outputFile) + '\n')
     logger.info(`output of ${arg.taskName} dumped`)
-    logger.print(`\n\n`)
   })
 
   bootstrapper.subscribable.on('executionSkipped', tn => {
@@ -205,16 +248,12 @@ export async function run(options: Options) {
   process.exitCode = exitCode
 }
 
-function reportTests(logger: Logger, arr: TestEndedEvent[], tr: TestReporting) {
-  if (tr === 'just-failing') {
-    return
-  }
-
-  let printPassing
-  if (tr === 'tree') {
-    printPassing = true
+function reportTests(logger: Logger, arr: TestEndedEvent[], tr: TestReporting, allTasksFile: string) {
+  let renderPassingTests
+  if (tr === 'tree-all') {
+    renderPassingTests = true
   } else if (tr === 'tree-just-failing') {
-    printPassing = false
+    renderPassingTests = false
   } else {
     shouldNeverHappen(tr)
   }
@@ -262,7 +301,10 @@ function reportTests(logger: Logger, arr: TestEndedEvent[], tr: TestReporting) {
       })
 
       const duration = at.durationMillis === undefined ? '' : ` (${at.durationMillis} ms)`
-      logger.print(`${spaces}${v} ${at.testPath.at(-1)}${duration}`, 'high')
+      const message = `${spaces}${v} ${at.testPath.at(-1)}${duration}`
+      // TODO(imaman): create a dedicate logger that write to the allTasksFile
+      logger.print(message, 'high')
+      fs.appendFileSync(allTasksFile, message + '\n')
 
       prev = k
     }
@@ -271,12 +313,15 @@ function reportTests(logger: Logger, arr: TestEndedEvent[], tr: TestReporting) {
   const list = Object.entries(groupBy(arr, at => at.fileName)).map(([fileName, tests]) => ({ fileName, tests }))
   const sorted = sortBy(list, at => at.fileName)
   const passing = sorted.filter(at => isPassing(at.tests))
-  if (printPassing) {
-    for (const at of passing) {
-      logger.print(`✅ PASSED ${at.fileName}`, 'high')
+  for (const at of passing) {
+    const message = `✅ PASSED ${at.fileName}`
+    fs.appendFileSync(allTasksFile, message + '\n')
+    if (renderPassingTests) {
+      logger.print(message, 'high')
     }
   }
   for (const at of sorted.filter(at => !isPassing(at.tests))) {
+    fs.appendFileSync(allTasksFile, at.fileName + '\n')
     logger.print(at.fileName, 'high')
     printTests(at.tests)
   }
@@ -310,7 +355,7 @@ export function main() {
         default: [],
       })
       .option('print-passing', {
-        describe: 'whether to print the output of passing tasks to the terminal.',
+        describe: 'whether to dump the output of passing tasks to the terminal.',
         type: 'boolean',
         default: false,
       })
@@ -320,6 +365,7 @@ export function main() {
         demandOption: false,
         default: 8,
       })
+      // TODO(imaman): seems like --compact, --loudness can be replaced by --task-progress-output
       .options('compact', {
         describe: 'whether to list only executing tasks (i.e., do not print skipped tasks)',
         type: 'boolean',
@@ -343,9 +389,9 @@ export function main() {
         demandOption: false,
       })
       .option('test-reporting', {
-        choices: ['just-failing', 'tree', 'tree-just-failing'],
+        choices: ['tree-all', 'tree-just-failing'],
         describe: 'test reporing policy',
-        default: 'tree',
+        default: 'tree-just-failing',
       })
       .option('test-caching', {
         describe: 'whether to skip running tests that have already passed',
@@ -353,7 +399,7 @@ export function main() {
         default: true,
       })
       .option('task-progress-output', {
-        describe: 'whether to print number of tasks ended/started',
+        describe: 'whether to print a line indicating verdict/execution-type for each task',
         type: 'boolean',
         default: false,
       })
@@ -394,7 +440,7 @@ export function main() {
             criticality: stringToLoudness(argv.loudness),
             testCaching: argv.testCaching,
             testReporting:
-              tr === 'just-failing' || tr === 'tree' || tr === 'tree-just-failing' || tr === undefined
+              tr === 'tree-all' || tr === 'tree-just-failing' || tr === undefined
                 ? tr
                 : failMe(`unsupported value: ${tr}`),
             stepByStepProcessor: argv.stepByStepProcessor,
@@ -441,7 +487,7 @@ export function main() {
             criticality: stringToLoudness(argv.loudness),
             testCaching: argv.testCaching,
             testReporting:
-              tr === 'just-failing' || tr === 'tree' || tr === 'tree-just-failing' || tr === undefined
+              tr === 'tree-all' || tr === 'tree-just-failing' || tr === undefined
                 ? tr
                 : failMe(`unsupported value: ${tr}`),
             stepByStepProcessor: argv.stepByStepProcessor,

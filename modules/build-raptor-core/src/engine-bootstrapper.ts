@@ -33,7 +33,9 @@ export interface TaskSelector {
 
 export class EngineBootstrapper {
   private readonly eventPublisher = new TypedPublisher<EngineEventScheme>()
+  readonly transmitter
   readonly rootDir
+
   private constructor(
     rootDir: string,
     readonly t0: number,
@@ -42,6 +44,7 @@ export class EngineBootstrapper {
     readonly repoProtocol: RepoProtocol,
   ) {
     this.rootDir = RepoRoot(rootDir)
+    this.transmitter = new StepByStepTransmitter(logger)
   }
 
   private async makeEngine(
@@ -61,11 +64,10 @@ export class EngineBootstrapper {
     const taskStore = new TaskStore(this.rootDir, this.storageClient, this.logger, this.eventPublisher)
 
     const stepByStepFile = path.join(options.buildRaptorDir, 'step-by-step.json')
-    const transmitter = await StepByStepTransmitter.create(
-      stepByStepFile,
-      options.stepByStepProcessorModuleName,
-      this.logger,
-    )
+    this.transmitter.setOutputFile(stepByStepFile)
+    if (options.stepByStepProcessorModuleName) {
+      this.transmitter.dynamicallyLoadProcessor(options.stepByStepProcessorModuleName)
+    }
     const engine = new Engine(
       this.logger,
       this.rootDir,
@@ -74,7 +76,7 @@ export class EngineBootstrapper {
       taskOutputDir,
       selector,
       this.eventPublisher,
-      transmitter,
+      this.transmitter,
       options,
     )
     return engine
