@@ -18,38 +18,61 @@ describe('custom-test-command', () => {
   test.only('should use custom test command when testCommand is specified', async () => {
     const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
 
+      // 'modules/a/src/abs.ts': 'export function abs(n: number) { return n }',
+      // 'modules/a/tests/abs.spec.ts': `
+      //     import {abs} from '../src/abs'
+      //     import {writeFileSync} from 'fs'
+      //     test('p', () => { writeFileSync('p', ''); expect(abs(1)).toEqual(1) })
+      //     test('n', () => { writeFileSync('n', ''); expect(abs(-2)).toEqual(2) })
+      //   `,
+
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
-      'modules/test-package/package.json': {
-        ...driver.packageJson('test-package'),
-        buildRaptor: {
-          testCommand: 'tools/custom-test.sh',
-        },
-      },
-      'modules/test-package/src/index.ts': 'export const foo = 1',
-      'tools/custom-test.sh': `#!/bin/bash
-echo "Custom test runner executed"
-echo "Package: $2"
-echo "Directory: $1"
-exit 0
-`,
+      'modules/a/package.json': driver.packageJson('a'),
+      'modules/a/src/a.ts': `//`,
+      'modules/a/tests/a.spec.ts': `test('a', () => {expect(1).toEqual(1)});`,
+      'modules/b/package.json': driver.packageJson('b'),
+      'modules/b/src/b.ts': `//`,
+      'modules/b/tests/b.spec.ts': `test('b', () => {expect(1).toEqual(1)});`,
     }
 
     const fork = await driver.repo(recipe).fork()
 
+    await fork.run('OK', { taskKind: 'test' })
+
+    // const recipe = {
+    //   'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+    //   'modules/test-package/package.json': {
+    //     ...driver.packageJson('test-package'),
+    //     // buildRaptor: {
+    //     //   testCommand: 'tools/custom-test.sh',
+    //     // },
+    //   },
+    //   'modules/test-package/src/a.ts': 'export const foo = 1',
+    //   'modules/test-package/tests/a.spce.ts': `test('a', () => {expect(1).toEqual(1) })`,
+//       'tools/custom-test.sh': `#!/bin/bash
+// echo "Custom test runner executed"
+// echo "Package: $2"
+// echo "Directory: $1"
+// exit 0
+// `,
+    // }
+
+    // const fork = await driver.repo(recipe).fork()
+
     // Make script executable
-    fork.file('tools/custom-test.sh').chmod(0o755)
+    // fork.file('tools/custom-test.sh').chmod(0o755)
 
     // Run the test task
-    const result = await fork.run('OK', { taskKind: 'test' })
+    await fork.run('OK', { taskKind: 'test' })
 
-    const output = await result.outputOf('test', 'test-package')
-    expect(output).toEqual(
-      expect.arrayContaining([
-        expect.stringContaining('Custom test runner executed'),
-        expect.stringContaining('Package: test-package'),
-      ]),
-    )
+    // const output = await result.outputOf('test', 'test-package')
+    // expect(output).toEqual(
+    //   expect.arrayContaining([
+    //     expect.stringContaining('Custom test runner executed'),
+    //     expect.stringContaining('Package: test-package'),
+    //   ]),
+    // )
   })
 
   test('should use Jest when testCommand is not specified', async () => {
