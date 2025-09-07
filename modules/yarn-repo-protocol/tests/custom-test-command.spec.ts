@@ -15,7 +15,7 @@ describe('custom-test-command', () => {
 
   const testName = () => expect.getState().currentTestName
 
-  test('should use custom test command when testCommand is specified', async () => {
+  test.only('should use custom test command when testCommand is specified', async () => {
     const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
 
     const recipe = {
