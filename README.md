@@ -72,14 +72,17 @@ The specail value `'_ALWAYS_'` can be used (as the value of the `inputs` attribu
 ```
 
 ### Configuration
+
 When a build statrs build-raptor loads its configuraiton from a `.build-raptor.json` file located at the root directory. This location can be changed via the `--config-file` command line option. The zod-schema of this file can be found at [build-raptor-config.ts](modules/build-raptor-core/src/build-raptor-config.ts).
 
 ### Log, outputs
+
 when a build run starts, build raptor creates a `.build-raptor` directory at the root directory. All log messages produced by build-raptor itself will be placed in the `.build-raptor/main.log` file in that directory.
 
-Additionally, there are outputs produced by the different build tasks that were executed during that build runs (compiler outputs, test runner outputs, etc.). These are placed in per-task files which are saved at  `.build-raptor/tasks` directory.
+Additionally, there are outputs produced by the different build tasks that were executed during that build runs (compiler outputs, test runner outputs, etc.). These are placed in per-task files which are saved at `.build-raptor/tasks` directory.
 
 ### Step-by-Step reporting
+
 As build raptor is running it produces JSON object describing various build events. The zod-schema of these JSON objects can be found in [build-raptor-api.ts](modules/build-raptor-api/src/build-raptor-api.ts). This allows other tools to get a details view of the build run, interact with outputs that were produced, etc.
 
 To get these events in real-time (while the build is running) one should define a node module (e.g., `my-processor`) and pass the name of that module to the `--step-by-step-processor` command (i.e., `--step-by-step-processor=my-processor`) line option. This module should look as follows:
@@ -92,8 +95,24 @@ export const processor: StepByStepProcessor = (s: Step) => {
 }
 ```
 
-The `processor` definition is mandatory: build-raptor expects that module to export a function called `processor` - the build will fail to start if that's not case. 
+The `processor` definition is mandatory: build-raptor expects that module to export a function called `processor` - the build will fail to start if that's not case.
 
+### Custom Test Runners
+
+Build Raptor supports custom test execution programs as an alternative to the default Jest runner. This allows you to use Vitest, Mocha, Playwright, or any other test framework while maintaining Build Raptor's caching and parallelization benefits.
+
+To use a custom test runner, add a `testCommand` field to your package.json's `buildRaptor` configuration:
+
+```json
+{
+  "name": "@myrepo/my-package",
+  "buildRaptor": {
+    "testCommand": "tools/test-runners/vitest.sh"
+  }
+}
+```
+
+The test command receives the package directory, package name, and rerun file path as arguments. See [CUSTOM_TEST_RUNNERS.md](docs/CUSTOM_TEST_RUNNERS.md) for detailed documentation and examples.
 
 ### goals and labels
 

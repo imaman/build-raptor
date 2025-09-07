@@ -119,6 +119,17 @@ export class YarnRepoProtocol implements RepoProtocol {
     const runScripts = Object.keys(pj.scripts ?? {})
     return runScripts.includes(runScript)
   }
+
+  private getTestCommand(unitId: UnitId): string | undefined {
+    const pj = this.getPackageJson(unitId)
+    // Check for buildRaptor.testCommand in package.json
+
+    const schema = z.object({ buildRaptor: z.object({ testCommand: z.string() }).optional() })
+
+    const { buildRaptor } = schema.parse(pj)
+    return buildRaptor?.testCommand
+  }
+
   private parseConfig(untypedConfig: unknown | undefined) {
     const parseResult = YarnRepoProtocolConfig.safeParse(untypedConfig ?? {}, { path: ['repoProtocol'] })
     if (parseResult.success) {
@@ -424,18 +435,37 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
 
     if (taskKind === 'test') {
-      const tempFile = await getTempFile()
-      const [a, b] = await Promise.all([this.runJest(dir, taskName, outputFile), this.runValidate(u, dir, tempFile)])
-      const ret = switchOn(a, {
-        CRASH: () => a,
-        FAIL: () => a,
-        OK: () => b,
-      })
+      const testCommand = this.getTestCommand(u.id)
 
-      const toAppend = await fse.readFile(tempFile)
-      await fse.appendFile(outputFile, toAppend)
+      if (testCommand) {
+        // Use custom test runner
+        const ret = await this.runCustomTest(u.id, dir, taskName, outputFile)
 
-      return ret
+        // Still run validate if it exists (unchanged)
+        if (ret === 'OK' && this.hasRunScript(u.id, this.scriptNames.validate)) {
+          const tempFile = await getTempFile()
+          const validateResult = await this.runValidate(u, dir, tempFile)
+          const toAppend = await fse.readFile(tempFile)
+          await fse.appendFile(outputFile, toAppend)
+          return validateResult
+        }
+
+        return ret
+      } else {
+        // Use default Jest runner (existing code)
+        const tempFile = await getTempFile()
+        const [a, b] = await Promise.all([this.runJest(dir, taskName, outputFile), this.runValidate(u, dir, tempFile)])
+        const ret = switchOn(a, {
+          CRASH: () => a,
+          FAIL: () => a,
+          OK: () => b,
+        })
+
+        const toAppend = await fse.readFile(tempFile)
+        await fse.appendFile(outputFile, toAppend)
+
+        return ret
+      }
     }
 
     if (taskKind === 'pack') {
@@ -596,6 +626,44 @@ export class YarnRepoProtocol implements RepoProtocol {
       at => `${at.fileName} ${at.testCaseFullName}`,
     )
     fs.writeFileSync(jof, JSON.stringify(RerunList.parse(rerunList)))
+
+    return ret
+  }
+
+  private async runCustomTest(
+    unitId: UnitId,
+    dir: string,
+    _taskName: TaskName,
+    outputFile: string,
+  ): Promise<ExitStatus> {
+    const testCommand = this.getTestCommand(unitId)
+    if (!testCommand) {
+      throw new Error(`Custom test command not found for ${unitId}`)
+    }
+
+    // Resolve command path relative to repo root
+    const commandPath = this.state.rootDir.resolve(PathInRepo(testCommand))
+
+    // Create empty test summary file to maintain invariant
+    const dirInRepo = this.state.rootDir.unresolve(dir)
+    const resolvedSummaryFile = this.state.rootDir.resolve(dirInRepo.expand(this.testRunSummaryFile))
+    fs.writeFileSync(resolvedSummaryFile, JSON.stringify({}))
+
+    // Prepare arguments for the test command
+    const args = [
+      dir, // Package directory absolute path
+      unitId.toString(), // Package name (unit ID)
+      path.join(dir, JEST_OUTPUT_FILE), // Rerun file path (optional use by custom runner)
+    ]
+
+    // Execute the custom test command
+    const ret = await this.run(commandPath, args, dir, outputFile)
+
+    // Write empty rerun list if custom runner doesn't provide one
+    const jof = path.join(dir, JEST_OUTPUT_FILE)
+    if (!fs.existsSync(jof)) {
+      fs.writeFileSync(jof, JSON.stringify([]))
+    }
 
     return ret
   }
