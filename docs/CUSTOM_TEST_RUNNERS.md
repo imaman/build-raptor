@@ -9,7 +9,7 @@ Custom test commands can be enabled or disabled repository-wide through the `.bu
 ```json
 {
   "repoProtocol": {
-    "enableCustomTestCommands": true // Default: true
+    "enableCustomTestCommands": false // Default: true
   }
 }
 ```

@@ -121,8 +121,9 @@ export class YarnRepoProtocol implements RepoProtocol {
   }
 
   private getTestCommand(unitId: UnitId): string | undefined {
-    // Check if custom test commands are enabled globally
-    if (this.state.config.enableCustomTestCommands === false) {
+    // Check if custom test commands are allowed
+    const toggle = this.state.config.enableCustomTestCommands ?? true
+    if (!toggle) {
       return undefined
     }
 

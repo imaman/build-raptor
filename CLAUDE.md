@@ -183,7 +183,7 @@ yarn publish-assets
   "repoProtocol": {
     // Protocol-specific config
     "install": "dormant", // Install strategy
-    "enableCustomTestCommands": true // Enable/disable custom test commands (default: true)
+    "enableCustomTestCommands": false // Enable/disable custom test commands (default: true)
   }
 }
 ```

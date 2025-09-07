@@ -11,7 +11,7 @@ The custom test command feature is controlled by the `enableCustomTestCommands` 
 ```json
 {
   "repoProtocol": {
-    "enableCustomTestCommands": true // or false to disable
+    "enableCustomTestCommands": false // or true (default) to enable
   }
 }
 ```
