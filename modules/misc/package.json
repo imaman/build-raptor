@@ -20,5 +20,8 @@
     "p-queue": "^6.0.0",
     "safe-stable-stringify": "^2.3.1",
     "tmp-promise": "^3.0.3"
+  },
+  "buildRaptor": {
+    "testCommand": "tools/jest-wrapper"
   }
 }
