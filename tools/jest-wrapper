@@ -1,0 +1,3 @@
+#!/bin/bash
+
+yarn jest --verbose dist/tests/*.spec.js
