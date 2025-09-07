@@ -22,12 +22,16 @@ describe('custom-test-command', () => {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
       'modules/a/package.json': driver.packageJson('a'),
       'modules/a/src/a.ts': `//`,
-      'modules/a/tests/a.spec.ts': `test('a', () => {expect(1).toEqual(1)});`,
+      'modules/a/tests/a.spec.ts': `test('a', () => {expect("zxcvbnm").toEqual("qwerty")});`,
     }
 
     const fork = await driver.repo(recipe).fork()
 
-    await fork.run('OK', { taskKind: 'test' })
+    const run = await fork.run('FAIL', { taskKind: 'test' })
+    expect(await run.outputOf('test', 'a')).toEqual(
+      expect.arrayContaining(['    Expected: "qwerty"', '    Received: "zxcvbnm"']),
+    )
+
     expect(100).toEqual(100)
 
     // const recipe = {
