@@ -29,11 +29,13 @@
     }
   },
   "resolutions": {
+    "@types/node": "^20.0.0",
     "jest/**/semver": "^7.5.2"
   },
   "dependencies": {},
   "devDependencies": {
     "@types/jest": "^29.5.3",
+    "@types/node": "^20.0.0",
     "@typescript-eslint/eslint-plugin": "^5.7.0",
     "@typescript-eslint/parser": "^5.7.0",
     "eslint": "^8.45.0",
@@ -52,6 +54,6 @@
     "sort-package-json": "^1.53.1",
     "source-map-support": "^0.5.16",
     "syncpack": "10.6.1",
-    "typescript": "^4.5.2"
+    "typescript": "^5.9.2"
   }
 }
