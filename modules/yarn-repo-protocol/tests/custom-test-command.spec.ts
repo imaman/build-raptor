@@ -6,7 +6,7 @@ import { YarnRepoProtocol } from '../src/yarn-repo-protocol'
 
 jest.setTimeout(120000)
 
-describe('custom-test-command', () => {
+describe('Custom Test Command', () => {
   const logger = createNopLogger()
 
   function newYarnRepoProtocol() {
@@ -15,21 +15,13 @@ describe('custom-test-command', () => {
 
   const testName = () => expect.getState().currentTestName
 
-  test.only('should use custom test command when testCommand is specified', async () => {
+  test('should use custom test command when testCommand is specified', async () => {
     const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
 
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
-      '.build-raptor.json': JSON.stringify({
-        repoProtocol: {
-          uberBuild: false,
-        },
-      }),
       'modules/test-package/package.json': {
-        ...driver.packageJson('test-package', [], {
-          build:
-            'echo "Build skipped for test" && mkdir -p dist/src dist/tests && echo "exports.foo = 1" > dist/src/index.js',
-        }),
+        ...driver.packageJson('test-package'),
         buildRaptor: {
           testCommand: 'tools/custom-test.sh',
         },
@@ -60,7 +52,7 @@ exit 0
     )
   })
 
-  test.skip('should use Jest when testCommand is not specified', async () => {
+  test('should use Jest when testCommand is not specified', async () => {
     const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
 
     const recipe = {
@@ -248,16 +240,15 @@ exit 0
     )
   })
 
-  test('should run validate script in parallel with custom test (even if test fails)', async () => {
+  test('should not run validate script after failed custom test', async () => {
     const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
 
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
       'modules/validate-fail-package/package.json': {
         ...driver.packageJson('validate-fail-package', [], {
-          build: 'echo "Build skipped" && mkdir -p dist/src dist/tests',
           test: 'echo "should not run"',
-          validate: 'echo "Validation runs in parallel"',
+          validate: 'echo "Validation should not run"',
         }),
         buildRaptor: {
           testCommand: 'tools/failing-test-validate.sh',
@@ -280,9 +271,8 @@ exit 1
     const output = await result.outputOf('test', 'validate-fail-package')
     expect(output).toEqual(expect.arrayContaining([expect.stringContaining('Tests failed')]))
 
-    // Validate now runs in parallel, so it SHOULD appear in output
     const outputStr = output?.join('\n') ?? ''
-    expect(outputStr).toContain('Validation runs in parallel')
+    expect(outputStr).not.toContain('Validation should not run')
   })
 
   test('should create test summary file even if custom test fails', async () => {
