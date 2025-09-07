@@ -182,7 +182,8 @@ yarn publish-assets
   "outDirName": ".out", // Output directory name
   "repoProtocol": {
     // Protocol-specific config
-    "install": "dormant" // Install strategy
+    "install": "dormant", // Install strategy
+    "enableCustomTestCommands": true // Enable/disable custom test commands (default: true)
   }
 }
 ```
