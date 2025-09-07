@@ -16,7 +16,7 @@ describe('maps', () => {
       expect(() => hardGet(map, 'foo')).toThrow('Could not find <foo> in the given map')
 
       map.set('foo', new Date(20))
-      expect(() => hardGet(map, 'bar')).toThrow('Could not find <b_ar> in the given map')
+      expect(() => hardGet(map, 'bar')).toThrow('Could not find <bar> in the given map')
     })
   })
   describe('mapIncrement', () => {
