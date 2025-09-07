@@ -20,12 +20,21 @@ describe('custom-test-command', () => {
 
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
-      'modules/a/package.json': driver.packageJson('a'),
+      'modules/a/package.json': { ...driver.packageJson('a'), buildRaptor: { testCommand: 'tools/etc/testme' } },
       'modules/a/src/a.ts': `//`,
-      'modules/a/tests/a.spec.ts': `test('a', () => {expect("zxcvbnm").toEqual("qwerty")});`,
+      'modules/a/tests/a.spec.ts': [
+        `import { test } from 'test';`,
+        `import assert from 'assert/strict';`,
+        ``,
+        `test('a', () => {`,
+        `  assert.strictEqual("zxcvbnm", "qwerty");`,
+        `});`,
+      ].join('\n'),
+      'tools/etc/testme': ['#!/bin/bash', '', 'cd $1', 'node --test dist/tests/a.spec.ts'].join('\n'),
     }
 
     const fork = await driver.repo(recipe).fork()
+    fork.file('tools/etc/testme').chmod(0o755)
 
     const run = await fork.run('FAIL', { taskKind: 'test' })
     expect(await run.outputOf('test', 'a')).toEqual(

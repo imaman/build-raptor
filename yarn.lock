@@ -2071,6 +2071,13 @@
   resolved "https://registry.yarnpkg.com/@types/node/-/node-16.11.12.tgz#ac7fb693ac587ee182c3780c26eb65546a1a3c10"
   integrity sha512-+2Iggwg7PxoO5Kyhvsq9VarmPbIelXP070HMImEpbtGCoyWNINQj4wzjbQCXzdHTRXnqufutJb5KAURZANNBAw==
 
+"@types/node@^20.0.0":
+  version "20.19.13"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-20.19.13.tgz#b79004a05068e28fb2de281b3a44c5c993650e59"
+  integrity sha512-yCAeZl7a0DxgNVteXFHt9+uyFbqXGy/ShC4BlcHkoE0AfGXYv/BUiplV72DjMYXHDBXFjhvr6DD1NiRVfB4j8g==
+  dependencies:
+    undici-types "~6.21.0"
+
 "@types/parse-json@^4.0.0":
   version "4.0.0"
   resolved "https://registry.yarnpkg.com/@types/parse-json/-/parse-json-4.0.0.tgz#2f8bb441434d163b35fb8ffdccd7138927ffb8c0"
@@ -5372,6 +5379,11 @@ unbox-primitive@^1.0.2:
     has-bigints "^1.0.2"
     has-symbols "^1.0.3"
     which-boxed-primitive "^1.0.2"
+
+undici-types@~6.21.0:
+  version "6.21.0"
+  resolved "https://registry.yarnpkg.com/undici-types/-/undici-types-6.21.0.tgz#691d00af3909be93a7faa13be61b3a5b50ef12cb"
+  integrity sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==
 
 universalify@^2.0.0:
   version "2.0.0"
