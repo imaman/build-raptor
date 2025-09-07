@@ -121,6 +121,12 @@ export class YarnRepoProtocol implements RepoProtocol {
   }
 
   private getTestCommand(unitId: UnitId): string | undefined {
+    // Check if custom test commands are allowed
+    const toggle = this.state.config.enableCustomTestCommands ?? true
+    if (!toggle) {
+      return undefined
+    }
+
     const pj = this.getPackageJson(unitId)
     // Check for buildRaptor.testCommand in package.json
 

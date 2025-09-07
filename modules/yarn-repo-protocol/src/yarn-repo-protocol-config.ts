@@ -15,6 +15,12 @@ export const YarnRepoProtocolConfig = z
       .boolean()
       .optional()
       .or(z.union([z.literal('off'), z.literal('dormant'), z.literal('on')])),
+    /**
+     * Whether to enable custom test commands specified in package.json files via buildRaptor.testCommand.
+     * When false, the standard Jest runner will always be used regardless of package configuration.
+     * Defaults to true (custom test commands are enabled).
+     */
+    enableCustomTestCommands: z.boolean().optional(),
   })
   .strict()
 export type YarnRepoProtocolConfig = z.infer<typeof YarnRepoProtocolConfig>

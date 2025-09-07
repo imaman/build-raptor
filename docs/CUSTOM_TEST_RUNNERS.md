@@ -2,9 +2,23 @@
 
 Build Raptor supports custom test execution programs as an alternative to the default Jest runner. This allows you to use any test framework or custom test orchestration logic while maintaining Build Raptor's caching and parallelization benefits.
 
-## Configuration
+## Global Configuration
 
-To use a custom test runner, add a `testCommand` field to your package.json's `buildRaptor` configuration:
+Custom test commands can be enabled or disabled repository-wide through the `.build-raptor.json` configuration:
+
+```json
+{
+  "repoProtocol": {
+    "enableCustomTestCommands": false // Default: true
+  }
+}
+```
+
+When set to `false`, all packages will use Jest regardless of their individual configurations. See [CUSTOM_TEST_COMMANDS_CONFIG.md](./CUSTOM_TEST_COMMANDS_CONFIG.md) for detailed configuration options.
+
+## Package-Level Configuration
+
+When custom test commands are enabled globally, add a `testCommand` field to your package.json's `buildRaptor` configuration:
 
 ```json
 {
