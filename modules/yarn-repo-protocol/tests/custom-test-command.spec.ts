@@ -6,7 +6,7 @@ import { YarnRepoProtocol } from '../src/yarn-repo-protocol'
 
 jest.setTimeout(120000)
 
-describe('Custom Test Command', () => {
+describe('custom-test-command', () => {
   const logger = createNopLogger()
 
   function newYarnRepoProtocol() {
