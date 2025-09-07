@@ -435,37 +435,25 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
 
     if (taskKind === 'test') {
+      const tempFile = await getTempFile()
       const testCommand = this.getTestCommand(u.id)
 
-      if (testCommand) {
-        // Use custom test runner
-        const ret = await this.runCustomTest(u.id, dir, taskName, outputFile)
+      // Run test and validate in parallel (same approach for both custom and Jest)
+      const [testResult, validateResult] = await Promise.all([
+        testCommand ? this.runCustomTest(u.id, dir, taskName, outputFile) : this.runJest(dir, taskName, outputFile),
+        this.runValidate(u, dir, tempFile),
+      ])
 
-        // Still run validate if it exists (unchanged)
-        if (ret === 'OK' && this.hasRunScript(u.id, this.scriptNames.validate)) {
-          const tempFile = await getTempFile()
-          const validateResult = await this.runValidate(u, dir, tempFile)
-          const toAppend = await fse.readFile(tempFile)
-          await fse.appendFile(outputFile, toAppend)
-          return validateResult
-        }
+      // Merge validate output into main output file
+      const toAppend = await fse.readFile(tempFile)
+      await fse.appendFile(outputFile, toAppend)
 
-        return ret
-      } else {
-        // Use default Jest runner (existing code)
-        const tempFile = await getTempFile()
-        const [a, b] = await Promise.all([this.runJest(dir, taskName, outputFile), this.runValidate(u, dir, tempFile)])
-        const ret = switchOn(a, {
-          CRASH: () => a,
-          FAIL: () => a,
-          OK: () => b,
-        })
-
-        const toAppend = await fse.readFile(tempFile)
-        await fse.appendFile(outputFile, toAppend)
-
-        return ret
-      }
+      // Return based on test result: if test fails, return test result; if test passes, return validate result
+      return switchOn(testResult, {
+        CRASH: () => testResult,
+        FAIL: () => testResult,
+        OK: () => validateResult,
+      })
     }
 
     if (taskKind === 'pack') {
