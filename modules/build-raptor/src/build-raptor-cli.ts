@@ -43,6 +43,7 @@ interface Options {
   stepByStepProcessor?: string
   buildRaptorConfigFile?: string
   taskProgressOutput?: boolean
+  printTiming?: boolean
 }
 
 type TestEndedEvent = RepoProtocolEvent['testEnded']
@@ -118,6 +119,7 @@ export async function run(options: Options) {
 
   const testOutput = new Map<TaskName, TestEndedEvent[]>()
   const visualizer = options.taskProgressOutput ? new TaskExecutionVisualizer() : undefined
+  const taskTimings = options.printTiming ? new Map<string, number>() : undefined
 
   // TODO(imaman): use a writable stream?
   const allTestsFile = path.join(buildRaptorDir, 'all-tests')
@@ -150,10 +152,13 @@ export async function run(options: Options) {
 
     if (s.step === 'TASK_ENDED') {
       if (visualizer) {
-        const line = visualizer.ended(s.taskName, s.verdict, s.executionType)
+        const line = visualizer.ended(s.taskName, s.verdict, s.executionType, s.durationMillis)
         if (line) {
           logger.print(line)
         }
+      }
+      if (taskTimings && s.durationMillis !== undefined) {
+        taskTimings.set(s.taskName, s.durationMillis)
       }
       return
     }
@@ -168,6 +173,19 @@ export async function run(options: Options) {
         // The logger does .trim() on the message so we use "." instead of a "pure" blank line
         logger.print(`.\n.\n.\n${whereIsTheLogMessage}${line}`)
       }
+
+      // Print timing report if --print-timing was specified
+      if (taskTimings && taskTimings.size > 0) {
+        const sortedTimings = Array.from(taskTimings.entries()).sort((a, b) => a[1] - b[1])
+
+        logger.print('\n\nTask Timing Report (sorted by duration):')
+        logger.print('==========================================')
+        for (const [taskName, durationMs] of sortedTimings) {
+          const seconds = (durationMs / 1000).toFixed(1)
+          logger.print(`${taskName}: ${seconds}s`)
+        }
+      }
+
       return
     }
 
@@ -403,6 +421,11 @@ export function main() {
         type: 'boolean',
         default: false,
       })
+      .option('print-timing', {
+        describe: 'print task timing report at the end (sorted by duration)',
+        type: 'boolean',
+        default: false,
+      })
       .command(
         'build',
         'build the code',
@@ -420,6 +443,7 @@ export function main() {
             stepByStepProcessor: argv.stepByStepProcessor,
             buildRaptorConfigFile: argv.configFile,
             taskProgressOutput: argv.taskProgressOutput,
+            printTiming: argv.printTiming,
           })
         },
       )
@@ -446,6 +470,7 @@ export function main() {
             stepByStepProcessor: argv.stepByStepProcessor,
             buildRaptorConfigFile: argv.configFile,
             taskProgressOutput: argv.taskProgressOutput,
+            printTiming: argv.printTiming,
           })
         },
       )
@@ -466,6 +491,7 @@ export function main() {
             stepByStepProcessor: argv.stepByStepProcessor,
             buildRaptorConfigFile: argv.configFile,
             taskProgressOutput: argv.taskProgressOutput,
+            printTiming: argv.printTiming,
           })
         },
       )
@@ -493,6 +519,7 @@ export function main() {
             stepByStepProcessor: argv.stepByStepProcessor,
             buildRaptorConfigFile: argv.configFile,
             taskProgressOutput: argv.taskProgressOutput,
+            printTiming: argv.printTiming,
           })
         },
       )
@@ -521,6 +548,7 @@ export function main() {
             stepByStepProcessor: argv.stepByStepProcessor,
             buildRaptorConfigFile: argv.configFile,
             taskProgressOutput: argv.taskProgressOutput,
+            printTiming: argv.printTiming,
           })
         },
       )
