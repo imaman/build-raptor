@@ -101,4 +101,18 @@ export class Task {
   setOutputFile(outputFile: string) {
     this.executionRecord.outputFile = outputFile
   }
+
+  getDurationMillis(): number | undefined {
+    const phases = this.executionRecord.phases
+    if (phases.length < 2) {
+      return undefined
+    }
+    // Find the first RUNNING phase and the last phase
+    const runningPhase = phases.find(p => p.phase === 'RUNNING')
+    const lastPhase = phases[phases.length - 1]
+    if (!runningPhase) {
+      return undefined
+    }
+    return lastPhase.timestampMillis - runningPhase.timestampMillis
+  }
 }

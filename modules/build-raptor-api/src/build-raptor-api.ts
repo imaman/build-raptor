@@ -91,6 +91,8 @@ export const Step = z.discriminatedUnion('step', [
       /** Execution type is indeterminate due to an unexpected failure of the build system */
       z.literal('UNKNOWN'),
     ]),
+    /** Duration of the task execution in milliseconds (optional for backwards compatibility) */
+    durationMillis: z.number().optional(),
   }),
   z.object({
     step: z.literal('ASSET_PUBLISHED'),

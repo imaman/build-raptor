@@ -31,6 +31,7 @@ export class TaskExecutionVisualizer {
     taskName: string,
     verdict: 'OK' | 'FAIL' | 'UNKNOWN' | 'CRASH',
     executionType: 'EXECUTED' | 'CACHED' | 'UNKNOWN' | 'CANNOT_START',
+    durationMillis?: number,
   ): string | undefined {
     if (executionType === 'CANNOT_START' || executionType === 'UNKNOWN') {
       // It looks like UNKNOWN cannot really happen once the task is started, so we ignore it.
@@ -70,7 +71,8 @@ export class TaskExecutionVisualizer {
 
     const full = `[${this.all}/${this.all}]`.length
     const progress = `[${this.numEnded}/${this.all}]`
-    return `${progress.padStart(full, '.')} ${verdictIndicator} ${cacheIndicator} ${taskName}`
+    const timing = durationMillis !== undefined ? ` ${(durationMillis / 1000).toFixed(1)}s` : ''
+    return `${progress.padStart(full, '.')} ${verdictIndicator} ${cacheIndicator} ${taskName}${timing}`
   }
 
   summary(durationInMillis: number) {

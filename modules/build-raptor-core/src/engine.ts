@@ -224,7 +224,8 @@ export class Engine {
           ? taskTracker.getTask(tn).taskInfo.deps ?? []
           : plan.taskGraph.neighborsOf(tn)
         await taskExecutor.executeTask(tn, deps)
-        const rec = taskTracker.getTask(tn).record
+        const task = taskTracker.getTask(tn)
+        const rec = task.record
         this.steps.transmit({
           step: 'TASK_ENDED',
           taskName: tn,
@@ -235,15 +236,18 @@ export class Engine {
             FAIL: () => 'FAIL',
             OK: () => 'OK',
           }),
+          durationMillis: task.getDurationMillis(),
         })
       } catch (e) {
-        const rec = taskTracker.getTask(tn).record
+        const task = taskTracker.getTask(tn)
+        const rec = task.record
         this.logger.info(`crashed while running ${tn}`)
         this.steps.transmit({
           step: 'TASK_ENDED',
           taskName: tn,
           executionType: rec.executionType,
           verdict: 'CRASH',
+          durationMillis: task.getDurationMillis(),
         })
         throw e
       } finally {
