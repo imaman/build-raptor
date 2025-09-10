@@ -33,12 +33,11 @@ export class TaskExecutionVisualizer {
     const steps = [
       [0, '▁'],
       [1, '▂'],
-      [5, '▃'],
-      [10, '▄'],
-      [30, '▅'],
-      [60, '▆'],
-      [120, '▇'],
-      [240, '█'],
+      [10, '▃'],
+      [30, '▄'],
+      [90, '▅'],
+      [270, '▆'],
+      [810, '▇'],
     ] as const
 
     const gradient = steps
@@ -104,7 +103,7 @@ export class TaskExecutionVisualizer {
 
   private formatDuration(durationMillis: number) {
     const seconds = durationMillis / 1000
-    if (seconds < 600) {
+    if (seconds < 810) {
       return `${seconds.toFixed(1)}s`
     } else {
       const minutes = seconds / 60
