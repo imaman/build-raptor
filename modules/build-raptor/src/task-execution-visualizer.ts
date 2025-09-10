@@ -29,20 +29,22 @@ export class TaskExecutionVisualizer {
 
   private getGradient(durationMillis: number): string {
     const seconds = durationMillis / 1000
-    const blocks = ['▁', '▂', '▃', '▄', '▅', '▆', '▇', '█']
 
-    let gradient = ''
+    const steps = [
+      [0, '▁'],
+      [1, '▂'],
+      [5, '▃'],
+      [10, '▄'],
+      [30, '▅'],
+      [60, '▆'],
+      [120, '▇'],
+      [240, '█'],
+    ] as const
 
-    // Build gradient based on duration thresholds
-    // Always show at least the first block for any completed task
-    gradient += blocks[0] // ▁ for any duration (< 1s)
-    if (seconds >= 1) gradient += blocks[1] // ▂ for >= 1s (< 5s)
-    if (seconds >= 5) gradient += blocks[2] // ▃ for >= 5s (< 10s)
-    if (seconds >= 10) gradient += blocks[3] // ▄ for >= 10s (< 30s)
-    if (seconds >= 30) gradient += blocks[4] // ▅ for >= 30s (< 60s)
-    if (seconds >= 60) gradient += blocks[5] // ▆ for >= 60s (< 120s)
-    if (seconds >= 120) gradient += blocks[6] // ▇ for >= 120s (< 240s)
-    if (seconds >= 240) gradient += blocks[7] // █ for >= 240s
+    const gradient = steps
+      .filter(at => seconds >= at[0])
+      .map(at => at[1])
+      .join('')
 
     // Pad to 8 characters with spaces for alignment
     return gradient.padEnd(8, ' ')
