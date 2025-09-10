@@ -27,6 +27,27 @@ export class TaskExecutionVisualizer {
     return this.getLine(taskName)
   }
 
+  private getGradient(durationMillis: number): string {
+    const seconds = durationMillis / 1000
+    const blocks = ['▁', '▂', '▃', '▄', '▅', '▆', '▇', '█']
+
+    let gradient = ''
+
+    // Build gradient based on duration thresholds
+    // Always show at least the first block for any completed task
+    gradient += blocks[0] // ▁ for any duration (< 1s)
+    if (seconds >= 1) gradient += blocks[1] // ▂ for >= 1s (< 5s)
+    if (seconds >= 5) gradient += blocks[2] // ▃ for >= 5s (< 10s)
+    if (seconds >= 10) gradient += blocks[3] // ▄ for >= 10s (< 30s)
+    if (seconds >= 30) gradient += blocks[4] // ▅ for >= 30s (< 60s)
+    if (seconds >= 60) gradient += blocks[5] // ▆ for >= 60s (< 120s)
+    if (seconds >= 120) gradient += blocks[6] // ▇ for >= 120s (< 240s)
+    if (seconds >= 240) gradient += blocks[7] // █ for >= 240s
+
+    // Pad to 8 characters with spaces for alignment
+    return gradient.padEnd(8, ' ')
+  }
+
   ended(
     taskName: string,
     verdict: 'OK' | 'FAIL' | 'UNKNOWN' | 'CRASH',
@@ -49,7 +70,7 @@ export class TaskExecutionVisualizer {
       },
       EXECUTED: () => {
         ++this.numExectuted
-        return '󠀠✨'
+        return '✨'
       },
     })
 
@@ -71,8 +92,12 @@ export class TaskExecutionVisualizer {
 
     const full = `[${this.all}/${this.all}]`.length
     const progress = `[${this.numEnded}/${this.all}]`
-    const timing = durationMillis !== undefined ? ` ${(durationMillis / 1000).toFixed(1)}s` : ''
-    return `${progress.padStart(full, '.')} ${verdictIndicator} ${cacheIndicator} ${taskName}${timing}`
+
+    // Calculate gradient and format timing
+    const gradient = durationMillis !== undefined ? this.getGradient(durationMillis) : '        '
+    const timing = durationMillis !== undefined ? `${(durationMillis / 1000).toFixed(1)}s`.padStart(6) : '      '
+
+    return `${progress.padStart(full, '.')} ${gradient} ${timing} ${verdictIndicator} ${cacheIndicator} ${taskName}`
   }
 
   summary(durationInMillis: number) {
