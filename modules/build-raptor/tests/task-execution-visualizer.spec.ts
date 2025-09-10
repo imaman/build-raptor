@@ -41,7 +41,10 @@ describe('TaskExecutionVisualizer', () => {
         { ms: 5100, expectedTiming: '  5.1s' },
         { ms: 10100, expectedTiming: ' 10.1s' },
         { ms: 120500, expectedTiming: '120.5s' },
-        { ms: 999900, expectedTiming: '999.9s' },
+        { ms: 240100, expectedTiming: '240.1s' },
+        { ms: 599800, expectedTiming: '599.8s' },
+        { ms: 600200, expectedTiming: ' 10.0m' },
+        { ms: 726000, expectedTiming: ' 12.1m' },
       ]
 
       testCases.forEach((testCase, index) => {
