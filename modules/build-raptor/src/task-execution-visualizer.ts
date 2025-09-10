@@ -95,9 +95,19 @@ export class TaskExecutionVisualizer {
 
     // Calculate gradient and format timing
     const gradient = durationMillis !== undefined ? this.getGradient(durationMillis) : '        '
-    const timing = durationMillis !== undefined ? `${(durationMillis / 1000).toFixed(1)}s`.padStart(6) : '      '
+    const timing = durationMillis !== undefined ? this.formatDuration(durationMillis).padStart(6) : '      '
 
     return `${progress.padStart(full, '.')} ${gradient} ${timing} ${verdictIndicator} ${cacheIndicator} ${taskName}`
+  }
+
+  private formatDuration(durationMillis: number) {
+    const seconds = durationMillis / 1000
+    if (seconds < 600) {
+      return `${seconds.toFixed(1)}s`
+    } else {
+      const minutes = seconds / 60
+      return `${minutes.toFixed(1)}m`
+    }
   }
 
   summary(durationInMillis: number) {
