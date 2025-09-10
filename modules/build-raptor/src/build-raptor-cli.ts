@@ -419,7 +419,7 @@ export function main() {
       .option('task-progress-output', {
         describe: 'whether to print a line indicating verdict/execution-type for each task',
         type: 'boolean',
-        default: false,
+        default: true,
       })
       .option('print-timing', {
         describe: 'print task timing report at the end (sorted by duration)',

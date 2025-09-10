@@ -27,6 +27,29 @@ export class TaskExecutionVisualizer {
     return this.getLine(taskName)
   }
 
+  private getGradient(durationMillis: number): string {
+    const seconds = durationMillis / 1000
+
+    const steps = [
+      [0, '▁'],
+      [1, '▂'],
+      [5, '▃'],
+      [10, '▄'],
+      [30, '▅'],
+      [60, '▆'],
+      [120, '▇'],
+      [240, '█'],
+    ] as const
+
+    const gradient = steps
+      .filter(at => seconds >= at[0])
+      .map(at => at[1])
+      .join('')
+
+    // Pad to 8 characters with spaces for alignment
+    return gradient.padEnd(8, ' ')
+  }
+
   ended(
     taskName: string,
     verdict: 'OK' | 'FAIL' | 'UNKNOWN' | 'CRASH',
@@ -49,7 +72,7 @@ export class TaskExecutionVisualizer {
       },
       EXECUTED: () => {
         ++this.numExectuted
-        return '󠀠✨'
+        return '✨'
       },
     })
 
@@ -71,8 +94,22 @@ export class TaskExecutionVisualizer {
 
     const full = `[${this.all}/${this.all}]`.length
     const progress = `[${this.numEnded}/${this.all}]`
-    const timing = durationMillis !== undefined ? ` ${(durationMillis / 1000).toFixed(1)}s` : ''
-    return `${progress.padStart(full, '.')} ${verdictIndicator} ${cacheIndicator} ${taskName}${timing}`
+
+    // Calculate gradient and format timing
+    const gradient = durationMillis !== undefined ? this.getGradient(durationMillis) : '        '
+    const timing = durationMillis !== undefined ? this.formatDuration(durationMillis).padStart(6) : '      '
+
+    return `${progress.padStart(full, '.')} ${gradient} ${timing} ${verdictIndicator} ${cacheIndicator} ${taskName}`
+  }
+
+  private formatDuration(durationMillis: number) {
+    const seconds = durationMillis / 1000
+    if (seconds < 600) {
+      return `${seconds.toFixed(1)}s`
+    } else {
+      const minutes = seconds / 60
+      return `${minutes.toFixed(1)}m`
+    }
   }
 
   summary(durationInMillis: number) {
