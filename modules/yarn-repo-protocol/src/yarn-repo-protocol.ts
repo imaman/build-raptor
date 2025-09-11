@@ -136,17 +136,6 @@ export class YarnRepoProtocol implements RepoProtocol {
     return buildRaptor?.testCommand
   }
 
-  private async hasSpecFiles(testsDir: string): Promise<boolean> {
-    try {
-      const files = await DirectoryScanner.listPaths(testsDir, { startingPointMustExist: false })
-      return files.some(file => file.endsWith('.spec.ts'))
-    } catch (error) {
-      // If directory doesn't exist or error reading it, assume no spec files
-      this.logger.info(`Error checking for spec files in ${testsDir}: ${error}`)
-      return false
-    }
-  }
-
   private parseConfig(untypedConfig: unknown | undefined) {
     const parseResult = YarnRepoProtocolConfig.safeParse(untypedConfig ?? {}, { path: ['repoProtocol'] })
     if (parseResult.success) {
@@ -452,33 +441,6 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
 
     if (taskKind === 'test') {
-      // Check if there are any *.spec.ts files in the tests directory
-      const testsDir = path.join(dir, this.tests)
-      const hasSpecFiles = await this.hasSpecFiles(testsDir)
-
-      if (!hasSpecFiles) {
-        // No spec files found - skip test execution
-        this.logger.info(`No *.spec.ts files found in ${testsDir}, skipping test execution`)
-        await fs.promises.writeFile(outputFile, `No test files found in ${testsDir}\n`)
-
-        // Create empty test summary file to maintain invariant
-        const dirInRepo = this.state.rootDir.unresolve(dir)
-        const resolvedSummaryFile = this.state.rootDir.resolve(dirInRepo.expand(this.testRunSummaryFile))
-        fs.writeFileSync(resolvedSummaryFile, JSON.stringify({}))
-
-        // Create empty jest output file
-        const jof = path.join(dir, JEST_OUTPUT_FILE)
-        fs.writeFileSync(jof, JSON.stringify([]))
-
-        // Still run validate if it exists
-        const tempFile = await getTempFile()
-        const validateResult = await this.runValidate(u, dir, tempFile)
-        const toAppend = await fse.readFile(tempFile)
-        await fse.appendFile(outputFile, toAppend)
-
-        return validateResult
-      }
-
       const tempFile = await getTempFile()
       const testCommand = this.getTestCommand(u.id)
 
