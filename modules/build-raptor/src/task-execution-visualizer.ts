@@ -103,7 +103,7 @@ export class TaskExecutionVisualizer {
 
   private formatDuration(durationMillis: number) {
     const seconds = durationMillis / 1000
-    if (seconds < 810) {
+    if (seconds < 600) {
       return `${seconds.toFixed(1)}s`
     } else {
       const minutes = seconds / 60
