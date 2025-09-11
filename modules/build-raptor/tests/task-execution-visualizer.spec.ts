@@ -16,13 +16,12 @@ describe('TaskExecutionVisualizer', () => {
       const testCases = [
         { ms: 100, expected: '▁' }, // < 1s
         { ms: 700, expected: '▁' }, // < 1s
-        { ms: 1200, expected: '▁▂' }, // < 5s
-        { ms: 5100, expected: '▁▂▃' }, // < 10s
-        { ms: 10100, expected: '▁▂▃▄' }, // < 30s
-        { ms: 30100, expected: '▁▂▃▄▅' }, // < 60s
-        { ms: 60200, expected: '▁▂▃▄▅▆' }, // < 120s
-        { ms: 120500, expected: '▁▂▃▄▅▆▇' }, // < 240s
-        { ms: 240100, expected: '▁▂▃▄▅▆▇█' }, // >= 240s
+        { ms: 7800, expected: '▁▂' }, // < 10s
+        { ms: 10100, expected: '▁▂▃' }, // < 30s
+        { ms: 30100, expected: '▁▂▃▄' }, // < 90s
+        { ms: 90200, expected: '▁▂▃▄▅' }, // < 270s
+        { ms: 270500, expected: '▁▂▃▄▅▆' }, // < 810s
+        { ms: 810500, expected: '▁▂▃▄▅▆▇' }, // < 810s
       ]
 
       testCases.forEach((testCase, index) => {
@@ -58,10 +57,8 @@ describe('TaskExecutionVisualizer', () => {
     it('should produce output matching the expected format', () => {
       visualizer.addTasks(Array(23).fill('test'))
 
-      const result = visualizer.ended('@moojo/cloud-toolkit:build:bundle', 'OK', 'CACHED', 240100)
-
-      // Expected format: .[23/23] ▁▂▃▄▅▆▇█ 240.1s ✅ 🗃️  @moojo/cloud-toolkit:build:bundle
-      expect(result).toBe('.[1/23] ▁▂▃▄▅▆▇█ 240.1s ✅ 🗃️  @moojo/cloud-toolkit:build:bundle')
+      const result = visualizer.ended('@moojo/cloud-toolkit:build:bundle', 'OK', 'CACHED', 810100)
+      expect(result).toBe('.[1/23] ▁▂▃▄▅▆▇   13.5m ✅ 🗃️  @moojo/cloud-toolkit:build:bundle')
     })
   })
 })

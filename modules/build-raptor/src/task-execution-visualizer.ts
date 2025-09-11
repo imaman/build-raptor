@@ -33,12 +33,11 @@ export class TaskExecutionVisualizer {
     const steps = [
       [0, '▁'],
       [1, '▂'],
-      [5, '▃'],
-      [10, '▄'],
-      [30, '▅'],
-      [60, '▆'],
-      [120, '▇'],
-      [240, '█'],
+      [10, '▃'],
+      [30, '▄'],
+      [90, '▅'],
+      [270, '▆'],
+      [810, '▇'],
     ] as const
 
     const gradient = steps
