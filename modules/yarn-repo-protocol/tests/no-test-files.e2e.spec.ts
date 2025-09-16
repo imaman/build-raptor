@@ -13,7 +13,7 @@ describe('no-test-files.e2e', () => {
   }
   const testName = () => expect.getState().currentTestName
 
-  test('test task succeeds when no spec files exist in tests directory', async () => {
+  test('task succeeds when no spec files exist in tests directory', async () => {
     const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
@@ -31,7 +31,7 @@ describe('no-test-files.e2e', () => {
     )
   })
 
-  test('test task succeeds when tests directory does not exist', async () => {
+  test('task succeeds when tests directory does not exist', async () => {
     const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
@@ -49,14 +49,14 @@ describe('no-test-files.e2e', () => {
     )
   })
 
-  test('test task runs normally when spec files exist', async () => {
+  test('task runs normally when spec files exist', async () => {
     const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
       'modules/a/package.json': driver.packageJson('a'),
       'modules/a/src/index.ts': 'export function hello() { return "world" }',
       'modules/a/tests/hello.spec.ts': `
-        import {hello} from '../src'
+        import {hello} from '../src/index'
         test('hello', () => { expect(hello()).toEqual("world") })
       `,
     }
@@ -70,7 +70,7 @@ describe('no-test-files.e2e', () => {
     )
   })
 
-  test('test task with validation still runs validate when no spec files exist', async () => {
+  test('task with validation still runs validate when no spec files exist', async () => {
     const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
@@ -88,7 +88,7 @@ describe('no-test-files.e2e', () => {
     expect(output).toEqual(expect.arrayContaining([expect.stringContaining('validation ran successfully')]))
   })
 
-  test('test task fails if validation fails even when no spec files exist', async () => {
+  test('task fails if validation fails even when no spec files exist', async () => {
     const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
     const recipe = {
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
@@ -163,15 +163,21 @@ describe('no-test-files.e2e', () => {
 
     // Module a should run tests normally
     expect(run.executionTypeOf('a', 'test')).toEqual('EXECUTED')
-    expect(await run.outputOf('test', 'a')).toContain('PASS dist/tests/a.spec.js')
+    expect(await run.outputOf('test', 'a')).toEqual(
+      expect.arrayContaining([expect.stringContaining('PASS dist/tests/a.spec.js')]),
+    )
 
     // Module b should skip test execution
     expect(run.executionTypeOf('b', 'test')).toEqual('EXECUTED')
-    expect(await run.outputOf('test', 'b')).toContain('No test files found')
+    expect(await run.outputOf('test', 'b')).toEqual(
+      expect.arrayContaining([expect.stringContaining('No test files found')]),
+    )
 
     // Module c should skip test execution
     expect(run.executionTypeOf('c', 'test')).toEqual('EXECUTED')
-    expect(await run.outputOf('test', 'c')).toContain('No test files found')
+    expect(await run.outputOf('test', 'c')).toEqual(
+      expect.arrayContaining([expect.stringContaining('No test files found')]),
+    )
   })
 
   test('caching works correctly when no spec files exist', async () => {
@@ -188,7 +194,9 @@ describe('no-test-files.e2e', () => {
     // First run - should execute
     const run1 = await fork.run('OK', { taskKind: 'test' })
     expect(run1.executionTypeOf('a', 'test')).toEqual('EXECUTED')
-    expect(await run1.outputOf('test', 'a')).toContain('No test files found')
+    expect(await run1.outputOf('test', 'a')).toEqual(
+      expect.arrayContaining([expect.stringContaining('No test files found')]),
+    )
 
     // Second run - should be cached
     const run2 = await fork.run('OK', { taskKind: 'test' })
@@ -210,17 +218,21 @@ describe('no-test-files.e2e', () => {
     // First run with no tests
     const run1 = await fork.run('OK', { taskKind: 'test' })
     expect(run1.executionTypeOf('a', 'test')).toEqual('EXECUTED')
-    expect(await run1.outputOf('test', 'a')).toContain('No test files found')
+    expect(await run1.outputOf('test', 'a')).toEqual(
+      expect.arrayContaining([expect.stringContaining('No test files found')]),
+    )
 
     // Add a spec file
     await fork.file('modules/a/tests/hello.spec.ts').write(`
-      import {hello} from '../src'
+      import {hello} from '../src/index'
       test('hello', () => { expect(hello()).toEqual("world") })
     `)
 
     // Second run should execute tests normally
     const run2 = await fork.run('OK', { taskKind: 'test' })
     expect(run2.executionTypeOf('a', 'test')).toEqual('EXECUTED')
-    expect(await run2.outputOf('test', 'a')).toContain('PASS dist/tests/hello.spec.js')
+    expect(await run2.outputOf('test', 'a')).toEqual(
+      expect.arrayContaining([expect.stringContaining('PASS dist/tests/hello.spec.js')]),
+    )
   })
 })
