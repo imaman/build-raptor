@@ -1,4 +1,5 @@
 export * from './breakdown'
+export * from './build-raptor-config'
 export * from './default-asset-publisher'
 export * from './engine-bootstrapper'
 export * from './execution-type'

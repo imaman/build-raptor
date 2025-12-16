@@ -1,4 +1,10 @@
-import { DefaultAssetPublisher, EngineBootstrapper, findRepoDir, TaskSelector } from 'build-raptor-core'
+import {
+  BuildRaptorConfig,
+  DefaultAssetPublisher,
+  EngineBootstrapper,
+  findRepoDir,
+  TaskSelector,
+} from 'build-raptor-core'
 import fs from 'fs'
 import * as fse from 'fs-extra'
 import { createDefaultLogger, Criticality, Logger } from 'logger'
@@ -22,9 +28,10 @@ import { getS3StorageClientFactory } from 's3-storage-client'
 import { TaskName } from 'task-name'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
-import { YarnRepoProtocol } from 'yarn-repo-protocol'
+import { YarnRepoProtocol, YarnRepoProtocolConfig } from 'yarn-repo-protocol'
 
 import { TaskExecutionVisualizer } from './task-execution-visualizer'
+import { zodToJson5Template } from './zod-to-json5-template'
 
 type TestReporting = 'tree-all' | 'tree-just-failing'
 
@@ -61,7 +68,7 @@ async function createStorageClient() {
   })
 }
 
-export async function run(options: Options) {
+async function makeBootstrapper(options: Options) {
   process.env.AWS_SDK_JS_SUPPRESS_MAINTENANCE_MODE_MESSAGE = '1' // eslint-disable-line no-process-env
   if (options.compact !== undefined) {
     options.criticality = options.compact ? 'moderate' : 'low'
@@ -238,7 +245,11 @@ export async function run(options: Options) {
   bootstrapper.subscribable.on('executionSkipped', tn => {
     logger.print(`Task ${tn} succeeded earlier. Skipping.\n`, 'low')
   })
+  return { bootstrapper, buildRaptorDir, commitHash, userDir, logger }
+}
 
+export async function run(options: Options) {
+  const { bootstrapper, buildRaptorDir, commitHash, userDir } = await makeBootstrapper(options)
   const selector: TaskSelector = {
     units: options.units,
     goals: options.goals,
@@ -550,6 +561,34 @@ export function main() {
             taskProgressOutput: argv.taskProgressOutput,
             printTiming: argv.printTiming,
           })
+        },
+      )
+      .command(
+        'init-config',
+        'generate a build-raptor.json5 config file with all available options commented out',
+        yargs => yargs,
+        async () => {
+          const { logger } = await makeBootstrapper({
+            units: [],
+            goals: [],
+            labels: [],
+            printPassing: false,
+            criticality: 'low',
+            concurrency: 0,
+          })
+          const configContent = zodToJson5Template(BuildRaptorConfig, {
+            repoProtocol: YarnRepoProtocolConfig,
+          })
+          const outputPath = path.join(process.cwd(), 'build-raptor.json5')
+
+          if (fs.existsSync(outputPath)) {
+            logger.print(`Error: ${outputPath} already exists. Remove it first if you want to regenerate.`)
+            process.exitCode = 1
+            return
+          }
+
+          fs.writeFileSync(outputPath, configContent + '\n')
+          logger.print(`Created ${outputPath}`)
         },
       )
       .demandCommand(1)
