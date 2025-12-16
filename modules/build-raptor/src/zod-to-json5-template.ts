@@ -86,24 +86,27 @@ function getDefaultValue(r: Reflected): string {
   }
   shouldNeverHappen(r.tag)
 }
-type Reflected =
-  | { tag: 'string' | 'boolean' | 'number' | 'array' | 'unknown'; description: string | undefined }
-  | { tag: 'union'; description: string | undefined; of: Reflected[] }
-  | { tag: 'object'; of: Partial<Record<string, Reflected>>; description: string | undefined }
+
+type Reflected = { description: string | undefined; defaultValue: unknown } & (
+  | { tag: 'string' | 'boolean' | 'number' | 'array' | 'unknown' }
+  | { tag: 'union'; of: Reflected[] }
+  | { tag: 'object'; of: Partial<Record<string, Reflected>> }
+)
 
 function reflect(schema: z.ZodTypeAny): Reflected {
   const unwrapped = unwrapSchema(schema)
   const typeName = getZodTypeName(unwrapped)
   const description = getDescription(schema)
 
-  if (
-    typeName === 'array' ||
-    typeName === 'boolean' ||
-    typeName === 'string' ||
-    typeName === 'number' ||
-    typeName === 'unknown'
-  ) {
-    return { tag: typeName, description }
+  if (typeName === 'array') {
+    return { tag: 'array', description, defaultValue: '[]' }
+  }
+  if (typeName === 'boolean' || typeName === 'string' || typeName === 'number' || typeName === 'unknown') {
+    const d =
+      schema instanceof ZodDefault
+        ? schema.parse(undefined)
+        : { boolean: 'false', string: '""', number: '0', unknown: 'null' }[typeName]
+    return { tag: typeName, description, defaultValue: d }
   }
 
   if (typeName === 'union') {
@@ -117,7 +120,9 @@ function reflect(schema: z.ZodTypeAny): Reflected {
     }
 
     const casted = options as z.ZodTypeAny[] // eslint-disable-line @typescript-eslint/consistent-type-assertions
-    return { tag: 'union', of: casted.map(at => reflect(at)), description }
+    const mapped = casted.map(at => reflect(at))
+    const d = schema instanceof ZodDefault ? schema.parse(undefined) : mapped[0].defaultValue
+    return { tag: 'union', of: mapped, description, defaultValue: d }
   }
 
   if (typeName === 'object') {
@@ -133,7 +138,7 @@ function reflect(schema: z.ZodTypeAny): Reflected {
       }),
     )
 
-    return { tag: 'object', of: obj, description }
+    return { tag: 'object', of: obj, description, defaultValue: {} }
   }
 
   shouldNeverHappen(typeName)
