@@ -30,7 +30,7 @@ import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import { YarnRepoProtocol, YarnRepoProtocolConfig } from 'yarn-repo-protocol'
 
-import { zodToJson5Template } from './examplify-zod'
+import { examplifyZod } from './examplify-zod'
 import { TaskExecutionVisualizer } from './task-execution-visualizer'
 
 type TestReporting = 'tree-all' | 'tree-just-failing'
@@ -576,7 +576,7 @@ export function main() {
             criticality: 'low',
             concurrency: 0,
           })
-          const configContent = zodToJson5Template(BuildRaptorConfig, {
+          const configContent = examplifyZod(BuildRaptorConfig, {
             repoProtocol: YarnRepoProtocolConfig,
           })
           const outputPath = path.join(userDir, 'build-raptor.json5')
