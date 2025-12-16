@@ -170,7 +170,7 @@ function format(r: Reflected, w: Writer, indent: string) {
   }
 
   if (r.tag === 'object') {
-    w.write(indent, '{')
+    w.write('{')
     w.newline()
     const newIndent = indent + '  '
     for (const [k, v] of Object.entries(r.of)) {
