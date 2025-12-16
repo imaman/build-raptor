@@ -89,7 +89,7 @@ function getDefaultValue(r: Reflected): string {
 type Reflected =
   | { tag: 'string' | 'boolean' | 'number' | 'array' | 'unknown'; description: string | undefined }
   | { tag: 'union'; description: string | undefined; of: Reflected[] }
-  | { tag: 'object'; obj: Partial<Record<string, Reflected>>; description: string | undefined }
+  | { tag: 'object'; of: Partial<Record<string, Reflected>>; description: string | undefined }
 
 function reflect(schema: z.ZodTypeAny): Reflected {
   const unwrapped = unwrapSchema(schema)
@@ -133,7 +133,7 @@ function reflect(schema: z.ZodTypeAny): Reflected {
       }),
     )
 
-    return { tag: 'object', obj, description }
+    return { tag: 'object', of: obj, description }
   }
 
   shouldNeverHappen(typeName)
@@ -173,7 +173,7 @@ function format(r: Reflected, w: Writer, indent: string) {
     w.write(indent, '{')
     w.newline()
     const newIndent = indent + '  '
-    for (const [k, v] of Object.entries(r.obj)) {
+    for (const [k, v] of Object.entries(r.of)) {
       if (!v) {
         continue
       }
