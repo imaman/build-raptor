@@ -140,7 +140,11 @@ function reflect(schema: z.ZodTypeAny): Reflected {
 }
 
 class Writer {
-  private readonly lines: string[][] = [[]]
+  private readonly lines: string[][] = []
+
+  constructor(private readonly prefix: string) {
+    this.newline()
+  }
 
   write(...strings: string[]) {
     const last = this.lines.at(-1) ?? failMe('array is empty')
@@ -148,7 +152,7 @@ class Writer {
   }
 
   newline() {
-    this.lines.push([])
+    this.lines.push([this.prefix])
   }
 
   getOutput() {
@@ -196,8 +200,12 @@ function format(r: Reflected, w: Writer, indent: string) {
  * @param nestedSchemas Optional map of property names to nested schemas (for properties like repoProtocol)
  * @returns A JSON5 template string
  */
-export function zodToJson5Template(input: z.ZodTypeAny, _nestedSchemas: Partial<Record<string, z.ZodTypeAny>>): string {
-  const w = new Writer()
+export function zodToJson5Template(
+  input: z.ZodTypeAny,
+  _nestedSchemas: Partial<Record<string, z.ZodTypeAny>>,
+  comment = true,
+): string {
+  const w = new Writer(comment ? '//' : '')
   const r = reflect(input)
   format(r, w, '')
   return w.getOutput()
