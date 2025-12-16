@@ -62,31 +62,6 @@ function getDescription(schema: ZodTypeAny): string | undefined {
   return undefined
 }
 
-function getDefaultValue(r: Reflected): string {
-  if (r.tag === 'array') {
-    return '[]'
-  }
-  if (r.tag === 'string') {
-    return '""'
-  }
-  if (r.tag === 'number') {
-    return '0'
-  }
-  if (r.tag === 'boolean') {
-    return 'false'
-  }
-  if (r.tag === 'union') {
-    return getDefaultValue(r.of[0])
-  }
-  if (r.tag === 'unknown') {
-    return 'null'
-  }
-  if (r.tag === 'object') {
-    return '{}'
-  }
-  shouldNeverHappen(r.tag)
-}
-
 type Reflected = { description: string | undefined; defaultValue: unknown } & (
   | { tag: 'string' | 'boolean' | 'number' | 'array' | 'unknown' }
   | { tag: 'union'; of: Reflected[] }
@@ -174,7 +149,7 @@ function format(r: Reflected, w: Writer, indent: string) {
     r.tag === 'union' ||
     r.tag === 'unknown'
   ) {
-    w.write(getDefaultValue(r))
+    w.write(String(r.defaultValue))
     return
   }
 
