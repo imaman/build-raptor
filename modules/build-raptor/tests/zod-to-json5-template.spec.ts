@@ -46,6 +46,12 @@ describe('zod-to-json5-template', () => {
     expect(zodToJson5Template(z.number().nullable().default(5), {}, false)).toEqual(`5`)
     expect(zodToJson5Template(z.string().nullable().default('abc'), {}, false)).toEqual(`"abc"`)
     expect(zodToJson5Template(z.boolean().nullable().default(true), {}, false)).toEqual(`true`)
+    expect(zodToJson5Template(z.number().optional().default(5), {}, false)).toEqual(`5`)
+    expect(zodToJson5Template(z.string().optional().default('abc'), {}, false)).toEqual(`"abc"`)
+    expect(zodToJson5Template(z.boolean().optional().default(true), {}, false)).toEqual(`true`)
+  })
+  test(`the value of .default() is used even if the schema is neither nullable nor optional`, () => {
+    expect(zodToJson5Template(z.string().default('the quick'), {}, false)).toEqual(`"the quick"`)
   })
   test(`default().nullable() is treated as nullable()`, () => {
     expect(zodToJson5Template(z.number().default(5).nullable(), {}, false)).toEqual(`0`)
@@ -54,5 +60,8 @@ describe('zod-to-json5-template', () => {
     expect(zodToJson5Template(z.number().or(z.string()).or(z.boolean()), {}, false)).toEqual(`0`)
     expect(zodToJson5Template(z.string().or(z.number()).or(z.boolean()), {}, false)).toEqual(`""`)
     expect(zodToJson5Template(z.boolean().or(z.string()).or(z.number()), {}, false)).toEqual(`false`)
+  })
+  test(`union which has an explicit default value`, () => {
+    expect(zodToJson5Template(z.number().or(z.string()).default('q'), {}, false)).toEqual(`"q"`)
   })
 })
