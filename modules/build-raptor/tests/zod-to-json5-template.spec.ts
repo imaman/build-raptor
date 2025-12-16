@@ -44,7 +44,7 @@ describe('zod-to-json5-template', () => {
   })
   test(`when a schema has .default() that value is taken as the default value`, () => {
     expect(zodToJson5Template(z.number().nullable().default(5), {}, false)).toEqual(`5`)
-    expect(zodToJson5Template(z.string().nullable().default('abc'), {}, false)).toEqual(`abc`)
+    expect(zodToJson5Template(z.string().nullable().default('abc'), {}, false)).toEqual(`"abc"`)
     expect(zodToJson5Template(z.boolean().nullable().default(true), {}, false)).toEqual(`true`)
   })
   test(`default().nullable() is treated as nullable()`, () => {

@@ -74,13 +74,13 @@ function reflect(schema: z.ZodTypeAny): Reflected {
   const description = getDescription(schema)
 
   if (typeName === 'array') {
-    return { tag: 'array', description, defaultValue: '[]' }
+    return { tag: 'array', description, defaultValue: [] }
   }
   if (typeName === 'boolean' || typeName === 'string' || typeName === 'number' || typeName === 'unknown') {
     const d =
       schema instanceof ZodDefault
         ? schema.parse(undefined)
-        : { boolean: 'false', string: '""', number: '0', unknown: 'null' }[typeName]
+        : { boolean: false, string: '', number: 0, unknown: null }[typeName]
     return { tag: typeName, description, defaultValue: d }
   }
 
@@ -149,7 +149,7 @@ function format(r: Reflected, w: Writer, indent: string) {
     r.tag === 'union' ||
     r.tag === 'unknown'
   ) {
-    w.write(String(r.defaultValue))
+    w.write(JSON.stringify(r.defaultValue))
     return
   }
 
