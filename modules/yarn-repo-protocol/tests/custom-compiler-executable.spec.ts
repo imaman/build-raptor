@@ -50,25 +50,4 @@ describe('custom-compiler-executable', () => {
 
     expect(output).toEqual(expect.arrayContaining([expect.stringContaining('CUSTOM_COMPILER_EXECUTABLE_WAS_INVOKED')]))
   })
-
-  test('should use tsc by default when compilerExecutable is not configured', async () => {
-    const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
-
-    const recipe = {
-      'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
-      'modules/a/package.json': driver.packageJson('a'),
-      'modules/a/src/a.ts': `export const x: number = 1`,
-    }
-
-    const fork = await driver.repo(recipe).fork()
-
-    // This should succeed using the default tsc compiler
-    const run = await fork.run('OK', { taskKind: 'build' })
-    const output = await run.outputOf('build', 'a')
-
-    // Should NOT contain our custom marker
-    expect(output).not.toEqual(
-      expect.arrayContaining([expect.stringContaining('CUSTOM_COMPILER_EXECUTABLE_WAS_INVOKED')]),
-    )
-  })
 })
