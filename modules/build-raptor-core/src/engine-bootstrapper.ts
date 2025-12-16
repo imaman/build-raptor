@@ -2,6 +2,7 @@ import { BuildFailedError } from 'build-failed-error'
 import { BuildRunId } from 'build-run-id'
 import { PathInRepo, RepoRoot } from 'core-types'
 import * as fs from 'fs'
+import * as JSON5 from 'json5'
 import { createDefaultLogger, Criticality, Logger } from 'logger'
 import { errorLike, StorageClient, Subscribable, switchOn, TypedPublisher } from 'misc'
 import * as path from 'path'
@@ -56,9 +57,10 @@ export class EngineBootstrapper {
     this.logger.info(`rootDir is ${this.rootDir}`)
     this.logger.info(`The console outputs (stdout/stderr) of tasks are stored under ${taskOutputDir}`)
 
+    const resolvedConfigFile = configFile ? PathInRepo(configFile) : this.resolveConfigFile()
     const options = {
       ...optionsSansConfig,
-      config: this.readConfigFile(PathInRepo(configFile ?? '.build-raptor.json')),
+      config: this.readConfigFile(resolvedConfigFile),
     }
 
     const taskStore = new TaskStore(this.rootDir, this.storageClient, this.logger, this.eventPublisher)
@@ -82,14 +84,46 @@ export class EngineBootstrapper {
     return engine
   }
 
-  private readConfigFile(pathToConfigFile: PathInRepo): BuildRaptorConfig {
+  private static readonly JSON5_CONFIG_FILE = 'build-raptor.json5'
+  private static readonly JSON_CONFIG_FILE = '.build-raptor.json'
+
+  private resolveConfigFile(): PathInRepo | undefined {
+    const json5Path = this.rootDir.resolve(PathInRepo(EngineBootstrapper.JSON5_CONFIG_FILE))
+    const jsonPath = this.rootDir.resolve(PathInRepo(EngineBootstrapper.JSON_CONFIG_FILE))
+
+    const json5Exists = fs.existsSync(json5Path)
+    const jsonExists = fs.existsSync(jsonPath)
+
+    if (json5Exists && jsonExists) {
+      throw new Error(
+        `Both '${EngineBootstrapper.JSON5_CONFIG_FILE}' and '${EngineBootstrapper.JSON_CONFIG_FILE}' exist. Please remove one of them.`,
+      )
+    }
+
+    if (json5Exists) {
+      return PathInRepo(EngineBootstrapper.JSON5_CONFIG_FILE)
+    }
+
+    if (jsonExists) {
+      return PathInRepo(EngineBootstrapper.JSON_CONFIG_FILE)
+    }
+
+    return undefined
+  }
+
+  private readConfigFile(pathToConfigFile: PathInRepo | undefined): BuildRaptorConfig {
+    if (pathToConfigFile === undefined) {
+      return BuildRaptorConfig.parse({})
+    }
+
     const p = this.rootDir.resolve(pathToConfigFile)
     try {
       if (!fs.existsSync(p)) {
         return BuildRaptorConfig.parse({})
       }
       const content = fs.readFileSync(p, 'utf-8')
-      const parsed = JSON.parse(content)
+      const isJson5 = pathToConfigFile.val.endsWith('.json5')
+      const parsed = isJson5 ? JSON5.parse(content) : JSON.parse(content)
       return BuildRaptorConfig.parse(parsed)
     } catch (e) {
       throw new Error(`could not read repo config file ${p} - ${e}`)

@@ -402,7 +402,7 @@ export function main() {
         demandOption: false,
       })
       .options('config-file', {
-        describe: `repo-relative path to a build-raptor config file (defaults to '.build-raptor.json')`,
+        describe: `repo-relative path to a build-raptor config file. If not specified, looks for 'build-raptor.json5' first, then '.build-raptor.json'. If both exist, an error is raised.`,
         type: 'string',
         demandOption: false,
       })
