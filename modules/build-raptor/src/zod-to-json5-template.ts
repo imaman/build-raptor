@@ -16,12 +16,24 @@ import {
 type ZodTypeName = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'union' | 'unknown'
 
 function getZodTypeName(schema: ZodTypeAny): ZodTypeName {
-  if (schema instanceof ZodString) return 'string'
-  if (schema instanceof ZodNumber) return 'number'
-  if (schema instanceof ZodBoolean) return 'boolean'
-  if (schema instanceof ZodObject) return 'object'
-  if (schema instanceof ZodArray) return 'array'
-  if (schema instanceof ZodUnion) return 'union'
+  if (schema instanceof ZodString) {
+    return 'string'
+  }
+  if (schema instanceof ZodNumber) {
+    return 'number'
+  }
+  if (schema instanceof ZodBoolean) {
+    return 'boolean'
+  }
+  if (schema instanceof ZodObject) {
+    return 'object'
+  }
+  if (schema instanceof ZodArray) {
+    return 'array'
+  }
+  if (schema instanceof ZodUnion) {
+    return 'union'
+  }
   return 'unknown'
 }
 
@@ -64,7 +76,7 @@ function getDefaultValue(r: Reflected): string {
     return 'false'
   }
   if (r.tag === 'union') {
-    return '[]'
+    return getDefaultValue(r.of[0])
   }
   if (r.tag === 'unknown') {
     return 'null'
@@ -76,7 +88,7 @@ function getDefaultValue(r: Reflected): string {
 }
 type Reflected =
   | { tag: 'string' | 'boolean' | 'number' | 'array' | 'unknown'; description: string | undefined }
-  | { tag: 'union'; description: string | undefined }
+  | { tag: 'union'; description: string | undefined; of: Reflected[] }
   | { tag: 'object'; obj: Partial<Record<string, Reflected>>; description: string | undefined }
 
 function reflect(schema: z.ZodTypeAny): Reflected {
@@ -89,15 +101,28 @@ function reflect(schema: z.ZodTypeAny): Reflected {
     typeName === 'boolean' ||
     typeName === 'string' ||
     typeName === 'number' ||
-    typeName === 'unknown' ||
-    typeName === 'union'
+    typeName === 'unknown'
   ) {
     return { tag: typeName, description }
   }
 
+  if (typeName === 'union') {
+    if (!(unwrapped instanceof z.ZodUnion)) {
+      throw new Error(`type name mismatch - expected: ${typeName}, got: ${unwrapped.constructor.name}`)
+    }
+
+    const options = unwrapped.options
+    if (!Array.isArray(options)) {
+      throw new Error(`type name mismatch - expected: an array, got: ${options.constructor.name}`)
+    }
+
+    const casted = options as z.ZodTypeAny[] // eslint-disable-line @typescript-eslint/consistent-type-assertions
+    return { tag: 'union', of: casted.map(at => reflect(at)), description }
+  }
+
   if (typeName === 'object') {
     if (!(unwrapped instanceof z.ZodObject)) {
-      throw new Error(`type name mismatch`)
+      throw new Error(`type name mismatch - expected: ${typeName}, got: ${unwrapped.constructor.name}`)
     }
 
     const obj = Object.fromEntries(
