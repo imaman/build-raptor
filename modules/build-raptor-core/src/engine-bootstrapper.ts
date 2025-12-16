@@ -138,8 +138,6 @@ export class EngineBootstrapper {
     return BuildRunId(uuid.v4())
   }
 
-  getConfig() {}
-
   /**
    * Returns a "runner function". When the runner function is invoked, a build will run.
    *
