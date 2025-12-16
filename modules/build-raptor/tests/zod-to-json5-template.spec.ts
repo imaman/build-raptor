@@ -13,6 +13,16 @@ describe('zod-to-json5-template', () => {
 //  b: false,
 //}`)
   })
+  test('descriptions', () => {
+    expect(zodToJson5Template(z.object({ s: z.string().describe('lorem ipsum') }), {})).toEqual(`//{
+//  lorem ipsum
+//  s: "",
+//}`)
+    expect(zodToJson5Template(z.object({ a: z.string().array(), b: z.boolean() }), {})).toEqual(`//{
+//  a: [],
+//  b: false,
+//}`)
+  })
   test('object nested', () => {
     expect(
       zodToJson5Template(

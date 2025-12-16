@@ -181,6 +181,12 @@ function format(r: Reflected, w: Writer, indent: string) {
       if (!v) {
         continue
       }
+      if (v.description) {
+        for (const line of v.description.split('\n')) {
+          w.write(newIndent, line)
+          w.newline()
+        }
+      }
       w.write(newIndent, k, ': ')
       format(v, w, newIndent)
       w.write(',')
