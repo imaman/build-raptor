@@ -17,4 +17,9 @@ describe('zod-to-json5-template', () => {
     expect(zodToJson5Template(z.number().nullable().default(5), {})).toEqual(`0`)
     expect(zodToJson5Template(z.number().default(5).nullable(), {})).toEqual(`0`)
   })
+  test('union', () => {
+    expect(zodToJson5Template(z.number().or(z.string()).or(z.boolean()), {})).toEqual(`0`)
+    expect(zodToJson5Template(z.string().or(z.number()).or(z.boolean()), {})).toEqual(`""`)
+    expect(zodToJson5Template(z.boolean().or(z.string()).or(z.number()), {})).toEqual(`false`)
+  })
 })
