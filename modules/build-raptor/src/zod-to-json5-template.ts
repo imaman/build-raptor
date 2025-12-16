@@ -1,121 +1,166 @@
-import { z, ZodTypeAny } from 'zod'
+import { failMe, shouldNeverHappen } from 'misc'
+import {
+  z,
+  ZodArray,
+  ZodBoolean,
+  ZodDefault,
+  ZodNullable,
+  ZodNumber,
+  ZodObject,
+  ZodOptional,
+  ZodString,
+  ZodTypeAny,
+  ZodUnion,
+} from 'zod'
 
-interface TemplateEntry {
-  key: string
-  value: string
-  description?: string
+type ZodTypeName = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'union' | 'unknown'
+
+function getZodTypeName(schema: ZodTypeAny): ZodTypeName {
+  if (schema instanceof ZodString) return 'string'
+  if (schema instanceof ZodNumber) return 'number'
+  if (schema instanceof ZodBoolean) return 'boolean'
+  if (schema instanceof ZodObject) return 'object'
+  if (schema instanceof ZodArray) return 'array'
+  if (schema instanceof ZodUnion) return 'union'
+  return 'unknown'
 }
 
-function getZodTypeName(schema: ZodTypeAny): string {
-  return schema._def.typeName
-}
-
-function unwrapZodType(schema: ZodTypeAny): ZodTypeAny {
-  const typeName = getZodTypeName(schema)
-
-  if (typeName === 'ZodOptional' || typeName === 'ZodNullable') {
-    return unwrapZodType(schema._def.innerType)
+function unwrapSchema(schema: ZodTypeAny): ZodTypeAny {
+  if (schema instanceof ZodOptional || schema instanceof ZodNullable) {
+    return unwrapSchema(schema.unwrap())
   }
-
-  if (typeName === 'ZodDefault') {
-    return unwrapZodType(schema._def.innerType)
+  if (schema instanceof ZodDefault) {
+    return unwrapSchema(schema.removeDefault())
   }
-
   return schema
 }
 
-function getDefaultValueForType(schema: ZodTypeAny): string {
-  const unwrapped = unwrapZodType(schema)
-  const typeName = getZodTypeName(unwrapped)
-
-  switch (typeName) {
-    case 'ZodString':
-      return '""'
-    case 'ZodNumber':
-      return '0'
-    case 'ZodBoolean':
-      return 'false'
-    case 'ZodArray':
-      return '[]'
-    case 'ZodObject':
-      return '{}'
-    case 'ZodUnion':
-    case 'ZodLiteral':
-      // For unions/literals, try to determine the underlying type
-      if (typeName === 'ZodUnion') {
-        const options = unwrapped._def.options
-        if (options.length > 0) {
-          return getDefaultValueForType(options[0])
-        }
-      }
-      if (typeName === 'ZodLiteral') {
-        const value = unwrapped._def.value
-        if (typeof value === 'string') return '""'
-        if (typeof value === 'number') return '0'
-        if (typeof value === 'boolean') return 'false'
-      }
-      return '""'
-    case 'ZodUnknown':
-    case 'ZodAny':
-      return '{}'
-    default:
-      return '""'
-  }
-}
-
 function getDescription(schema: ZodTypeAny): string | undefined {
-  // Check for description at the current level
-  if (schema._def.description) {
-    return schema._def.description
+  if (schema.description) {
+    return schema.description
   }
 
-  // Check inner types for description
-  const typeName = getZodTypeName(schema)
-  if (typeName === 'ZodOptional' || typeName === 'ZodNullable' || typeName === 'ZodDefault') {
-    return getDescription(schema._def.innerType)
+  if (schema instanceof ZodOptional || schema instanceof ZodNullable) {
+    return getDescription(schema.unwrap())
+  }
+  if (schema instanceof ZodDefault) {
+    return getDescription(schema.removeDefault())
   }
 
   return undefined
 }
 
-function extractEntriesFromObject(schema: z.ZodObject<z.ZodRawShape>): TemplateEntry[] {
-  const entries: TemplateEntry[] = []
-  const shape = schema.shape
+function getDefaultValue(r: Reflected): string {
+  if (r.tag === 'array') {
+    return '[]'
+  }
+  if (r.tag === 'string') {
+    return '""'
+  }
+  if (r.tag === 'number') {
+    return '0'
+  }
+  if (r.tag === 'boolean') {
+    return 'false'
+  }
+  if (r.tag === 'union') {
+    return '[]'
+  }
+  if (r.tag === 'unknown') {
+    return 'null'
+  }
+  if (r.tag === 'object') {
+    return '{}'
+  }
+  shouldNeverHappen(r.tag)
+}
+type Reflected =
+  | { tag: 'string' | 'boolean' | 'number' | 'array' | 'unknown'; description: string | undefined }
+  | { tag: 'union'; description: string | undefined }
+  | { tag: 'object'; obj: Partial<Record<string, Reflected>>; description: string | undefined }
 
-  for (const [key, fieldSchema] of Object.entries(shape)) {
-    const zodSchema = fieldSchema
-    const description = getDescription(zodSchema)
-    const defaultValue = getDefaultValueForType(zodSchema)
+function reflect(schema: z.ZodTypeAny): Reflected {
+  const unwrapped = unwrapSchema(schema)
+  const typeName = getZodTypeName(unwrapped)
+  const description = getDescription(schema)
 
-    entries.push({
-      key,
-      value: defaultValue,
-      description,
-    })
+  if (
+    typeName === 'array' ||
+    typeName === 'boolean' ||
+    typeName === 'string' ||
+    typeName === 'number' ||
+    typeName === 'unknown' ||
+    typeName === 'union'
+  ) {
+    return { tag: typeName, description }
   }
 
-  return entries
+  if (typeName === 'object') {
+    if (!(unwrapped instanceof z.ZodObject)) {
+      throw new Error(`type name mismatch`)
+    }
+
+    const obj = Object.fromEntries(
+      Object.entries(unwrapped.shape).map(kv => {
+        const k: string = kv[0]
+        const v = kv[1]
+        return [k, reflect(v as z.ZodTypeAny)] // eslint-disable-line @typescript-eslint/consistent-type-assertions
+      }),
+    )
+
+    return { tag: 'object', obj, description }
+  }
+
+  shouldNeverHappen(typeName)
 }
 
-function formatDescription(description: string, indent: string): string {
-  const lines = description.split('\n')
-  if (lines.length === 1) {
-    return `${indent}// ${description}`
+class Writer {
+  private readonly lines: string[][] = [[]]
+
+  write(...strings: string[]) {
+    const last = this.lines.at(-1) ?? failMe('array is empty')
+    last.push(...strings)
   }
-  return lines.map(line => `${indent}// ${line}`).join('\n')
+
+  newline() {
+    this.lines.push([])
+  }
+
+  getOutput() {
+    return this.lines.map(line => line.join('')).join('\n')
+  }
 }
 
-function formatEntry(entry: TemplateEntry, indent: string, isLast: boolean): string {
-  const lines: string[] = []
-
-  if (entry.description) {
-    lines.push(formatDescription(entry.description, indent))
+function format(r: Reflected, w: Writer, indent: string) {
+  if (
+    r.tag === 'array' ||
+    r.tag === 'boolean' ||
+    r.tag === 'number' ||
+    r.tag === 'string' ||
+    r.tag === 'union' ||
+    r.tag === 'unknown'
+  ) {
+    w.write(getDefaultValue(r))
+    return
   }
 
-  const comma = isLast ? '' : ','
-  lines.push(`${indent}// "${entry.key}": ${entry.value}${comma}`)
-
-  return lines.join('\n')
+  if (r.tag === 'object') {
+    w.write(indent, '{')
+    w.newline()
+    const newIndent = indent + '  '
+    for (const [k, v] of Object.entries(r.obj)) {
+      if (!v) {
+        continue
+      }
+      w.write(newIndent, k, ': ')
+      format(v, w, newIndent)
+      w.write(',')
+      w.newline()
+    }
+    w.write(indent, '}')
+    return
+  }
+  shouldNeverHappen(r.tag)
 }
 
 /**
@@ -126,48 +171,9 @@ function formatEntry(entry: TemplateEntry, indent: string, isLast: boolean): str
  * @param nestedSchemas Optional map of property names to nested schemas (for properties like repoProtocol)
  * @returns A JSON5 template string
  */
-export function zodToJson5Template(
-  schema: z.ZodObject<z.ZodRawShape>,
-  nestedSchemas?: Record<string, z.ZodObject<z.ZodRawShape>>,
-): string {
-  const entries = extractEntriesFromObject(schema)
-  const lines: string[] = ['{']
-
-  for (let i = 0; i < entries.length; i++) {
-    const entry = entries[i]
-    const isLast = i === entries.length - 1
-
-    // Check if this property has a nested schema
-    if (nestedSchemas && nestedSchemas[entry.key]) {
-      const nestedSchema = nestedSchemas[entry.key]
-      const nestedEntries = extractEntriesFromObject(nestedSchema)
-
-      if (entry.description) {
-        lines.push(formatDescription(entry.description, '  '))
-      }
-
-      lines.push(`  // "${entry.key}": {`)
-
-      for (let j = 0; j < nestedEntries.length; j++) {
-        const nestedEntry = nestedEntries[j]
-        const nestedIsLast = j === nestedEntries.length - 1
-        const formattedEntry = formatEntry(nestedEntry, '  //   ', nestedIsLast)
-        lines.push(formattedEntry)
-      }
-
-      const comma = isLast ? '' : ','
-      lines.push(`  // }${comma}`)
-    } else {
-      lines.push(formatEntry(entry, '  ', isLast))
-    }
-
-    // Add blank line between entries for readability (except after the last one)
-    if (!isLast) {
-      lines.push('')
-    }
-  }
-
-  lines.push('}')
-
-  return lines.join('\n')
+export function zodToJson5Template(input: z.ZodTypeAny, _nestedSchemas: Partial<Record<string, z.ZodTypeAny>>): string {
+  const w = new Writer()
+  const r = reflect(input)
+  format(r, w, '')
+  return w.getOutput()
 }
