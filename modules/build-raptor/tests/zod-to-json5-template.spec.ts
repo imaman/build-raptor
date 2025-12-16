@@ -38,10 +38,16 @@ describe('zod-to-json5-template', () => {
 //  },
 //}`)
   })
-  test(`nullable/optional/default's default value is the default value of the wrapped schema`, () => {
+  test(`in nullable/optional values the default value of the wrapped schema`, () => {
     expect(zodToJson5Template(z.number().optional(), {}, false)).toEqual(`0`)
     expect(zodToJson5Template(z.number().nullable(), {}, false)).toEqual(`0`)
-    expect(zodToJson5Template(z.number().nullable().default(5), {}, false)).toEqual(`0`)
+  })
+  test(`when a schema has .default() that value is taken as the default value`, () => {
+    expect(zodToJson5Template(z.number().nullable().default(5), {}, false)).toEqual(`5`)
+    expect(zodToJson5Template(z.string().nullable().default('abc'), {}, false)).toEqual(`abc`)
+    expect(zodToJson5Template(z.boolean().nullable().default(true), {}, false)).toEqual(`true`)
+  })
+  test(`default().nullable() is treated as nullable()`, () => {
     expect(zodToJson5Template(z.number().default(5).nullable(), {}, false)).toEqual(`0`)
   })
   test(`union's default value is the default value of the first option`, () => {
