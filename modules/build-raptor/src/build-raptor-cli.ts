@@ -568,7 +568,7 @@ export function main() {
         'generate a build-raptor.json5 config file with all available options commented out',
         yargs => yargs,
         async () => {
-          const { logger } = await makeBootstrapper({
+          const { logger, userDir } = await makeBootstrapper({
             units: [],
             goals: [],
             labels: [],
@@ -579,7 +579,7 @@ export function main() {
           const configContent = zodToJson5Template(BuildRaptorConfig, {
             repoProtocol: YarnRepoProtocolConfig,
           })
-          const outputPath = path.join(process.cwd(), 'build-raptor.json5')
+          const outputPath = path.join(userDir, 'build-raptor.json5')
 
           if (fs.existsSync(outputPath)) {
             logger.print(`Error: ${outputPath} already exists. Remove it first if you want to regenerate.`)
