@@ -21,6 +21,11 @@ export const YarnRepoProtocolConfig = z
      * Defaults to true (custom test commands are enabled).
      */
     enableCustomTestCommands: z.boolean().optional(),
+    /**
+     * The compiler executable to use for uber builds. Defaults to 'tsc'.
+     * The executable must support the same CLI interface as tsc (i.e., `<executable> --build <dirs...>`).
+     */
+    compilerExecutable: z.string().optional(),
   })
   .strict()
 export type YarnRepoProtocolConfig = z.infer<typeof YarnRepoProtocolConfig>
