@@ -30,8 +30,8 @@ import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import { YarnRepoProtocol, YarnRepoProtocolConfig } from 'yarn-repo-protocol'
 
+import { zodToJson5Template } from './examplify-zod'
 import { TaskExecutionVisualizer } from './task-execution-visualizer'
-import { zodToJson5Template } from './zod-to-json5-template'
 
 type TestReporting = 'tree-all' | 'tree-just-failing'
 

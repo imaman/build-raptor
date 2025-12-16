@@ -186,7 +186,7 @@ function format(r: Reflected, w: Writer, indent: string) {
  * @param nestedSchemas Optional map of property names to nested schemas (for properties like repoProtocol)
  * @returns A JSON5 template string
  */
-export function zodToJson5Template(
+export function examplifyZod(
   input: z.ZodTypeAny,
   _nestedSchemas: Partial<Record<string, z.ZodTypeAny>>,
   comment = true,
