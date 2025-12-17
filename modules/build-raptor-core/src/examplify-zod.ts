@@ -183,14 +183,8 @@ function format(r: Reflected, w: Writer, indent: string) {
  * All properties are commented out with their default values.
  *
  * @param schema The main Zod object schema
- * @param nestedSchemas Optional map of property names to nested schemas (for properties like repoProtocol)
- * @returns A JSON5 template string
  */
-export function examplifyZod(
-  input: z.ZodTypeAny,
-  _nestedSchemas: Partial<Record<string, z.ZodTypeAny>>,
-  comment = true,
-): string {
+export function examplifyZod(input: z.ZodTypeAny, { comment = true }: { comment?: boolean } = {}): string {
   const w = new Writer(comment ? '//' : '')
   const r = reflect(input)
   format(r, w, '')
