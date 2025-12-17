@@ -92,9 +92,8 @@ export class EngineBootstrapper {
     const arr = EngineBootstrapper.CONFIG_FILES.map(at => PathInRepo(at))
     const existings = arr.flatMap(at => (fs.existsSync(this.rootDir.resolve(at)) ? [at] : []))
     if (existings.length > 1) {
-      throw new Error(
-        `Found competing config files: ${existings.join(', ')}. To avoid confusion, you must keep just one.`,
-      )
+      const quoted = existings.map(at => `"${at}"`)
+      throw new Error(`Found competing config files: ${quoted.join(', ')}. To avoid confusion, you must keep just one.`)
     }
 
     return existings.at(0)
