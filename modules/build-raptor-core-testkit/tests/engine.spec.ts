@@ -3,6 +3,7 @@ import { aTimeoutOf, Graph, Key, StorageClient } from 'misc'
 import { ExitStatus, RepoProtocol, TaskInfo } from 'repo-protocol'
 import { TaskKind, TaskName } from 'task-name'
 import { UnitId, UnitMetadata } from 'unit-metadata'
+import { z } from 'zod'
 
 import { Driver } from '../src/driver'
 import { RepoProtocolTestkit } from '../src/repo-protocol-testkit'
@@ -90,6 +91,9 @@ describe('engine', () => {
         units.push(new UnitMetadata(s, UnitId(s)))
         g.vertex(UnitId(s))
         return Promise.resolve()
+      },
+      getConfigSchema() {
+        return z.object({})
       },
       execute(): Promise<ExitStatus> {
         return Promise.resolve('OK')

@@ -18,6 +18,7 @@ import { ExitStatus, RepoProtocol, TaskInfo } from 'repo-protocol'
 import { generateTaskInfos, TaskDefinition, TaskInfoGenerator } from 'repo-protocol-toolbox'
 import { TaskKind, TaskName } from 'task-name'
 import { UnitId, UnitMetadata } from 'unit-metadata'
+import { z } from 'zod'
 
 import { Run } from './driver'
 
@@ -211,6 +212,10 @@ class RepoProtocolImpl implements RepoProtocol {
 
   async initialize(rootDir: RepoRoot): Promise<void> {
     this.rootDir = rootDir
+  }
+
+  getConfigSchema(): z.AnyZodObject {
+    return z.object({})
   }
 
   async close() {}

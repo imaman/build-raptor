@@ -8,6 +8,7 @@ import { generateTaskInfos } from 'repo-protocol-toolbox'
 import { TaskName } from 'task-name'
 import { UnitId, UnitMetadata } from 'unit-metadata'
 import * as util from 'util'
+import { z } from 'zod'
 
 export class SimpleNodeRepoProtocol implements RepoProtocol {
   constructor(
@@ -15,6 +16,10 @@ export class SimpleNodeRepoProtocol implements RepoProtocol {
     private readonly buildOutputLocations: string[] = [],
     private readonly catalog?: { tasks: TaskInfo[] },
   ) {}
+
+  getConfigSchema(): z.AnyZodObject {
+    return z.object({})
+  }
 
   private units: UnitMetadata[] = []
   private graph: Graph<UnitId> = new Graph<UnitId>(x => x)

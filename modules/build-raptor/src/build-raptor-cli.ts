@@ -1,10 +1,4 @@
-import {
-  BuildRaptorConfig,
-  DefaultAssetPublisher,
-  EngineBootstrapper,
-  findRepoDir,
-  TaskSelector,
-} from 'build-raptor-core'
+import { DefaultAssetPublisher, EngineBootstrapper, findRepoDir, TaskSelector } from 'build-raptor-core'
 import fs from 'fs'
 import * as fse from 'fs-extra'
 import { createDefaultLogger, Criticality, Logger } from 'logger'
@@ -28,9 +22,8 @@ import { getS3StorageClientFactory } from 's3-storage-client'
 import { TaskName } from 'task-name'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
-import { YarnRepoProtocol, YarnRepoProtocolConfig } from 'yarn-repo-protocol'
+import { YarnRepoProtocol } from 'yarn-repo-protocol'
 
-import { examplifyZod } from './examplify-zod'
 import { TaskExecutionVisualizer } from './task-execution-visualizer'
 
 type TestReporting = 'tree-all' | 'tree-just-failing'
@@ -568,7 +561,7 @@ export function main() {
         'generate a build-raptor.json5 config file with all available options commented out',
         yargs => yargs,
         async () => {
-          const { logger, userDir } = await makeBootstrapper({
+          const { logger, userDir, bootstrapper } = await makeBootstrapper({
             units: [],
             goals: [],
             labels: [],
@@ -576,9 +569,7 @@ export function main() {
             criticality: 'low',
             concurrency: 0,
           })
-          const configContent = examplifyZod(BuildRaptorConfig, {
-            repoProtocol: YarnRepoProtocolConfig,
-          })
+          const configContent = bootstrapper.getConfigFileExample()
           const outputPath = path.join(userDir, 'build-raptor.json5')
 
           if (fs.existsSync(outputPath)) {

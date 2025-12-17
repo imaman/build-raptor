@@ -10,11 +10,13 @@ import { RepoProtocol } from 'repo-protocol'
 import * as Tmp from 'tmp-promise'
 import * as util from 'util'
 import * as uuid from 'uuid'
+import { z } from 'zod'
 
 import { Breakdown } from './breakdown'
 import { BuildRaptorConfig } from './build-raptor-config'
 import { Engine, EngineOptions } from './engine'
 import { EngineEventScheme } from './engine-event-scheme'
+import { examplifyZod } from './examplify-zod'
 import { StepByStepTransmitter } from './step-by-step-transmitter'
 import { Task } from './task'
 import { TaskStore } from './task-store'
@@ -136,6 +138,11 @@ export class EngineBootstrapper {
 
   private newBuildRunId() {
     return BuildRunId(uuid.v4())
+  }
+
+  getConfigFileExample() {
+    const withRepoProtocol = z.object({ ...BuildRaptorConfig.shape, repoProtocol: this.repoProtocol.getConfigSchema() })
+    return examplifyZod(withRepoProtocol, {})
   }
 
   /**
