@@ -191,8 +191,7 @@ function format(r: Reflected, w: Writer, path: string[]) {
   const trimmed = r.description?.trim()
   if (trimmed) {
     for (const line of trimmed.split('\n')) {
-      w.write(line)
-      w.newline()
+      w.writeln(line)
     }
   }
 
@@ -205,8 +204,7 @@ function format(r: Reflected, w: Writer, path: string[]) {
     r.tag === 'union' ||
     r.tag === 'unknown'
   ) {
-    w.write(pref, JSON.stringify(r.defaultValue), path.length ? ',' : '')
-    w.newline()
+    w.writeln(pref, JSON.stringify(r.defaultValue), path.length ? ',' : '')
     return
   }
 
@@ -221,15 +219,13 @@ function format(r: Reflected, w: Writer, path: string[]) {
 
       if (!isFirst) {
         nestedWriter.newline()
-        nestedWriter.write('')
-        nestedWriter.newline()
+        nestedWriter.writeln('')
       }
       isFirst = false
       format(v, nestedWriter, [...path, k])
     }
     w.newline()
-    w.write('}', path.length ? ',' : '')
-    w.newline()
+    w.writeln('}', path.length ? ',' : '')
     return
   }
   shouldNeverHappen(r.tag)
