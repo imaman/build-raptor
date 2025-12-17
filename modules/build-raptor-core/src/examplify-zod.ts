@@ -184,9 +184,13 @@ function format(r: Reflected, w: Writer, indent: string) {
  *
  * @param schema The main Zod object schema
  */
-export function examplifyZod(input: z.ZodTypeAny, { comment = true }: { comment?: boolean } = {}): string {
+export function examplifyZod(input: z.ZodTypeAny, { comment = true }: ExamplifyZodOptions = {}): string {
   const w = new Writer(comment ? '//' : '')
   const r = reflect(input)
   format(r, w, '')
   return w.getOutput()
+}
+
+export interface ExamplifyZodOptions {
+  comment?: boolean
 }
