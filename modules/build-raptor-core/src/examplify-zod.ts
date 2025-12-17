@@ -217,19 +217,19 @@ function format(r: Reflected, w: Writer, path: string[]) {
   }
   shouldNeverHappen(r.tag)
 }
-
 /**
- * Generates a formatted JSON example from a Zod schema with default values and descriptions.
+ * Generates a formatted example from a Zod schema showing structure, default values, and descriptions.
  *
- * Converts any Zod schema into a human-readable JSON example showing structure and default values.
- * Schema descriptions appear as comments above properties. Supports primitives, objects, arrays,
- * unions, and nested structures. Output can be either a commented example or valid JSON.
+ * Converts any supported Zod schema into a human-readable example displaying the data
+ * structure and default values. Schema descriptions appear as comments above properties.
+ * Supports primitives (string, number, boolean), objects, arrays, unions, and nested structures.
+ *
+ * **Note**: Output is formatted for readability, not valid JSON (contains trailing commas
+ * and comments).
  *
  * @param input - Any Zod schema (object, primitive, array, union, etc.)
  * @param options - Formatting options (see {@link ExamplifyZodOptions})
- * @returns Multi-line string. When `comment: true` (default), returns a commented example
- *          with `//` markers. When `comment: false`, returns valid JSON (descriptions remain
- *          commented).
+ * @returns A string containing an example object matching the schema, with default values populated.
  *
  * @example
  * ```ts
@@ -245,17 +245,46 @@ function format(r: Reflected, w: Writer, path: string[]) {
  * //
  * //   // host: "",
  * // }
+ *
+ * examplifyZod(schema, { comment: false })
+ * // Returns:
+ * // {
+ * //   // Server port
+ * //   port: 3000,
+ * //
+ * //   host: "",
+ * // }
  * ```
  *
  * @remarks
- * - **Default values**: Primitives use type defaults (0, "", false, []). Respects `.default()` modifiers.
- * - **Nullable/optional**: Unwrapped to show underlying type's default. ⚠️ Order matters:
- *   `.nullable().default(5)` uses `5`, but `.default(5).nullable()` uses type default (0).
- * - **Unions**: Default is first option's default, unless explicit `.default()` provided.
- * - **Descriptions**: Always appear as comments above properties (even with `comment: false`),
- *   supporting multi-line text.
- * - **Arrays**: Shown as empty array `[]` without element type information.
- * - **Spacing**: Blank lines separate properties for readability.
+ * ### Default Values
+ * - **Primitives**: Use type defaults: `0`, `""`, `false`
+ * - **Arrays**: Always shown as empty `[]` (element schema is not analyzed)
+ * - **Objects**: Empty object `{}`
+ * - **With `.default()`**: Uses the specified default value
+ *
+ * ### Nullable/Optional Handling
+ * Unwrapped to show the underlying type's default.
+ *
+ * ⚠️ **Order matters with `.default()`**:
+ * - `.nullable().default(5)` → uses `5`
+ * - `.default(5).nullable()` → uses type default `0` (`.nullable()` wraps after default is set)
+ *
+ * Same applies to `.optional()`.
+ *
+ * ### Unions
+ * Default is the first option's default value, unless an explicit `.default()` is provided.
+ *
+ * ### Descriptions
+ * Always appear as comments above their properties (even with `comment: false`).
+ * Multi-line descriptions are supported.
+ *
+ * ### Unsupported Types
+ * Zod types not explicitly handled (enums, literals, records, tuples, intersections, etc.)
+ * are treated as `'unknown'` with a default value of `null`.
+ *
+ * ### Spacing
+ * Blank lines separate top-level properties for readability.
  */
 export function examplifyZod(input: z.ZodTypeAny, options: ExamplifyZodOptions = {}): string {
   const r = reflect(input)
@@ -267,12 +296,13 @@ export function examplifyZod(input: z.ZodTypeAny, options: ExamplifyZodOptions =
 }
 
 /**
- * Configuration options for formatting Zod schema templates.
+ * Options for controlling the output format of examplifyZod().
  */
 export interface ExamplifyZodOptions {
   /**
    * Whether to comment out property lines with '//' markers.
-   * When false, outputs valid JSON. When true, outputs commented template.
+   * When false, outputs property lines without comment prefix.
+   * When true, all property lines are commented.
    * @default true
    */
   comment?: boolean
