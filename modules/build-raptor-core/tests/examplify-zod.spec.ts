@@ -7,10 +7,10 @@ const runExamplify = (input: z.ZodTypeAny, options?: ExamplifyZodOptions) => exa
 describe('examplifyZod', () => {
   test('object', () => {
     expect(runExamplify(z.object({ alpha: z.string(), beta: z.number() }))).toEqual([
-      `//{`,
+      `{`,
       `//  alpha: "",`,
       `//  beta: 0,`,
-      `//}`,
+      `}`,
     ])
     expect(runExamplify(z.object({ a: z.string().array(), b: z.boolean() }))).toEqual([
       `//{`,
