@@ -226,6 +226,7 @@ function format(r: Reflected, w: Writer, path: string[]) {
     }
     w.newline()
     w.write('}', path.length ? ',' : '')
+    w.newline()
     return
   }
   shouldNeverHappen(r.tag)
