@@ -9,7 +9,11 @@ const runExamplify = (input: z.ZodTypeAny, options?: ExamplifyZodOptions) => {
   JsoncParser.parse(example, errors, { allowEmptyContent: true, allowTrailingComma: true, disallowComments: false })
   const at = errors.at(0)
   if (at) {
-    throw new Error(`Parsing as jsonc failed: ${JsoncParser.printParseErrorCode(at.error)} at offset ${at.offset}`)
+    throw new Error(
+      `Output is not a valid jsonc - ${JsoncParser.printParseErrorCode(at.error)} at offset ${
+        at.offset
+      }: ${example.slice(at.offset, at.offset + at.length)}`,
+    )
   }
   return example.split('\n')
 }
