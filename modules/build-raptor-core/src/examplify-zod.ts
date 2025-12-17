@@ -191,9 +191,8 @@ function format(r: Reflected, w: Writer, path: string[]) {
       w.newline()
     }
   }
-  if (path.length) {
-    w.write(path.at(-1) ?? '', ': ')
-  }
+
+  const pref = path.length ? `${path.at(-1) ?? ''}: ` : ``
   if (
     r.tag === 'array' ||
     r.tag === 'boolean' ||
@@ -202,13 +201,13 @@ function format(r: Reflected, w: Writer, path: string[]) {
     r.tag === 'union' ||
     r.tag === 'unknown'
   ) {
-    w.write(JSON.stringify(r.defaultValue), path.length ? ',' : '')
+    w.write(pref, JSON.stringify(r.defaultValue), path.length ? ',' : '')
     w.newline()
     return
   }
 
   if (r.tag === 'object') {
-    w.write('{')
+    w.write(pref, '{')
     const nestedWriter = w.nest()
     let isFirst = true
     for (const [k, v] of Object.entries(r.of)) {
