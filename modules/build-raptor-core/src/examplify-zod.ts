@@ -239,11 +239,7 @@ function format(r: Reflected, w: Writer, path: string[]) {
  * and nested structures. Schema descriptions become comments above properties.
  *
  * @param input - Any Zod schema (object, primitive, array, union, etc.)
- * @param options - Formatting options
- * @param options.comment - Whether to comment out property lines (default: true)
- * @param options.commentAlsoOutermostBraces - Whether to comment top-level braces (default: false)
- * @param options.commentIndentation - Column position for comment markers (default: 2)
- *
+ * @param options - Formatting options (see {@link ExamplifyZodOptions})
  * @returns Multi-line JSON template string with comments
  *
  * @example
@@ -277,8 +273,28 @@ export function examplifyZod(input: z.ZodTypeAny, options: ExamplifyZodOptions =
   return acc.join('\n')
 }
 
+/**
+ * Configuration options for formatting Zod schema templates.
+ */
 export interface ExamplifyZodOptions {
+  /**
+   * Whether to comment out property lines with '//' markers.
+   * When false, outputs valid JSON. When true, outputs commented template.
+   * @default true
+   */
   comment?: boolean
+
+  /**
+   * Whether to also comment the outermost object braces.
+   * Only applies when `comment` is true. Useful for embedding in existing JSON.
+   * @default false
+   */
   commentAlsoOutermostBraces?: boolean
+
+  /**
+   * Column position where comment markers ('//' prefix) start.
+   * Controls horizontal alignment of comments.
+   * @default 2
+   */
   commentIndentation?: number
 }
