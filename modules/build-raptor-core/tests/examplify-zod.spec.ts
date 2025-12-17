@@ -33,7 +33,7 @@ describe('examplifyZod', () => {
       `//}`,
     ])
   })
-  test('object nested', () => {
+  test('nested objects', () => {
     expect(
       runExamplify(
         z.object({
@@ -45,6 +45,29 @@ describe('examplifyZod', () => {
     ).toEqual([
       `//{`,
       `//  alpha: "",`,
+      `//  beta: {`,
+      `//    pi: "",`,
+      `//    kappa: 0,`,
+      `//    rho: [],`,
+      `//  },`,
+      `//}`,
+    ])
+  })
+  test('nested objects can have a description', () => {
+    expect(
+      runExamplify(
+        z.object({
+          alpha: z.string(),
+          beta: z
+            .object({ pi: z.string(), kappa: z.number(), rho: z.array(z.number()) })
+            .describe('beta is the second letter'),
+        }),
+        {},
+      ),
+    ).toEqual([
+      `//{`,
+      `//  alpha: "",`,
+      `//  beta is the second letter`,
       `//  beta: {`,
       `//    pi: "",`,
       `//    kappa: 0,`,
