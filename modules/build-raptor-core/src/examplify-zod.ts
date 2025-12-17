@@ -232,10 +232,41 @@ function format(r: Reflected, w: Writer, path: string[]) {
 }
 
 /**
- * Generates a JSON5 template string from a Zod schema.
- * All properties are commented out with their default values.
+ * Generates a formatted JSON template from a Zod schema with default values and descriptions.
  *
- * @param schema The main Zod object schema
+ * Converts any Zod schema into a human-readable JSON template showing structure, default values,
+ * and inline documentation. Supports primitives (string, number, boolean), objects, arrays, unions,
+ * and nested structures. Schema descriptions become comments above properties.
+ *
+ * @param input - Any Zod schema (object, primitive, array, union, etc.)
+ * @param options - Formatting options
+ * @param options.comment - Whether to comment out property lines (default: true)
+ * @param options.commentAlsoOutermostBraces - Whether to comment top-level braces (default: false)
+ * @param options.commentIndentation - Column position for comment markers (default: 2)
+ *
+ * @returns Multi-line JSON template string with comments
+ *
+ * @example
+ * ```ts
+ * const schema = z.object({
+ *   port: z.number().default(3000).describe('Server port'),
+ *   host: z.string().optional()
+ * })
+ * examplifyZod(schema)
+ * // Returns:
+ * // {
+ * //   // Server port
+ * //   // port: 3000,
+ * //
+ * //   // host: "",
+ * // }
+ * ```
+ *
+ * @remarks
+ * - Default values: Primitives use type defaults (0, "", false, []). Respects `.default()` modifiers.
+ * - Nullable/optional: Unwrapped to show underlying type's default, unless `.default()` is set.
+ * - Unions: Default is first option's default, unless explicit `.default()` provided.
+ * - Descriptions: From `.describe()` appear as comments above properties, supporting multi-line text.
  */
 export function examplifyZod(input: z.ZodTypeAny, options: ExamplifyZodOptions = {}): string {
   const r = reflect(input)
