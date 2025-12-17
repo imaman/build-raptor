@@ -29,6 +29,7 @@ describe('examplifyZod', () => {
     expect(runExamplify(z.object({ alpha: z.string(), beta: z.number() }), { comment: true })).toEqual([
       `{`,
       `//  alpha: "",`,
+      `//  beta: 0,`,
       `}`,
     ])
   })
