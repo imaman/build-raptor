@@ -134,12 +134,12 @@ class Writer {
   private blocks: OutputBlock[] = []
   private curr: Extract<OutputBlock, { tag: 'line' }>
 
-  constructor(private readonly nesting: number, private readonly prefix: string) {
+  constructor(private readonly nesting: number) {
     this.curr = this.makeNewCurr()
   }
 
   nest() {
-    const ret = new Writer(this.nesting + 1, this.prefix)
+    const ret = new Writer(this.nesting + 1)
     this.blocks.push({ tag: 'writer', writer: ret })
     return ret
   }
@@ -158,16 +158,17 @@ class Writer {
     this.curr = this.makeNewCurr()
   }
 
-  collectOutput(acc: string[]) {
-    for (const at of this.blocks) {
-      if (at.tag === 'writer') {
-        at.writer.collectOutput(acc)
-      } else if (at.tag === 'line') {
-        if (at.parts.length) {
-          acc.push(this.prefix + '  '.repeat(at.nesting) + at.parts.join(''))
+  collectOutput(acc: string[], comment: boolean) {
+    for (const block of this.blocks) {
+      if (block.tag === 'writer') {
+        block.writer.collectOutput(acc, comment)
+      } else if (block.tag === 'line') {
+        // Skip blocks with no parts ([]). A blank (comment) line can still be produced if block.parts is ['']
+        if (block.parts.length) {
+          acc.push((comment ? '//' : '') + '  '.repeat(block.nesting) + block.parts.join(''))
         }
       } else {
-        shouldNeverHappen(at)
+        shouldNeverHappen(block)
       }
     }
   }
@@ -221,10 +222,10 @@ function format(r: Reflected, w: Writer, path: string[]) {
  */
 export function examplifyZod(input: z.ZodTypeAny, { comment = true }: ExamplifyZodOptions = {}): string {
   const r = reflect(input)
-  const w = new Writer(0, comment ? '//' : '')
+  const w = new Writer(0)
   format(r, w, [])
   const acc: string[] = []
-  w.collectOutput(acc)
+  w.collectOutput(acc, comment)
   return acc.join('\n')
 }
 
