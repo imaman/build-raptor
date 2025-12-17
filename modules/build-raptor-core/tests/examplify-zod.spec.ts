@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 import { examplifyZod } from '../src/examplify-zod'
 
-describe('zod-to-json5-template', () => {
+describe('examplifyZod', () => {
   test('object', () => {
     expect(examplifyZod(z.object({ a: z.string(), b: z.number() }))).toEqual(`//{
 //  a: "",
