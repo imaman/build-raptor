@@ -570,7 +570,7 @@ export function main() {
             concurrency: 0,
           })
           const configContent = bootstrapper.getConfigFileExample()
-          const outputPath = path.join(userDir, 'build-raptor.json5')
+          const outputPath = path.join(userDir, EngineBootstrapper.JSON5_CONFIG_FILE)
 
           if (fs.existsSync(outputPath)) {
             logger.print(`Error: ${outputPath} already exists. Remove it first if you want to regenerate.`)
