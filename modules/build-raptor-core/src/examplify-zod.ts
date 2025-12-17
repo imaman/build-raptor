@@ -143,12 +143,8 @@ class Writer {
     this.blocks.push({ tag: 'writer', writer: ret })
     return ret
   }
-
-  private write(...strings: string[]) {
-    this.curr.parts.push(...strings)
-  }
   writeln(...strings: string[]) {
-    this.write(...strings)
+    this.curr.parts.push(...strings)
     this.newline()
   }
 
