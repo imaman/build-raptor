@@ -35,6 +35,9 @@ describe('examplify-zod', () => {
       `}`,
     ])
   })
+  test('property name can include double quotes', () => {
+    expect(runExamplify(z.object({ ['a"b']: z.boolean() }))).toEqual([`{`, `  // "a\\"b": false,`, `}`])
+  })
   describe('options', () => {
     test('commentIndentation controls the column at which the comment starts', () => {
       expect(runExamplify(z.object({ alpha: z.string() }), { commentIndentation: 4 })).toEqual([
