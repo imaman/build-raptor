@@ -124,6 +124,7 @@ type OutputBlock =
       tag: 'line'
       nesting: number
       parts: string[]
+      isDesc: boolean
     }
   | {
       tag: 'writer'
@@ -140,8 +141,13 @@ class Writer {
     this.blocks.push({ tag: 'writer', writer: ret })
     return ret
   }
+
   writeln(...parts: string[]) {
-    this.blocks.push({ tag: 'line', nesting: this.nesting, parts })
+    this.blocks.push({ tag: 'line', nesting: this.nesting, parts, isDesc: false })
+  }
+
+  writeDescLine(...parts: string[]) {
+    this.blocks.push({ tag: 'line', nesting: this.nesting, parts, isDesc: true })
   }
 
   collectOutput(acc: string[], options: Required<ExamplifyZodOptions>) {
@@ -173,7 +179,7 @@ function format(r: Reflected, w: Writer, path: string[]) {
   const trimmed = r.description?.trim()
   if (trimmed) {
     for (const line of trimmed.split('\n')) {
-      w.writeln(line)
+      w.writeDescLine(line)
     }
   }
 
