@@ -86,8 +86,8 @@ export class EngineBootstrapper {
     return engine
   }
 
-  private static readonly JSON5_CONFIG_FILE = '.build-raptor.json5'
-  private static readonly JSON_CONFIG_FILE = '.build-raptor.json'
+  static readonly JSON5_CONFIG_FILE = '.build-raptor.json5'
+  static readonly JSON_CONFIG_FILE = '.build-raptor.json'
 
   private resolveConfigFile(): PathInRepo | undefined {
     const json5Path = this.rootDir.resolve(PathInRepo(EngineBootstrapper.JSON5_CONFIG_FILE))

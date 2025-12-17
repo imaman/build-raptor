@@ -406,7 +406,7 @@ export function main() {
         demandOption: false,
       })
       .options('config-file', {
-        describe: `repo-relative path to a build-raptor config file. If not specified, looks for 'build-raptor.json5' first, then '.build-raptor.json'. If both exist, an error is raised.`,
+        describe: `repo-relative path to a build-raptor config file. If not specified, looks for '${EngineBootstrapper.JSON5_CONFIG_FILE}' and then for '${EngineBootstrapper.JSON_CONFIG_FILE}' (mutually exclusive).`,
         type: 'string',
         demandOption: false,
       })
