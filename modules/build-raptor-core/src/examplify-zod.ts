@@ -226,7 +226,7 @@ function format(r: Reflected, w: Writer, path: string[]) {
  * serve as both documentation and a working starting point.
  *
  * **Note**: Output is formatted for readability and is not valid JSON (contains
- * trailing commas and inline comments).
+ * inline comments and trailing commas).
  *
  * @example
  * ```ts
@@ -237,21 +237,21 @@ function format(r: Reflected, w: Writer, path: string[]) {
  *
  * console.log(examplifyZod(schema))
  * // Output:
- * // {
- * //   // Server port
- * //   // port: 3000,
- * //
- * //   // host: "",
- * // }
+ *  {
+ *    // Server port
+ *    // port: 3000,
+ *
+ *    // host: "",
+ *  }
  *
  * console.log(examplifyZod(schema, { comment: false }))
  * // Output:
- * // {
- * //   // Server port
- * //   port: 3000,
- * //
- * //   host: "",
- * // }
+ *  {
+ *    // Server port
+ *    port: 3000,
+ *
+ *    host: "",
+ *  }
  * ```
  *
  * @param input - Any Zod schema (object, primitive, array, union, etc.)
