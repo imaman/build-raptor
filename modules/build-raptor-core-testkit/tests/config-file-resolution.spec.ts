@@ -55,9 +55,9 @@ describe('config file resolution', () => {
       })
       const recipe = {
         'package.json': { private: true, workspaces: ['modules/*'] },
-        '.gitignore': '.build-raptor\n.trailing-comma-out',
+        '.gitignore': '.build-raptor\nmy-out-dir',
         '.build-raptor.jsonc': `{
-          "outDirName": ".trailing-comma-out",
+          "outDirName": "my-out-dir",
         }`,
         'modules/a/package.json': { name: 'a', version: '1.0.0', scripts: { build: 'exit 0' } },
       }
