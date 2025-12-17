@@ -31,6 +31,10 @@ describe('examplifyZod', () => {
       `//}`,
     ])
   })
+  test('comment controls whether we comment out', () => {
+    expect(runExamplify(z.object({ alpha: z.string() }), { comment: false })).toEqual([`{`, `  alpha: "",`, `}`])
+    expect(runExamplify(z.object({ alpha: z.string() }), { comment: true })).toEqual([`{`, `//  alpha: "",`, `}`])
+  })
   test('descriptions', () => {
     expect(runExamplify(z.object({ s: z.string().describe('lorem ipsum') }))).toEqual([
       `{`,
