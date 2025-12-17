@@ -62,20 +62,6 @@ describe('examplifyZod', () => {
       ).toEqual([`// {`, `//   alpha: "",`, `// }`])
     })
   })
-  test('descriptions', () => {
-    expect(runExamplify(z.object({ s: z.string().describe('lorem ipsum') }))).toEqual([
-      `{`,
-      `  // lorem ipsum`,
-      `  // s: "",`,
-      `}`,
-    ])
-    expect(runExamplify(z.object({ a: z.string().array(), b: z.boolean() }))).toEqual([
-      `{`,
-      `  // a: [],`,
-      `  // b: false,`,
-      `}`,
-    ])
-  })
   test('nested objects', () => {
     expect(
       runExamplify(
@@ -96,28 +82,44 @@ describe('examplifyZod', () => {
       `}`,
     ])
   })
-  test('nested objects can have a description', () => {
-    expect(
-      runExamplify(
-        z.object({
-          alpha: z.string(),
-          beta: z
-            .object({ pi: z.string(), kappa: z.number(), rho: z.array(z.number()) })
-            .describe('beta is the second letter'),
-        }),
-        {},
-      ),
-    ).toEqual([
-      `{`,
-      `  // alpha: "",`,
-      `  // beta is the second letter`,
-      `  // beta: {`,
-      `  //   pi: "",`,
-      `  //   kappa: 0,`,
-      `  //   rho: [],`,
-      `  // },`,
-      `}`,
-    ])
+  describe('descriptions', () => {
+    test('descriptions', () => {
+      expect(runExamplify(z.object({ s: z.string().describe('lorem ipsum') }))).toEqual([
+        `{`,
+        `  // lorem ipsum`,
+        `  // s: "",`,
+        `}`,
+      ])
+      expect(runExamplify(z.object({ a: z.string().array(), b: z.boolean() }))).toEqual([
+        `{`,
+        `  // a: [],`,
+        `  // b: false,`,
+        `}`,
+      ])
+    })
+    test('nested objects can have a description', () => {
+      expect(
+        runExamplify(
+          z.object({
+            alpha: z.string(),
+            beta: z
+              .object({ pi: z.string(), kappa: z.number(), rho: z.array(z.number()) })
+              .describe('beta is the second letter'),
+          }),
+          {},
+        ),
+      ).toEqual([
+        `{`,
+        `  // alpha: "",`,
+        `  // beta is the second letter`,
+        `  // beta: {`,
+        `  //   pi: "",`,
+        `  //   kappa: 0,`,
+        `  //   rho: [],`,
+        `  // },`,
+        `}`,
+      ])
+    })
   })
   test(`in nullable/optional values the default value of the wrapped schema`, () => {
     expect(runExamplify(z.number().optional(), { comment: false })).toEqual([`0`])
