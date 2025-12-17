@@ -132,11 +132,8 @@ type OutputBlock =
 
 class Writer {
   private blocks: OutputBlock[] = []
-  private curr: Extract<OutputBlock, { tag: 'line' }>
 
-  constructor(private readonly nesting: number) {
-    this.curr = this.makeNewCurr()
-  }
+  constructor(private readonly nesting: number) {}
 
   nest() {
     const ret = new Writer(this.nesting + 1)
@@ -144,7 +141,8 @@ class Writer {
     return ret
   }
   writeln(...strings: string[]) {
-    this.curr.parts.push(...strings)
+    const ret: OutputBlock = { tag: 'line', nesting: this.nesting, parts: strings }
+    this.blocks.push(ret)
     this.newline()
   }
 
@@ -155,7 +153,7 @@ class Writer {
   }
 
   newline() {
-    this.curr = this.makeNewCurr()
+    this.makeNewCurr()
   }
 
   collectOutput(acc: string[], options: Required<ExamplifyZodOptions>) {
