@@ -1,69 +1,86 @@
+import * as JsoncParser from 'jsonc-parser'
 import { z } from 'zod'
 
 import { examplifyZod, ExamplifyZodOptions } from '../src/examplify-zod'
 
-const runExamplify = (input: z.ZodTypeAny, options?: ExamplifyZodOptions) => examplifyZod(input, options).split('\n')
+const runExamplify = (input: z.ZodTypeAny, options?: ExamplifyZodOptions) => {
+  const example = examplifyZod(input, options)
+  const errors: JsoncParser.ParseError[] = []
+  JsoncParser.parse(example, errors, { allowEmptyContent: true, allowTrailingComma: true, disallowComments: false })
+  const at = errors.at(0)
+  if (at) {
+    throw new Error(
+      `Output is not a valid jsonc - ${JsoncParser.printParseErrorCode(at.error)} at offset ${
+        at.offset
+      }: ${example.slice(at.offset, at.offset + at.length)}`,
+    )
+  }
+  return example.split('\n')
+}
 
 describe('examplify-zod', () => {
   test('object', () => {
     expect(runExamplify(z.object({ alpha: z.string(), beta: z.number() }))).toEqual([
       `{`,
-      `  // alpha: "",`,
+      `  // "alpha": "",`,
       ``,
-      `  // beta: 0,`,
+      `  // "beta": 0,`,
       `}`,
     ])
     expect(runExamplify(z.object({ a: z.string().array(), b: z.boolean() }))).toEqual([
       `{`,
-      `  // a: [],`,
+      `  // "a": [],`,
       ``,
-      `  // b: false,`,
+      `  // "b": false,`,
       `}`,
     ])
+  })
+  test('property name can include double quotes', () => {
+    expect(runExamplify(z.object({ ['a"b']: z.boolean() }))).toEqual([`{`, `  // "a\\"b": false,`, `}`])
   })
   describe('options', () => {
     test('commentIndentation controls the column at which the comment starts', () => {
       expect(runExamplify(z.object({ alpha: z.string() }), { commentIndentation: 4 })).toEqual([
         `{`,
-        `    // alpha: "",`,
+        `    // "alpha": "",`,
         `}`,
       ])
       expect(runExamplify(z.object({ alpha: z.string() }), { commentIndentation: 2 })).toEqual([
         `{`,
-        `  // alpha: "",`,
+        `  // "alpha": "",`,
         `}`,
       ])
     })
     test('comment controls whether we comment out', () => {
       expect(runExamplify(z.object({ alpha: z.string(), beta: z.number() }), { comment: false })).toEqual([
         `{`,
-        `  alpha: "",`,
+        `  "alpha": "",`,
         ``,
-        `  beta: 0,`,
+        `  "beta": 0,`,
         `}`,
       ])
       expect(runExamplify(z.object({ alpha: z.string(), beta: z.number() }), { comment: true })).toEqual([
         `{`,
-        `  // alpha: "",`,
+        `  // "alpha": "",`,
         ``,
-        `  // beta: 0,`,
+        `  // "beta": 0,`,
         `}`,
       ])
     })
     test('commentAlsoOutermostBraces controls whether the braces of the top-level object are commented out', () => {
       expect(runExamplify(z.object({ alpha: z.string() }), { commentAlsoOutermostBraces: false })).toEqual([
         `{`,
-        `  // alpha: "",`,
+        `  // "alpha": "",`,
         `}`,
       ])
       expect(runExamplify(z.object({ alpha: z.string() }), { commentAlsoOutermostBraces: true })).toEqual([
         `// {`,
-        `  // alpha: "",`,
+        `  // "alpha": "",`,
         `// }`,
       ])
       expect(
         runExamplify(z.object({ alpha: z.string() }), { commentAlsoOutermostBraces: true, commentIndentation: 0 }),
-      ).toEqual([`// {`, `//   alpha: "",`, `// }`])
+      ).toEqual([`// {`, `//   "alpha": "",`, `// }`])
     })
   })
   test('nested objects', () => {
@@ -77,14 +94,14 @@ describe('examplify-zod', () => {
       ),
     ).toEqual([
       `{`,
-      `  // alpha: "",`,
+      `  // "alpha": "",`,
       ``,
-      `  // beta: {`,
-      `  //   pi: "",`,
+      `  // "beta": {`,
+      `  //   "pi": "",`,
       ``,
-      `  //   kappa: 0,`,
+      `  //   "kappa": 0,`,
       ``,
-      `  //   rho: [],`,
+      `  //   "rho": [],`,
       `  // },`,
       `}`,
     ])
@@ -94,7 +111,7 @@ describe('examplify-zod', () => {
       expect(runExamplify(z.object({ s: z.string().describe('lorem ipsum') }))).toEqual([
         `{`,
         `  // lorem ipsum`,
-        `  // s: "",`,
+        `  // "s": "",`,
         `}`,
       ])
     })
@@ -114,7 +131,7 @@ describe('examplify-zod', () => {
         `{`,
         `  // Four score and seven years ago our fathers brought forth on this continent, a new nation, conceived in Liberty, and`,
         `  // dedicated to the proposition that all men are created equal.`,
-        `  // address: "",`,
+        `  // "address": "",`,
         `}`,
       ])
     })
@@ -136,16 +153,16 @@ describe('examplify-zod', () => {
         ),
       ).toEqual([
         `{`,
-        `  // alpha: "",`,
+        `  // "alpha": "",`,
         ``,
         `  // beta is the second letter`,
-        `  // beta: {`,
+        `  // "beta": {`,
         `  //   this is a greek letter`,
-        `  //   pi: "",`,
+        `  //   "pi": "",`,
         ``,
-        `  //   kappa: 0,`,
+        `  //   "kappa": 0,`,
         ``,
-        `  //   rho: [],`,
+        `  //   "rho": [],`,
         `  // },`,
         `}`,
       ])
@@ -154,7 +171,7 @@ describe('examplify-zod', () => {
       expect(runExamplify(z.object({ s: z.string().describe('lorem ipsum') }), { comment: false })).toEqual([
         `{`,
         `  // lorem ipsum`,
-        `  s: "",`,
+        `  "s": "",`,
         `}`,
       ])
     })
