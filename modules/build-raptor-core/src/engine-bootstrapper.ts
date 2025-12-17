@@ -2,7 +2,7 @@ import { BuildFailedError } from 'build-failed-error'
 import { BuildRunId } from 'build-run-id'
 import { PathInRepo, RepoRoot } from 'core-types'
 import * as fs from 'fs'
-import * as JSON5 from 'json5'
+import * as JsoncParser from 'jsonc-parser'
 import { createDefaultLogger, Criticality, Logger } from 'logger'
 import { errorLike, StorageClient, Subscribable, switchOn, TypedPublisher } from 'misc'
 import * as path from 'path'
@@ -10,11 +10,13 @@ import { RepoProtocol } from 'repo-protocol'
 import * as Tmp from 'tmp-promise'
 import * as util from 'util'
 import * as uuid from 'uuid'
+import { z } from 'zod'
 
 import { Breakdown } from './breakdown'
 import { BuildRaptorConfig } from './build-raptor-config'
 import { Engine, EngineOptions } from './engine'
 import { EngineEventScheme } from './engine-event-scheme'
+import { examplifyZod } from './examplify-zod'
 import { StepByStepTransmitter } from './step-by-step-transmitter'
 import { Task } from './task'
 import { TaskStore } from './task-store'
@@ -84,31 +86,17 @@ export class EngineBootstrapper {
     return engine
   }
 
-  private static readonly JSON5_CONFIG_FILE = 'build-raptor.json5'
-  private static readonly JSON_CONFIG_FILE = '.build-raptor.json'
+  static readonly CONFIG_FILES = ['.build-raptor.jsonc', '.build-raptor.json']
 
   private resolveConfigFile(): PathInRepo | undefined {
-    const json5Path = this.rootDir.resolve(PathInRepo(EngineBootstrapper.JSON5_CONFIG_FILE))
-    const jsonPath = this.rootDir.resolve(PathInRepo(EngineBootstrapper.JSON_CONFIG_FILE))
-
-    const json5Exists = fs.existsSync(json5Path)
-    const jsonExists = fs.existsSync(jsonPath)
-
-    if (json5Exists && jsonExists) {
-      throw new Error(
-        `Both '${EngineBootstrapper.JSON5_CONFIG_FILE}' and '${EngineBootstrapper.JSON_CONFIG_FILE}' exist. Please remove one of them.`,
-      )
+    const arr = EngineBootstrapper.CONFIG_FILES.map(at => PathInRepo(at))
+    const existings = arr.flatMap(at => (fs.existsSync(this.rootDir.resolve(at)) ? [at] : []))
+    if (existings.length > 1) {
+      const quoted = existings.map(at => `"${at}"`)
+      throw new Error(`Found competing config files: ${quoted.join(', ')}. To avoid confusion, you must keep just one.`)
     }
 
-    if (json5Exists) {
-      return PathInRepo(EngineBootstrapper.JSON5_CONFIG_FILE)
-    }
-
-    if (jsonExists) {
-      return PathInRepo(EngineBootstrapper.JSON_CONFIG_FILE)
-    }
-
-    return undefined
+    return existings.at(0)
   }
 
   private readConfigFile(pathToConfigFile: PathInRepo | undefined): BuildRaptorConfig {
@@ -122,11 +110,15 @@ export class EngineBootstrapper {
         return BuildRaptorConfig.parse({})
       }
       const content = fs.readFileSync(p, 'utf-8')
-      const isJson5 = pathToConfigFile.val.endsWith('.json5')
-      const parsed = isJson5 ? JSON5.parse(content) : JSON.parse(content)
+      const errors: JsoncParser.ParseError[] = []
+      const parsed = JsoncParser.parse(content, errors, { allowTrailingComma: true, allowEmptyContent: true })
+      const e = errors.at(0)
+      if (e) {
+        throw new Error(`Bad format: ${JsoncParser.printParseErrorCode(e.error)} at position ${e.offset}`)
+      }
       return BuildRaptorConfig.parse(parsed)
     } catch (e) {
-      throw new Error(`could not read repo config file ${p} - ${e}`)
+      throw new Error(`could not read repo config file ${p} - ${errorLike(e).message}`)
     }
   }
 
@@ -136,6 +128,16 @@ export class EngineBootstrapper {
 
   private newBuildRunId() {
     return BuildRunId(uuid.v4())
+  }
+
+  getConfigFileExample() {
+    const withRepoProtocol = z.object({
+      ...BuildRaptorConfig.shape,
+      repoProtocol: this.repoProtocol
+        .getConfigSchema()
+        .describe(BuildRaptorConfig.shape.repoProtocol.description ?? ''),
+    })
+    return examplifyZod(withRepoProtocol, {})
   }
 
   /**

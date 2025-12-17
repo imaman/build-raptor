@@ -3,6 +3,7 @@ import { RepoRoot } from 'core-types'
 import { Graph, TypedPublisher } from 'misc'
 import { TaskName } from 'task-name'
 import { UnitId, UnitMetadata } from 'unit-metadata'
+import { z } from 'zod'
 
 import { TaskInfo } from './task-info'
 
@@ -49,6 +50,7 @@ export interface RepoProtocol {
   getGraph(): Promise<Graph<UnitId>>
   getUnits(): Promise<UnitMetadata[]>
   getTasks(): Promise<TaskInfo[]>
+  getConfigSchema(): z.AnyZodObject
   close(): Promise<void>
 }
 

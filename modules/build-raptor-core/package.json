@@ -22,7 +22,7 @@
     "core-types": "1.0.0",
     "fs-extra": "^9.0.0",
     "ignore": "^5.1.9",
-    "json5": "^2.2.3",
+    "jsonc-parser": "^3.3.1",
     "logger": "1.0.0",
     "misc": "1.0.0",
     "repo-protocol": "1.0.0",

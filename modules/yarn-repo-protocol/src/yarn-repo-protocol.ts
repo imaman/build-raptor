@@ -95,6 +95,10 @@ export class YarnRepoProtocol implements RepoProtocol {
   private readonly tsconfigBaseName = 'tsconfig-base.json'
   private state_: State | undefined
 
+  getConfigSchema() {
+    return YarnRepoProtocolConfig
+  }
+
   private dist(which?: 't' | 's') {
     const d = `dist`
     return which === undefined
