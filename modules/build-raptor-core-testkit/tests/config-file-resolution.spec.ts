@@ -101,7 +101,7 @@ describe('config file resolution', () => {
 
       const fork = await driver.repo(recipe).fork()
       await expect(fork.run('CRASH', { taskKind: 'build' })).rejects.toThrow(
-        'Found two (or more) competing config files: .build-raptor.jsonc, .build-raptor.json. To avoid confusion, you must keep just one.',
+        'Found competing config files: ".build-raptor.jsonc", ".build-raptor.json". To avoid confusion, you must keep just one.',
       )
     })
   })
