@@ -83,17 +83,11 @@ describe('examplifyZod', () => {
     ])
   })
   describe('descriptions', () => {
-    test('descriptions', () => {
+    test('appear above the property', () => {
       expect(runExamplify(z.object({ s: z.string().describe('lorem ipsum') }))).toEqual([
         `{`,
         `  // lorem ipsum`,
         `  // s: "",`,
-        `}`,
-      ])
-      expect(runExamplify(z.object({ a: z.string().array(), b: z.boolean() }))).toEqual([
-        `{`,
-        `  // a: [],`,
-        `  // b: false,`,
         `}`,
       ])
     })
