@@ -219,15 +219,17 @@ function format(r: Reflected, w: Writer, path: string[]) {
 }
 
 /**
- * Generates a formatted JSON template from a Zod schema with default values and descriptions.
+ * Generates a formatted JSON example from a Zod schema with default values and descriptions.
  *
- * Converts any Zod schema into a human-readable JSON template showing structure, default values,
- * and inline documentation. Supports primitives (string, number, boolean), objects, arrays, unions,
- * and nested structures. Schema descriptions become comments above properties.
+ * Converts any Zod schema into a human-readable JSON example showing structure and default values.
+ * Schema descriptions appear as comments above properties. Supports primitives, objects, arrays,
+ * unions, and nested structures. Output can be either a commented example or valid JSON.
  *
  * @param input - Any Zod schema (object, primitive, array, union, etc.)
  * @param options - Formatting options (see {@link ExamplifyZodOptions})
- * @returns Multi-line JSON template string with comments
+ * @returns Multi-line string. When `comment: true` (default), returns a commented example
+ *          with `//` markers. When `comment: false`, returns valid JSON (descriptions remain
+ *          commented).
  *
  * @example
  * ```ts
@@ -246,10 +248,14 @@ function format(r: Reflected, w: Writer, path: string[]) {
  * ```
  *
  * @remarks
- * - Default values: Primitives use type defaults (0, "", false, []). Respects `.default()` modifiers.
- * - Nullable/optional: Unwrapped to show underlying type's default, unless `.default()` is set.
- * - Unions: Default is first option's default, unless explicit `.default()` provided.
- * - Descriptions: From `.describe()` appear as comments above properties, supporting multi-line text.
+ * - **Default values**: Primitives use type defaults (0, "", false, []). Respects `.default()` modifiers.
+ * - **Nullable/optional**: Unwrapped to show underlying type's default. ⚠️ Order matters:
+ *   `.nullable().default(5)` uses `5`, but `.default(5).nullable()` uses type default (0).
+ * - **Unions**: Default is first option's default, unless explicit `.default()` provided.
+ * - **Descriptions**: Always appear as comments above properties (even with `comment: false`),
+ *   supporting multi-line text.
+ * - **Arrays**: Shown as empty array `[]` without element type information.
+ * - **Spacing**: Blank lines separate properties for readability.
  */
 export function examplifyZod(input: z.ZodTypeAny, options: ExamplifyZodOptions = {}): string {
   const r = reflect(input)
