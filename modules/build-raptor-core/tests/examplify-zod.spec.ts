@@ -1,8 +1,18 @@
+import * as JsoncParser from 'jsonc-parser'
 import { z } from 'zod'
 
 import { examplifyZod, ExamplifyZodOptions } from '../src/examplify-zod'
 
-const runExamplify = (input: z.ZodTypeAny, options?: ExamplifyZodOptions) => examplifyZod(input, options).split('\n')
+const runExamplify = (input: z.ZodTypeAny, options?: ExamplifyZodOptions) => {
+  const example = examplifyZod(input, options)
+  const errors: JsoncParser.ParseError[] = []
+  JsoncParser.parse(example, errors, { allowEmptyContent: true, allowTrailingComma: true, disallowComments: false })
+  const at = errors.at(0)
+  if (at) {
+    throw new Error(`Parsing as jsonc failed: ${JsoncParser.printParseErrorCode(at.error)} at offset ${at.offset}`)
+  }
+  return example.split('\n')
+}
 
 describe('examplify-zod', () => {
   test('object', () => {
