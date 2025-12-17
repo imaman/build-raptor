@@ -144,7 +144,7 @@ class Writer {
     return ret
   }
 
-  write(...strings: string[]) {
+  private write(...strings: string[]) {
     this.curr.parts.push(...strings)
   }
   writeln(...strings: string[]) {
@@ -209,7 +209,7 @@ function format(r: Reflected, w: Writer, path: string[]) {
   }
 
   if (r.tag === 'object') {
-    w.write(pref, '{')
+    w.writeln(pref, '{')
     const nestedWriter = w.nest()
     let isFirst = true
     for (const [k, v] of Object.entries(r.of)) {
