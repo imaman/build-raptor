@@ -93,9 +93,7 @@ export class EngineBootstrapper {
     const existings = arr.flatMap(at => (fs.existsSync(this.rootDir.resolve(at)) ? [at] : []))
     if (existings.length > 1) {
       throw new Error(
-        `Found two (or more) competing config files: ${existings.join(
-          ', ',
-        )}. To avoid confusion, you must keep just one.`,
+        `Found competing config files: ${existings.join(', ')}. To avoid confusion, you must keep just one.`,
       )
     }
 
