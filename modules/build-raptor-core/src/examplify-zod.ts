@@ -157,7 +157,7 @@ class Writer {
       } else if (block.tag === 'line') {
         // Skip blocks with no parts ([]). A blank (comment) line can still be produced if block.parts is ['']
         if (block.parts.length) {
-          const content = block.parts.join('')
+          let content = block.parts.join('')
           if (!content.trim()) {
             acc.push('')
             continue
@@ -165,9 +165,29 @@ class Writer {
           const addComment =
             block.isDesc || (options.comment && (block.nesting > 0 || options.commentAlsoOutermostBraces))
           const col = !addComment ? 0 : block.nesting > 0 ? options.commentIndentation : 0
-          acc.push(
-            (addComment ? ' '.repeat(col) + '// ' : '') + ' '.repeat(Math.max(0, 2 * block.nesting - col)) + content,
-          )
+          const preContent =
+            (addComment ? ' '.repeat(col) + '// ' : '') + ' '.repeat(Math.max(0, 2 * block.nesting - col))
+          if (!block.isDesc) {
+            acc.push(preContent + content)
+            continue
+          }
+
+          const lineMax = 120
+          const allowedLen = lineMax - preContent.length
+          while (true) {
+            if (content.length < allowedLen) {
+              acc.push(preContent + content)
+              break
+            }
+            const lastSpace = content.slice(0, lineMax).lastIndexOf(' ')
+            if (lastSpace < 0) {
+              acc.push(preContent + content)
+              break
+            }
+
+            acc.push(preContent + content.slice(0, lastSpace))
+            content = content.slice(lastSpace).trimStart()
+          }
         }
       } else {
         shouldNeverHappen(block)
