@@ -36,10 +36,22 @@ describe('examplifyZod', () => {
   test('object nested', () => {
     expect(
       runExamplify(
-        z.object({ a: z.string(), b: z.object({ p: z.string(), q: z.number(), r: z.array(z.number()) }) }),
+        z.object({
+          alpha: z.string(),
+          beta: z.object({ pi: z.string(), kappa: z.number(), rho: z.array(z.number()) }),
+        }),
         {},
       ),
-    ).toEqual([`//{`, `//  a: "",`, `//  b: {`, `//    p: "",`, `//    q: 0,`, `//    r: [],`, `//  },`, `//}`])
+    ).toEqual([
+      `//{`,
+      `//  alpha: "",`,
+      `//  beta: {`,
+      `//    pi: "",`,
+      `//    kappa: 0,`,
+      `//    rho: [],`,
+      `//  },`,
+      `//}`,
+    ])
   })
   test(`in nullable/optional values the default value of the wrapped schema`, () => {
     expect(runExamplify(z.number().optional(), { comment: false })).toEqual([`0`])
