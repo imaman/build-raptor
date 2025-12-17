@@ -166,7 +166,12 @@ class Writer {
         // Skip blocks with no parts ([]). A blank (comment) line can still be produced if block.parts is ['']
         if (block.parts.length) {
           const addComment = options.comment && (block.nesting > 0 || options.commentAlsoOutermostBraces)
-          acc.push((addComment ? '//' : '') + '  '.repeat(block.nesting) + block.parts.join(''))
+          const col = !addComment ? 0 : block.nesting > 0 ? options.commentIndentation : 0
+          acc.push(
+            (addComment ? ' '.repeat(col) + '// ' : '') +
+              ' '.repeat(Math.max(0, 2 * block.nesting - col)) +
+              block.parts.join(''),
+          )
         }
       } else {
         shouldNeverHappen(block)

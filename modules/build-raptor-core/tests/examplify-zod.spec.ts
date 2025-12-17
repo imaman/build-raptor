@@ -8,14 +8,14 @@ describe('examplifyZod', () => {
   test('object', () => {
     expect(runExamplify(z.object({ alpha: z.string(), beta: z.number() }))).toEqual([
       `{`,
-      `//  alpha: "",`,
-      `//  beta: 0,`,
+      `  // alpha: "",`,
+      `  // beta: 0,`,
       `}`,
     ])
     expect(runExamplify(z.object({ a: z.string().array(), b: z.boolean() }))).toEqual([
       `{`,
-      `//  a: [],`,
-      `//  b: false,`,
+      `  // a: [],`,
+      `  // b: false,`,
       `}`,
     ])
   })
@@ -29,21 +29,21 @@ describe('examplifyZod', () => {
       ])
       expect(runExamplify(z.object({ alpha: z.string(), beta: z.number() }), { comment: true })).toEqual([
         `{`,
-        `//  alpha: "",`,
-        `//  beta: 0,`,
+        `  // alpha: "",`,
+        `  // beta: 0,`,
         `}`,
       ])
     })
     test('commentAlsoOutermostBraces controls whether the braces of the top-level object are commented out', () => {
       expect(runExamplify(z.object({ alpha: z.string() }), { commentAlsoOutermostBraces: false })).toEqual([
         `{`,
-        `//  alpha: "",`,
+        `  // alpha: "",`,
         `}`,
       ])
       expect(runExamplify(z.object({ alpha: z.string() }), { commentAlsoOutermostBraces: true })).toEqual([
-        `//{`,
-        `//  alpha: "",`,
-        `//}`,
+        `// {`,
+        `  // alpha: "",`,
+        `// }`,
       ])
     })
     test('commentIndentation controls the column at which the comment starts', () => {
@@ -62,14 +62,14 @@ describe('examplifyZod', () => {
   test('descriptions', () => {
     expect(runExamplify(z.object({ s: z.string().describe('lorem ipsum') }))).toEqual([
       `{`,
-      `//  lorem ipsum`,
-      `//  s: "",`,
+      `  // lorem ipsum`,
+      `  // s: "",`,
       `}`,
     ])
     expect(runExamplify(z.object({ a: z.string().array(), b: z.boolean() }))).toEqual([
       `{`,
-      `//  a: [],`,
-      `//  b: false,`,
+      `  // a: [],`,
+      `  // b: false,`,
       `}`,
     ])
   })
@@ -84,12 +84,12 @@ describe('examplifyZod', () => {
       ),
     ).toEqual([
       `{`,
-      `//  alpha: "",`,
-      `//  beta: {`,
-      `//    pi: "",`,
-      `//    kappa: 0,`,
-      `//    rho: [],`,
-      `//  },`,
+      `  // alpha: "",`,
+      `  // beta: {`,
+      `  //   pi: "",`,
+      `  //   kappa: 0,`,
+      `  //   rho: [],`,
+      `  // },`,
       `}`,
     ])
   })
@@ -106,13 +106,13 @@ describe('examplifyZod', () => {
       ),
     ).toEqual([
       `{`,
-      `//  alpha: "",`,
-      `//  beta is the second letter`,
-      `//  beta: {`,
-      `//    pi: "",`,
-      `//    kappa: 0,`,
-      `//    rho: [],`,
-      `//  },`,
+      `  // alpha: "",`,
+      `  // beta is the second letter`,
+      `  // beta: {`,
+      `  //   pi: "",`,
+      `  //   kappa: 0,`,
+      `  //   rho: [],`,
+      `  // },`,
       `}`,
     ])
   })
