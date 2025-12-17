@@ -147,6 +147,10 @@ class Writer {
   write(...strings: string[]) {
     this.curr.parts.push(...strings)
   }
+  writeln(...strings: string[]) {
+    this.write(...strings)
+    this.newline()
+  }
 
   private makeNewCurr() {
     const ret: OutputBlock = { tag: 'line', nesting: this.nesting, parts: [] }
