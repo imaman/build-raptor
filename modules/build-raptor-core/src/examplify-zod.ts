@@ -237,21 +237,21 @@ function format(r: Reflected, w: Writer, path: string[]) {
  *
  * console.log(examplifyZod(schema))
  * // Output:
- *  {
- *    // Server port
- *    // port: 3000,
+ * {
+ *   // Server port
+ *   // port: 3000,
  *
- *    // host: "",
- *  }
+ *   // host: "",
+ * }
  *
  * console.log(examplifyZod(schema, { comment: false }))
  * // Output:
- *  {
- *    // Server port
- *    port: 3000,
+ * {
+ *   // Server port
+ *   port: 3000,
  *
- *    host: "",
- *  }
+ *   // host: "",
+ * }
  * ```
  *
  * @param input - Any Zod schema (object, primitive, array, union, etc.)
@@ -266,7 +266,7 @@ function format(r: Reflected, w: Writer, path: string[]) {
  * - **With `.default()`**: Uses the specified default value
  *
  * ### Nullable/Optional Handling
- * Unwrapped to show the underlying type's default.
+ * These modifiers are unwrapped to show the underlying type's default.
  *
  * ⚠️ **Order matters with `.default()`**:
  * - `.nullable().default(5)` → uses `5`
@@ -283,7 +283,7 @@ function format(r: Reflected, w: Writer, path: string[]) {
  *
  * ### Unsupported Types
  * Unrecognized Zod types (enums, literals, records, tuples, intersections, etc.)
- * are rendered as `'unknown'` with a default value of `null`.
+ * are rendered as the string `'unknown'` with a default value of `null`.
  */
 export function examplifyZod(input: z.ZodTypeAny, options: ExamplifyZodOptions = {}): string {
   const r = reflect(input)
