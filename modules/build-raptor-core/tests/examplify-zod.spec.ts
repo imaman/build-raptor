@@ -46,6 +46,18 @@ describe('examplifyZod', () => {
         `//}`,
       ])
     })
+    test('commentIndentation controls the column at which the comment starts', () => {
+      expect(runExamplify(z.object({ alpha: z.string() }), { commentIndentation: 4 })).toEqual([
+        `{`,
+        `    // alpha: "",`,
+        `}`,
+      ])
+      expect(runExamplify(z.object({ alpha: z.string() }), { commentIndentation: 2 })).toEqual([
+        `{`,
+        `  // alpha: "",`,
+        `}`,
+      ])
+    })
   })
   test('descriptions', () => {
     expect(runExamplify(z.object({ s: z.string().describe('lorem ipsum') }))).toEqual([
