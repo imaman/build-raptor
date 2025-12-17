@@ -162,7 +162,8 @@ class Writer {
             acc.push('')
             continue
           }
-          const addComment = options.comment && (block.nesting > 0 || options.commentAlsoOutermostBraces)
+          const addComment =
+            block.isDesc || (options.comment && (block.nesting > 0 || options.commentAlsoOutermostBraces))
           const col = !addComment ? 0 : block.nesting > 0 ? options.commentIndentation : 0
           acc.push(
             (addComment ? ' '.repeat(col) + '// ' : '') + ' '.repeat(Math.max(0, 2 * block.nesting - col)) + content,
