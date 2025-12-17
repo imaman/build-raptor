@@ -20,8 +20,7 @@
     "misc": "1.0.0",
     "s3-storage-client": "1.0.0",
     "yargs": "^17.3.0",
-    "yarn-repo-protocol": "1.0.0",
-    "zod": "^3.21.4"
+    "yarn-repo-protocol": "1.0.0"
   },
   "devDependencies": {
     "@types/yargs": "^17.0.7",
