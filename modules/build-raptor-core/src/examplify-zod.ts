@@ -140,20 +140,8 @@ class Writer {
     this.blocks.push({ tag: 'writer', writer: ret })
     return ret
   }
-  writeln(...strings: string[]) {
-    const ret: OutputBlock = { tag: 'line', nesting: this.nesting, parts: strings }
-    this.blocks.push(ret)
-    this.newline()
-  }
-
-  private makeNewCurr() {
-    const ret: OutputBlock = { tag: 'line', nesting: this.nesting, parts: [] }
-    this.blocks.push(ret)
-    return ret
-  }
-
-  newline() {
-    // this.makeNewCurr()
+  writeln(...parts: string[]) {
+    this.blocks.push({ tag: 'line', nesting: this.nesting, parts })
   }
 
   collectOutput(acc: string[], options: Required<ExamplifyZodOptions>) {
@@ -212,13 +200,11 @@ function format(r: Reflected, w: Writer, path: string[]) {
       }
 
       if (!isFirst) {
-        nestedWriter.newline()
         nestedWriter.writeln('')
       }
       isFirst = false
       format(v, nestedWriter, [...path, k])
     }
-    w.newline()
     w.writeln('}', path.length ? ',' : '')
     return
   }
