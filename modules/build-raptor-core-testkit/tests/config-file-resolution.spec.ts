@@ -8,15 +8,15 @@ jest.setTimeout(30000)
 describe('config file resolution', () => {
   const testName = () => expect.getState().currentTestName
 
-  describe('build-raptor.json5', () => {
-    test('uses build-raptor.json5 when it exists', async () => {
+  describe('.build-raptor.json5', () => {
+    test('uses .build-raptor.json5 when it exists', async () => {
       const driver = new Driver(testName(), {
         repoProtocol: new SimpleNodeRepoProtocol(PathInRepo('modules')),
       })
       const recipe = {
         'package.json': { private: true, workspaces: ['modules/*'] },
         '.gitignore': '.build-raptor\n.custom-json5-out',
-        'build-raptor.json5': `{
+        '.build-raptor.json5': `{
           // This is a comment - JSON5 allows comments
           outDirName: ".custom-json5-out",
         }`,
@@ -36,7 +36,7 @@ describe('config file resolution', () => {
       const recipe = {
         'package.json': { private: true, workspaces: ['modules/*'] },
         '.gitignore': '.build-raptor\n.trailing-comma-out',
-        'build-raptor.json5': `{
+        '.build-raptor.json5': `{
           "outDirName": ".trailing-comma-out",
         }`,
         'modules/a/package.json': { name: 'a', version: '1.0.0', scripts: { build: 'exit 0' } },
@@ -54,7 +54,7 @@ describe('config file resolution', () => {
       const recipe = {
         'package.json': { private: true, workspaces: ['modules/*'] },
         '.gitignore': '.build-raptor\n.unquoted-out',
-        'build-raptor.json5': `{
+        '.build-raptor.json5': `{
           outDirName: ".unquoted-out"
         }`,
         'modules/a/package.json': { name: 'a', version: '1.0.0', scripts: { build: 'exit 0' } },
@@ -92,7 +92,7 @@ describe('config file resolution', () => {
       const recipe = {
         'package.json': { private: true, workspaces: ['modules/*'] },
         '.gitignore': '.build-raptor',
-        'build-raptor.json5': `{ outDirName: ".from-json5" }`,
+        '.build-raptor.json5': `{ outDirName: ".from-json5" }`,
         '.build-raptor.json': { outDirName: '.from-json' },
         'modules/a/package.json': { name: 'a', version: '1.0.0', scripts: { build: 'exit 0' } },
       }
