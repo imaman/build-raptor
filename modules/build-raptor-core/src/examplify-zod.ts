@@ -37,12 +37,12 @@ function getZodTypeName(schema: ZodTypeAny): ZodTypeName {
   return 'unknown'
 }
 
-function unwrapSchema(schema: ZodTypeAny): ZodTypeAny {
+function unwrap(schema: ZodTypeAny): ZodTypeAny {
   if (schema instanceof ZodOptional || schema instanceof ZodNullable) {
-    return unwrapSchema(schema.unwrap())
+    return unwrap(schema.unwrap())
   }
   if (schema instanceof ZodDefault) {
-    return unwrapSchema(schema.removeDefault())
+    return unwrap(schema.removeDefault())
   }
   return schema
 }
@@ -64,12 +64,12 @@ function getDescription(schema: ZodTypeAny): string | undefined {
 
 type Reflected = { description: string | undefined; defaultValue: unknown } & (
   | { tag: 'string' | 'boolean' | 'number' | 'array' | 'unknown' }
-  | { tag: 'union'; of: Reflected[] }
+  | { tag: 'union' }
   | { tag: 'object'; of: Partial<Record<string, Reflected>> }
 )
 
 function reflect(schema: z.ZodTypeAny): Reflected {
-  const unwrapped = unwrapSchema(schema)
+  const unwrapped = unwrap(schema)
   const typeName = getZodTypeName(unwrapped)
   const description = getDescription(schema)
 
@@ -97,7 +97,7 @@ function reflect(schema: z.ZodTypeAny): Reflected {
     const casted = options as z.ZodTypeAny[] // eslint-disable-line @typescript-eslint/consistent-type-assertions
     const mapped = casted.map(at => reflect(at))
     const d = schema instanceof ZodDefault ? schema.parse(undefined) : mapped[0].defaultValue
-    return { tag: 'union', of: mapped, description, defaultValue: d }
+    return { tag: 'union', description, defaultValue: d }
   }
 
   if (typeName === 'object') {
