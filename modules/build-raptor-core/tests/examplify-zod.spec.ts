@@ -98,7 +98,7 @@ describe('examplify-zod', () => {
         `}`,
       ])
     })
-    test('nested objects can have a description', () => {
+    test('nested objects can have a description and also its own properties', () => {
       expect(
         runExamplify(
           z.object({
@@ -126,6 +126,14 @@ describe('examplify-zod', () => {
         ``,
         `  //   rho: [],`,
         `  // },`,
+        `}`,
+      ])
+    })
+    test('descriptions are always commented out', () => {
+      expect(runExamplify(z.object({ s: z.string().describe('lorem ipsum') }), { comment: false })).toEqual([
+        `{`,
+        `  // lorem ipsum`,
+        `  s: "",`,
         `}`,
       ])
     })
