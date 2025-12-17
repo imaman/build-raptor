@@ -221,17 +221,11 @@ function format(r: Reflected, w: Writer, path: string[]) {
  * Generates a formatted example from a Zod schema showing structure, default values, and descriptions.
  *
  * Converts any supported Zod schema into a human-readable example displaying the data
- * structure and default values. Useful for documenting configuration file schemas or
- * generating example config files that show users what options are available and their defaults.
- * Schema descriptions appear as comments above properties.
- * Supports primitives (string, number, boolean), objects, arrays, unions, and nested structures.
+ * structure and default values. Useful for documenting configuration files or for generating example config files that
+ * allows users to get a correct, self-documenting, editable configurtion.
  *
  * **Note**: Output is formatted for readability, not valid JSON (contains trailing commas
  * and comments).
- *
- * @param input - Any Zod schema (object, primitive, array, union, etc.)
- * @param options - Formatting options (see {@link ExamplifyZodOptions})
- * @returns A string containing an example object matching the schema, with default values populated.
  *
  * @example
  * ```ts
@@ -257,6 +251,10 @@ function format(r: Reflected, w: Writer, path: string[]) {
  * //   host: "",
  * // }
  * ```
+ *
+ * @param input - Any Zod schema (object, primitive, array, union, etc.)
+ * @param options - Formatting options (see {@link ExamplifyZodOptions})
+ * @returns A string containing an example object matching the schema, with default values populated.
  *
  * @remarks
  * ### Default Values
