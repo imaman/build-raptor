@@ -9,12 +9,14 @@ describe('examplifyZod', () => {
     expect(runExamplify(z.object({ alpha: z.string(), beta: z.number() }))).toEqual([
       `{`,
       `  // alpha: "",`,
+      ``,
       `  // beta: 0,`,
       `}`,
     ])
     expect(runExamplify(z.object({ a: z.string().array(), b: z.boolean() }))).toEqual([
       `{`,
       `  // a: [],`,
+      ``,
       `  // b: false,`,
       `}`,
     ])
@@ -36,12 +38,14 @@ describe('examplifyZod', () => {
       expect(runExamplify(z.object({ alpha: z.string(), beta: z.number() }), { comment: false })).toEqual([
         `{`,
         `  alpha: "",`,
+        ``,
         `  beta: 0,`,
         `}`,
       ])
       expect(runExamplify(z.object({ alpha: z.string(), beta: z.number() }), { comment: true })).toEqual([
         `{`,
         `  // alpha: "",`,
+        ``,
         `  // beta: 0,`,
         `}`,
       ])
@@ -74,9 +78,12 @@ describe('examplifyZod', () => {
     ).toEqual([
       `{`,
       `  // alpha: "",`,
+      ``,
       `  // beta: {`,
       `  //   pi: "",`,
+      ``,
       `  //   kappa: 0,`,
+      ``,
       `  //   rho: [],`,
       `  // },`,
       `}`,
@@ -109,11 +116,14 @@ describe('examplifyZod', () => {
       ).toEqual([
         `{`,
         `  // alpha: "",`,
+        ``,
         `  // beta is the second letter`,
         `  // beta: {`,
         `  //   this is a greek letter`,
         `  //   pi: "",`,
+        ``,
         `  //   kappa: 0,`,
+        ``,
         `  //   rho: [],`,
         `  // },`,
         `}`,

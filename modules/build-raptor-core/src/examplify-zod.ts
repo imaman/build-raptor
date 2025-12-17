@@ -165,12 +165,15 @@ class Writer {
       } else if (block.tag === 'line') {
         // Skip blocks with no parts ([]). A blank (comment) line can still be produced if block.parts is ['']
         if (block.parts.length) {
+          const content = block.parts.join('')
+          if (!content.trim()) {
+            acc.push('')
+            continue
+          }
           const addComment = options.comment && (block.nesting > 0 || options.commentAlsoOutermostBraces)
           const col = !addComment ? 0 : block.nesting > 0 ? options.commentIndentation : 0
           acc.push(
-            (addComment ? ' '.repeat(col) + '// ' : '') +
-              ' '.repeat(Math.max(0, 2 * block.nesting - col)) +
-              block.parts.join(''),
+            (addComment ? ' '.repeat(col) + '// ' : '') + ' '.repeat(Math.max(0, 2 * block.nesting - col)) + content,
           )
         }
       } else {
@@ -207,10 +210,18 @@ function format(r: Reflected, w: Writer, path: string[]) {
   if (r.tag === 'object') {
     w.write('{')
     const nestedWriter = w.nest()
+    let isFirst = true
     for (const [k, v] of Object.entries(r.of)) {
       if (!v) {
         continue
       }
+
+      if (!isFirst) {
+        nestedWriter.newline()
+        nestedWriter.write('')
+        nestedWriter.newline()
+      }
+      isFirst = false
       format(v, nestedWriter, [...path, k])
     }
     w.newline()
