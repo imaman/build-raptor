@@ -572,7 +572,7 @@ export function main() {
             concurrency: 0,
           })
           const configContent = bootstrapper.getConfigFileExample()
-          const outputPath = path.join(userDir, EngineBootstrapper.JSON5_CONFIG_FILE)
+          const outputPath = path.join(userDir, EngineBootstrapper.CONFIG_FILES[0])
 
           if (fs.existsSync(outputPath)) {
             logger.print(`Error: ${outputPath} already exists. Remove it first if you want to regenerate.`)
