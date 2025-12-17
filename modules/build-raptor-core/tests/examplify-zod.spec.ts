@@ -4,7 +4,7 @@ import { examplifyZod, ExamplifyZodOptions } from '../src/examplify-zod'
 
 const runExamplify = (input: z.ZodTypeAny, options?: ExamplifyZodOptions) => examplifyZod(input, options).split('\n')
 
-describe('examplifyZod', () => {
+describe('examplify-zod', () => {
   test('object', () => {
     expect(runExamplify(z.object({ alpha: z.string(), beta: z.number() }))).toEqual([
       `{`,
