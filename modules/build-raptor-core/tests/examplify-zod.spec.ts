@@ -2,12 +2,12 @@ import { z } from 'zod'
 
 import { examplifyZod } from '../src/examplify-zod'
 
+const lines = (...args: string[]) => args.join('\n')
 describe('examplifyZod', () => {
   test('object', () => {
-    expect(examplifyZod(z.object({ a: z.string(), b: z.number() }))).toEqual(`//{
-//  a: "",
-//  b: 0,
-//}`)
+    expect(examplifyZod(z.object({ a: z.string(), b: z.number() }))).toEqual(
+      lines(`//{`, `//  a: ""`, `//  b: 0`, `//}`),
+    )
     expect(examplifyZod(z.object({ a: z.string().array(), b: z.boolean() }))).toEqual(`//{
 //  a: [],
 //  b: false,
