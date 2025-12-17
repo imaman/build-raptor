@@ -119,36 +119,46 @@ function reflect(schema: z.ZodTypeAny): Reflected {
   shouldNeverHappen(typeName)
 }
 
+interface WriterLine {
+  nesting: number
+  parts: string[]
+}
 class Writer {
-  private readonly lines: string[][] = []
+  constructor(
+    private readonly nesting: number,
+    private readonly prefix: string,
+    private readonly lines: WriterLine[] = [],
+  ) {
+    this.lines.push({ nesting: this.nesting, parts: [] })
+  }
 
-  constructor(private readonly prefix: string) {
-    this.newline()
+  nest() {
+    return new Writer(this.nesting + 1, this.prefix, this.lines)
   }
 
   write(...strings: string[]) {
     const last = this.lines.at(-1) ?? failMe('array is empty')
-    last.push(...strings)
+    last.parts.push(...strings)
   }
 
   newline() {
-    this.lines.push([this.prefix])
+    this.lines.push({ nesting: this.nesting, parts: [] })
   }
 
   getOutput() {
-    return this.lines.map(line => line.join('')).join('\n')
+    return this.lines.map(line => this.prefix + '  '.repeat(line.nesting) + line.parts.join('')).join('\n')
   }
 }
 
-function format(r: Reflected, w: Writer, indent: string, path: string[]) {
+function format(r: Reflected, w: Writer, path: string[]) {
   if (r.description) {
     for (const line of r.description.split('\n')) {
-      w.write(indent, line)
+      w.write(line)
       w.newline()
     }
   }
   if (path.length) {
-    w.write(indent, path.at(-1) ?? '', ': ')
+    w.write(path.at(-1) ?? '', ': ')
   }
   if (
     r.tag === 'array' ||
@@ -164,16 +174,15 @@ function format(r: Reflected, w: Writer, indent: string, path: string[]) {
 
   if (r.tag === 'object') {
     w.write('{')
-    w.newline()
-    const newIndent = indent + '  '
+    const nestedWriter = w.nest()
     for (const [k, v] of Object.entries(r.of)) {
       if (!v) {
         continue
       }
-      format(v, w, newIndent, [...path, k])
-      w.newline()
+      format(v, nestedWriter, [...path, k])
+      nestedWriter.newline()
     }
-    w.write(indent, '}', path.length ? ',' : '')
+    w.write('}', path.length ? ',' : '')
     return
   }
   shouldNeverHappen(r.tag)
@@ -186,9 +195,9 @@ function format(r: Reflected, w: Writer, indent: string, path: string[]) {
  * @param schema The main Zod object schema
  */
 export function examplifyZod(input: z.ZodTypeAny, { comment = true }: ExamplifyZodOptions = {}): string {
-  const w = new Writer(comment ? '//' : '')
   const r = reflect(input)
-  format(r, w, '', [])
+  const w = new Writer(0, comment ? '//' : '')
+  format(r, w, [])
   return w.getOutput()
 }
 
