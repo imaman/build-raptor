@@ -131,7 +131,12 @@ export class EngineBootstrapper {
   }
 
   getConfigFileExample() {
-    const withRepoProtocol = z.object({ ...BuildRaptorConfig.shape, repoProtocol: this.repoProtocol.getConfigSchema() })
+    const withRepoProtocol = z.object({
+      ...BuildRaptorConfig.shape,
+      repoProtocol: this.repoProtocol
+        .getConfigSchema()
+        .describe(BuildRaptorConfig.shape.repoProtocol.description ?? ''),
+    })
     return examplifyZod(withRepoProtocol, {})
   }
 
