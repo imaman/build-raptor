@@ -19,31 +19,33 @@ describe('examplifyZod', () => {
       `}`,
     ])
   })
-  test('comment controls whether we comment out', () => {
-    expect(runExamplify(z.object({ alpha: z.string(), beta: z.number() }), { comment: false })).toEqual([
-      `{`,
-      `  alpha: "",`,
-      `  beta: 0,`,
-      `}`,
-    ])
-    expect(runExamplify(z.object({ alpha: z.string(), beta: z.number() }), { comment: true })).toEqual([
-      `{`,
-      `//  alpha: "",`,
-      `//  beta: 0,`,
-      `}`,
-    ])
-  })
-  test('commentAlsoOutermostBraces controls whether the braces of the top-level object are commented out', () => {
-    expect(runExamplify(z.object({ alpha: z.string() }), { commentAlsoOutermostBraces: false })).toEqual([
-      `{`,
-      `//  alpha: "",`,
-      `}`,
-    ])
-    expect(runExamplify(z.object({ alpha: z.string() }), { commentAlsoOutermostBraces: true })).toEqual([
-      `//{`,
-      `//  alpha: "",`,
-      `//}`,
-    ])
+  describe('options', () => {
+    test('comment controls whether we comment out', () => {
+      expect(runExamplify(z.object({ alpha: z.string(), beta: z.number() }), { comment: false })).toEqual([
+        `{`,
+        `  alpha: "",`,
+        `  beta: 0,`,
+        `}`,
+      ])
+      expect(runExamplify(z.object({ alpha: z.string(), beta: z.number() }), { comment: true })).toEqual([
+        `{`,
+        `//  alpha: "",`,
+        `//  beta: 0,`,
+        `}`,
+      ])
+    })
+    test('commentAlsoOutermostBraces controls whether the braces of the top-level object are commented out', () => {
+      expect(runExamplify(z.object({ alpha: z.string() }), { commentAlsoOutermostBraces: false })).toEqual([
+        `{`,
+        `//  alpha: "",`,
+        `}`,
+      ])
+      expect(runExamplify(z.object({ alpha: z.string() }), { commentAlsoOutermostBraces: true })).toEqual([
+        `//{`,
+        `//  alpha: "",`,
+        `//}`,
+      ])
+    })
   })
   test('descriptions', () => {
     expect(runExamplify(z.object({ s: z.string().describe('lorem ipsum') }))).toEqual([
