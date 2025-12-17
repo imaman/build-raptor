@@ -1,4 +1,4 @@
-import { failMe, shouldNeverHappen } from 'misc'
+import { shouldNeverHappen } from 'misc'
 import {
   z,
   ZodArray,
@@ -119,40 +119,64 @@ function reflect(schema: z.ZodTypeAny): Reflected {
   shouldNeverHappen(typeName)
 }
 
-interface WriterLine {
-  nesting: number
-  parts: string[]
-}
+type OutputBlock =
+  | {
+      tag: 'line'
+      nesting: number
+      parts: string[]
+    }
+  | {
+      tag: 'writer'
+      writer: Writer
+    }
+
 class Writer {
-  constructor(
-    private readonly nesting: number,
-    private readonly prefix: string,
-    private readonly lines: WriterLine[] = [],
-  ) {
-    this.lines.push({ nesting: this.nesting, parts: [] })
+  private blocks: OutputBlock[] = []
+  private curr: Extract<OutputBlock, { tag: 'line' }>
+
+  constructor(private readonly nesting: number, private readonly prefix: string) {
+    this.curr = this.makeNewCurr()
   }
 
   nest() {
-    return new Writer(this.nesting + 1, this.prefix, this.lines)
+    const ret = new Writer(this.nesting + 1, this.prefix)
+    this.blocks.push({ tag: 'writer', writer: ret })
+    return ret
   }
 
   write(...strings: string[]) {
-    const last = this.lines.at(-1) ?? failMe('array is empty')
-    last.parts.push(...strings)
+    this.curr.parts.push(...strings)
+  }
+
+  private makeNewCurr() {
+    const ret: OutputBlock = { tag: 'line', nesting: this.nesting, parts: [] }
+    this.blocks.push(ret)
+    return ret
   }
 
   newline() {
-    this.lines.push({ nesting: this.nesting, parts: [] })
+    this.curr = this.makeNewCurr()
   }
 
-  getOutput() {
-    return this.lines.map(line => this.prefix + '  '.repeat(line.nesting) + line.parts.join('')).join('\n')
+  collectOutput(acc: string[]) {
+    for (const at of this.blocks) {
+      if (at.tag === 'writer') {
+        at.writer.collectOutput(acc)
+      } else if (at.tag === 'line') {
+        if (at.parts.length) {
+          acc.push(this.prefix + '  '.repeat(at.nesting) + at.parts.join(''))
+        }
+      } else {
+        shouldNeverHappen(at)
+      }
+    }
   }
 }
 
 function format(r: Reflected, w: Writer, path: string[]) {
-  if (r.description) {
-    for (const line of r.description.split('\n')) {
+  const trimmed = r.description?.trim()
+  if (trimmed) {
+    for (const line of trimmed.split('\n')) {
       w.write(line)
       w.newline()
     }
@@ -169,6 +193,7 @@ function format(r: Reflected, w: Writer, path: string[]) {
     r.tag === 'unknown'
   ) {
     w.write(JSON.stringify(r.defaultValue), path.length ? ',' : '')
+    w.newline()
     return
   }
 
@@ -180,8 +205,8 @@ function format(r: Reflected, w: Writer, path: string[]) {
         continue
       }
       format(v, nestedWriter, [...path, k])
-      nestedWriter.newline()
     }
+    w.newline()
     w.write('}', path.length ? ',' : '')
     return
   }
@@ -198,7 +223,9 @@ export function examplifyZod(input: z.ZodTypeAny, { comment = true }: ExamplifyZ
   const r = reflect(input)
   const w = new Writer(0, comment ? '//' : '')
   format(r, w, [])
-  return w.getOutput()
+  const acc: string[] = []
+  w.collectOutput(acc)
+  return acc.join('\n')
 }
 
 export interface ExamplifyZodOptions {
