@@ -226,11 +226,12 @@ export function examplifyZod(input: z.ZodTypeAny, options: ExamplifyZodOptions =
   const w = new Writer(0)
   format(r, w, [])
   const acc: string[] = []
-  w.collectOutput(acc, { comment: true, commentAlsoOutermostBraces: false, ...options })
+  w.collectOutput(acc, { comment: true, commentAlsoOutermostBraces: false, commentIndentation: 2, ...options })
   return acc.join('\n')
 }
 
 export interface ExamplifyZodOptions {
   comment?: boolean
   commentAlsoOutermostBraces?: boolean
+  commentIndentation?: number
 }
