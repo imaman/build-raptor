@@ -159,6 +159,10 @@ describe('examplify-zod', () => {
       ])
     })
   })
+  test.todo('z.literal')
+  test.todo('z.enum')
+  test.todo('z.discriminatedUnion')
+  test.todo('z.tuple')
   test(`in nullable/optional values takes the default value of the wrapped schema`, () => {
     expect(runExamplify(z.number().optional(), { comment: false })).toEqual([`0`])
     expect(runExamplify(z.number().nullable(), { comment: false })).toEqual([`0`])
