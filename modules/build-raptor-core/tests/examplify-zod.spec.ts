@@ -20,8 +20,17 @@ describe('examplifyZod', () => {
     ])
   })
   test('comment controls whether we comment out', () => {
-    expect(runExamplify(z.object({ alpha: z.string() }), { comment: false })).toEqual([`{`, `  alpha: "",`, `}`])
-    expect(runExamplify(z.object({ alpha: z.string() }), { comment: true })).toEqual([`{`, `//  alpha: "",`, `}`])
+    expect(runExamplify(z.object({ alpha: z.string(), beta: z.number() }), { comment: false })).toEqual([
+      `{`,
+      `  alpha: "",`,
+      `  beta: 0,`,
+      `}`,
+    ])
+    expect(runExamplify(z.object({ alpha: z.string(), beta: z.number() }), { comment: true })).toEqual([
+      `{`,
+      `//  alpha: "",`,
+      `}`,
+    ])
   })
   test('commentAlsoOutermostBraces controls whether the braces of the top-level object are commented out', () => {
     expect(runExamplify(z.object({ alpha: z.string() }), { commentAlsoOutermostBraces: false })).toEqual([
