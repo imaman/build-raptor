@@ -221,7 +221,9 @@ function format(r: Reflected, w: Writer, path: string[]) {
  * Generates a formatted example from a Zod schema showing structure, default values, and descriptions.
  *
  * Converts any supported Zod schema into a human-readable example displaying the data
- * structure and default values. Schema descriptions appear as comments above properties.
+ * structure and default values. Useful for documenting configuration file schemas or
+ * generating example config files that show users what options are available and their defaults.
+ * Schema descriptions appear as comments above properties.
  * Supports primitives (string, number, boolean), objects, arrays, unions, and nested structures.
  *
  * **Note**: Output is formatted for readability, not valid JSON (contains trailing commas
