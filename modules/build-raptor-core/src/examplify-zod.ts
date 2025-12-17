@@ -217,15 +217,16 @@ function format(r: Reflected, w: Writer, path: string[]) {
   }
   shouldNeverHappen(r.tag)
 }
+
 /**
- * Generates a formatted example from a Zod schema showing structure, default values, and descriptions.
+ * Generates a formatted example from a Zod schema with default values and descriptions.
  *
- * Converts any supported Zod schema into a human-readable example displaying the data
- * structure and default values. Useful for generating annotated example configuration files that serve as both
- * documentation and a working starting point.
+ * Converts any supported Zod schema into a human-readable example showing the data
+ * structure with defaults. Useful for generating annotated configuration files that
+ * serve as both documentation and a working starting point.
  *
- * **Note**: Output is formatted for readability, not valid JSON (contains trailing commas
- * and comments).
+ * **Note**: Output is formatted for readability and is not valid JSON (contains
+ * trailing commas and inline comments).
  *
  * @example
  * ```ts
@@ -233,8 +234,9 @@ function format(r: Reflected, w: Writer, path: string[]) {
  *   port: z.number().default(3000).describe('Server port'),
  *   host: z.string().optional()
  * })
- * examplifyZod(schema)
- * // Returns:
+ *
+ * console.log(examplifyZod(schema))
+ * // Output:
  * // {
  * //   // Server port
  * //   // port: 3000,
@@ -242,8 +244,8 @@ function format(r: Reflected, w: Writer, path: string[]) {
  * //   // host: "",
  * // }
  *
- * examplifyZod(schema, { comment: false })
- * // Returns:
+ * console.log(examplifyZod(schema, { comment: false }))
+ * // Output:
  * // {
  * //   // Server port
  * //   port: 3000,
@@ -254,12 +256,12 @@ function format(r: Reflected, w: Writer, path: string[]) {
  *
  * @param input - Any Zod schema (object, primitive, array, union, etc.)
  * @param options - Formatting options (see {@link ExamplifyZodOptions})
- * @returns A string containing an example object matching the schema, with default values populated.
+ * @returns A formatted string example matching the schema structure with defaults populated
  *
  * @remarks
  * ### Default Values
  * - **Primitives**: Use type defaults: `0`, `""`, `false`
- * - **Arrays**: Always shown as empty `[]` (element schema is not analyzed)
+ * - **Arrays**: Always shown as an empty array `[]`
  * - **Objects**: Empty object `{}`
  * - **With `.default()`**: Uses the specified default value
  *
@@ -270,21 +272,18 @@ function format(r: Reflected, w: Writer, path: string[]) {
  * - `.nullable().default(5)` → uses `5`
  * - `.default(5).nullable()` → uses type default `0` (`.nullable()` wraps after default is set)
  *
- * Same applies to `.optional()`.
+ * The same applies to `.optional()`.
  *
  * ### Unions
- * Default is the first option's default value, unless an explicit `.default()` is provided.
+ * Uses the first option's default value unless an explicit `.default()` is provided.
  *
  * ### Descriptions
- * Always appear as comments above their properties (even with `comment: false`).
- * Multi-line descriptions are supported.
+ * Property descriptions always appear as comments above their properties, regardless
+ * of the `comment` option. Multi-line descriptions are supported.
  *
  * ### Unsupported Types
- * Zod types not explicitly handled (enums, literals, records, tuples, intersections, etc.)
- * are treated as `'unknown'` with a default value of `null`.
- *
- * ### Spacing
- * Blank lines separate top-level properties for readability.
+ * Unrecognized Zod types (enums, literals, records, tuples, intersections, etc.)
+ * are rendered as `'unknown'` with a default value of `null`.
  */
 export function examplifyZod(input: z.ZodTypeAny, options: ExamplifyZodOptions = {}): string {
   const r = reflect(input)
