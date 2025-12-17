@@ -204,7 +204,7 @@ function format(r: Reflected, w: Writer, path: string[]) {
     }
   }
 
-  const pref = path.length ? `${path.at(-1) ?? ''}: ` : ``
+  const pref = path.length ? `"${path.at(-1) ?? ''}": ` : ``
   if (
     r.tag === 'array' ||
     r.tag === 'boolean' ||
