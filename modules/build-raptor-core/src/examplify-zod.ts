@@ -165,10 +165,7 @@ class Writer {
       } else if (block.tag === 'line') {
         // Skip blocks with no parts ([]). A blank (comment) line can still be produced if block.parts is ['']
         if (block.parts.length) {
-          let addComment = options.comment
-          if (options.doNotCommentTopLevel && block.nesting === 0) {
-            addComment = false
-          }
+          const addComment = options.comment && (block.nesting > 0 || options.commentAlsoOutermostBraces)
           acc.push((addComment ? '//' : '') + '  '.repeat(block.nesting) + block.parts.join(''))
         }
       } else {
@@ -229,11 +226,11 @@ export function examplifyZod(input: z.ZodTypeAny, options: ExamplifyZodOptions =
   const w = new Writer(0)
   format(r, w, [])
   const acc: string[] = []
-  w.collectOutput(acc, { comment: true, doNotCommentTopLevel: true, ...options })
+  w.collectOutput(acc, { comment: true, commentAlsoOutermostBraces: false, ...options })
   return acc.join('\n')
 }
 
 export interface ExamplifyZodOptions {
   comment?: boolean
-  doNotCommentTopLevel?: boolean
+  commentAlsoOutermostBraces?: boolean
 }
