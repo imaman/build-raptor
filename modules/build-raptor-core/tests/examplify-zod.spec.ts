@@ -13,24 +13,24 @@ describe('examplifyZod', () => {
       `}`,
     ])
     expect(runExamplify(z.object({ a: z.string().array(), b: z.boolean() }))).toEqual([
-      `//{`,
+      `{`,
       `//  a: [],`,
       `//  b: false,`,
-      `//}`,
+      `}`,
     ])
   })
   test('descriptions', () => {
     expect(runExamplify(z.object({ s: z.string().describe('lorem ipsum') }))).toEqual([
-      `//{`,
+      `{`,
       `//  lorem ipsum`,
       `//  s: "",`,
-      `//}`,
+      `}`,
     ])
     expect(runExamplify(z.object({ a: z.string().array(), b: z.boolean() }))).toEqual([
-      `//{`,
+      `{`,
       `//  a: [],`,
       `//  b: false,`,
-      `//}`,
+      `}`,
     ])
   })
   test('nested objects', () => {
@@ -43,14 +43,14 @@ describe('examplifyZod', () => {
         {},
       ),
     ).toEqual([
-      `//{`,
+      `{`,
       `//  alpha: "",`,
       `//  beta: {`,
       `//    pi: "",`,
       `//    kappa: 0,`,
       `//    rho: [],`,
       `//  },`,
-      `//}`,
+      `}`,
     ])
   })
   test('nested objects can have a description', () => {
@@ -65,7 +65,7 @@ describe('examplifyZod', () => {
         {},
       ),
     ).toEqual([
-      `//{`,
+      `{`,
       `//  alpha: "",`,
       `//  beta is the second letter`,
       `//  beta: {`,
@@ -73,7 +73,7 @@ describe('examplifyZod', () => {
       `//    kappa: 0,`,
       `//    rho: [],`,
       `//  },`,
-      `//}`,
+      `}`,
     ])
   })
   test(`in nullable/optional values the default value of the wrapped schema`, () => {

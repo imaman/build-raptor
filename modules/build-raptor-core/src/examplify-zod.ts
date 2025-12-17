@@ -165,7 +165,11 @@ class Writer {
       } else if (block.tag === 'line') {
         // Skip blocks with no parts ([]). A blank (comment) line can still be produced if block.parts is ['']
         if (block.parts.length) {
-          acc.push((options.comment ? '//' : '') + '  '.repeat(block.nesting) + block.parts.join(''))
+          let addComment = options.comment
+          if (options.doNotCommentTopLevel && block.nesting === 0) {
+            addComment = false
+          }
+          acc.push((addComment ? '//' : '') + '  '.repeat(block.nesting) + block.parts.join(''))
         }
       } else {
         shouldNeverHappen(block)
