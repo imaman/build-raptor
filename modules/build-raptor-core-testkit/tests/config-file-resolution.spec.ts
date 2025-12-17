@@ -31,6 +31,23 @@ describe('config file resolution', () => {
       // Now it should succeed because of the .jsonc config file we just created.
       await fork.run('OK', { taskKind: 'build', checkGitIgnore: true })
     })
+    test('when the .jsonc file is parsed a certain level of syntax conformance is enfroced', async () => {
+      const driver = new Driver(testName(), {
+        repoProtocol: new SimpleNodeRepoProtocol(PathInRepo('modules')),
+      })
+      const recipe = {
+        'package.json': { private: true, workspaces: ['modules/*'] },
+        '.build-raptor.jsonc': `{
+        //}`, // <-- closing curly-braces are intentionally commented out to make the file syntactically broken
+        '.gitignore': '.build-raptor\ndist',
+        'modules/a/package.json': { name: 'a', version: '1.0.0', scripts: { build: 'exit 0' } },
+      }
+
+      const fork = await driver.repo(recipe).fork()
+      await expect(fork.run('CRASH', { taskKind: 'build', checkGitIgnore: true })).rejects.toThrow(
+        'Bad format: CloseBraceExpected at position 13',
+      )
+    })
 
     test('parses .jsonc with trailing commas', async () => {
       const driver = new Driver(testName(), {

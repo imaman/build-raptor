@@ -113,10 +113,15 @@ export class EngineBootstrapper {
         return BuildRaptorConfig.parse({})
       }
       const content = fs.readFileSync(p, 'utf-8')
-      const parsed = JsoncParser.parse(content)
+      const errors: JsoncParser.ParseError[] = []
+      const parsed = JsoncParser.parse(content, errors, { allowTrailingComma: true, allowEmptyContent: true })
+      const e = errors.at(0)
+      if (e) {
+        throw new Error(`Bad format: ${JsoncParser.printParseErrorCode(e.error)} at position ${e.offset}`)
+      }
       return BuildRaptorConfig.parse(parsed)
     } catch (e) {
-      throw new Error(`could not read repo config file ${p} - ${e}`)
+      throw new Error(`could not read repo config file ${p} - ${errorLike(e).message}`)
     }
   }
 
