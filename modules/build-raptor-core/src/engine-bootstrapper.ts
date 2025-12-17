@@ -2,7 +2,7 @@ import { BuildFailedError } from 'build-failed-error'
 import { BuildRunId } from 'build-run-id'
 import { PathInRepo, RepoRoot } from 'core-types'
 import * as fs from 'fs'
-import * as JSON5 from 'json5'
+import * as JsoncParser from 'jsonc-parser'
 import { createDefaultLogger, Criticality, Logger } from 'logger'
 import { errorLike, StorageClient, Subscribable, switchOn, TypedPublisher } from 'misc'
 import * as path from 'path'
@@ -113,7 +113,7 @@ export class EngineBootstrapper {
         return BuildRaptorConfig.parse({})
       }
       const content = fs.readFileSync(p, 'utf-8')
-      const parsed = JSON5.parse(content)
+      const parsed = JsoncParser.parse(content)
       return BuildRaptorConfig.parse(parsed)
     } catch (e) {
       throw new Error(`could not read repo config file ${p} - ${e}`)
