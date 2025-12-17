@@ -113,8 +113,7 @@ export class EngineBootstrapper {
         return BuildRaptorConfig.parse({})
       }
       const content = fs.readFileSync(p, 'utf-8')
-      const isJson5 = pathToConfigFile.val.endsWith('.json5')
-      const parsed = isJson5 ? JSON5.parse(content) : JSON.parse(content)
+      const parsed = JSON5.parse(content)
       return BuildRaptorConfig.parse(parsed)
     } catch (e) {
       throw new Error(`could not read repo config file ${p} - ${e}`)
