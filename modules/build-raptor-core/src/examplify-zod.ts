@@ -153,7 +153,7 @@ class Writer {
   }
 
   newline() {
-    this.makeNewCurr()
+    // this.makeNewCurr()
   }
 
   collectOutput(acc: string[], options: Required<ExamplifyZodOptions>) {
