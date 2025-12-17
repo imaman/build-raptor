@@ -140,7 +140,10 @@ class Writer {
   }
 }
 
-function format(r: Reflected, w: Writer, indent: string) {
+function format(r: Reflected, w: Writer, indent: string, path: string[]) {
+  if (path.length) {
+    w.write(indent, path.at(-1) ?? '', ': ')
+  }
   if (
     r.tag === 'array' ||
     r.tag === 'boolean' ||
@@ -149,7 +152,7 @@ function format(r: Reflected, w: Writer, indent: string) {
     r.tag === 'union' ||
     r.tag === 'unknown'
   ) {
-    w.write(JSON.stringify(r.defaultValue))
+    w.write(JSON.stringify(r.defaultValue), path.length ? ',' : '')
     return
   }
 
@@ -161,18 +164,18 @@ function format(r: Reflected, w: Writer, indent: string) {
       if (!v) {
         continue
       }
-      if (v.description) {
-        for (const line of v.description.split('\n')) {
-          w.write(newIndent, line)
-          w.newline()
-        }
-      }
-      w.write(newIndent, k, ': ')
-      format(v, w, newIndent)
-      w.write(',')
+      // format(v, w, ne)
+      // if (v.description) {
+      //   for (const line of v.description.split('\n')) {
+      //     w.write(newIndent, line)
+      //     w.newline()
+      //   }
+      // }
+      // w.write(newIndent, k, ': ')
+      format(v, w, newIndent, [...path, k])
       w.newline()
     }
-    w.write(indent, '}')
+    w.write(indent, '}', path.length ? ',' : '')
     return
   }
   shouldNeverHappen(r.tag)
@@ -187,7 +190,7 @@ function format(r: Reflected, w: Writer, indent: string) {
 export function examplifyZod(input: z.ZodTypeAny, { comment = true }: ExamplifyZodOptions = {}): string {
   const w = new Writer(comment ? '//' : '')
   const r = reflect(input)
-  format(r, w, '')
+  format(r, w, '', [])
   return w.getOutput()
 }
 
