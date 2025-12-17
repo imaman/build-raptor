@@ -97,7 +97,11 @@ describe('examplifyZod', () => {
           z.object({
             alpha: z.string(),
             beta: z
-              .object({ pi: z.string(), kappa: z.number(), rho: z.array(z.number()) })
+              .object({
+                pi: z.string().describe('this is a greek letter'),
+                kappa: z.number(),
+                rho: z.array(z.number()),
+              })
               .describe('beta is the second letter'),
           }),
           {},
@@ -107,6 +111,7 @@ describe('examplifyZod', () => {
         `  // alpha: "",`,
         `  // beta is the second letter`,
         `  // beta: {`,
+        `  //   this is a greek letter`,
         `  //   pi: "",`,
         `  //   kappa: 0,`,
         `  //   rho: [],`,
@@ -115,7 +120,7 @@ describe('examplifyZod', () => {
       ])
     })
   })
-  test(`in nullable/optional values the default value of the wrapped schema`, () => {
+  test(`in nullable/optional values takes the default value of the wrapped schema`, () => {
     expect(runExamplify(z.number().optional(), { comment: false })).toEqual([`0`])
     expect(runExamplify(z.number().nullable(), { comment: false })).toEqual([`0`])
   })
