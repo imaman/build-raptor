@@ -15,21 +15,24 @@ describe('config file resolution', () => {
       })
       const recipe = {
         'package.json': { private: true, workspaces: ['modules/*'] },
-        '.gitignore': '.build-raptor\n.custom-json5-out',
-        '.build-raptor.jsonc': `{
-          // This is a comment - JSON5 allows comments
-          outDirName: ".custom-json5-out",
-        }`,
+        '.gitignore': '.build-raptor\nbest-output-dir',
         'modules/a/package.json': { name: 'a', version: '1.0.0', scripts: { build: 'exit 0' } },
       }
 
       const fork = await driver.repo(recipe).fork()
-      const r = await fork.run('OK', { taskKind: 'build', checkGitIgnore: true })
-      expect(r.exitCode).toEqual(0)
-      // If the config wasn't applied, the build would fail because .custom-json5-out wouldn't be in .gitignore check
+      const r = await fork.run('FAIL', { taskKind: 'build', checkGitIgnore: true })
+      expect(r.message).toMatch('the out dir (.out) should be .gitignore-d')
+
+      await fork.file('.build-raptor.jsonc').write(`{
+          // This is a comment - a .jsonc file allows it!
+          "outDirName": "best-output-dir",
+        }`)
+
+      // Now it should succeed because of the .jsonc config file we just created.
+      await fork.run('OK', { taskKind: 'build', checkGitIgnore: true })
     })
 
-    test('parses JSON5 with trailing commas', async () => {
+    test('parses .jsonc with trailing commas', async () => {
       const driver = new Driver(testName(), {
         repoProtocol: new SimpleNodeRepoProtocol(PathInRepo('modules')),
       })
@@ -38,24 +41,6 @@ describe('config file resolution', () => {
         '.gitignore': '.build-raptor\n.trailing-comma-out',
         '.build-raptor.jsonc': `{
           "outDirName": ".trailing-comma-out",
-        }`,
-        'modules/a/package.json': { name: 'a', version: '1.0.0', scripts: { build: 'exit 0' } },
-      }
-
-      const fork = await driver.repo(recipe).fork()
-      const r = await fork.run('OK', { taskKind: 'build', checkGitIgnore: true })
-      expect(r.exitCode).toEqual(0)
-    })
-
-    test('parses JSON5 with unquoted keys', async () => {
-      const driver = new Driver(testName(), {
-        repoProtocol: new SimpleNodeRepoProtocol(PathInRepo('modules')),
-      })
-      const recipe = {
-        'package.json': { private: true, workspaces: ['modules/*'] },
-        '.gitignore': '.build-raptor\n.unquoted-out',
-        '.build-raptor.jsonc': `{
-          outDirName: ".unquoted-out"
         }`,
         'modules/a/package.json': { name: 'a', version: '1.0.0', scripts: { build: 'exit 0' } },
       }
@@ -99,7 +84,7 @@ describe('config file resolution', () => {
 
       const fork = await driver.repo(recipe).fork()
       await expect(fork.run('CRASH', { taskKind: 'build' })).rejects.toThrow(
-        "Both 'build-raptor.json5' and '.build-raptor.json' exist. Please remove one of them.",
+        'Found two (or more) competing config files: .build-raptor.jsonc, .build-raptor.json. To avoid confusion, you must keep just one.',
       )
     })
   })
