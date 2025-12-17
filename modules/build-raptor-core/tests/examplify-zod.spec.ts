@@ -129,7 +129,7 @@ describe('examplify-zod', () => {
         `}`,
       ])
     })
-    test.skip('descriptions are always commented out', () => {
+    test('descriptions are always commented out', () => {
       expect(runExamplify(z.object({ s: z.string().describe('lorem ipsum') }), { comment: false })).toEqual([
         `{`,
         `  // lorem ipsum`,
