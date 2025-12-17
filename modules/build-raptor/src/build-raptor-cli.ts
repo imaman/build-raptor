@@ -406,7 +406,9 @@ export function main() {
         demandOption: false,
       })
       .options('config-file', {
-        describe: `repo-relative path to a build-raptor config file. If not specified, looks for '${EngineBootstrapper.JSON5_CONFIG_FILE}' and then for '${EngineBootstrapper.JSON_CONFIG_FILE}' (mutually exclusive).`,
+        describe: `repo-relative path to a build-raptor config file. If not specified, looks for '${EngineBootstrapper.CONFIG_FILES.join(
+          ', ',
+        )}' (mutually exclusive).`,
         type: 'string',
         demandOption: false,
       })
@@ -558,7 +560,7 @@ export function main() {
       )
       .command(
         'init-config',
-        'generate a build-raptor.json5 config file with all available options commented out',
+        'generate a build-raptor config file with all available options commented out',
         yargs => yargs,
         async () => {
           const { logger, userDir, bootstrapper } = await makeBootstrapper({

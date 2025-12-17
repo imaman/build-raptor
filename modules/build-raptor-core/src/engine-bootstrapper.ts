@@ -88,29 +88,20 @@ export class EngineBootstrapper {
 
   static readonly JSON5_CONFIG_FILE = '.build-raptor.json5'
   static readonly JSON_CONFIG_FILE = '.build-raptor.json'
+  static readonly CONFIG_FILES = [EngineBootstrapper.JSON5_CONFIG_FILE, EngineBootstrapper.JSON_CONFIG_FILE]
 
   private resolveConfigFile(): PathInRepo | undefined {
-    const json5Path = this.rootDir.resolve(PathInRepo(EngineBootstrapper.JSON5_CONFIG_FILE))
-    const jsonPath = this.rootDir.resolve(PathInRepo(EngineBootstrapper.JSON_CONFIG_FILE))
-
-    const json5Exists = fs.existsSync(json5Path)
-    const jsonExists = fs.existsSync(jsonPath)
-
-    if (json5Exists && jsonExists) {
+    const arr = EngineBootstrapper.CONFIG_FILES.map(at => PathInRepo(at))
+    const existings = arr.flatMap(at => (fs.existsSync(this.rootDir.resolve(at)) ? [at] : []))
+    if (existings.length > 1) {
       throw new Error(
-        `Both '${EngineBootstrapper.JSON5_CONFIG_FILE}' and '${EngineBootstrapper.JSON_CONFIG_FILE}' exist. Please remove one of them.`,
+        `Found two (or more) competing config files: ${existings.join(
+          ', ',
+        )}. To avoid confusion, you must keep just one.`,
       )
     }
 
-    if (json5Exists) {
-      return PathInRepo(EngineBootstrapper.JSON5_CONFIG_FILE)
-    }
-
-    if (jsonExists) {
-      return PathInRepo(EngineBootstrapper.JSON_CONFIG_FILE)
-    }
-
-    return undefined
+    return existings.at(0)
   }
 
   private readConfigFile(pathToConfigFile: PathInRepo | undefined): BuildRaptorConfig {
