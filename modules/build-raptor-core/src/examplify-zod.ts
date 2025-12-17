@@ -141,6 +141,12 @@ class Writer {
 }
 
 function format(r: Reflected, w: Writer, indent: string, path: string[]) {
+  if (r.description) {
+    for (const line of r.description.split('\n')) {
+      w.write(indent, line)
+      w.newline()
+    }
+  }
   if (path.length) {
     w.write(indent, path.at(-1) ?? '', ': ')
   }
@@ -164,14 +170,6 @@ function format(r: Reflected, w: Writer, indent: string, path: string[]) {
       if (!v) {
         continue
       }
-      // format(v, w, ne)
-      // if (v.description) {
-      //   for (const line of v.description.split('\n')) {
-      //     w.write(newIndent, line)
-      //     w.newline()
-      //   }
-      // }
-      // w.write(newIndent, k, ': ')
       format(v, w, newIndent, [...path, k])
       w.newline()
     }
