@@ -20,6 +20,18 @@ describe('examplifyZod', () => {
     ])
   })
   describe('options', () => {
+    test('commentIndentation controls the column at which the comment starts', () => {
+      expect(runExamplify(z.object({ alpha: z.string() }), { commentIndentation: 4 })).toEqual([
+        `{`,
+        `    // alpha: "",`,
+        `}`,
+      ])
+      expect(runExamplify(z.object({ alpha: z.string() }), { commentIndentation: 2 })).toEqual([
+        `{`,
+        `  // alpha: "",`,
+        `}`,
+      ])
+    })
     test('comment controls whether we comment out', () => {
       expect(runExamplify(z.object({ alpha: z.string(), beta: z.number() }), { comment: false })).toEqual([
         `{`,
@@ -45,18 +57,9 @@ describe('examplifyZod', () => {
         `  // alpha: "",`,
         `// }`,
       ])
-    })
-    test('commentIndentation controls the column at which the comment starts', () => {
-      expect(runExamplify(z.object({ alpha: z.string() }), { commentIndentation: 4 })).toEqual([
-        `{`,
-        `    // alpha: "",`,
-        `}`,
-      ])
-      expect(runExamplify(z.object({ alpha: z.string() }), { commentIndentation: 2 })).toEqual([
-        `{`,
-        `  // alpha: "",`,
-        `}`,
-      ])
+      expect(
+        runExamplify(z.object({ alpha: z.string() }), { commentAlsoOutermostBraces: true, commentIndentation: 0 }),
+      ).toEqual([`// {`, `//   alpha: "",`, `// }`])
     })
   })
   test('descriptions', () => {
