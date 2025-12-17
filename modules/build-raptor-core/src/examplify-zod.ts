@@ -158,14 +158,14 @@ class Writer {
     this.curr = this.makeNewCurr()
   }
 
-  collectOutput(acc: string[], comment: boolean) {
+  collectOutput(acc: string[], options: Required<ExamplifyZodOptions>) {
     for (const block of this.blocks) {
       if (block.tag === 'writer') {
-        block.writer.collectOutput(acc, comment)
+        block.writer.collectOutput(acc, options)
       } else if (block.tag === 'line') {
         // Skip blocks with no parts ([]). A blank (comment) line can still be produced if block.parts is ['']
         if (block.parts.length) {
-          acc.push((comment ? '//' : '') + '  '.repeat(block.nesting) + block.parts.join(''))
+          acc.push((options.comment ? '//' : '') + '  '.repeat(block.nesting) + block.parts.join(''))
         }
       } else {
         shouldNeverHappen(block)
@@ -220,15 +220,16 @@ function format(r: Reflected, w: Writer, path: string[]) {
  *
  * @param schema The main Zod object schema
  */
-export function examplifyZod(input: z.ZodTypeAny, { comment = true }: ExamplifyZodOptions = {}): string {
+export function examplifyZod(input: z.ZodTypeAny, options: ExamplifyZodOptions = {}): string {
   const r = reflect(input)
   const w = new Writer(0)
   format(r, w, [])
   const acc: string[] = []
-  w.collectOutput(acc, comment)
+  w.collectOutput(acc, { comment: true, doNotCommentTopLevel: true, ...options })
   return acc.join('\n')
 }
 
 export interface ExamplifyZodOptions {
   comment?: boolean
+  doNotCommentTopLevel?: boolean
 }
