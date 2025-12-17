@@ -19,6 +19,10 @@ describe('examplifyZod', () => {
       `}`,
     ])
   })
+  test('comment controls whether we comment out', () => {
+    expect(runExamplify(z.object({ alpha: z.string() }), { comment: false })).toEqual([`{`, `  alpha: "",`, `}`])
+    expect(runExamplify(z.object({ alpha: z.string() }), { comment: true })).toEqual([`{`, `//  alpha: "",`, `}`])
+  })
   test('commentAlsoOutermostBraces controls whether the braces of the top-level object are commented out', () => {
     expect(runExamplify(z.object({ alpha: z.string() }), { commentAlsoOutermostBraces: false })).toEqual([
       `{`,
@@ -30,10 +34,6 @@ describe('examplifyZod', () => {
       `//  alpha: "",`,
       `//}`,
     ])
-  })
-  test('comment controls whether we comment out', () => {
-    expect(runExamplify(z.object({ alpha: z.string() }), { comment: false })).toEqual([`{`, `  alpha: "",`, `}`])
-    expect(runExamplify(z.object({ alpha: z.string() }), { comment: true })).toEqual([`{`, `//  alpha: "",`, `}`])
   })
   test('descriptions', () => {
     expect(runExamplify(z.object({ s: z.string().describe('lorem ipsum') }))).toEqual([
