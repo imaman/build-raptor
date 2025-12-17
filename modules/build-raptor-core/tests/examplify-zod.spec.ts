@@ -2,11 +2,16 @@ import { z } from 'zod'
 
 import { examplifyZod, ExamplifyZodOptions } from '../src/examplify-zod'
 
-const run = (input: z.ZodTypeAny, options?: ExamplifyZodOptions) => examplifyZod(input, options).split('\n')
+const runExamplify = (input: z.ZodTypeAny, options?: ExamplifyZodOptions) => examplifyZod(input, options).split('\n')
 
 describe('examplifyZod', () => {
   test('object', () => {
-    expect(run(z.object({ a: z.string(), b: z.number() }))).toEqual([`//{`, `//  a: ""`, `//  b: 0`, `//}`])
+    expect(runExamplify(z.object({ alpha: z.string(), beta: z.number() }))).toEqual([
+      `//{`,
+      `//  alpha: "",`,
+      `//  beta: 0,`,
+      `//}`,
+    ])
     expect(examplifyZod(z.object({ a: z.string().array(), b: z.boolean() }))).toEqual(`//{
 //  a: [],
 //  b: false,
