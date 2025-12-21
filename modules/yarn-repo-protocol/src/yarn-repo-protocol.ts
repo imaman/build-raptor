@@ -595,7 +595,7 @@ export class YarnRepoProtocol implements RepoProtocol {
       ],
       dir,
       outputFile,
-      this.state.config.additionalTestEnvVars,
+      this.state.config.additionalJestEnvVars,
     )
 
     const readStdout = () => fs.readFileSync(outputFile, 'utf-8').trim()
