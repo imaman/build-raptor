@@ -134,7 +134,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     const pj = this.getPackageJson(unitId)
     // Check for buildRaptor.testCommand in package.json
 
-    const schema = z.object({ buildRaptor: z.object({ testCommand: z.string() }).optional() })
+    const schema = z.object({ buildRaptor: z.object({ testCommand: z.string().optional() }).optional() })
 
     const { buildRaptor } = schema.parse(pj)
     return buildRaptor?.testCommand
