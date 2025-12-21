@@ -32,7 +32,7 @@ export const YarnRepoProtocolConfig = z
       .record(z.string(), z.string().optional())
       .optional()
       .describe(
-        'Additional environment variables to pass to the process that runs Jest tests. Note: These variables are not passed to custom test commands.',
+        'Additional environment variables to pass to the Jest test runner. Specified as key-value pairs. Note: These variables are not passed to custom test commands.',
       ),
   })
   .strict()
