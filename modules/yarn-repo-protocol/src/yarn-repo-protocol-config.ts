@@ -28,6 +28,7 @@ export const YarnRepoProtocolConfig = z
       .describe(
         "The compiler executable to use for uber builds. Defaults to 'tsc'. The executable must support the same CLI interface as tsc (i.e., `<executable> --build <dirs...>`).",
       ),
+    additionalTestEnvVars: z.record(z.string(), z.string().optional()).describe('DO NOT FORGET TO FILL THIS IN'),
   })
   .strict()
 export type YarnRepoProtocolConfig = z.infer<typeof YarnRepoProtocolConfig>
