@@ -134,7 +134,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     const pj = this.getPackageJson(unitId)
     // Check for buildRaptor.testCommand in package.json
 
-    const schema = z.object({ buildRaptor: z.object({ testCommand: z.string() }).optional() })
+    const schema = z.object({ buildRaptor: z.object({ testCommand: z.string().optional() }).optional() })
 
     const { buildRaptor } = schema.parse(pj)
     return buildRaptor?.testCommand
@@ -320,13 +320,19 @@ export class YarnRepoProtocol implements RepoProtocol {
   }
   async close() {}
 
-  private async run(cmd: string, args: string[], dir: string, outputFile: string): Promise<ExitStatus> {
+  private async run(
+    cmd: string,
+    args: string[],
+    dir: string,
+    outputFile: string,
+    additionalEnvVars: Partial<Record<string, string>> = {},
+  ): Promise<ExitStatus> {
     const summary = `<${dir}$ ${cmd} ${args.join(' ')}>`
     this.logger.info(`Dispatching ${summary}. output: ${outputFile}`)
 
     const out = await fse.open(outputFile, 'w')
     try {
-      const p = await execa(cmd, args, { cwd: dir, stdout: out, stderr: out, reject: false })
+      const p = await execa(cmd, args, { cwd: dir, stdout: out, stderr: out, reject: false, env: additionalEnvVars })
       this.logger.info(`exitCode of ${cmd} ${args.join(' ')} is ${p.exitCode}`)
       if (p.exitCode === 0) {
         return 'OK'
@@ -589,6 +595,7 @@ export class YarnRepoProtocol implements RepoProtocol {
       ],
       dir,
       outputFile,
+      this.state.config.additionalJestEnvVars,
     )
 
     const readStdout = () => fs.readFileSync(outputFile, 'utf-8').trim()
