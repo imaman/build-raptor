@@ -21,5 +21,11 @@ export const BuildRaptorConfig = z.object({
     .describe(
       'Name of the directory at which outputs of tasks will be placed (other than compilation outputs which are currently under dist). This directory is created in each module.',
     ),
+  fingerprintSeed: z
+    .string()
+    .default('8')
+    .describe(
+      'Seed value for fingerprint computation. Changing this value invalidates all cached content by producing new fingerprints.',
+    ),
 })
 export type BuildRaptorConfig = z.infer<typeof BuildRaptorConfig>
