@@ -14,8 +14,8 @@ export class Fingerprinter {
   constructor(
     private readonly dirScanner: DirectoryScanner,
     private readonly logger: Logger,
+    private readonly seed: string,
     private readonly onHasherClose: OnHasherClose = async () => {},
-    private readonly seed: string = '8',
   ) {
     this.logger.info('Fingerprinter: constructed')
   }

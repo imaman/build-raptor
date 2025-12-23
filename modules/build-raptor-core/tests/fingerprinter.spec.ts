@@ -11,7 +11,7 @@ describe('fingerprinter', () => {
   async function create(recipe: FolderifyRecipe, predicate: (path: string) => boolean, onHasherClose?: OnHasherClose) {
     const dir = await folderify(recipe)
     const dirScanner = new DirectoryScanner(dir, { predicate })
-    const fingerprinter = new Fingerprinter(dirScanner, createNopLogger(), onHasherClose)
+    const fingerprinter = new Fingerprinter(dirScanner, createNopLogger(), '8', onHasherClose)
     return { fingerprinter, dir }
   }
   test('an ignored-and-empty sub directory does not affect the fingerprint', async () => {

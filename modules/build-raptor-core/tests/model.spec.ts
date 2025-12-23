@@ -18,7 +18,7 @@ describe('model', () => {
     ]
 
     const ds = new DirectoryScanner((await Tmp.dir()).path)
-    const fingerprinter = new Fingerprinter(ds, createNopLogger())
+    const fingerprinter = new Fingerprinter(ds, createNopLogger(), '8')
 
     expect(() => new Model(RepoRoot('/d'), g, units, BuildRunId('a'), fingerprinter)).toThrowError(
       'Unit ID collision detected: ["a"]',
