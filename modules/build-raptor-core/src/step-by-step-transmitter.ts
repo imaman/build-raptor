@@ -1,5 +1,5 @@
 import { Step, StepByStep, StepByStepProcessor } from 'build-raptor-api'
-import { loadDynamically } from 'build-raptor-dynamic-loader'
+import { loadDynamically, loadEsm } from 'build-raptor-dynamic-loader'
 import * as fs from 'fs'
 import { Logger } from 'logger'
 import * as util from 'util'
@@ -40,8 +40,17 @@ export class StepByStepTransmitter {
   }
 
   async dynamicallyLoadProcessor(stepByStepProcessorModuleName: string, lookFor = 'processor') {
-    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-    const imported = loadDynamically(stepByStepProcessorModuleName) as object
+    let imported
+
+    try {
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+      imported = loadDynamically(stepByStepProcessorModuleName) as object
+    } catch (e) {
+      this.logger.info(`Failed to load via loadDynamically so falling back`, e)
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+      imported = (await loadEsm(stepByStepProcessorModuleName)) as object
+    }
+
     const temp = Object.entries(imported)
       .flatMap(([k, v]) => (k === lookFor ? [v] : []))
       .find(Boolean)
