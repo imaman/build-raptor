@@ -1,8 +1,13 @@
 {
   "name": "build-raptor-dynamic-loader",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "",
   "keywords": [],
+  "repository": {
+    "type": "git",
+    "url": "git+http://github.com/imaman/build-raptor.git",
+    "directory": "free-electrons/build-raptor-dynamic-loader"
+  },
   "license": "ISC",
   "author": "",
   "main": "index.js",
