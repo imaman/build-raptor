@@ -317,7 +317,7 @@ export class Engine {
 
     this.logger.info(`unit graph=\n${graph}`)
     const scanner = new DirectoryScanner(this.rootDir.resolve(), { predicate: ig.createFilter() })
-    const fingerprinter = new Fingerprinter(scanner, this.logger, async (h, c) => {
+    const fingerprinter = new Fingerprinter(scanner, this.logger, this.options.config.fingerprintSeed, async (h, c) => {
       if (c) {
         this.fingerprintLedger.updateFile(h, c)
       } else {

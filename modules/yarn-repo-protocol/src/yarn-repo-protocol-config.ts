@@ -15,7 +15,10 @@ export const YarnRepoProtocolConfig = z
     install: z
       .boolean()
       .optional()
-      .or(z.union([z.literal('off'), z.literal('dormant'), z.literal('on')])),
+      .or(z.union([z.literal('off'), z.literal('dormant'), z.literal('on')]))
+      .describe(
+        "[EXPERIMENTAL - Not yet stable] Controls yarn install behavior. 'off': Skip install, 'dormant': Install only if no node_modules exists, 'on': Always install. Can also be set to boolean (true='on', false='off').",
+      ),
     enableCustomTestCommands: z
       .boolean()
       .optional()

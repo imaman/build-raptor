@@ -4,7 +4,7 @@ import { pairsToRecord } from 'misc'
 import { Fingerprint } from './fingerprint'
 
 export class Hasher {
-  private readonly hash = crypto.createHash('sha224').update('8')
+  private readonly hash: crypto.Hash
   private readonly audit = new Map<string, string>()
   private status: 'OPEN' | 'CLOSED' = 'OPEN'
 
@@ -12,7 +12,9 @@ export class Hasher {
 
   private digest_: Fingerprint | undefined
 
-  constructor(readonly name: string) {}
+  constructor(readonly name: string, seed: string) {
+    this.hash = crypto.createHash('sha224').update(seed)
+  }
 
   update(arg: crypto.BinaryLike | Hasher) {
     if (this.status === 'CLOSED') {

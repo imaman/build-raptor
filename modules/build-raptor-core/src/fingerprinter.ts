@@ -14,6 +14,7 @@ export class Fingerprinter {
   constructor(
     private readonly dirScanner: DirectoryScanner,
     private readonly logger: Logger,
+    private readonly seed: string,
     private readonly onHasherClose: OnHasherClose = async () => {},
   ) {
     this.logger.info('Fingerprinter: constructed')
@@ -28,7 +29,7 @@ export class Fingerprinter {
     const resolved = path.join(this.dirScanner.rootDir, pathInRepo)
     const stat = statPath(resolved)
     if (!stat) {
-      const hasher = new Hasher(pathInRepo)
+      const hasher = new Hasher(pathInRepo, this.seed)
       const content = Buffer.from('')
       hasher.update(content)
       return await this.store(hasher, true, content.toString('utf-8'))
@@ -41,12 +42,12 @@ export class Fingerprinter {
     if (!stat.isDirectory()) {
       const content = await readFile(resolved)
 
-      const hasher = new Hasher(pathInRepo)
+      const hasher = new Hasher(pathInRepo, this.seed)
       hasher.update(content)
       return await this.store(hasher, active, content.toString('utf-8'))
     }
 
-    const hasher = new Hasher(pathInRepo)
+    const hasher = new Hasher(pathInRepo, this.seed)
     // TODO(imaman): do not fingerprint node_modules directories (and similar directories in other ecosystems)?
 
     const dirEntries = await readDir(resolved)
