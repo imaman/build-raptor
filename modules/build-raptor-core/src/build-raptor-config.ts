@@ -13,7 +13,7 @@ export const BuildRaptorConfig = z.object({
     .boolean()
     .default(false)
     .describe(
-      'Selects one of two modes for determining when a task will run. A task will always run if one of the tasks listed in its TaskInfo.deps had to run. Additionally, a task will run if any of its inputs have changed (when this attribute is true) or if any of the tasks that generates its inputs had to run (when this attribute is false).',
+      '[EXPERIMENTAL - Not yet stable] Selects one of two modes for determining when a task will run. A task will always run if one of the tasks listed in its TaskInfo.deps had to run. Additionally, a task will run if any of its inputs have changed (when this attribute is true) or if any of the tasks that generates its inputs had to run (when this attribute is false).',
     ),
   outDirName: z
     .string()
