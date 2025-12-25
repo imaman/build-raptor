@@ -1,3 +1,4 @@
+import fs from 'fs'
 import fse from 'fs-extra/esm'
 import * as path from 'path'
 
@@ -36,19 +37,19 @@ export class FilesystemStorageClient implements StorageClient {
   }
 
   async putObject(key: Key, content: string | Buffer): Promise<void> {
-    await fse.writeFile(this.keyToPath(key), content)
+    await fs.promises.writeFile(this.keyToPath(key), content)
   }
 
   async putContentAddressable(content: string | Buffer): Promise<string> {
     const ret = computeHash(content)
     const p = this.hashToPath('cas', ret)
-    await fse.writeFile(p, content)
+    await fs.promises.writeFile(p, content)
     return ret
   }
 
   async getContentAddressable(hash: string): Promise<Buffer> {
     const p = this.hashToPath('cas', hash)
-    return await fse.readFile(p)
+    return await fs.promises.readFile(p)
   }
 
   getObject(key: Key): Promise<string>
@@ -58,10 +59,10 @@ export class FilesystemStorageClient implements StorageClient {
     const p = this.keyToPath(key)
     try {
       if (type === 'string') {
-        return await fse.readFile(p, 'utf-8')
+        return await fs.promises.readFile(p, 'utf-8')
       }
       if (type === 'buffer') {
-        return await fse.readFile(p)
+        return await fs.promises.readFile(p)
       }
       shouldNeverHappen(type)
     } catch (e) {

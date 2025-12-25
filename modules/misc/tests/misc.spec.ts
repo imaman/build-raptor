@@ -1,4 +1,4 @@
-import fse from 'fs-extra/esm'
+import fs from 'fs'
 import * as path from 'path'
 import * as Tmp from 'tmp-promise'
 
@@ -26,10 +26,10 @@ describe('misc', () => {
   describe('dumpFile', () => {
     async function runDumpFile(src: string) {
       const f = (await Tmp.file()).path
-      const stream = fse.createWriteStream(f)
+      const stream = fs.createWriteStream(f)
       try {
         await dumpFile(src, stream)
-        const content = await fse.readFile(f, 'utf-8')
+        const content = await fs.promises.readFile(f, 'utf-8')
         return content
       } finally {
         stream.close()
@@ -38,7 +38,7 @@ describe('misc', () => {
 
     test('copies the content of a file to the given output stream', async () => {
       const src = (await Tmp.file()).path
-      await fse.writeFile(src, 'we choose to go to the moon')
+      await fs.promises.writeFile(src, 'we choose to go to the moon')
       const content = await runDumpFile(src)
 
       expect(content).toEqual('we choose to go to the moon')
@@ -47,7 +47,7 @@ describe('misc', () => {
       const longString = chaoticDeterministicString(300 * 1000, 'x')
 
       const src = (await Tmp.file()).path
-      await fse.writeFile(src, longString)
+      await fs.promises.writeFile(src, longString)
       const content = await runDumpFile(src)
       expect(content).toEqual(longString)
     })

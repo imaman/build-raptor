@@ -165,7 +165,7 @@ export class DirectoryScanner {
   // does the sorting).
   private async readDirSorted(resolvedPath: string) {
     try {
-      const ret = await fse.readdir(resolvedPath)
+      const ret = await fs.promises.readdir(resolvedPath)
       ret.sort()
       return ret
     } catch (e) {

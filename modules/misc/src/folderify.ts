@@ -1,3 +1,4 @@
+import fs from 'fs'
 import fse from 'fs-extra/esm'
 import * as path from 'path'
 import * as Tmp from 'tmp-promise'
@@ -43,7 +44,7 @@ export async function writeRecipe(destinationDir: string, recipe: FolderifyRecip
     await fse.mkdirp(dir)
     try {
       if (typeof content === 'string') {
-        await fse.writeFile(file, content)
+        await fs.promises.writeFile(file, content)
       } else {
         await fse.writeJSON(file, content)
       }
