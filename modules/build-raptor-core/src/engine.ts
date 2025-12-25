@@ -291,7 +291,7 @@ export class Engine {
     const gitIgnorePath = this.rootDir.resolve(PathInRepo('.gitignore'))
     const ig = ignore()
     if (await fse.pathExists(gitIgnorePath)) {
-      const gitIgnoreContent = await fse.readFile(gitIgnorePath, 'utf8')
+      const gitIgnoreContent = await fs.promises.readFile(gitIgnorePath, 'utf8')
       const lines = gitIgnoreContent.split('\n')
       this.logger.info(`Found a .gitignore file:\n${JSON.stringify(lines, null, 2)}`)
       ig.add(lines)

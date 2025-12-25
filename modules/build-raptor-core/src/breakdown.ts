@@ -1,4 +1,5 @@
 import { BuildRunId } from 'build-run-id'
+import fs from 'fs'
 import fse from 'fs-extra/esm'
 import { shouldNeverHappen, switchOn } from 'misc'
 import * as path from 'path'
@@ -50,7 +51,7 @@ export class Breakdown {
       if (!outputFile) {
         return []
       }
-      const content = await fse.readFile(outputFile, 'utf8')
+      const content = await fs.promises.readFile(outputFile, 'utf8')
       const trimmed = content.trim()
       return format === 'string' ? trimmed : trimmed.split('\n')
     }
@@ -71,7 +72,7 @@ export class Breakdown {
     if (!(await fse.pathExists(resolved))) {
       return undefined
     }
-    const content = await fse.readFile(resolved, 'utf8')
+    const content = await fs.promises.readFile(resolved, 'utf8')
     return content.trim().split('\n')
   }
 }

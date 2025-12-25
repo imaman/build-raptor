@@ -1,4 +1,4 @@
-import fse from 'fs-extra/esm'
+import fs from 'fs'
 import * as path from 'path'
 import { Readable, Writable } from 'stream'
 
@@ -8,7 +8,7 @@ import { streamTobuffer } from '../src/stream-to-buffer.js'
 describe('stream-to-buffer', () => {
   test('translates a file read stream to a buffer', async () => {
     const d = await folderify({ a: 'abcd' })
-    const s = fse.createReadStream(path.join(d, 'a'))
+    const s = fs.createReadStream(path.join(d, 'a'))
     const buffer = await streamTobuffer(s)
     expect(buffer.toString()).toEqual('abcd')
   })
