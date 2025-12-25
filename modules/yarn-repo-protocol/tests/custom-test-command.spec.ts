@@ -2,9 +2,7 @@ import { NopAssetPublisher } from 'build-raptor-core'
 import { Driver } from 'build-raptor-core-testkit'
 import { createNopLogger } from 'logger'
 
-import { YarnRepoProtocol } from '../src/yarn-repo-protocol'
-
-jest.setTimeout(120000)
+import { YarnRepoProtocol } from '../src/yarn-repo-protocol.js'
 
 describe('custom-test-command', () => {
   const logger = createNopLogger()

@@ -1,19 +1,20 @@
 import { BuildFailedError } from 'build-failed-error'
-import * as fse from 'fs-extra'
+import fs from 'fs'
+import fse from 'fs-extra/esm'
 import { Logger } from 'logger'
 import { failMe, promises, shouldNeverHappen, TypedPublisher } from 'misc'
 import * as path from 'path'
 import { ExitStatus, RepoProtocol } from 'repo-protocol'
 import { TaskName } from 'task-name'
 
-import { EngineEventScheme } from './engine-event-scheme'
-import { Fingerprint } from './fingerprint'
-import { FingerprintLedger } from './fingerprint-ledger'
-import { Model } from './model'
-import { Phase } from './phase'
-import { Purger } from './purger'
-import { TaskStore } from './task-store'
-import { TaskTracker } from './task-tracker'
+import { EngineEventScheme } from './engine-event-scheme.js'
+import { Fingerprint } from './fingerprint.js'
+import { FingerprintLedger } from './fingerprint-ledger.js'
+import { Model } from './model.js'
+import { Phase } from './phase.js'
+import { Purger } from './purger.js'
+import { TaskStore } from './task-store.js'
+import { TaskTracker } from './task-tracker.js'
 
 /**
  * An object that is reponsible for executing a task.
@@ -113,7 +114,7 @@ class SingleTaskExecutor {
   private async postProcess(status: ExitStatus, outputFile: string, time: number) {
     // Since outputFile's content can be big, read it only if this task is "diagnosed".
     if (this.shouldDiagnose) {
-      const content = fse.readFileSync(outputFile, 'utf-8')
+      const content = fs.readFileSync(outputFile, 'utf-8')
       this.diagnose(`content of ${outputFile} is ${content}`)
     }
     // TODO(imaman): cover (await is dropped)

@@ -4,13 +4,14 @@
   "description": "",
   "keywords": [],
   "author": "",
+  "type": "module",
   "main": "dist/src/index.js",
   "scripts": {
     "build": "tsc -b",
     "test": "jest"
   },
   "jest": {
-    "preset": "../../jest.preset.js"
+    "preset": "../../jest.preset.cjs"
   },
   "dependencies": {
     "zod": "^3.21.4"

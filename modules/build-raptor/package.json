@@ -5,6 +5,7 @@
   "keywords": [],
   "license": "MIT",
   "author": "",
+  "type": "module",
   "main": "dist/src/index.js",
   "bin": "dist/src/main.js",
   "scripts": {
@@ -16,7 +17,7 @@
   },
   "dependencies": {
     "build-raptor-core": "1.0.0",
-    "fs-extra": "^9.0.0",
+    "fs-extra": "^11.3.3",
     "logger": "1.0.0",
     "misc": "1.0.0",
     "repo-protocol": "1.0.0",

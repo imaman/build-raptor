@@ -1,6 +1,6 @@
 import { DefaultAssetPublisher, EngineBootstrapper, findRepoDir, TaskSelector } from 'build-raptor-core'
 import fs from 'fs'
-import * as fse from 'fs-extra'
+import fse from 'fs-extra/esm'
 import { createDefaultLogger, Criticality, Logger } from 'logger'
 import {
   assigningGet,
@@ -24,7 +24,7 @@ import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import { YarnRepoProtocol } from 'yarn-repo-protocol'
 
-import { TaskExecutionVisualizer } from './task-execution-visualizer'
+import { TaskExecutionVisualizer } from './task-execution-visualizer.js'
 
 type TestReporting = 'tree-all' | 'tree-just-failing'
 
@@ -102,7 +102,7 @@ async function makeBootstrapper(options: Options) {
   }
 
   const buildRaptorDirTasks = path.join(buildRaptorDir, 'tasks')
-  await fse.rm(buildRaptorDirTasks, { recursive: true, force: true })
+  await fs.promises.rm(buildRaptorDirTasks, { recursive: true, force: true })
 
   const storageClient = await storageClientFactory(logger)
   const assetPublisher = new DefaultAssetPublisher(storageClient, logger)
@@ -208,7 +208,7 @@ async function makeBootstrapper(options: Options) {
     // TODO(imaman): cover (output is indeed written in file structure)
     await fse.ensureDir(buildRaptorDirTasks)
     const fileName = path.join(buildRaptorDirTasks, toReasonableFileName(arg.taskName))
-    const stream = fse.createWriteStream(fileName)
+    const stream = fs.createWriteStream(fileName)
     try {
       await dumpFile(arg.outputFile, stream)
       logger.info(`wrote output of ${arg.taskName} to ${fileName}`)

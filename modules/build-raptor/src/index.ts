@@ -1,1 +1,1 @@
-export { run } from './build-raptor-cli'
+export { run } from './build-raptor-cli.js'

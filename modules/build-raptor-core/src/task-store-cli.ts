@@ -4,8 +4,11 @@ import { createNopLogger } from 'logger'
 import { FilesystemStorageClient } from 'misc'
 import * as os from 'os'
 import * as path from 'path'
+import { fileURLToPath } from 'url'
 
-import { BlobId, TaskStore } from './task-store'
+import { BlobId, TaskStore } from './task-store.js'
+
+const __filename = fileURLToPath(import.meta.url)
 
 function print(...args: unknown[]) {
   console.log(...args) // eslint-disable-line no-console

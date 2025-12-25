@@ -4,7 +4,7 @@ import { OutputLocation, TaskInfo } from 'repo-protocol'
 import { TaskKind, TaskName } from 'task-name'
 import { UnitId, UnitMetadata } from 'unit-metadata'
 
-import { TaskDefinition } from './task-definition'
+import { TaskDefinition } from './task-definition.js'
 
 export class TaskInfoGenerator {
   computeInfos(defs: readonly TaskDefinition[] | undefined, units: UnitMetadata[], graph: Graph<UnitId>) {

@@ -1,7 +1,7 @@
 import * as JsoncParser from 'jsonc-parser'
 import { z } from 'zod'
 
-import { examplifyZod, ExamplifyZodOptions } from '../src/examplify-zod'
+import { examplifyZod, ExamplifyZodOptions } from '../src/examplify-zod.js'
 
 const runExamplify = (input: z.ZodTypeAny, options?: ExamplifyZodOptions) => {
   const example = examplifyZod(input, options)

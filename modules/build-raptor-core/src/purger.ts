@@ -1,10 +1,10 @@
 import { PathInRepo, RepoRoot } from 'core-types'
-import * as fse from 'fs-extra'
+import fs from 'fs'
 import { Logger } from 'logger'
 import { promises, switchOn } from 'misc'
 import { OutputLocation } from 'repo-protocol'
 
-import { Task } from './task'
+import { Task } from './task.js'
 
 export class Purger {
   constructor(private readonly logger: Logger, private readonly repoRootDir: RepoRoot) {}
@@ -13,7 +13,7 @@ export class Purger {
     await promises(outputLocations).forEach(20, async p => {
       const resolved = this.repoRootDir.resolve(p)
       this.logger.info(`purging ${resolved}`)
-      await fse.rm(resolved, { recursive: true, force: true })
+      await fs.promises.rm(resolved, { recursive: true, force: true })
     })
   }
 

@@ -1,5 +1,6 @@
 import * as crypto from 'crypto'
-import * as fse from 'fs-extra'
+import fs from 'fs'
+import fse from 'fs-extra/esm'
 import jsonStringify from 'safe-stable-stringify'
 import * as util from 'util'
 
@@ -43,7 +44,7 @@ export async function dumpFile(inputPath: string, output: NodeJS.WritableStream)
     throw new Error(`Cannot dump non existing file: ${inputPath}`)
   }
   return new Promise<void>((res, rej) => {
-    const inputStream = fse.createReadStream(inputPath)
+    const inputStream = fs.createReadStream(inputPath)
     inputStream.on('end', () => {
       res()
     })

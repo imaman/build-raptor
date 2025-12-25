@@ -1,9 +1,9 @@
 import * as fs from 'fs'
-import * as fse from 'fs-extra'
+import fse from 'fs-extra/esm'
 import * as path from 'path'
 
-import { shouldNeverHappen } from '.'
-import { trimTrailing } from './strings'
+import { shouldNeverHappen } from './index.js'
+import { trimTrailing } from './strings.js'
 
 type Predicate = (relativePath: string, stat: fs.Stats) => boolean
 
@@ -165,7 +165,7 @@ export class DirectoryScanner {
   // does the sorting).
   private async readDirSorted(resolvedPath: string) {
     try {
-      const ret = await fse.readdir(resolvedPath)
+      const ret = await fs.promises.readdir(resolvedPath)
       ret.sort()
       return ret
     } catch (e) {

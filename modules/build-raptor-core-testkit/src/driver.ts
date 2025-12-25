@@ -3,7 +3,7 @@ import { BlobId, Breakdown, EngineBootstrapper, TaskStore } from 'build-raptor-c
 import { ExecutionType } from 'build-raptor-core'
 import { PathInRepo, RepoRoot } from 'core-types'
 import * as fs from 'fs'
-import * as fse from 'fs-extra'
+import fse from 'fs-extra/esm'
 import { createNopLogger } from 'logger'
 import {
   folderify,
@@ -16,12 +16,16 @@ import {
   StorageClient,
 } from 'misc'
 import * as path from 'path'
+import { fileURLToPath } from 'url'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 import { RepoProtocol } from 'repo-protocol'
 import { TaskKind, TaskName } from 'task-name'
 import { PackageJson } from 'type-fest'
 import { UnitId } from 'unit-metadata'
 
-import { SimpleNodeRepoProtocol } from './simple-node-repo-protocol'
+import { SimpleNodeRepoProtocol } from './simple-node-repo-protocol.js'
 
 interface LinesOptions {
   trimEach?: boolean
@@ -123,7 +127,7 @@ class File {
     if (!(await fse.pathExists(resolved))) {
       return undefined
     }
-    const content = await fse.readFile(resolved, 'utf-8')
+    const content = await fs.promises.readFile(resolved, 'utf-8')
     return content
       .trim()
       .split('\n')
@@ -149,7 +153,7 @@ class File {
         : typeof content === 'object'
         ? JSON.stringify(content)
         : shouldNeverHappen(content)
-    await fse.writeFile(resolved, c)
+    await fs.promises.writeFile(resolved, c)
   }
 
   async exists() {
@@ -169,7 +173,7 @@ class File {
   }
 
   async lastChanged() {
-    const st = await fse.stat(this.resolve())
+    const st = await fs.promises.stat(this.resolve())
     return st.mtime.getTime()
   }
 }
@@ -310,7 +314,7 @@ class Repo {
     const outerDir = await folderify(ROOT_NAME, this.recipe)
     const rootDir = path.join(outerDir, ROOT_NAME)
     const ret = new Fork(rootDir, this.driver.storageClient, this.driver.repoProtocol, this.driver.testName)
-    await fse.symlink(path.resolve(__dirname, '../../../../node_modules'), path.join(outerDir, 'node_modules'))
+    await fs.promises.symlink(path.resolve(__dirname, '../../../../node_modules'), path.join(outerDir, 'node_modules'))
     return ret
   }
 }

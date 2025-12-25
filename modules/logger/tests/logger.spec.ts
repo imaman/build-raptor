@@ -1,8 +1,11 @@
 import * as fs from 'fs'
 import { aTimeoutOf } from 'misc'
 import * as Tmp from 'tmp-promise'
+import { fileURLToPath } from 'url'
 
-import { createDefaultLogger } from '../src/logger'
+import { createDefaultLogger } from '../src/logger.js'
+
+const __filename = fileURLToPath(import.meta.url)
 
 async function awaitFor<T>(ms: number, calc: () => Promise<T | undefined>): Promise<T> {
   const t0 = Date.now()
@@ -50,7 +53,7 @@ describe('logger', () => {
 
     const lines = content.split('\n')
     expect(lines[0]).toMatch(/\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d\.\d+([+-][0-2]\d:[0-5]\d|Z) \[error\] uh-oh/)
-    expect(lines[1]).toContain(`${__filename.replace('/dist/', '/').replace(/\.js$/, '.ts')}:47:27`)
+    expect(lines[1]).toContain(`${__filename.replace('/dist/', '/').replace(/\.js$/, '.ts')}:50:27`)
   })
   test('by default, does not write debug-level messages to the file', async () => {
     const f = await Tmp.file({})

@@ -1,5 +1,5 @@
-import { folderify } from '../src/folderify'
-import { slurpDir } from '../src/slurp-dir'
+import { folderify } from '../src/folderify.js'
+import { slurpDir } from '../src/slurp-dir.js'
 
 describe('folderify', () => {
   test('returns the names of the files under the given directory and their content', async () => {

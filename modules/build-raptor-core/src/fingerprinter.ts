@@ -1,11 +1,10 @@
 import * as fs from 'fs'
-import * as fse from 'fs-extra'
 import { Logger } from 'logger'
 import { DirectoryScanner, sortBy } from 'misc'
 import * as path from 'path'
 
-import { Fingerprint } from './fingerprint'
-import { Hasher } from './hasher'
+import { Fingerprint } from './fingerprint.js'
+import { Hasher } from './hasher.js'
 
 export type OnHasherClose = (h: Hasher, content?: string) => Promise<void>
 
@@ -78,7 +77,7 @@ export class Fingerprinter {
 
 async function readFile(p: string) {
   try {
-    return await fse.readFile(p)
+    return await fs.promises.readFile(p)
   } catch (e) {
     throw new Error(`Failed to read ${p}: ${e}`)
   }
@@ -94,7 +93,7 @@ function statPath(p: string) {
 
 async function readDir(p: string) {
   try {
-    return await fse.readdir(p, { withFileTypes: true })
+    return await fs.promises.readdir(p, { withFileTypes: true })
   } catch (e) {
     throw new Error(`Failed to read dir ${p}: ${e}`)
   }

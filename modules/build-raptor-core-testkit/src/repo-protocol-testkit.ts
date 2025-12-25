@@ -1,7 +1,8 @@
 import { Brand } from 'brand'
 import { BuildRunId } from 'build-run-id'
 import { RepoRoot } from 'core-types'
-import * as fse from 'fs-extra'
+import fs from 'fs'
+import fse from 'fs-extra/esm'
 import {
   failMe,
   FolderifyRecipe,
@@ -20,7 +21,7 @@ import { TaskKind, TaskName } from 'task-name'
 import { UnitId, UnitMetadata } from 'unit-metadata'
 import { z } from 'zod'
 
-import { Run } from './driver'
+import { Run } from './driver.js'
 
 type TaskInRun = Brand<string, 'TaskInRun'>
 
@@ -228,7 +229,7 @@ class RepoProtocolImpl implements RepoProtocol {
     const u = this.units.find(u => u.id === unitId) ?? failMe(`Unit not found (unit ID=${unitId})`)
     const dir = this.rootDir.resolve(u.pathInRepo)
     const v = await taskCb(dir)
-    await fse.writeFile(outputFile, `task ${tn} result is ${v}`)
+    await fs.promises.writeFile(outputFile, `task ${tn} result is ${v}`)
     return v
   }
 

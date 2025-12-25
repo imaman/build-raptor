@@ -3,7 +3,7 @@ import { BuildRunId } from 'build-run-id'
 import child_process from 'child_process'
 import { PathInRepo, RepoRoot } from 'core-types'
 import * as fs from 'fs'
-import * as fse from 'fs-extra'
+import fse from 'fs-extra/esm'
 import ignore from 'ignore'
 import { Logger } from 'logger'
 import { DirectoryScanner, failMe, Int, shouldNeverHappen, switchOn, TypedPublisher } from 'misc'
@@ -11,19 +11,19 @@ import * as path from 'path'
 import { RepoProtocol } from 'repo-protocol'
 import { TaskName } from 'task-name'
 
-import { BuildRaptorConfig } from './build-raptor-config'
-import { TaskSelector } from './engine-bootstrapper'
-import { EngineEventScheme } from './engine-event-scheme'
-import { ExecutionPlan } from './execution-plan'
-import { NopFingerprintLedger, PersistedFingerprintLedger } from './fingerprint-ledger'
-import { Fingerprinter } from './fingerprinter'
-import { Model } from './model'
-import { Planner } from './planner'
-import { Purger } from './purger'
-import { StepByStepTransmitter } from './step-by-step-transmitter'
-import { TaskExecutor } from './task-executor'
-import { TaskStore } from './task-store'
-import { TaskTracker } from './task-tracker'
+import { BuildRaptorConfig } from './build-raptor-config.js'
+import { TaskSelector } from './engine-bootstrapper.js'
+import { EngineEventScheme } from './engine-event-scheme.js'
+import { ExecutionPlan } from './execution-plan.js'
+import { NopFingerprintLedger, PersistedFingerprintLedger } from './fingerprint-ledger.js'
+import { Fingerprinter } from './fingerprinter.js'
+import { Model } from './model.js'
+import { Planner } from './planner.js'
+import { Purger } from './purger.js'
+import { StepByStepTransmitter } from './step-by-step-transmitter.js'
+import { TaskExecutor } from './task-executor.js'
+import { TaskStore } from './task-store.js'
+import { TaskTracker } from './task-tracker.js'
 
 export interface EngineOptions {
   /**
@@ -291,7 +291,7 @@ export class Engine {
     const gitIgnorePath = this.rootDir.resolve(PathInRepo('.gitignore'))
     const ig = ignore()
     if (await fse.pathExists(gitIgnorePath)) {
-      const gitIgnoreContent = await fse.readFile(gitIgnorePath, 'utf8')
+      const gitIgnoreContent = await fs.promises.readFile(gitIgnorePath, 'utf8')
       const lines = gitIgnoreContent.split('\n')
       this.logger.info(`Found a .gitignore file:\n${JSON.stringify(lines, null, 2)}`)
       ig.add(lines)

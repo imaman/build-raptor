@@ -1,12 +1,13 @@
 import { BuildRunId } from 'build-run-id'
-import * as fse from 'fs-extra'
+import fs from 'fs'
+import fse from 'fs-extra/esm'
 import { shouldNeverHappen, switchOn } from 'misc'
 import * as path from 'path'
 import { TaskKind, TaskName } from 'task-name'
 import { UnitId } from 'unit-metadata'
 
-import { PerformanceReport } from './performance-report'
-import { TaskSummary } from './task-summary'
+import { PerformanceReport } from './performance-report.js'
+import { TaskSummary } from './task-summary.js'
 
 export class Breakdown {
   constructor(
@@ -50,7 +51,7 @@ export class Breakdown {
       if (!outputFile) {
         return []
       }
-      const content = await fse.readFile(outputFile, 'utf8')
+      const content = await fs.promises.readFile(outputFile, 'utf8')
       const trimmed = content.trim()
       return format === 'string' ? trimmed : trimmed.split('\n')
     }
@@ -71,7 +72,7 @@ export class Breakdown {
     if (!(await fse.pathExists(resolved))) {
       return undefined
     }
-    const content = await fse.readFile(resolved, 'utf8')
+    const content = await fs.promises.readFile(resolved, 'utf8')
     return content.trim().split('\n')
   }
 }

@@ -3,7 +3,7 @@ import * as path from 'path'
 import * as Tmp from 'tmp-promise'
 
 import { chaoticDeterministicString } from '../src'
-import { cleanDirectory } from '../src/clean-directory'
+import { cleanDirectory } from '../src/clean-directory.js'
 
 describe('directory-cleaner', () => {
   describe('ALWAYS', () => {

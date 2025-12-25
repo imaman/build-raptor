@@ -1,4 +1,4 @@
-import { computeHash } from './misc'
+import { computeHash } from './misc.js'
 
 export function trimTrailing(s: string, suffix: string) {
   if (suffix.length === 0) {

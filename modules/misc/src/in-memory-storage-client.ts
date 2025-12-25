@@ -1,7 +1,7 @@
-import { Int } from '.'
-import { failMe, shouldNeverHappen } from './constructs'
-import { computeHash, computeObjectHash } from './misc'
-import { Key, StorageClient } from './storage-client'
+import { failMe, shouldNeverHappen } from './constructs.js'
+import { Int } from './index.js'
+import { computeHash, computeObjectHash } from './misc.js'
+import { Key, StorageClient } from './storage-client.js'
 
 export class InMemoryStorageClient implements StorageClient {
   private byteCount_: Int = Int(0)

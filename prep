@@ -1,0 +1,23 @@
+#!/bin/bash
+
+set -e
+
+parDir=/tmp/pub #home/imaman/code/moojo-tech/antelope/linked
+dir2=$parDir/build-raptor-jest-reporter
+dir1=$parDir/sample
+
+rm -rf "$dir1" "$dir2"
+
+mkdir -p "$dir1/node_modules" "$dir2" 
+
+etc/prepare-npm-package.mjs modules/build-raptor-jest-reporter "$dir2"
+cd "$dir1"
+npm init -y
+yarn add jest@29.7.0
+ln -s ../../build-raptor-jest-reporter node_modules/build-raptor-jest-reporter
+cat > a.spec.js <<EOF
+test('foo', () => expect(1).toEqual(1))
+
+EOF
+
+yarn jest --outputFile out.json --reporters build-raptor-jest-reporter --reporters default

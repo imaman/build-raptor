@@ -3,7 +3,7 @@ import { BuildFailedError } from 'build-failed-error'
 import { PathInRepo, RepoRoot } from 'core-types'
 import * as fs from 'fs'
 import { createWriteStream } from 'fs'
-import * as fse from 'fs-extra'
+import fse from 'fs-extra/esm'
 import { Logger } from 'logger'
 import { computeHash, computeObjectHash, DirectoryScanner, Key, promises, StorageClient, TypedPublisher } from 'misc'
 import * as path from 'path'
@@ -14,9 +14,9 @@ import * as util from 'util'
 import * as zlib from 'zlib'
 import { z } from 'zod'
 
-import { Fingerprint } from './fingerprint'
-import { TarStream } from './tar-stream'
-import { TaskStoreEvent } from './task-store-event'
+import { Fingerprint } from './fingerprint.js'
+import { TarStream } from './tar-stream.js'
+import { TaskStoreEvent } from './task-store-event.js'
 
 type OutputDescriptor = { pathInRepo: PathInRepo; isPublic: boolean }
 
@@ -212,7 +212,7 @@ export class TaskStore {
     const destination = createWriteStream(tempFile.path)
     await pipeline(source, gzip, destination)
 
-    const gzipped = await fse.readFile(tempFile.path)
+    const gzipped = await fs.promises.readFile(tempFile.path)
     this.trace?.push(`gzipped is ${gzipped.length} long`)
 
     const ret = Buffer.concat([lenBuf, metadataBuf, gzipped])
@@ -231,7 +231,7 @@ export class TaskStore {
     const outputs = metadata.outputs.map(at => PathInRepo(at))
 
     const removeOutputDir = async (o: PathInRepo) =>
-      await fse.rm(this.repoRootDir.resolve(o), { recursive: true, force: true })
+      await fs.promises.rm(this.repoRootDir.resolve(o), { recursive: true, force: true })
     await promises(outputs)
       .map(async o => await removeOutputDir(o))
       .reify(20)

@@ -1,12 +1,12 @@
 import { BuildRunId } from 'build-run-id'
-import * as fse from 'fs-extra'
+import fse from 'fs-extra/esm'
 import { Logger } from 'logger'
 import { failMe } from 'misc'
 import { TaskName } from 'task-name'
 import { z } from 'zod'
 
-import { Fingerprint } from './fingerprint'
-import { Hasher } from './hasher'
+import { Fingerprint } from './fingerprint.js'
+import { Hasher } from './hasher.js'
 
 const LedgerItem = z.union([
   z.object({

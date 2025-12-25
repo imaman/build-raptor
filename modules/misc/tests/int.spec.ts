@@ -1,4 +1,4 @@
-import { Int } from '../src/int'
+import { Int } from '../src/int.js'
 
 describe('Int', () => {
   test('yells if a non-integer number is passed to it', () => {

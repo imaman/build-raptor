@@ -12,15 +12,15 @@ import * as util from 'util'
 import * as uuid from 'uuid'
 import { z } from 'zod'
 
-import { Breakdown } from './breakdown'
-import { BuildRaptorConfig } from './build-raptor-config'
-import { Engine, EngineOptions } from './engine'
-import { EngineEventScheme } from './engine-event-scheme'
-import { examplifyZod } from './examplify-zod'
-import { StepByStepTransmitter } from './step-by-step-transmitter'
-import { Task } from './task'
-import { TaskStore } from './task-store'
-import { TaskSummary } from './task-summary'
+import { Breakdown } from './breakdown.js'
+import { BuildRaptorConfig } from './build-raptor-config.js'
+import { Engine, EngineOptions } from './engine.js'
+import { EngineEventScheme } from './engine-event-scheme.js'
+import { examplifyZod } from './examplify-zod.js'
+import { StepByStepTransmitter } from './step-by-step-transmitter.js'
+import { Task } from './task.js'
+import { TaskStore } from './task-store.js'
+import { TaskSummary } from './task-summary.js'
 
 export interface TaskSelector {
   /**
@@ -70,7 +70,7 @@ export class EngineBootstrapper {
     const stepByStepFile = path.join(options.buildRaptorDir, 'step-by-step.json')
     this.transmitter.setOutputFile(stepByStepFile)
     if (options.stepByStepProcessorModuleName) {
-      this.transmitter.dynamicallyLoadProcessor(options.stepByStepProcessorModuleName)
+      await this.transmitter.dynamicallyLoadProcessor(options.stepByStepProcessorModuleName)
     }
     const engine = new Engine(
       this.logger,

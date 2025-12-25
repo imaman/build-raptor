@@ -1,9 +1,7 @@
 import { PathInRepo } from 'core-types'
 
-import { Driver } from '../src/driver'
-import { SimpleNodeRepoProtocol } from '../src/simple-node-repo-protocol'
-
-jest.setTimeout(30000)
+import { Driver } from '../src/driver.js'
+import { SimpleNodeRepoProtocol } from '../src/simple-node-repo-protocol.js'
 
 describe('config file resolution', () => {
   const testName = () => expect.getState().currentTestName

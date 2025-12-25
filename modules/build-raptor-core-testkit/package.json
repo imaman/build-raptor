@@ -4,6 +4,7 @@
   "description": "",
   "keywords": [],
   "author": "",
+  "type": "module",
   "main": "dist/src/index.js",
   "files": [
     "dist/src"
@@ -13,7 +14,7 @@
     "test": "jest"
   },
   "jest": {
-    "preset": "../../jest.preset.js"
+    "preset": "../../jest.preset.cjs"
   },
   "dependencies": {
     "brand": "1.0.0",
@@ -22,7 +23,7 @@
     "build-run-id": "1.0.0",
     "core-types": "1.0.0",
     "execa": "^5.0.0",
-    "fs-extra": "^9.0.0",
+    "fs-extra": "^11.3.3",
     "logger": "1.0.0",
     "misc": "1.0.0",
     "repo-protocol": "1.0.0",
@@ -31,6 +32,5 @@
     "type-fest": "^2.12.2",
     "unit-metadata": "1.0.0",
     "zod": "^3.21.4"
-  },
-  "devDependencies": {}
+  }
 }

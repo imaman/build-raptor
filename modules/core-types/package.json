@@ -4,6 +4,7 @@
   "description": "",
   "keywords": [],
   "author": "",
+  "type": "module",
   "main": "dist/src/index.js",
   "files": [
     "dist/src"
@@ -13,7 +14,7 @@
     "test": "jest"
   },
   "jest": {
-    "preset": "../../jest.preset.js"
+    "preset": "../../jest.preset.cjs"
   },
   "dependencies": {
     "brand": "1.0.0",

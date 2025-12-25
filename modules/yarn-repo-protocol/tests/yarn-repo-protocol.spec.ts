@@ -1,13 +1,13 @@
 import { NopAssetPublisher } from 'build-raptor-core'
 import { PathInRepo, RepoRoot } from 'core-types'
-import * as fse from 'fs-extra'
+import fs from 'fs'
 import { createNopLogger } from 'logger'
 import { DirectoryScanner, folderify, FolderifyRecipe, slurpDir, TypedPublisher } from 'misc'
 import { RepoProtocolEvent } from 'repo-protocol'
 import { TaskKind, TaskName } from 'task-name'
 import { UnitId } from 'unit-metadata'
 
-import { YarnRepoProtocol } from '../src/yarn-repo-protocol'
+import { YarnRepoProtocol } from '../src/yarn-repo-protocol.js'
 
 async function makeFolder(recipe: FolderifyRecipe) {
   return RepoRoot(await folderify(recipe))
@@ -17,7 +17,6 @@ async function slurp(d: RepoRoot) {
   return await slurpDir(d.resolve())
 }
 
-jest.setTimeout(60000)
 describe('yarn-repo-protocol', () => {
   const logger = createNopLogger()
   const p = new TypedPublisher<RepoProtocolEvent>()
@@ -468,12 +467,12 @@ describe('yarn-repo-protocol', () => {
         await yrpA.initialize(d, p, out)
 
         const tsconfigPath = d.resolve(PathInRepo('modules/a/tsconfig.json'))
-        const statA = await fse.stat(tsconfigPath)
+        const statA = await fs.promises.stat(tsconfigPath)
 
         const yrpB = newYarnRepoProtocol()
         await yrpB.initialize(d, p, out)
 
-        const statB = await fse.stat(tsconfigPath)
+        const statB = await fs.promises.stat(tsconfigPath)
         expect(statB.mtimeMs).toEqual(statA.mtimeMs)
       })
     })

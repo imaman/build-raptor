@@ -1,7 +1,7 @@
 import { chaoticDeterministicString, slurpDir } from '../src'
-import { FilesystemStorageClient } from '../src/file-system-storage-client'
-import { folderify } from '../src/folderify'
-import { storageClientContract } from './storage-client-contract'
+import { FilesystemStorageClient } from '../src/file-system-storage-client.js'
+import { folderify } from '../src/folderify.js'
+import { storageClientContract } from './storage-client-contract.js'
 
 describe('file-system-storage-client', () => {
   storageClientContract(async () => await FilesystemStorageClient.create(await folderify({})))
