@@ -1,5 +1,5 @@
-import { Int } from '.'
 import { failMe, shouldNeverHappen } from './constructs.js'
+import { Int } from './index.js'
 import { computeHash, computeObjectHash } from './misc.js'
 import { Key, StorageClient } from './storage-client.js'
 

@@ -2,7 +2,7 @@ import * as fs from 'fs'
 import fse from 'fs-extra/esm'
 import * as path from 'path'
 
-import { shouldNeverHappen } from '.'
+import { shouldNeverHappen } from './index.js'
 import { trimTrailing } from './strings.js'
 
 type Predicate = (relativePath: string, stat: fs.Stats) => boolean

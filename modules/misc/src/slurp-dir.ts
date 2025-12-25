@@ -1,4 +1,4 @@
-import { DirectoryScanner } from '.'
+import { DirectoryScanner } from './index.js'
 
 export async function slurpDir(rootDir: string): Promise<Record<string, string | string>> {
   const scanner = new DirectoryScanner(rootDir)

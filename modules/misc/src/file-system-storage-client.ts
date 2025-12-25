@@ -2,8 +2,8 @@ import fs from 'fs'
 import fse from 'fs-extra/esm'
 import * as path from 'path'
 
-import { shouldNeverHappen } from '.'
 import { cleanDirectory } from './clean-directory.js'
+import { shouldNeverHappen } from './index.js'
 import { computeHash, computeObjectHash } from './misc.js'
 import { Key, StorageClient } from './storage-client.js'
 
