@@ -2,17 +2,9 @@
 
 set -e
 
-#yarn pack-all
+yarn pack-all
 
-dir1=$(mktemp -d)
-dir2=$(mktemp -d)
-dir3=$(mktemp -d)
-
-etc/prepare-npm-package.mjs modules/build-raptor "$dir1" 
-etc/prepare-npm-package.mjs modules/build-raptor-jest-reporter "$dir2"
-etc/prepare-npm-package.mjs modules/build-raptor-api "$dir3"
-
-pushd "$dir1"
+pushd modules/build-raptor/pack
 CURRENT_VERSION=$(npm info build-raptor version)
 npm pkg set "version=$CURRENT_VERSION"
 npm version minor
@@ -23,19 +15,19 @@ popd
 
 
 
-pushd "$dir2"
+pushd modules/build-raptor-jest-reporter/pack
 npm pkg set "version=$NEXT_VERSION"
 echo "pubishing build-raptor-jest-reporter $NEXT_VERSION"
 npm publish
 popd
 
-pushd "$dir3"
+pushd modules/build-raptor-api/pack
 npm pkg set "version=$NEXT_VERSION"
 echo "pubishing build-raptor-api $NEXT_VERSION"
 npm publish
 popd
 
-pushd "$dir1"
+pushd modules/build-raptor/pack
 echo "pubishing build-raptor $NEXT_VERSION"
 npm publish
 popd
