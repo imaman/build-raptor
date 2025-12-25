@@ -9,10 +9,10 @@
       "path": "../build-failed-error"
     },
     {
-      "path": "../build-raptor-core-testkit"
+      "path": "../build-raptor-core"
     },
     {
-      "path": "../build-raptor-jest-reporter"
+      "path": "../build-raptor-core-testkit"
     },
     {
       "path": "../core-types"

@@ -6,10 +6,16 @@
   },
   "references": [
     {
+      "path": "../brand"
+    },
+    {
       "path": "../build-raptor-api"
     },
     {
       "path": "../build-raptor-core"
+    },
+    {
+      "path": "../build-run-id"
     },
     {
       "path": "../core-types"
