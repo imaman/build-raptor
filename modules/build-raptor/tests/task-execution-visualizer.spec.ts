@@ -1,4 +1,4 @@
-import { TaskExecutionVisualizer } from '../src/task-execution-visualizer'
+import { TaskExecutionVisualizer } from '../src/task-execution-visualizer.js'
 
 describe('TaskExecutionVisualizer', () => {
   let visualizer: TaskExecutionVisualizer

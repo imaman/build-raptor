@@ -1,1 +1,1 @@
-export * from './build-failed-error'
+export * from './build-failed-error.js'

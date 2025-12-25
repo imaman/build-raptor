@@ -4,10 +4,10 @@ import { OutputLocation, TaskInfo } from 'repo-protocol'
 import { TaskName } from 'task-name'
 import { Mutable } from 'type-fest'
 
-import { ExecutionRecord } from './execution-record'
-import { Fingerprint } from './fingerprint'
-import { Phase } from './phase'
-import { SlotIndex } from './slot-index'
+import { ExecutionRecord } from './execution-record.js'
+import { Fingerprint } from './fingerprint.js'
+import { Phase } from './phase.js'
+import { SlotIndex } from './slot-index.js'
 
 export class Task {
   readonly name: TaskName

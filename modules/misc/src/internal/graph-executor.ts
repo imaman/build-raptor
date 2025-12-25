@@ -1,6 +1,6 @@
-import { Executor } from '../executor'
-import { BatchScheduler, Graph } from '../graph'
-import { mapIncrement } from '../maps'
+import { Executor } from '../executor.js'
+import { BatchScheduler, Graph } from '../graph.js'
+import { mapIncrement } from '../maps.js'
 
 export class GraphExecutor<V> {
   private readonly map

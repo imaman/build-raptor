@@ -1,1 +1,1 @@
-export * from './reporter-output'
+export * from './reporter-output.js'

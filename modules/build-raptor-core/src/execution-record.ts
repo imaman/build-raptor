@@ -1,9 +1,9 @@
 export type Verdict = 'UNKNOWN' | 'CRASH' | 'FAIL' | 'OK'
 import { TaskName } from 'task-name'
 
-import { ExecutionType } from './execution-type'
-import { Phase } from './phase'
-import { SlotIndex } from './slot-index'
+import { ExecutionType } from './execution-type.js'
+import { Phase } from './phase.js'
+import { SlotIndex } from './slot-index.js'
 
 export interface ExecutionRecord {
   readonly verdict: Verdict

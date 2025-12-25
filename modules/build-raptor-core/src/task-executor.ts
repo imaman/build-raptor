@@ -6,14 +6,14 @@ import * as path from 'path'
 import { ExitStatus, RepoProtocol } from 'repo-protocol'
 import { TaskName } from 'task-name'
 
-import { EngineEventScheme } from './engine-event-scheme'
-import { Fingerprint } from './fingerprint'
-import { FingerprintLedger } from './fingerprint-ledger'
-import { Model } from './model'
-import { Phase } from './phase'
-import { Purger } from './purger'
-import { TaskStore } from './task-store'
-import { TaskTracker } from './task-tracker'
+import { EngineEventScheme } from './engine-event-scheme.js'
+import { Fingerprint } from './fingerprint.js'
+import { FingerprintLedger } from './fingerprint-ledger.js'
+import { Model } from './model.js'
+import { Phase } from './phase.js'
+import { Purger } from './purger.js'
+import { TaskStore } from './task-store.js'
+import { TaskTracker } from './task-tracker.js'
 
 /**
  * An object that is reponsible for executing a task.

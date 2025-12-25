@@ -1,7 +1,7 @@
 import * as crypto from 'crypto'
 import { pairsToRecord } from 'misc'
 
-import { Fingerprint } from './fingerprint'
+import { Fingerprint } from './fingerprint.js'
 
 export class Hasher {
   private readonly hash: crypto.Hash

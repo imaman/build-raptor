@@ -1,5 +1,5 @@
-import { DirectoryScanner } from '../src/directory-scanner'
-import { folderify } from '../src/folderify'
+import { DirectoryScanner } from '../src/directory-scanner.js'
+import { folderify } from '../src/folderify.js'
 
 describe('folderify', () => {
   test('creates files as specifies in its input', async () => {

@@ -4,7 +4,7 @@ import { Logger } from 'logger'
 import { promises, switchOn } from 'misc'
 import { OutputLocation } from 'repo-protocol'
 
-import { Task } from './task'
+import { Task } from './task.js'
 
 export class Purger {
   constructor(private readonly logger: Logger, private readonly repoRootDir: RepoRoot) {}

@@ -1,11 +1,11 @@
-import { errorLike } from '../src/constructs'
+import { errorLike } from '../src/constructs.js'
 import {
   chaoticDeterministicString,
   partition,
   threeWaySplit,
   toReasonableFileName,
   trimTrailing,
-} from '../src/strings'
+} from '../src/strings.js'
 
 describe('strings', () => {
   describe('trimTrailing()', () => {

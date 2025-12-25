@@ -2,10 +2,10 @@ import { Int, shouldNeverHappen, switchOn } from 'misc'
 import { ExitStatus } from 'repo-protocol'
 import { TaskName } from 'task-name'
 
-import { ExecutionPlan } from './execution-plan'
-import { PerformanceReport } from './performance-report'
-import { SlotIndex } from './slot-index'
-import { Task } from './task'
+import { ExecutionPlan } from './execution-plan.js'
+import { PerformanceReport } from './performance-report.js'
+import { SlotIndex } from './slot-index.js'
+import { Task } from './task.js'
 
 export class TaskTracker {
   private numRunning = 0

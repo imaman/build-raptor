@@ -1,7 +1,7 @@
 import PQueue from 'p-queue'
 
-import { sortBy } from './arrays'
-import { shouldNeverHappen } from './constructs'
+import { sortBy } from './arrays.js'
+import { shouldNeverHappen } from './constructs.js'
 
 /**
  * An array-like collection of items allowing map() and filter() operations to be used with async functions with minimal

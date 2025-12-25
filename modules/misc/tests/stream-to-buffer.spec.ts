@@ -2,8 +2,8 @@ import * as fse from 'fs-extra'
 import * as path from 'path'
 import { Readable, Writable } from 'stream'
 
-import { folderify } from '../src/folderify'
-import { streamTobuffer } from '../src/stream-to-buffer'
+import { folderify } from '../src/folderify.js'
+import { streamTobuffer } from '../src/stream-to-buffer.js'
 
 describe('stream-to-buffer', () => {
   test('translates a file read stream to a buffer', async () => {

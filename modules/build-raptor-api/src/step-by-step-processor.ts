@@ -1,4 +1,4 @@
-import { Step } from './build-raptor-api'
+import { Step } from './build-raptor-api.js'
 
 /**
  * StepByStepProcessor is a function type for processing build steps in real-time.

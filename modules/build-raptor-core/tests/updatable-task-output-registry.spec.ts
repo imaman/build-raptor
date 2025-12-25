@@ -1,7 +1,7 @@
 import { PathInRepo } from 'core-types'
 import { TaskName } from 'task-name'
 
-import { TaskOutputRegistry, UpdateableTaskOutputRegistry } from '../src/updatable-task-output-registry'
+import { TaskOutputRegistry, UpdateableTaskOutputRegistry } from '../src/updatable-task-output-registry.js'
 
 describe('updatable-task-output-registry', () => {
   const add = (reg: UpdateableTaskOutputRegistry, taskName: string, pathInRepo: string) => {
