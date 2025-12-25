@@ -18,7 +18,7 @@
   "dependencies": {
     "brand": "1.0.0",
     "fs-extra": "^11.3.3",
-    "p-queue": "^6.0.0",
+    "p-queue": "^9.0.1",
     "safe-stable-stringify": "^2.3.1",
     "tmp-promise": "^3.0.3"
   },
