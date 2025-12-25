@@ -35,7 +35,7 @@
     "zod": "^3.21.4"
   },
   "devDependencies": {
-    "@types/fs-extra": "^9.0.0",
+    "@types/fs-extra": "^11.0.4",
     "@types/tmp": "^0.2.2",
     "@types/uuid": "^8.0.0",
     "tmp": "^0.2.5"
