@@ -5,16 +5,16 @@
   "keywords": [],
   "author": "",
   "type": "module",
-  "main": "dist/src/index.js",
+  "main": "dist/src/index.cjs",
   "files": [
     "dist/src"
   ],
   "scripts": {
-    "build": "tsc -b && cp src/a.js dist/src/index.js",
-    "build:post": "cp src/a.js dist/src/index.js",
+    "build": "tsc -b && cp src/a.cjs dist/src/index.cjs",
+    "build:post": "cp src/a.cjs dist/src/index.cjs",
     "test": "jest"
   },
   "jest": {
-    "preset": "../../jest.preset.js"
+    "preset": "../../jest.preset.cjs"
   }
 }

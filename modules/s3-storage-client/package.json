@@ -14,7 +14,7 @@
     "test": "jest"
   },
   "jest": {
-    "preset": "../../jest.preset.js"
+    "preset": "../../jest.preset.cjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.623.0",
