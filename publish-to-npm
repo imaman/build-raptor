@@ -8,7 +8,7 @@ dir1=$(mktemp -d)
 dir2=$(mktemp -d)
 dir3=$(mktemp -d)
 
-etc/prepare-npm-package.mjs modules/build-raptor "$dir1" --exclude build-raptor-jest-reporter
+etc/prepare-npm-package.mjs modules/build-raptor "$dir1" 
 etc/prepare-npm-package.mjs modules/build-raptor-jest-reporter "$dir2"
 etc/prepare-npm-package.mjs modules/build-raptor-api "$dir3"
 
