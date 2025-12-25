@@ -16,18 +16,21 @@
     "preset": "../../jest.preset.js"
   },
   "dependencies": {
+    "brand": "1.0.0",
     "build-raptor-api": "1.0.0",
     "build-raptor-core": "1.0.0",
+    "build-run-id": "1.0.0",
     "core-types": "1.0.0",
+    "execa": "^5.0.0",
     "fs-extra": "^9.0.0",
     "logger": "1.0.0",
     "misc": "1.0.0",
     "repo-protocol": "1.0.0",
     "repo-protocol-toolbox": "1.0.0",
     "task-name": "1.0.0",
-    "unit-metadata": "1.0.0"
+    "type-fest": "^2.12.2",
+    "unit-metadata": "1.0.0",
+    "zod": "^3.21.4"
   },
-  "devDependencies": {
-    "type-fest": "^2.12.2"
-  }
+  "devDependencies": {}
 }
