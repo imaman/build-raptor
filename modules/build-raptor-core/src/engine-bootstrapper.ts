@@ -70,7 +70,7 @@ export class EngineBootstrapper {
     const stepByStepFile = path.join(options.buildRaptorDir, 'step-by-step.json')
     this.transmitter.setOutputFile(stepByStepFile)
     if (options.stepByStepProcessorModuleName) {
-      this.transmitter.dynamicallyLoadProcessor(options.stepByStepProcessorModuleName)
+      await this.transmitter.dynamicallyLoadProcessor(options.stepByStepProcessorModuleName)
     }
     const engine = new Engine(
       this.logger,
