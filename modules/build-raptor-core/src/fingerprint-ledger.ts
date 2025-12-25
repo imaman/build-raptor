@@ -5,8 +5,8 @@ import { failMe } from 'misc'
 import { TaskName } from 'task-name'
 import { z } from 'zod'
 
-import { Fingerprint } from './fingerprint.js'
-import { Hasher } from './hasher.js'
+import { Fingerprint } from './fingerprint'
+import { Hasher } from './hasher'
 
 const LedgerItem = z.union([
   z.object({

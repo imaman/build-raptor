@@ -1,5 +1,5 @@
 import { aTimeoutOf } from '../src'
-import { TypedPublisher } from '../src/typed-publisher.js'
+import { TypedPublisher } from '../src/typed-publisher'
 
 describe('typed-publisher', () => {
   test('relays an event to a subscriber', () => {

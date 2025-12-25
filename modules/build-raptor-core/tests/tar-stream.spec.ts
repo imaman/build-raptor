@@ -4,7 +4,7 @@ import { folderify, slurpDir } from 'misc'
 import * as os from 'os'
 import * as path from 'path'
 
-import { TarStream } from '../src/tar-stream.js'
+import { TarStream } from '../src/tar-stream'
 
 function tempDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'tmp'))

@@ -1,6 +1,6 @@
 import { createNopLogger } from 'logger'
 
-import { S3StorageClient } from './s3-storage-client.js'
+import { S3StorageClient } from './s3-storage-client'
 
 /* eslint-disable no-console */
 async function main() {

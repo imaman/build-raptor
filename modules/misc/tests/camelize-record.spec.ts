@@ -1,4 +1,4 @@
-import { CamelizeRecord, camelizeRecord } from '../src/camelize-record.js'
+import { CamelizeRecord, camelizeRecord } from '../src/camelize-record'
 
 type Example = Record<'first-name' | 'last-name' | 'home-town', string | number | boolean>
 

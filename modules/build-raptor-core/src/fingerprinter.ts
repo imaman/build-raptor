@@ -4,8 +4,8 @@ import { Logger } from 'logger'
 import { DirectoryScanner, sortBy } from 'misc'
 import * as path from 'path'
 
-import { Fingerprint } from './fingerprint.js'
-import { Hasher } from './hasher.js'
+import { Fingerprint } from './fingerprint'
+import { Hasher } from './hasher'
 
 export type OnHasherClose = (h: Hasher, content?: string) => Promise<void>
 

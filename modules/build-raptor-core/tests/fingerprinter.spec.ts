@@ -5,7 +5,7 @@ import { createNopLogger } from 'logger'
 import { DirectoryScanner, folderify, FolderifyRecipe } from 'misc'
 import * as path from 'path'
 
-import { Fingerprinter, OnHasherClose } from '../src/fingerprinter.js'
+import { Fingerprinter, OnHasherClose } from '../src/fingerprinter'
 
 describe('fingerprinter', () => {
   async function create(recipe: FolderifyRecipe, predicate: (path: string) => boolean, onHasherClose?: OnHasherClose) {

@@ -4,7 +4,7 @@ import * as ChildProcess from 'child_process'
 import { createNopLogger } from 'logger'
 import { folderify } from 'misc'
 
-import { YarnRepoProtocol } from '../src/yarn-repo-protocol.js'
+import { YarnRepoProtocol } from '../src/yarn-repo-protocol'
 
 jest.setTimeout(120000)
 describe('asset-publishing-and-packing-and-running', () => {

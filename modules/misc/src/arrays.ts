@@ -1,4 +1,4 @@
-import { mapIncrement } from './maps.js'
+import { mapIncrement } from './maps'
 
 export function sortBy<T>(input: readonly T[], key: (item: T) => number): T[]
 export function sortBy<T>(input: readonly T[], key: (item: T) => string): T[]

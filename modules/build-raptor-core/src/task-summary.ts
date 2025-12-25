@@ -1,7 +1,7 @@
 import { TaskName } from 'task-name'
 
-import { ExecutionType } from './execution-type.js'
-import { SlotIndex } from './slot-index.js'
+import { ExecutionType } from './execution-type'
+import { SlotIndex } from './slot-index'
 
 export interface TaskSummary {
   taskName: TaskName

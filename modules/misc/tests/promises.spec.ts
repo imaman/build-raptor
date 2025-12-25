@@ -1,5 +1,5 @@
-import { aTimeoutOf } from '../src/misc.js'
-import { promises } from '../src/promises.js'
+import { aTimeoutOf } from '../src/misc'
+import { promises } from '../src/promises'
 
 describe('promises', () => {
   describe('map', () => {

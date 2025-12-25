@@ -1,1 +1,1 @@
-export * from './unit-metadata.js'
+export * from './unit-metadata'

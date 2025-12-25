@@ -1,8 +1,8 @@
 import { TaskKind } from 'task-name'
 import { UnitId } from 'unit-metadata'
 
-import { Driver } from '../src/driver.js'
-import { RepoProtocolTestkit } from '../src/repo-protocol-testkit.js'
+import { Driver } from '../src/driver'
+import { RepoProtocolTestkit } from '../src/repo-protocol-testkit'
 
 jest.setTimeout(30000)
 describe('planner', () => {

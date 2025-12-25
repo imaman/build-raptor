@@ -5,7 +5,7 @@ import { FilesystemStorageClient } from 'misc'
 import * as os from 'os'
 import * as path from 'path'
 
-import { BlobId, TaskStore } from './task-store.js'
+import { BlobId, TaskStore } from './task-store'
 
 function print(...args: unknown[]) {
   console.log(...args) // eslint-disable-line no-console

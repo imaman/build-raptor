@@ -2,7 +2,7 @@ import { NopAssetPublisher } from 'build-raptor-core'
 import { Driver } from 'build-raptor-core-testkit'
 import { createNopLogger } from 'logger'
 
-import { YarnRepoProtocol } from '../src/yarn-repo-protocol.js'
+import { YarnRepoProtocol } from '../src/yarn-repo-protocol'
 
 jest.setTimeout(120000)
 describe('yarn-repo-protocol.e2e', () => {

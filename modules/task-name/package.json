@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "brand": "1.0.0",
+    "misc": "1.0.0",
     "unit-metadata": "1.0.0"
   }
 }

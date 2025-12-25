@@ -16,7 +16,6 @@
     "preset": "../../jest.preset.js"
   },
   "dependencies": {
-    "core-types": "1.0.0",
     "misc": "1.0.0",
     "repo-protocol": "1.0.0",
     "task-name": "1.0.0",

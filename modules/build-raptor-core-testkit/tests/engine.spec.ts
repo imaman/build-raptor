@@ -5,9 +5,9 @@ import { TaskKind, TaskName } from 'task-name'
 import { UnitId, UnitMetadata } from 'unit-metadata'
 import { z } from 'zod'
 
-import { Driver } from '../src/driver.js'
-import { RepoProtocolTestkit } from '../src/repo-protocol-testkit.js'
-import { SimpleNodeRepoProtocol } from '../src/simple-node-repo-protocol.js'
+import { Driver } from '../src/driver'
+import { RepoProtocolTestkit } from '../src/repo-protocol-testkit'
+import { SimpleNodeRepoProtocol } from '../src/simple-node-repo-protocol'
 
 class FailingStorageClient implements StorageClient {
   getContentAddressable(_hash: string): Promise<Buffer> {

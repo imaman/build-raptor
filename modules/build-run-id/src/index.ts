@@ -1,1 +1,1 @@
-export * from './build-run-id.js'
+export * from './build-run-id'

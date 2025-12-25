@@ -2,7 +2,7 @@ import * as fs from 'fs'
 import { aTimeoutOf } from 'misc'
 import * as Tmp from 'tmp-promise'
 
-import { createDefaultLogger } from '../src/logger.js'
+import { createDefaultLogger } from '../src/logger'
 
 async function awaitFor<T>(ms: number, calc: () => Promise<T | undefined>): Promise<T> {
   const t0 = Date.now()

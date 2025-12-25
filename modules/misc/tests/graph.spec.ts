@@ -1,5 +1,5 @@
 import { aTimeoutOf } from '../src'
-import { Graph } from '../src/graph.js'
+import { Graph } from '../src/graph'
 
 describe('graph', () => {
   describe('neighborsOf', () => {

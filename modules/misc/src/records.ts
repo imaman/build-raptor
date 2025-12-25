@@ -1,4 +1,4 @@
-import { sortBy } from './arrays.js'
+import { sortBy } from './arrays'
 
 /**
  * Translates a given record into an array of key,value pairs. Unlike Object.entires() it correctly preserves the types
@@ -25,7 +25,7 @@ export function pairsToRecord<K extends string, V>(pairs: Iterable<[K, V]> | Arr
 
 export function mapRecord<K extends string, V, K2 extends string, V2>(
   record: Record<K, V>,
-  f: (a: [K, V]) => [K2, V2] | undefined,
+  f: (a: [K, V]) => [K2, V2]|undefined,
 ): Record<K2, V2> {
   // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   const ret = {} as Record<K2, V2>

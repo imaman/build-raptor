@@ -24,7 +24,7 @@ import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import { YarnRepoProtocol } from 'yarn-repo-protocol'
 
-import { TaskExecutionVisualizer } from './task-execution-visualizer.js'
+import { TaskExecutionVisualizer } from './task-execution-visualizer'
 
 type TestReporting = 'tree-all' | 'tree-just-failing'
 

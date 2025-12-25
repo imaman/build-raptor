@@ -20,7 +20,7 @@ import { TaskKind, TaskName } from 'task-name'
 import { UnitId, UnitMetadata } from 'unit-metadata'
 import { z } from 'zod'
 
-import { Run } from './driver.js'
+import { Run } from './driver'
 
 type TaskInRun = Brand<string, 'TaskInRun'>
 

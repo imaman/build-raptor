@@ -3,7 +3,7 @@ import { failMe, findDups, groupBy, hardGet, recordToPairs, sortBy } from 'misc'
 import { TaskInfo } from 'repo-protocol'
 import { TaskName } from 'task-name'
 
-import { TaskOutputRegistry, UpdateableTaskOutputRegistry } from './updatable-task-output-registry.js'
+import { TaskOutputRegistry, UpdateableTaskOutputRegistry } from './updatable-task-output-registry'
 
 export function validateTaskInfos(infos: TaskInfo[]): TaskOutputRegistry {
   checkNameCollision(infos)

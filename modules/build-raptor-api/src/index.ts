@@ -1,2 +1,2 @@
-export * from './build-raptor-api.js'
-export * from './step-by-step-processor.js'
+export * from './build-raptor-api'
+export * from './step-by-step-processor'

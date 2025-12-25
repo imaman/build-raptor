@@ -21,7 +21,7 @@ import { TaskKind, TaskName } from 'task-name'
 import { PackageJson } from 'type-fest'
 import { UnitId } from 'unit-metadata'
 
-import { SimpleNodeRepoProtocol } from './simple-node-repo-protocol.js'
+import { SimpleNodeRepoProtocol } from './simple-node-repo-protocol'
 
 interface LinesOptions {
   trimEach?: boolean

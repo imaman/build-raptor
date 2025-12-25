@@ -1,3 +1,3 @@
-export * from './generate-task-infos.js'
-export * from './repo-protocol-toolbox.js'
-export * from './task-definition.js'
+export * from './generate-task-infos'
+export * from './repo-protocol-toolbox'
+export * from './task-definition'

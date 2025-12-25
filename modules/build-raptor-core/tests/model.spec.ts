@@ -5,8 +5,8 @@ import { DirectoryScanner, Graph } from 'misc'
 import * as Tmp from 'tmp-promise'
 import { UnitId, UnitMetadata } from 'unit-metadata'
 
-import { Fingerprinter } from '../src/fingerprinter.js'
-import { Model } from '../src/model.js'
+import { Fingerprinter } from '../src/fingerprinter'
+import { Model } from '../src/model'
 
 describe('model', () => {
   test('yells on duplicate unit IDs', async () => {

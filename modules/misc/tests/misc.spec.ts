@@ -2,8 +2,8 @@ import * as fse from 'fs-extra'
 import * as path from 'path'
 import * as Tmp from 'tmp-promise'
 
-import { computeObjectHash, dumpFile } from '../src/misc.js'
-import { chaoticDeterministicString } from '../src/strings.js'
+import { computeObjectHash, dumpFile } from '../src/misc'
+import { chaoticDeterministicString } from '../src/strings'
 
 describe('misc', () => {
   describe('computeObjectHash', () => {

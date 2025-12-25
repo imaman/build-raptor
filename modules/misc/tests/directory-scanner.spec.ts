@@ -2,8 +2,8 @@ import * as fs from 'fs'
 import * as fse from 'fs-extra'
 import * as path from 'path'
 
-import { DirectoryScanner } from '../src/directory-scanner.js'
-import { folderify } from '../src/folderify.js'
+import { DirectoryScanner } from '../src/directory-scanner'
+import { folderify } from '../src/folderify'
 
 describe('directory-scanner', () => {
   async function run(

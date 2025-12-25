@@ -5,8 +5,8 @@ import * as path from 'path'
 import { TaskKind, TaskName } from 'task-name'
 import { UnitId } from 'unit-metadata'
 
-import { PerformanceReport } from './performance-report.js'
-import { TaskSummary } from './task-summary.js'
+import { PerformanceReport } from './performance-report'
+import { TaskSummary } from './task-summary'
 
 export class Breakdown {
   constructor(

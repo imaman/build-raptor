@@ -1,1 +1,1 @@
-export * from './task-name.js'
+export * from './task-name'

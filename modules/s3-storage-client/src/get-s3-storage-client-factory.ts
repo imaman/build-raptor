@@ -2,8 +2,8 @@ import { Logger } from 'logger'
 import { StorageClient } from 'misc'
 import { z } from 'zod'
 
-import { Creds } from './creds.js'
-import { S3StorageClient } from './s3-storage-client.js'
+import { Creds } from './creds'
+import { S3StorageClient } from './s3-storage-client'
 
 const AwsAccessKey = z.object({
   AccessKey: z.object({

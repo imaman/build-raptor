@@ -14,9 +14,9 @@ import * as util from 'util'
 import * as zlib from 'zlib'
 import { z } from 'zod'
 
-import { Fingerprint } from './fingerprint.js'
-import { TarStream } from './tar-stream.js'
-import { TaskStoreEvent } from './task-store-event.js'
+import { Fingerprint } from './fingerprint'
+import { TarStream } from './tar-stream'
+import { TaskStoreEvent } from './task-store-event'
 
 type OutputDescriptor = { pathInRepo: PathInRepo; isPublic: boolean }
 

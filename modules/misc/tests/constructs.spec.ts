@@ -1,4 +1,4 @@
-import { errorLike, failMe, shouldNeverHappen, switchOn } from '../src/constructs.js'
+import { errorLike, failMe, shouldNeverHappen, switchOn } from '../src/constructs'
 
 describe('constructs', () => {
   describe('shouldNeverHappen', () => {

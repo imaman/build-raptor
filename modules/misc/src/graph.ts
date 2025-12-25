@@ -1,11 +1,11 @@
 import PQueue from 'p-queue'
 
-import { sortBy } from './arrays.js'
-import { shouldNeverHappen } from './constructs.js'
-import { Executor } from './executor.js'
-import { GraphExecutor } from './internal/graph-executor.js'
-import { hardGet, mapIncrement } from './maps.js'
-import { ObjectMap } from './object-map.js'
+import { sortBy } from './arrays'
+import { shouldNeverHappen } from './constructs'
+import { Executor } from './executor'
+import { GraphExecutor } from './internal/graph-executor'
+import { hardGet, mapIncrement } from './maps'
+import { ObjectMap } from './object-map'
 
 interface TraverseOptions {
   direction: 'forward' | 'backwards'

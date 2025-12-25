@@ -34,10 +34,10 @@ import { PackageJson, TsConfigJson } from 'type-fest'
 import { UnitId, UnitMetadata } from 'unit-metadata'
 import { z } from 'zod'
 
-import { BuildTaskRecord, ResolvedBuildTaskDefinition } from './build-task-record.js'
-import { generateTestRunSummary } from './generate-test-run-summary.js'
-import { RerunList } from './rerun-list.js'
-import { YarnRepoProtocolConfig } from './yarn-repo-protocol-config.js'
+import { BuildTaskRecord, ResolvedBuildTaskDefinition } from './build-task-record'
+import { generateTestRunSummary } from './generate-test-run-summary'
+import { RerunList } from './rerun-list'
+import { YarnRepoProtocolConfig } from './yarn-repo-protocol-config'
 
 const yarnWorkspacesInfoSchema = z.record(
   z.object({

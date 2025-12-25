@@ -7,7 +7,7 @@ import { RepoProtocolEvent } from 'repo-protocol'
 import { TaskKind, TaskName } from 'task-name'
 import { UnitId } from 'unit-metadata'
 
-import { YarnRepoProtocol } from '../src/yarn-repo-protocol.js'
+import { YarnRepoProtocol } from '../src/yarn-repo-protocol'
 
 async function makeFolder(recipe: FolderifyRecipe) {
   return RepoRoot(await folderify(recipe))
