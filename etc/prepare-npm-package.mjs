@@ -168,7 +168,7 @@ async function bundleWithEsbuild(entryPoint, outputPath, externalDeps, options =
     target: 'node20',
     outfile: outputPath,
     external: externalDeps,
-    sourcemap: false,
+    sourcemap: 'inline',
     minify: false,
     keepNames: true,
     ...(banner && { banner: { js: banner } }),
