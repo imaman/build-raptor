@@ -217,16 +217,17 @@ function bundleTypeDeclarations(packagePath, inRepoDeps, outputDir) {
     return
   }
 
-  // Create a temporary tsconfig with moduleResolution: "node" because dts-bundle-generator
-  // doesn't support moduleResolution: "bundler" which is used in this repo
+  // Create a temporary tsconfig with moduleResolution: "node16" because dts-bundle-generator
+  // doesn't support moduleResolution: "bundler" which is used in this repo.
+  // We use "node16" instead of "node" to support subpath exports (e.g., fs-extra/esm).
   const tempTsconfig = path.join(REPO_ROOT, '.temp-dts-tsconfig.json')
   fs.writeFileSync(
     tempTsconfig,
     JSON.stringify(
       {
         compilerOptions: {
-          module: 'ES2022',
-          moduleResolution: 'node',
+          module: 'Node16',
+          moduleResolution: 'Node16',
           target: 'ES2022',
           declaration: true,
           strict: true,
