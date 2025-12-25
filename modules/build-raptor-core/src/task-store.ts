@@ -1,3 +1,4 @@
+import { Brand } from 'brand'
 import { BuildFailedError } from 'build-failed-error'
 import { PathInRepo, RepoRoot } from 'core-types'
 import * as fs from 'fs'
