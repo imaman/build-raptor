@@ -18,15 +18,18 @@ export class StepByStepTransmitter {
 
   addProcessor(p: StepByStepProcessor) {
     this.stepByStepProcessors.push(p)
+    this.logger.print(`added processor: ${p.constructor.name}`)
   }
 
   transmit(step: Step) {
     const parsed = Step.parse(step)
     this.steps.push(parsed)
 
+    this.logger.print(`transmitting: ${JSON.stringify(step)}`)
     for (const p of this.stepByStepProcessors) {
       this.promises.push(Promise.resolve(p(parsed)))
     }
+    this.logger.print('transmitted')
   }
 
   async close() {
