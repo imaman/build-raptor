@@ -1,5 +1,4 @@
 import * as fs from 'fs'
-import fse from 'fs-extra/esm'
 import { Logger } from 'logger'
 import { DirectoryScanner, sortBy } from 'misc'
 import * as path from 'path'
@@ -78,7 +77,7 @@ export class Fingerprinter {
 
 async function readFile(p: string) {
   try {
-    return await fse.readFile(p)
+    return await fs.promises.readFile(p)
   } catch (e) {
     throw new Error(`Failed to read ${p}: ${e}`)
   }
@@ -94,7 +93,7 @@ function statPath(p: string) {
 
 async function readDir(p: string) {
   try {
-    return await fse.readdir(p, { withFileTypes: true })
+    return await fs.promises.readdir(p, { withFileTypes: true })
   } catch (e) {
     throw new Error(`Failed to read dir ${p}: ${e}`)
   }
