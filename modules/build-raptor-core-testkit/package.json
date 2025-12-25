@@ -22,7 +22,7 @@
     "build-run-id": "1.0.0",
     "core-types": "1.0.0",
     "execa": "^5.0.0",
-    "fs-extra": "^9.0.0",
+    "fs-extra": "^11.3.3",
     "logger": "1.0.0",
     "misc": "1.0.0",
     "repo-protocol": "1.0.0",
