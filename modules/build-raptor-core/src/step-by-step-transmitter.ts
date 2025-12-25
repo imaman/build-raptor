@@ -28,7 +28,7 @@ export class StepByStepTransmitter {
     for (const p of this.stepByStepProcessors) {
       this.promises.push(Promise.resolve(p(parsed)))
     }
-    this.logger.print('transmitted')
+    this.logger.info('transmitted')
   }
 
   async close() {
