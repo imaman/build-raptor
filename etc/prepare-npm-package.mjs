@@ -202,8 +202,18 @@ async function bundleBinScripts(packagePath, binField, packageName, outputDir, e
 
 function bundleTypeDeclarations(packagePath, inRepoDeps, outputDir) {
   const entryPoint = path.join(packagePath, 'src', 'index.ts')
+
+  // Check if index.ts exists and has actual exports
   if (!fs.existsSync(entryPoint)) {
-    fs.writeFileSync(path.join(outputDir, 'index.d.ts'), '// Type declarations not available\nexport {}\n')
+    copyFallbackDts(packagePath, outputDir)
+    return
+  }
+
+  const sourceContent = fs.readFileSync(entryPoint, 'utf-8')
+  const hasExports = /\bexport\b/.test(sourceContent)
+  if (!hasExports) {
+    console.log('  src/index.ts has no exports, skipping dts-bundle-generator')
+    copyFallbackDts(packagePath, outputDir)
     return
   }
 
@@ -252,6 +262,15 @@ function bundleTypeDeclarations(packagePath, inRepoDeps, outputDir) {
     fs.writeFileSync(path.join(outputDir, 'index.d.ts'), bundledDts)
   } finally {
     fs.rmSync(tempTsconfig, { force: true })
+  }
+}
+
+function copyFallbackDts(packagePath, outputDir) {
+  const compiledDts = path.join(packagePath, 'dist', 'src', 'index.d.ts')
+  if (fs.existsSync(compiledDts)) {
+    fs.copyFileSync(compiledDts, path.join(outputDir, 'index.d.ts'))
+  } else {
+    fs.writeFileSync(path.join(outputDir, 'index.d.ts'), '// Type declarations not available\nexport {}\n')
   }
 }
 
