@@ -1,5 +1,6 @@
 // We probably do not need this anymore since we started computing fingerprints of inputs, and these tests
 
+import fs from 'fs'
 import fse from 'fs-extra/esm'
 import { createNopLogger } from 'logger'
 import { DirectoryScanner, folderify, FolderifyRecipe } from 'misc'
@@ -19,7 +20,7 @@ describe('fingerprinter', () => {
     const { fingerprinter: fingerprinterB, dir } = await create({ 'x/y': 'foo' }, p => p !== 'x/z')
 
     await fse.ensureDir(path.join(dir, 'x/z'))
-    await fse.writeFile(path.join(dir, 'x/z/z1'), 'foo')
+    await fs.promises.writeFile(path.join(dir, 'x/z/z1'), 'foo')
     expect(await fingerprinterA.computeFingerprint('x')).toEqual(await fingerprinterB.computeFingerprint('x'))
   })
   test.todo('fingerprint of a directroy with an ignored file should not change when this file changes')

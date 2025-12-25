@@ -1,4 +1,3 @@
-import { Brand } from 'brand'
 import { BuildFailedError } from 'build-failed-error'
 import { PathInRepo, RepoRoot } from 'core-types'
 import * as fs from 'fs'
@@ -212,7 +211,7 @@ export class TaskStore {
     const destination = createWriteStream(tempFile.path)
     await pipeline(source, gzip, destination)
 
-    const gzipped = await fse.readFile(tempFile.path)
+    const gzipped = await fs.promises.readFile(tempFile.path)
     this.trace?.push(`gzipped is ${gzipped.length} long`)
 
     const ret = Buffer.concat([lenBuf, metadataBuf, gzipped])
@@ -231,7 +230,7 @@ export class TaskStore {
     const outputs = metadata.outputs.map(at => PathInRepo(at))
 
     const removeOutputDir = async (o: PathInRepo) =>
-      await fse.rm(this.repoRootDir.resolve(o), { recursive: true, force: true })
+      await fs.promises.rm(this.repoRootDir.resolve(o), { recursive: true, force: true })
     await promises(outputs)
       .map(async o => await removeOutputDir(o))
       .reify(20)
