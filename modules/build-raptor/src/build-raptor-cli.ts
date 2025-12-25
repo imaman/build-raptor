@@ -1,6 +1,6 @@
 import { DefaultAssetPublisher, EngineBootstrapper, findRepoDir, TaskSelector } from 'build-raptor-core'
 import fs from 'fs'
-import * as fse from 'fs-extra'
+import fse from 'fs-extra/esm'
 import { createDefaultLogger, Criticality, Logger } from 'logger'
 import {
   assigningGet,

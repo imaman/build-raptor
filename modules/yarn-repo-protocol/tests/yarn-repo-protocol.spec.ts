@@ -1,6 +1,6 @@
 import { NopAssetPublisher } from 'build-raptor-core'
 import { PathInRepo, RepoRoot } from 'core-types'
-import * as fse from 'fs-extra'
+import fse from 'fs-extra/esm'
 import { createNopLogger } from 'logger'
 import { DirectoryScanner, folderify, FolderifyRecipe, slurpDir, TypedPublisher } from 'misc'
 import { RepoProtocolEvent } from 'repo-protocol'

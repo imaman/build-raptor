@@ -1,4 +1,4 @@
-import * as fse from 'fs-extra'
+import fse from 'fs-extra/esm'
 import * as path from 'path'
 
 import { shouldNeverHappen } from '.'

@@ -1,5 +1,5 @@
 import { BuildFailedError } from 'build-failed-error'
-import * as fse from 'fs-extra'
+import fse from 'fs-extra/esm'
 import { Logger } from 'logger'
 import { failMe, promises, shouldNeverHappen, TypedPublisher } from 'misc'
 import * as path from 'path'

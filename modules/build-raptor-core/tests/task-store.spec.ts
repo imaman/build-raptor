@@ -1,6 +1,6 @@
 import { PathInRepo, RepoRoot } from 'core-types'
 import * as fs from 'fs'
-import * as fse from 'fs-extra'
+import fse from 'fs-extra/esm'
 import { createNopLogger, Logger } from 'logger'
 import { chaoticDeterministicString, folderify, InMemoryStorageClient, Int, slurpDir, StorageClient } from 'misc'
 import { TaskKind, TaskName } from 'task-name'

@@ -1,7 +1,7 @@
 import { Brand } from 'brand'
 import { BuildRunId } from 'build-run-id'
 import { RepoRoot } from 'core-types'
-import * as fse from 'fs-extra'
+import fse from 'fs-extra/esm'
 import {
   failMe,
   FolderifyRecipe,

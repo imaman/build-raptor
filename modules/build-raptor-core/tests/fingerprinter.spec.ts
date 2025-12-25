@@ -1,6 +1,6 @@
 // We probably do not need this anymore since we started computing fingerprints of inputs, and these tests
 
-import * as fse from 'fs-extra'
+import fse from 'fs-extra/esm'
 import { createNopLogger } from 'logger'
 import { DirectoryScanner, folderify, FolderifyRecipe } from 'misc'
 import * as path from 'path'

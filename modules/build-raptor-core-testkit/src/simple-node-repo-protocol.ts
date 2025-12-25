@@ -1,7 +1,7 @@
 import { BuildRunId } from 'build-run-id'
 import { PathInRepo, RepoRoot } from 'core-types'
 import execa from 'execa'
-import * as fse from 'fs-extra'
+import fse from 'fs-extra/esm'
 import { failMe, Graph, promises } from 'misc'
 import { ExitStatus, RepoProtocol, TaskInfo } from 'repo-protocol'
 import { generateTaskInfos } from 'repo-protocol-toolbox'

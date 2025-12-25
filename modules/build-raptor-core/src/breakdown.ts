@@ -1,5 +1,5 @@
 import { BuildRunId } from 'build-run-id'
-import * as fse from 'fs-extra'
+import fse from 'fs-extra/esm'
 import { shouldNeverHappen, switchOn } from 'misc'
 import * as path from 'path'
 import { TaskKind, TaskName } from 'task-name'

@@ -3,7 +3,7 @@ import { PathInRepo, RepoRoot } from 'core-types'
 import escapeStringRegexp from 'escape-string-regexp'
 import execa from 'execa'
 import * as fs from 'fs'
-import * as fse from 'fs-extra'
+import fse from 'fs-extra/esm'
 import { Logger } from 'logger'
 import {
   DirectoryScanner,

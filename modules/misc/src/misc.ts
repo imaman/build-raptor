@@ -1,5 +1,5 @@
 import * as crypto from 'crypto'
-import * as fse from 'fs-extra'
+import fse from 'fs-extra/esm'
 import jsonStringify from 'safe-stable-stringify'
 import * as util from 'util'
 

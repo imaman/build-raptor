@@ -1,5 +1,5 @@
 import { BuildRunId } from 'build-run-id'
-import * as fse from 'fs-extra'
+import fse from 'fs-extra/esm'
 import { Logger } from 'logger'
 import { failMe } from 'misc'
 import { TaskName } from 'task-name'

@@ -1,5 +1,5 @@
 import { PathInRepo, RepoRoot } from 'core-types'
-import * as fse from 'fs-extra'
+import fse from 'fs-extra/esm'
 import { Logger } from 'logger'
 import { promises, switchOn } from 'misc'
 import { OutputLocation } from 'repo-protocol'
