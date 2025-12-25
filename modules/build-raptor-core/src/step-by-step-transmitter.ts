@@ -1,5 +1,4 @@
 import { Step, StepByStep, StepByStepProcessor } from 'build-raptor-api'
-// import { loadDynamically, loadEsm } from 'build-raptor-dynamic-loader'
 import * as fs from 'fs'
 import { Logger } from 'logger'
 import * as util from 'util'
@@ -18,14 +17,14 @@ export class StepByStepTransmitter {
 
   addProcessor(p: StepByStepProcessor) {
     this.stepByStepProcessors.push(p)
-    this.logger.print(`added processor: ${p.constructor.name}`)
+    this.logger.info(`added processor: ${p.constructor.name}`)
   }
 
   transmit(step: Step) {
     const parsed = Step.parse(step)
     this.steps.push(parsed)
 
-    this.logger.print(`transmitting: ${JSON.stringify(step)}`)
+    this.logger.info(`transmitting: a ${JSON.stringify(step.step)} step`)
     for (const p of this.stepByStepProcessors) {
       this.promises.push(Promise.resolve(p(parsed)))
     }
