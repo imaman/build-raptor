@@ -2,15 +2,24 @@
 
 set -e
 
-dir1=/tmp/pub-build-raptor
-dir2=/tmp/pub-build-raptor-jest-reporter
-dir3=/tmp/pub-build-raptor-api
+parDir=/tmp/pub #home/imaman/code/moojo-tech/antelope/linked
+  dir1=$parDir/build-raptor
+dir2=$parDir/build-raptor-jest-reporter
+dir3=$parDir/build-raptor-api
 
 rm -rf "$dir1" "$dir2" "$dir3"
 
-mkdir "$dir1" "$dir2" "$dir3"
+mkdir -p "$dir1" "$dir2" "$dir3"
 
 etc/prepare-npm-package.mjs modules/build-raptor "$dir1" 
 etc/prepare-npm-package.mjs modules/build-raptor-jest-reporter "$dir2"
 etc/prepare-npm-package.mjs modules/build-raptor-api "$dir3"
 
+cd "$dir1"
+yarn link
+
+cd "$dir2"
+yarn link
+
+cd "$dir3"
+yarn link
