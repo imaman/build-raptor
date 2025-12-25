@@ -123,7 +123,7 @@ class File {
     if (!(await fse.pathExists(resolved))) {
       return undefined
     }
-    const content = await fse.readFile(resolved, 'utf-8')
+    const content = await fs.promises.readFile(resolved, 'utf-8')
     return content
       .trim()
       .split('\n')
@@ -149,7 +149,7 @@ class File {
         : typeof content === 'object'
         ? JSON.stringify(content)
         : shouldNeverHappen(content)
-    await fse.writeFile(resolved, c)
+    await fs.promises.writeFile(resolved, c)
   }
 
   async exists() {
@@ -169,7 +169,7 @@ class File {
   }
 
   async lastChanged() {
-    const st = await fse.stat(this.resolve())
+    const st = await fs.promises.stat(this.resolve())
     return st.mtime.getTime()
   }
 }
@@ -310,7 +310,7 @@ class Repo {
     const outerDir = await folderify(ROOT_NAME, this.recipe)
     const rootDir = path.join(outerDir, ROOT_NAME)
     const ret = new Fork(rootDir, this.driver.storageClient, this.driver.repoProtocol, this.driver.testName)
-    await fse.symlink(path.resolve(__dirname, '../../../../node_modules'), path.join(outerDir, 'node_modules'))
+    await fs.promises.symlink(path.resolve(__dirname, '../../../../node_modules'), path.join(outerDir, 'node_modules'))
     return ret
   }
 }
