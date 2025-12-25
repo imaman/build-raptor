@@ -5,13 +5,13 @@
   "keywords": [],
   "author": "",
   "type": "module",
-  "main": "dist/src/index.cjs",
+  "main": "dist/src/index.js",
   "files": [
     "dist/src"
   ],
   "scripts": {
-    "build": "tsc -b && cp src/a.cjs dist/src/index.cjs",
-    "build:post": "cp src/a.cjs dist/src/index.cjs",
+    "build": "tsc -b && cp src/a.js dist/src/index.js",
+    "build:post": "cp src/a.js dist/src/index.js",
     "test": "jest"
   },
   "jest": {

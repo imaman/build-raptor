@@ -16,10 +16,8 @@ npm init -y
 yarn add jest@29.7.0
 ln -s ../../build-raptor-jest-reporter node_modules/build-raptor-jest-reporter
 cat > a.spec.js <<EOF
-test('foo', () => expect(1).toEqual(-1))
+test('foo', () => expect(1).toEqual(1))
 
 EOF
 
-
-
-yarn jest --reporters build-raptor-jest-reporter
+yarn jest --outputFile out.json --reporters build-raptor-jest-reporter --reporters default

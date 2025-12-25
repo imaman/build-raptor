@@ -1,7 +1,7 @@
-const path = require('path')
-const fs = require('fs')
+import path from 'node:path'
+import fs from 'node:fs'
 
-module.exports = class BuildRaptorJestReporter {
+export default class BuildRaptorJestReporter {
   constructor(config) {
     if (!config.outputFile) {
       throw new Error(`outputFile is missing (must be specified in the config)`)
