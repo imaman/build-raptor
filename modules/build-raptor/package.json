@@ -5,6 +5,7 @@
   "keywords": [],
   "license": "MIT",
   "author": "",
+  "type": "module",
   "main": "dist/src/index.js",
   "bin": "dist/src/main.js",
   "scripts": {

@@ -6,6 +6,7 @@
   "keywords": [],
   "license": "ISC",
   "author": "",
+  "type": "module",
   "main": "dist/src/index.js",
   "files": [
     "dist/src"
@@ -13,6 +14,5 @@
   "scripts": {
     "build": "tsc -b",
     "test": "jest"
-  },
-  "dependencies": {}
+  }
 }
