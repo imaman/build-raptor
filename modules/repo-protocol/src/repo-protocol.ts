@@ -5,7 +5,7 @@ import { TaskName } from 'task-name'
 import { UnitId, UnitMetadata } from 'unit-metadata'
 import { z } from 'zod'
 
-import { TaskInfo } from './task-info'
+import { TaskInfo } from './task-info.js'
 
 export type ExitStatus = 'OK' | 'FAIL' | 'CRASH'
 

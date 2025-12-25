@@ -1,4 +1,4 @@
-import { assigningGet, hardGet, mapIncrement } from '../src/maps'
+import { assigningGet, hardGet, mapIncrement } from '../src/maps.js'
 
 describe('maps', () => {
   describe('hardGet', () => {

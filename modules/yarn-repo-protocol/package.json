@@ -17,7 +17,6 @@
   },
   "dependencies": {
     "build-failed-error": "1.0.0",
-    "build-raptor-jest-reporter": "1.0.0",
     "core-types": "1.0.0",
     "escape-string-regexp": "^4.0.0",
     "execa": "^5.0.0",
@@ -28,11 +27,12 @@
     "reporter-output": "1.0.0",
     "task-name": "1.0.0",
     "tmp-promise": "^3.0.3",
+    "type-fest": "^2.12.2",
     "unit-metadata": "1.0.0",
     "zod": "^3.21.4"
   },
   "devDependencies": {
-    "build-raptor-core-testkit": "1.0.0",
-    "type-fest": "^2.12.2"
+    "build-raptor-core": "1.0.0",
+    "build-raptor-core-testkit": "1.0.0"
   }
 }

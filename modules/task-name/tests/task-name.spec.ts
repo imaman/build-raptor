@@ -1,6 +1,6 @@
 import { UnitId } from 'unit-metadata'
 
-import { TaskKind, TaskName } from '../src/task-name'
+import { TaskKind, TaskName } from '../src/task-name.js'
 
 describe('task-name', () => {
   describe('TaskName', () => {

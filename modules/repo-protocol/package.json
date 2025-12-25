@@ -15,11 +15,11 @@
     "test": "jest"
   },
   "dependencies": {
-    "brand": "1.0.0",
     "build-run-id": "1.0.0",
     "core-types": "1.0.0",
     "misc": "1.0.0",
     "task-name": "1.0.0",
-    "unit-metadata": "1.0.0"
+    "unit-metadata": "1.0.0",
+    "zod": "^3.21.4"
   }
 }

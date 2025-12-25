@@ -1,7 +1,7 @@
 import * as fs from 'fs'
 import * as path from 'path'
 
-import { sortBy } from './arrays'
+import { sortBy } from './arrays.js'
 
 export function cleanDirectory(
   directoryPath: string,

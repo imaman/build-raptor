@@ -1,4 +1,4 @@
-import { mapRecord, pairsToRecord, recordToPairs } from '../src/records'
+import { mapRecord, pairsToRecord, recordToPairs } from '../src/records.js'
 
 describe('records', () => {
   describe('recordToPairs', () => {

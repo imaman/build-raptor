@@ -1,7 +1,7 @@
 import { PathInRepo } from 'core-types'
 
-import { Driver } from '../src/driver'
-import { SimpleNodeRepoProtocol } from '../src/simple-node-repo-protocol'
+import { Driver } from '../src/driver.js'
+import { SimpleNodeRepoProtocol } from '../src/simple-node-repo-protocol.js'
 
 jest.setTimeout(30000)
 

@@ -2,7 +2,7 @@ import * as fse from 'fs-extra'
 import * as path from 'path'
 import * as Tmp from 'tmp-promise'
 
-import { shouldNeverHappen } from './constructs'
+import { shouldNeverHappen } from './constructs.js'
 
 type Jsonable = { [x: string]: string | number | boolean | string[] | number[] | boolean | Jsonable | Jsonable[] }
 

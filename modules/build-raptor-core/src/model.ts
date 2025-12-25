@@ -3,7 +3,7 @@ import { PathInRepo, RepoRoot } from 'core-types'
 import { findDups, Graph, uniqueBy } from 'misc'
 import { UnitId, UnitMetadata } from 'unit-metadata'
 
-import { Fingerprinter } from './fingerprinter'
+import { Fingerprinter } from './fingerprinter.js'
 
 export class Model {
   constructor(

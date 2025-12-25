@@ -1,6 +1,6 @@
 import PQueue from 'p-queue'
 
-import { TypedPublisher } from './typed-publisher'
+import { TypedPublisher } from './typed-publisher.js'
 
 /**
  * Allows tasks (promises) to be executed with controlled concurrency, providing error-handling ("fail fast"), and notifications

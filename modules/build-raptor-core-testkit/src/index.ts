@@ -1,3 +1,3 @@
-export * from './build-raptor-core-testkit'
-export * from './repo-protocol-testkit'
-export * from './simple-node-repo-protocol'
+export * from './build-raptor-core-testkit.js'
+export * from './repo-protocol-testkit.js'
+export * from './simple-node-repo-protocol.js'

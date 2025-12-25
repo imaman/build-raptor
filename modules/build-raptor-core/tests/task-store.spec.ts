@@ -7,8 +7,8 @@ import { TaskKind, TaskName } from 'task-name'
 import * as TmpSync from 'tmp'
 import { UnitId } from 'unit-metadata'
 
-import { Fingerprint } from '../src/fingerprint'
-import { TaskStore } from '../src/task-store'
+import { Fingerprint } from '../src/fingerprint.js'
+import { TaskStore } from '../src/task-store.js'
 
 async function slurp(d: RepoRoot) {
   return await slurpDir(d.resolve())

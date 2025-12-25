@@ -2,9 +2,9 @@ import * as fse from 'fs-extra'
 import * as path from 'path'
 
 import { shouldNeverHappen } from '.'
-import { cleanDirectory } from './clean-directory'
-import { computeHash, computeObjectHash } from './misc'
-import { Key, StorageClient } from './storage-client'
+import { cleanDirectory } from './clean-directory.js'
+import { computeHash, computeObjectHash } from './misc.js'
+import { Key, StorageClient } from './storage-client.js'
 
 interface Options {
   /**
