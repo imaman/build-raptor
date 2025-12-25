@@ -3,7 +3,6 @@ import { PathInRepo, RepoRoot } from 'core-types'
 import escapeStringRegexp from 'escape-string-regexp'
 import execa from 'execa'
 import fs from 'fs'
-import * as fs from 'fs'
 import fse from 'fs-extra/esm'
 import { Logger } from 'logger'
 import {
@@ -238,7 +237,7 @@ export class YarnRepoProtocol implements RepoProtocol {
       }
       const packageLoc = rootDir.resolve(u.pathInRepo)
       const packageFromNodeModules = path.relative(nodeModulesLoc, packageLoc)
-      await fse.symlink(packageFromNodeModules, linkLoc)
+      await fs.promises.symlink(packageFromNodeModules, linkLoc)
     }
   }
 
@@ -316,7 +315,7 @@ export class YarnRepoProtocol implements RepoProtocol {
       }
 
       this.logger.info(`updating the tsconfig.json file of ${u.id}`)
-      await fse.writeFile(p, content)
+      await fs.promises.writeFile(p, content)
     }
   }
   async close() {}
@@ -331,9 +330,15 @@ export class YarnRepoProtocol implements RepoProtocol {
     const summary = `<${dir}$ ${cmd} ${args.join(' ')}>`
     this.logger.info(`Dispatching ${summary}. output: ${outputFile}`)
 
-    const out = await fse.open(outputFile, 'w')
+    const out = await fs.promises.open(outputFile, 'w')
     try {
-      const p = await execa(cmd, args, { cwd: dir, stdout: out, stderr: out, reject: false, env: additionalEnvVars })
+      const p = await execa(cmd, args, {
+        cwd: dir,
+        stdout: out.fd,
+        stderr: out.fd,
+        reject: false,
+        env: additionalEnvVars,
+      })
       this.logger.info(`exitCode of ${cmd} ${args.join(' ')} is ${p.exitCode}`)
       if (p.exitCode === 0) {
         return 'OK'
@@ -343,7 +348,7 @@ export class YarnRepoProtocol implements RepoProtocol {
       this.logger.error(`execution of ${summary} failed`, e)
       return 'CRASH'
     } finally {
-      await fse.close(out)
+      await out.close()
     }
   }
 
@@ -361,8 +366,8 @@ export class YarnRepoProtocol implements RepoProtocol {
     const tempFile = await getTempFile()
     const ret = await this.run('npm', ['run', this.scriptNames.postBuild], dir, tempFile)
 
-    const toAppend = await fse.readFile(tempFile)
-    await fse.appendFile(outputFile, toAppend)
+    const toAppend = await fs.promises.readFile(tempFile)
+    await fs.promises.appendFile(outputFile, toAppend)
     return ret
   }
 
@@ -484,8 +489,8 @@ export class YarnRepoProtocol implements RepoProtocol {
         // Still run validate if it exists
         const tempFile = await getTempFile()
         const validateResult = await this.runValidate(u, dir, tempFile)
-        const toAppend = await fse.readFile(tempFile)
-        await fse.appendFile(outputFile, toAppend)
+        const toAppend = await fs.promises.readFile(tempFile)
+        await fs.promises.appendFile(outputFile, toAppend)
 
         return validateResult
       }
@@ -500,8 +505,8 @@ export class YarnRepoProtocol implements RepoProtocol {
       ])
 
       // Merge validate output into main output file
-      const toAppend = await fse.readFile(tempFile)
-      await fse.appendFile(outputFile, toAppend)
+      const toAppend = await fs.promises.readFile(tempFile)
+      await fs.promises.appendFile(outputFile, toAppend)
 
       // Return based on test result: if test fails, return test result; if test passes, return validate result
       return switchOn(testResult, {
@@ -513,7 +518,7 @@ export class YarnRepoProtocol implements RepoProtocol {
 
     if (taskKind === 'pack') {
       const ret = await this.pack(u, dir)
-      await fse.writeFile(outputFile, '')
+      await fs.promises.writeFile(outputFile, '')
       return ret
     }
 
@@ -521,7 +526,7 @@ export class YarnRepoProtocol implements RepoProtocol {
       const scriptName = this.scriptNames.prepareAssets
 
       const fullPath = path.join(dir, PREPARED_ASSETS_DIR)
-      await fse.rm(fullPath, { force: true, recursive: true })
+      await fs.promises.rm(fullPath, { force: true, recursive: true })
       await fse.mkdirp(fullPath)
 
       const ret = await this.run('npm', ['run', scriptName], dir, outputFile)
@@ -532,10 +537,10 @@ export class YarnRepoProtocol implements RepoProtocol {
         )
       }
 
-      const files = await fse.readdir(fullPath)
+      const files = await fs.promises.readdir(fullPath)
       await Promise.all(
         files.map(async f => {
-          const contentToPublish = await fse.readFile(path.join(fullPath, f))
+          const contentToPublish = await fs.promises.readFile(path.join(fullPath, f))
           this.logger.info(`unit ${u.id}: publishing asset ${f}`)
           const casAddress = await this.assetPublisher.publishAsset(u, contentToPublish, f)
           this.logger.info(`unit ${u.id}: asset ${f} published to cas ${casAddress}`)
@@ -556,7 +561,7 @@ export class YarnRepoProtocol implements RepoProtocol {
   private async runUberBuild(outputFile: string, taskName: TaskName): Promise<ExitStatus> {
     if (this.state.uberBuildPromise) {
       const ret = await this.state.uberBuildPromise
-      await fse.writeFile(outputFile, ``)
+      await fs.promises.writeFile(outputFile, ``)
       return ret
     }
 
