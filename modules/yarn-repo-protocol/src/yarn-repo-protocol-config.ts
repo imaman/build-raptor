@@ -6,7 +6,7 @@ export const YarnRepoProtocolConfig = z
       .boolean()
       .optional()
       .describe(
-        'Whether to let tsc to build multiple units of the monorepo. When set to false, build-raptor will build each unit separately.',
+        'Whether to let tsc to build multiple units of the monorepo at once. When set to false, the compiler is called for each unit separately.',
       ),
     cacheCompilationOutputs: z
       .boolean()
