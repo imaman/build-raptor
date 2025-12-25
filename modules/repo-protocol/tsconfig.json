@@ -6,9 +6,6 @@
   },
   "references": [
     {
-      "path": "../brand"
-    },
-    {
       "path": "../build-run-id"
     },
     {

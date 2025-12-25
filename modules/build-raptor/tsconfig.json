@@ -15,7 +15,13 @@
       "path": "../misc"
     },
     {
+      "path": "../repo-protocol"
+    },
+    {
       "path": "../s3-storage-client"
+    },
+    {
+      "path": "../task-name"
     },
     {
       "path": "../yarn-repo-protocol"
