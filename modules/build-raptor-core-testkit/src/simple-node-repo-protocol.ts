@@ -1,7 +1,7 @@
 import { BuildRunId } from 'build-run-id'
 import { PathInRepo, RepoRoot } from 'core-types'
 import execa from 'execa'
-import fse from 'fs-extra/esm'
+import fs from 'fs'
 import { failMe, Graph, promises } from 'misc'
 import { ExitStatus, RepoProtocol, TaskInfo } from 'repo-protocol'
 import { generateTaskInfos } from 'repo-protocol-toolbox'
@@ -49,7 +49,7 @@ export class SimpleNodeRepoProtocol implements RepoProtocol {
   private async readPackageJsonAt(pir: PathInRepo) {
     const resolved = this.rootDir.resolve(pir.expand('package.json'))
     try {
-      const content = await fse.readFile(resolved, 'utf-8')
+      const content = await fs.promises.readFile(resolved, 'utf-8')
       return JSON.parse(content)
     } catch (e) {
       throw new Error(`Failed to read package.json in ${resolved}: ${e}`)
@@ -66,9 +66,15 @@ export class SimpleNodeRepoProtocol implements RepoProtocol {
       throw new Error(`Missing script for ${taskName}`)
     }
 
-    const fd = await fse.open(outputFile, 'w')
+    const fileHandle = await fs.promises.open(outputFile, 'w')
     try {
-      const p = await execa.command(script, { cwd: dir, stdout: fd, stderr: fd, reject: false, shell: true })
+      const p = await execa.command(script, {
+        cwd: dir,
+        stdout: fileHandle.fd,
+        stderr: fileHandle.fd,
+        reject: false,
+        shell: true,
+      })
       if (p.exitCode === 0) {
         return 'OK'
       }
@@ -77,7 +83,7 @@ export class SimpleNodeRepoProtocol implements RepoProtocol {
     } catch (e) {
       throw new Error(`Crashed when running task ${taskName} in ${dir} (command: ${script}): ${util.inspect(e)}`)
     } finally {
-      await fse.close(fd)
+      await fileHandle.close()
     }
   }
   async getGraph(): Promise<Graph<UnitId>> {
@@ -85,7 +91,7 @@ export class SimpleNodeRepoProtocol implements RepoProtocol {
   }
 
   private async read() {
-    const list = await fse.readdir(this.rootDir.resolve(this.pathToModulesDir))
+    const list = await fs.promises.readdir(this.rootDir.resolve(this.pathToModulesDir))
     return await promises(
       list.map(async name => {
         const pir = this.pathToModulesDir.expand(name)
