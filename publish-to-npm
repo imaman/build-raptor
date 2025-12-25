@@ -2,7 +2,9 @@
 
 set -e
 
-#yarn pack-all
+yarn build
+node --enable-source-maps modules/build-raptor/dist/src/main.js build
+
 
 dir1=$(mktemp -d)
 dir2=$(mktemp -d)
