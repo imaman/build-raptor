@@ -1,6 +1,5 @@
 import { PathInRepo, RepoRoot } from 'core-types'
 import * as fs from 'fs'
-import fse from 'fs-extra/esm'
 import { createNopLogger, Logger } from 'logger'
 import { chaoticDeterministicString, folderify, InMemoryStorageClient, Int, slurpDir, StorageClient } from 'misc'
 import { TaskKind, TaskName } from 'task-name'
@@ -327,24 +326,24 @@ describe('task-store', () => {
       )
 
       const dir = store.repoRootDir
-      await fse.chmod(dir.resolve(PathInRepo('a/f1')), 0o755)
-      await fse.chmod(dir.resolve(PathInRepo('a/f2')), 0o640)
-      await fse.utimes(dir.resolve(PathInRepo('a/f2')), new Date(0), new Date(2000))
-      await fse.utimes(dir.resolve(PathInRepo('a/f3')), new Date(0), new Date(3000))
+      await fs.promises.chmod(dir.resolve(PathInRepo('a/f1')), 0o755)
+      await fs.promises.chmod(dir.resolve(PathInRepo('a/f2')), 0o640)
+      await fs.promises.utimes(dir.resolve(PathInRepo('a/f2')), new Date(0), new Date(2000))
+      await fs.promises.utimes(dir.resolve(PathInRepo('a/f3')), new Date(0), new Date(3000))
 
       await record(store, taskNameA, Fingerprint('fp'), [PathInRepo('a')], 'OK')
 
       const destination = newTaskStore(sc, logger)
       await destination.restoreTask(taskNameA, Fingerprint('fp'))
 
-      const stat1 = await fse.stat(destination.repoRootDir.resolve(PathInRepo('a/f1')))
+      const stat1 = await fs.promises.stat(destination.repoRootDir.resolve(PathInRepo('a/f1')))
       expect(stat1.mode).toEqual(0o100755)
 
-      const stat2 = await fse.stat(destination.repoRootDir.resolve(PathInRepo('a/f2')))
+      const stat2 = await fs.promises.stat(destination.repoRootDir.resolve(PathInRepo('a/f2')))
       expect(stat2.mtime.getTime()).toEqual(2000)
       expect(stat2.mode).toEqual(0o100640)
 
-      const stat3 = await fse.stat(destination.repoRootDir.resolve(PathInRepo('a/f3')))
+      const stat3 = await fs.promises.stat(destination.repoRootDir.resolve(PathInRepo('a/f3')))
       expect(stat3.mtime.getTime()).toEqual(3000)
     })
     test('handles multiple output locations', async () => {
