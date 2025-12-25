@@ -1,0 +1,16 @@
+#!/bin/bash
+
+set -e
+
+dir1=/tmp/pub-build-raptor
+dir2=/tmp/pub-build-raptor-jest-reporter
+dir3=/tmp/pub-build-raptor-api
+
+rm -rf "$dir1" "$dir2" "$dir3"
+
+mkdir "$dir1" "$dir2" "$dir3"
+
+etc/prepare-npm-package.mjs modules/build-raptor "$dir1" 
+etc/prepare-npm-package.mjs modules/build-raptor-jest-reporter "$dir2"
+etc/prepare-npm-package.mjs modules/build-raptor-api "$dir3"
+
