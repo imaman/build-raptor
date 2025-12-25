@@ -2,6 +2,7 @@ import { BuildFailedError } from 'build-failed-error'
 import { PathInRepo, RepoRoot } from 'core-types'
 import escapeStringRegexp from 'escape-string-regexp'
 import execa from 'execa'
+import fs from 'fs'
 import * as fs from 'fs'
 import fse from 'fs-extra/esm'
 import { Logger } from 'logger'
@@ -1133,7 +1134,7 @@ export class YarnRepoProtocol implements RepoProtocol {
       return [this.tests]
     }
 
-    const content = await fse.readFile(resolved, 'utf-8')
+    const content = await fs.promises.readFile(resolved, 'utf-8')
     let parsed
     try {
       parsed = JSON.parse(content)

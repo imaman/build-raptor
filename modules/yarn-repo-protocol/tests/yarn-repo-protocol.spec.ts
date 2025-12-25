@@ -1,6 +1,6 @@
 import { NopAssetPublisher } from 'build-raptor-core'
 import { PathInRepo, RepoRoot } from 'core-types'
-import fse from 'fs-extra/esm'
+import fs from 'fs'
 import { createNopLogger } from 'logger'
 import { DirectoryScanner, folderify, FolderifyRecipe, slurpDir, TypedPublisher } from 'misc'
 import { RepoProtocolEvent } from 'repo-protocol'
@@ -468,12 +468,12 @@ describe('yarn-repo-protocol', () => {
         await yrpA.initialize(d, p, out)
 
         const tsconfigPath = d.resolve(PathInRepo('modules/a/tsconfig.json'))
-        const statA = await fse.stat(tsconfigPath)
+        const statA = await fs.promises.stat(tsconfigPath)
 
         const yrpB = newYarnRepoProtocol()
         await yrpB.initialize(d, p, out)
 
-        const statB = await fse.stat(tsconfigPath)
+        const statB = await fs.promises.stat(tsconfigPath)
         expect(statB.mtimeMs).toEqual(statA.mtimeMs)
       })
     })
