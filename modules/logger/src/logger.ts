@@ -2,7 +2,7 @@ import * as fs from 'fs'
 import { format } from 'logform'
 import * as path from 'path'
 import jsonStringify from 'safe-stable-stringify'
-import * as winston from 'winston'
+import winston from 'winston'
 
 const criticalityLegend: Record<Criticality, number> = {
   high: 0,
