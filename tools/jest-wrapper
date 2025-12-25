@@ -1,3 +1,3 @@
 #!/bin/bash
 
-yarn jest --verbose dist/tests/*.spec.js
+NODE_OPTIONS="--experimental-vm-modules" yarn jest --verbose dist/tests/*.spec.js

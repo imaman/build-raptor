@@ -31,7 +31,6 @@ class FailingStorageClient implements StorageClient {
   }
 }
 
-jest.setTimeout(30000)
 describe('engine', () => {
   const testName = () => expect.getState().currentTestName
 

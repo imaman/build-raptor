@@ -4,7 +4,6 @@ import { createNopLogger } from 'logger'
 
 import { YarnRepoProtocol } from '../src/yarn-repo-protocol.js'
 
-jest.setTimeout(90000)
 describe('validations', () => {
   const logger = createNopLogger()
 

@@ -4,7 +4,6 @@ import { UnitId } from 'unit-metadata'
 import { Driver } from '../src/driver.js'
 import { RepoProtocolTestkit } from '../src/repo-protocol-testkit.js'
 
-jest.setTimeout(30000)
 describe('planner', () => {
   const testName = () => expect.getState().currentTestName
 

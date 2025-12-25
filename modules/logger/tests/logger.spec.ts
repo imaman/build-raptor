@@ -1,8 +1,11 @@
 import * as fs from 'fs'
 import { aTimeoutOf } from 'misc'
 import * as Tmp from 'tmp-promise'
+import { fileURLToPath } from 'url'
 
 import { createDefaultLogger } from '../src/logger.js'
+
+const __filename = fileURLToPath(import.meta.url)
 
 async function awaitFor<T>(ms: number, calc: () => Promise<T | undefined>): Promise<T> {
   const t0 = Date.now()

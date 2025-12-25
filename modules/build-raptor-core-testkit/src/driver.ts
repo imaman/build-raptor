@@ -16,6 +16,10 @@ import {
   StorageClient,
 } from 'misc'
 import * as path from 'path'
+import { fileURLToPath } from 'url'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 import { RepoProtocol } from 'repo-protocol'
 import { TaskKind, TaskName } from 'task-name'
 import { PackageJson } from 'type-fest'

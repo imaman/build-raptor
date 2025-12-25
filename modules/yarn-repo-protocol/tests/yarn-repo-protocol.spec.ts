@@ -17,7 +17,6 @@ async function slurp(d: RepoRoot) {
   return await slurpDir(d.resolve())
 }
 
-jest.setTimeout(60000)
 describe('yarn-repo-protocol', () => {
   const logger = createNopLogger()
   const p = new TypedPublisher<RepoProtocolEvent>()

@@ -132,6 +132,9 @@ module.exports = {
   // The test environment that will be used for testing
   testEnvironment: 'node',
 
+  // Default test timeout (in ms) - needed for ESM mode where jest global is not available
+  testTimeout: 240000,
+
   // Options that will be passed to the testEnvironment
   // testEnvironmentOptions: {},
 

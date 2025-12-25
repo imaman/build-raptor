@@ -1,7 +1,6 @@
 import { Driver } from '../src/driver.js'
 import { RepoProtocolTestkit } from '../src/repo-protocol-testkit.js'
 
-jest.setTimeout(30000)
 describe('minimal testing', () => {
   const testName = () => expect.getState().currentTestName
 
