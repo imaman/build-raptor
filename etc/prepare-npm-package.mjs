@@ -68,15 +68,18 @@ function readPackageJson(packagePath) {
 }
 
 function collectAllInRepoDeps(packageName, workspaceIndex, visited = new Set()) {
-  const { workspacesInfo } = workspaceIndex
-  const info = workspacesInfo[packageName]
+  const { packageNames, nameToLocation } = workspaceIndex
 
-  if (!info) {
+  const packagePath = nameToLocation.get(packageName)
+  if (!packagePath) {
     return visited
   }
 
-  for (const depName of info.workspaceDependencies) {
-    if (!visited.has(depName)) {
+  const pkg = readPackageJson(packagePath)
+  const deps = Object.keys(pkg.dependencies || {})
+
+  for (const depName of deps) {
+    if (packageNames.has(depName) && !visited.has(depName)) {
       visited.add(depName)
       collectAllInRepoDeps(depName, workspaceIndex, visited)
     }
