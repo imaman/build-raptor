@@ -18,7 +18,7 @@ npm pkg set "version=$CURRENT_VERSION"
 npm version minor
 NEXT_VERSION=$(npm pkg get version | tr -d '"')
 echo "resolved new version: $NEXT_VERSION"
-npm pkg set "dependencies.build-raptor-jest-reporter=$NEXT_VERSION"
+# npm pkg set "dependencies.build-raptor-jest-reporter=$NEXT_VERSION"
 popd
 
 
