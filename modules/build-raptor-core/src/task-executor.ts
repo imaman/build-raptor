@@ -1,4 +1,5 @@
 import { BuildFailedError } from 'build-failed-error'
+import fs from 'fs'
 import fse from 'fs-extra/esm'
 import { Logger } from 'logger'
 import { failMe, promises, shouldNeverHappen, TypedPublisher } from 'misc'
@@ -113,7 +114,7 @@ class SingleTaskExecutor {
   private async postProcess(status: ExitStatus, outputFile: string, time: number) {
     // Since outputFile's content can be big, read it only if this task is "diagnosed".
     if (this.shouldDiagnose) {
-      const content = fse.readFileSync(outputFile, 'utf-8')
+      const content = fs.readFileSync(outputFile, 'utf-8')
       this.diagnose(`content of ${outputFile} is ${content}`)
     }
     // TODO(imaman): cover (await is dropped)
