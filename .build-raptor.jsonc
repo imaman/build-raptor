@@ -1,7 +1,8 @@
 {
   "verbosePrintTasks": [],
-  "tightFingerprints": false, // true?
+  "tightFingerprints": true,
   "repoProtocol": {
+    "install": "dormant",
     "additionalJestEnvVars": {
       "NODE_OPTIONS": "--experimental-vm-modules"
     }
