@@ -92,8 +92,8 @@ export class SimpleNodeRepoProtocol implements RepoProtocol {
 
   private async read() {
     const list = await fs.promises.readdir(this.rootDir.resolve(this.pathToModulesDir))
-    return await promises(
-      list.map(async name => {
+    const ret = await promises(list)
+      .map(async name => {
         const pir = this.pathToModulesDir.expand(name)
         const parsed = await this.readPackageJsonAt(pir)
         return {
@@ -101,8 +101,10 @@ export class SimpleNodeRepoProtocol implements RepoProtocol {
           id: UnitId(parsed.name),
           packageJson: parsed,
         }
-      }),
-    ).reify()
+      })
+      .reify()
+
+    return ret
   }
 
   async getUnits(): Promise<UnitMetadata[]> {

@@ -13,7 +13,6 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "baseUrl": ".",
     "paths": {
       "safe-stable-stringify": ["./types/safe-stable-stringify"]
     }
