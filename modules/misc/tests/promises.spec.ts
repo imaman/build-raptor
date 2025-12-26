@@ -30,15 +30,21 @@ describe('promises', () => {
       expect(await ps.reify()).toEqual(['four', 'and', 'years'])
     })
     test('can be applied also to Promises', async () => {
-      const ps = promises([Promise.resolve(1), Promise.resolve(2), Promise.resolve(3), Promise.resolve(4)]).filter(
-        async x => x % 3 === 1,
-      )
+      const ps = promises<number>([
+        Promise.resolve(1),
+        Promise.resolve(2),
+        Promise.resolve(3),
+        Promise.resolve(4),
+      ]).filter(async x => x % 3 === 1)
       expect(await ps.reify()).toEqual([1, 4])
     })
     test('allows the predicate to be a plain (non async) function', async () => {
-      const ps = promises([Promise.resolve(1), Promise.resolve(2), Promise.resolve(3), Promise.resolve(4)]).filter(
-        x => x % 2 === 0,
-      )
+      const ps = promises<number>([
+        Promise.resolve(1),
+        Promise.resolve(2),
+        Promise.resolve(3),
+        Promise.resolve(4),
+      ]).filter(x => x % 2 === 0)
       expect(await ps.reify()).toEqual([2, 4])
     })
     test('combined with map', async () => {
