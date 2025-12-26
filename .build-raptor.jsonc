@@ -1,7 +1,9 @@
 {
   "verbosePrintTasks": [],
   "tightFingerprints": true,
+  "fingerprintSeed": "1",
   "repoProtocol": {
+    "compilerExecutable": "tsgo",
     "install": "dormant",
     "additionalJestEnvVars": {
       "NODE_OPTIONS": "--experimental-vm-modules"
