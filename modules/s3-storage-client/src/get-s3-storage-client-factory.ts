@@ -37,7 +37,7 @@ export function getS3StorageClientFactory() {
       logger.error(`parsing of s3CacheString failed`, err)
       throw e
     }
-    logger.print(`Using AWS Access key "${awsAccessKey.AccessKey.AccessKeyId}"`)
+    logger.print(`Using AWS Access key ID "${awsAccessKey.AccessKey.AccessKeyId}"`)
 
     return new Promise<StorageClient>(res => {
       const creds: Creds = {
