@@ -117,6 +117,9 @@ describe('engine', () => {
         units.length = 0
         return Promise.resolve()
       },
+      generateTsConfigFiles(): Promise<void> {
+        return Promise.resolve()
+      },
     }
     const driver = new Driver(testName(), { repoProtocol: rp })
     const fork = await driver

@@ -140,6 +140,10 @@ export class EngineBootstrapper {
     return examplifyZod(withRepoProtocol, {})
   }
 
+  async generateTsConfigFiles(): Promise<void> {
+    await this.repoProtocol.generateTsConfigFiles(this.rootDir)
+  }
+
   /**
    * Returns a "runner function". When the runner function is invoked, a build will run.
    *

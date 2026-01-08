@@ -51,6 +51,11 @@ export interface RepoProtocol {
   getUnits(): Promise<UnitMetadata[]>
   getTasks(): Promise<TaskInfo[]>
   getConfigSchema(): z.AnyZodObject
+  /**
+   * Generates tsconfig.json files for all units based on their dependencies.
+   * Can be called without full initialization.
+   */
+  generateTsConfigFiles(rootDir: RepoRoot): Promise<void>
   close(): Promise<void>
 }
 

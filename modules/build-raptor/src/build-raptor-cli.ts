@@ -584,6 +584,31 @@ export function main() {
           logger.print(`Created ${outputPath}`)
         },
       )
+      .command(
+        'generate-tsconfig',
+        'generate tsconfig.json files for all workspace packages based on their dependencies',
+        yargs => yargs,
+        async () => {
+          const { logger, bootstrapper } = await makeBootstrapper({
+            units: [],
+            goals: [],
+            labels: [],
+            printPassing: false,
+            criticality: 'low',
+            concurrency: 0,
+          })
+
+          logger.print('Generating tsconfig.json files...')
+
+          try {
+            await bootstrapper.generateTsConfigFiles()
+            logger.print('Done.')
+          } catch (error) {
+            logger.print(`Error generating tsconfig files: ${error}`)
+            process.exitCode = 1
+          }
+        },
+      )
       .demandCommand(1)
       .parse()
   )
