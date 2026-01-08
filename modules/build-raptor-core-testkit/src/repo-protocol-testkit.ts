@@ -221,6 +221,10 @@ class RepoProtocolImpl implements RepoProtocol {
 
   async close() {}
 
+  async generateTsConfigFiles(_rootDir: RepoRoot): Promise<void> {
+    // No-op for test repo protocol
+  }
+
   async execute(tn: TaskName, outputFile: string, buildRunId: BuildRunId): Promise<ExitStatus> {
     mapIncrement(this.state.countByTask, tn, 1)
     mapIncrement(this.state.countByTaskInRun, TaskInRun(tn, buildRunId), 1)

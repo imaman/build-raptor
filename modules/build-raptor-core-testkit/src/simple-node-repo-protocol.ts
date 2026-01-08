@@ -46,6 +46,10 @@ export class SimpleNodeRepoProtocol implements RepoProtocol {
     this.graph = new Graph<UnitId>(x => x)
   }
 
+  async generateTsConfigFiles(_rootDir: RepoRoot): Promise<void> {
+    // No-op for simple node repo protocol
+  }
+
   private async readPackageJsonAt(pir: PathInRepo) {
     const resolved = this.rootDir.resolve(pir.expand('package.json'))
     try {

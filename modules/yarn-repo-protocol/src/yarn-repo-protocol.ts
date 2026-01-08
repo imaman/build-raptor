@@ -180,17 +180,12 @@ export class YarnRepoProtocol implements RepoProtocol {
     ])
     const versionByPackageId = computeVersions([...packageByUnitId.values()])
 
-    const violations: [UnitId, UnitId][] = []
-    const graph = new Graph<UnitId>(x => x)
-    for (const [p, data] of Object.entries(yarnInfo)) {
-      const uid = UnitId(p)
-      graph.vertex(uid)
-      for (const dep of data.workspaceDependencies) {
-        graph.edge(uid, UnitId(dep))
-      }
+    const graph = buildDependencyGraph(yarnInfo)
 
+    const violations: [UnitId, UnitId][] = []
+    for (const [p, data] of Object.entries(yarnInfo)) {
       for (const d of data.mismatchedWorkspaceDependencies) {
-        violations.push([uid, UnitId(d)])
+        violations.push([UnitId(p), UnitId(d)])
       }
     }
 
@@ -208,7 +203,7 @@ export class YarnRepoProtocol implements RepoProtocol {
       )
     }
 
-    await this.generateTsConfigFiles(rootDir, units, graph)
+    await this.generateTsConfigFilesInternal(rootDir, units, graph)
 
     await this.generateSymlinksToPackages(rootDir, units)
     this.state_ = {
@@ -241,7 +236,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     }
   }
 
-  private async generateTsConfigFiles(rootDir: RepoRoot, units: UnitMetadata[], graph: Graph<UnitId>) {
+  private async generateTsConfigFilesInternal(rootDir: RepoRoot, units: UnitMetadata[], graph: Graph<UnitId>) {
     const rootBase = rootDir.resolve(PathInRepo(this.tsconfigBaseName))
     const rootBaseExists = await fse.pathExists(rootBase)
 
@@ -318,6 +313,16 @@ export class YarnRepoProtocol implements RepoProtocol {
       await fs.promises.writeFile(p, content)
     }
   }
+
+  async generateTsConfigFiles(rootDir: RepoRoot): Promise<void> {
+    const yarnInfo = await this.getYarnInfo(rootDir)
+    const allUnits = computeUnits(yarnInfo)
+    const units = computeRealUnits(allUnits)
+    const graph = buildDependencyGraph(yarnInfo)
+
+    await this.generateTsConfigFilesInternal(rootDir, units, graph)
+  }
+
   async close() {}
 
   private async run(
@@ -1239,6 +1244,18 @@ function computeVersions(packages: PackageJson[]) {
 
 function computeRealUnits(units: UnitMetadata[]) {
   return units.filter(at => at.id !== rootUnitId)
+}
+
+function buildDependencyGraph(yarnInfo: YarnWorkspacesInfo): Graph<UnitId> {
+  const graph = new Graph<UnitId>(x => x)
+  for (const [p, data] of Object.entries(yarnInfo)) {
+    const uid = UnitId(p)
+    graph.vertex(uid)
+    for (const dep of data.workspaceDependencies) {
+      graph.edge(uid, UnitId(dep))
+    }
+  }
+  return graph
 }
 
 const JEST_OUTPUT_FILE = 'jest-output.json'
