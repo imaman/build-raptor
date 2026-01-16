@@ -853,6 +853,7 @@ export class YarnRepoProtocol implements RepoProtocol {
     switchOn(this.getInstallFeatureToggle(), {
       off: () => {
         ret.inputs?.push(PathInRepo('yarn.lock'))
+        ret.inputs?.push(PathInRepo('node_modules/.yarn-integrity'))
       },
       dormant: () => {},
       on: () => {},

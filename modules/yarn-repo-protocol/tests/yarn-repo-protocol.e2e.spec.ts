@@ -269,6 +269,32 @@ describe('yarn-repo-protocol.e2e', () => {
     const run3 = await fork.run('OK', { taskKind: 'build' })
     expect(run3.executionTypeOf('a', 'build')).toEqual('CACHED')
   })
+  test('all modules are rebuilt when node_modules/.yarn-integrity file changes', async () => {
+    const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
+    const recipe = {
+      // turn install off because the install task is already depending on yarn.lock
+      '.build-raptor.json': { repoProtocol: { install: 'off' } },
+      'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+      'yarn.lock': '# abc',
+      'node_modules/.yarn-integrity': '{"integrity": "abc"}',
+      'modules/a/package.json': driver.packageJson('a'),
+      'modules/a/src/a.ts': `export function a() { }`,
+      'modules/a/tests/a.spec.ts': ``,
+    }
+
+    const fork = await driver.repo(recipe).fork()
+
+    const run1 = await fork.run('OK', { taskKind: 'build' })
+    expect(run1.executionTypeOf('a', 'build')).toEqual('EXECUTED')
+
+    await fork.file('node_modules/.yarn-integrity').write('{"integrity": "xyz"}')
+    const run2 = await fork.run('OK', { taskKind: 'build' })
+    expect(run2.executionTypeOf('a', 'build')).toEqual('EXECUTED')
+
+    await fork.file('node_modules/.yarn-integrity').write('{"integrity": "abc"}')
+    const run3 = await fork.run('OK', { taskKind: 'build' })
+    expect(run3.executionTypeOf('a', 'build')).toEqual('CACHED')
+  })
   describe('custom build tasks', () => {
     test('are defined in the package.json file', async () => {
       const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
