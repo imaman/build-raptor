@@ -62,7 +62,6 @@ async function createStorageClient() {
 }
 
 async function makeBootstrapper(options: Options) {
-  process.env.AWS_SDK_JS_SUPPRESS_MAINTENANCE_MODE_MESSAGE = '1' // eslint-disable-line no-process-env
   if (options.compact !== undefined) {
     options.criticality = options.compact ? 'moderate' : 'low'
   }
