@@ -429,7 +429,7 @@ export function main() {
       .option('print-timing', {
         describe: 'print task timing report at the end (sorted by duration)',
         type: 'boolean',
-        default: false,
+        default: true,
       })
       .command(
         'build',
