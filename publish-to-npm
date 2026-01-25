@@ -5,45 +5,37 @@ set -e
 yarn build
 node --enable-source-maps modules/build-raptor/dist/src/main.js build
 
+OUTPUT_DIR=$(mktemp -d)
+VERSION_FILE=$(mktemp)
 
-dir1=$(mktemp -d)
-dir2=$(mktemp -d)
-dir3=$(mktemp -d)
+# Prepare all packages with monocrate (same version for all)
+npx monocrate prepare \
+  modules/build-raptor \
+  modules/build-raptor-jest-reporter \
+  modules/build-raptor-api \
+  --bump minor \
+  --output "$OUTPUT_DIR" \
+  --report "$VERSION_FILE"
 
-etc/prepare-npm-package.mjs modules/build-raptor "$dir1" 
-etc/prepare-npm-package.mjs modules/build-raptor-jest-reporter "$dir2"
-etc/prepare-npm-package.mjs modules/build-raptor-api "$dir3"
-
-pushd "$dir1"
-CURRENT_VERSION=$(npm info build-raptor version)
-npm pkg set "version=$CURRENT_VERSION"
-npm version minor
-NEXT_VERSION=$(npm pkg get version | tr -d '"')
+NEXT_VERSION=$(cat "$VERSION_FILE")
 echo "resolved new version: $NEXT_VERSION"
-npm pkg set "dependencies.build-raptor-jest-reporter=$NEXT_VERSION"
-popd
 
+# Add build-raptor-jest-reporter as a dependency to build-raptor
+# (it's loaded dynamically by jest at runtime, not bundled)
+npm pkg set "dependencies.build-raptor-jest-reporter=$NEXT_VERSION" --prefix "$OUTPUT_DIR/build-raptor"
 
+# Publish in order (dependencies first)
+echo "publishing build-raptor-jest-reporter $NEXT_VERSION"
+npm publish "$OUTPUT_DIR/build-raptor-jest-reporter"
 
-pushd "$dir2"
-npm pkg set "version=$NEXT_VERSION"
-echo "pubishing build-raptor-jest-reporter $NEXT_VERSION"
-npm publish
-popd
+echo "publishing build-raptor-api $NEXT_VERSION"
+npm publish "$OUTPUT_DIR/build-raptor-api"
 
-pushd "$dir3"
-npm pkg set "version=$NEXT_VERSION"
-echo "pubishing build-raptor-api $NEXT_VERSION"
-npm publish
-popd
+echo "publishing build-raptor $NEXT_VERSION"
+npm publish "$OUTPUT_DIR/build-raptor"
 
-pushd "$dir1"
-echo "pubishing build-raptor $NEXT_VERSION"
-npm publish
-popd
-
-
+# Tag and push
 T="published@$NEXT_VERSION"
-echo tagging "$T"
+echo "tagging $T"
 git tag "$T"
 git push --tags
