@@ -1,3 +1,5 @@
+// Anchoring import: jest loads this at runtime via --reporters, resolved below via createRequire
+import 'build-raptor-jest-reporter'
 import { BuildFailedError } from 'build-failed-error'
 import { PathInRepo, RepoRoot } from 'core-types'
 import escapeStringRegexp from 'escape-string-regexp'
@@ -19,6 +21,7 @@ import {
   uniqueBy,
 } from 'misc'
 import * as path from 'path'
+import { createRequire } from 'module'
 import {
   ExitStatus,
   Publisher,
@@ -592,6 +595,8 @@ export class YarnRepoProtocol implements RepoProtocol {
     const jof = path.join(dir, JEST_OUTPUT_FILE)
     const testsToRun = await this.computeTestsToRun(jof)
     const reporterOutputFile = (await Tmp.file()).path
+    const resolvedReporterPath = createRequire(import.meta.url).resolve('build-raptor-jest-reporter')
+    this.logger.info(`Resolved jest reporter path: ${resolvedReporterPath}`)
     const ret = await this.run(
       'npx',
       [
@@ -600,7 +605,7 @@ export class YarnRepoProtocol implements RepoProtocol {
         '--outputFile',
         reporterOutputFile,
         '--reporters',
-        'build-raptor-jest-reporter',
+        resolvedReporterPath,
         '--reporters',
         'default',
       ],

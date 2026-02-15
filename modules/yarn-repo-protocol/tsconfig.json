@@ -15,6 +15,9 @@
       "path": "../build-raptor-core-testkit"
     },
     {
+      "path": "../build-raptor-jest-reporter"
+    },
+    {
       "path": "../core-types"
     },
     {
