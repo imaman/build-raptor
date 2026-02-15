@@ -1,5 +1,3 @@
-// Explicit import to anchor the dependency: jest loads this at runtime via --reporters (see yarn-repo-protocol)
-import 'build-raptor-jest-reporter'
 import { DefaultAssetPublisher, EngineBootstrapper, findRepoDir, TaskSelector } from 'build-raptor-core'
 import fs from 'fs'
 import fse from 'fs-extra/esm'
