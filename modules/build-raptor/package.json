@@ -15,9 +15,6 @@
     "prepare-assets": "echo 'abc' > prepared-assets/x2 && echo 'def' > prepared-assets/y2",
     "test": "jest"
   },
-  "engines": {
-    "node": ">=20.6.0"
-  },
   "dependencies": {
     "build-raptor-core": "1.0.0",
     "fs-extra": "^11.3.3",
@@ -32,5 +29,8 @@
   },
   "devDependencies": {
     "@types/yargs": "^17.0.7"
+  },
+  "engines": {
+    "node": ">=20.6.0"
   }
 }
