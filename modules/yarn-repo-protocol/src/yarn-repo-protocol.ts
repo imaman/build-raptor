@@ -595,6 +595,8 @@ export class YarnRepoProtocol implements RepoProtocol {
     const jof = path.join(dir, JEST_OUTPUT_FILE)
     const testsToRun = await this.computeTestsToRun(jof)
     const reporterOutputFile = (await Tmp.file()).path
+    const resolvedReporterPath = fileURLToPath(import.meta.resolve('build-raptor-jest-reporter'))
+    this.logger.info(`Resolved jest reporter path: ${resolvedReporterPath}`)
     const ret = await this.run(
       'npx',
       [
@@ -603,7 +605,7 @@ export class YarnRepoProtocol implements RepoProtocol {
         '--outputFile',
         reporterOutputFile,
         '--reporters',
-        fileURLToPath(import.meta.resolve('build-raptor-jest-reporter')),
+        resolvedReporterPath,
         '--reporters',
         'default',
       ],
