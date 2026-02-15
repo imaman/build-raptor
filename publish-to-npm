@@ -20,19 +20,11 @@ npx monocrate prepare \
 NEXT_VERSION=$(cat "$VERSION_FILE")
 echo "resolved new version: $NEXT_VERSION"
 
-# Add build-raptor-jest-reporter as a dependency to build-raptor
-# (it's loaded dynamically by jest at runtime, not bundled)
-npm pkg set "dependencies.build-raptor-jest-reporter=$NEXT_VERSION" --prefix "$OUTPUT_DIR/build-raptor"
-
-# Publish in order (dependencies first)
-echo "publishing build-raptor-jest-reporter $NEXT_VERSION"
-npm publish "$OUTPUT_DIR/build-raptor-jest-reporter"
-
-echo "publishing build-raptor-api $NEXT_VERSION"
-npm publish "$OUTPUT_DIR/build-raptor-api"
-
-echo "publishing build-raptor $NEXT_VERSION"
-npm publish "$OUTPUT_DIR/build-raptor"
+# Publish all packages
+for pkg in build-raptor-jest-reporter build-raptor-api build-raptor; do
+  echo "publishing $pkg $NEXT_VERSION"
+  npm publish "$OUTPUT_DIR/$pkg"
+done
 
 # Tag and push
 T="published@$NEXT_VERSION"

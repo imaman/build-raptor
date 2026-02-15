@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "build-raptor-core": "1.0.0",
+    "build-raptor-jest-reporter": "1.0.0",
     "fs-extra": "^11.3.3",
     "logger": "1.0.0",
     "misc": "1.0.0",
