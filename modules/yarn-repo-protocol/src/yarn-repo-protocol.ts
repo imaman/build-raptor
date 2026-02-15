@@ -1,5 +1,3 @@
-// Anchoring import: jest loads this at runtime via --reporters, resolved below via import.meta.resolve
-import 'build-raptor-jest-reporter'
 import { BuildFailedError } from 'build-failed-error'
 import { PathInRepo, RepoRoot } from 'core-types'
 import escapeStringRegexp from 'escape-string-regexp'
