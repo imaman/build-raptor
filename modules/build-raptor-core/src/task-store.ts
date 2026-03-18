@@ -231,7 +231,7 @@ export class TaskStore {
     const outputs = metadata.outputs.map(at => PathInRepo(at))
 
     const removeOutputDir = async (o: PathInRepo) =>
-      await fs.promises.rm(this.repoRootDir.resolve(o), { recursive: true, force: true })
+      await fs.promises.rm(this.repoRootDir.resolve(o), { recursive: true, force: true, maxRetries: 3, retryDelay: 100 })
     await promises(outputs)
       .map(async o => await removeOutputDir(o))
       .reify(20)

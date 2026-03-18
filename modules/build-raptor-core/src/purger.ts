@@ -13,7 +13,7 @@ export class Purger {
     await promises(outputLocations).forEach(20, async p => {
       const resolved = this.repoRootDir.resolve(p)
       this.logger.info(`purging ${resolved}`)
-      await fs.promises.rm(resolved, { recursive: true, force: true })
+      await fs.promises.rm(resolved, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 })
     })
   }
 
