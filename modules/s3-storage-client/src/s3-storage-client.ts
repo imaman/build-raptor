@@ -62,7 +62,7 @@ export class S3StorageClient implements StorageClient {
     this.logger.info(`putting object (key hint=${hint}), object length: ${len} chars`)
 
     try {
-      await this.s3.putObject({ Bucket: this.bucketName, Key: resolved, Body: content })
+      await this.s3.putObject({ Bucket: this.bucketName, Key: resolved, Body: content, ChecksumAlgorithm: 'SHA256' })
       this.logger.info(`s3.putObject() took ${Date.now() - t0}ms (object length: ${len} chars)`)
     } catch (e) {
       this.logger.error(`putObject error at ${resolved} (key hint=${hint}), `, e)
