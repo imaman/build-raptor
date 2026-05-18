@@ -13,7 +13,7 @@ npx monocrate publish \
   modules/build-raptor-api \
   --bump minor \
   --max \
-  --output-json "$RESULT_FILE"
+  --result-file "$RESULT_FILE"
 
 NEXT_VERSION=$(node -p "JSON.parse(require('fs').readFileSync('$RESULT_FILE', 'utf8')).resolvedVersion")
 echo "published version: $NEXT_VERSION"
