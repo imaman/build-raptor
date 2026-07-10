@@ -5,17 +5,6 @@ import { z } from 'zod'
 import { Creds } from './creds.js'
 import { S3StorageClient } from './s3-storage-client.js'
 
-const AwsAccessKey = z.object({
-  AccessKey: z.object({
-    UserName: z.string(),
-    Status: z.string(),
-    CreateDate: z.string(),
-    SecretAccessKey: z.string(),
-    AccessKeyId: z.string(),
-  }),
-})
-type AwsAccessKey = z.infer<typeof AwsAccessKey>
-
 // TODO(imaman): cover
 export function getS3StorageClientFactory() {
   const s3CacheEnvVar = 's3_cache'
@@ -28,21 +17,43 @@ export function getS3StorageClientFactory() {
   }
 
   return async (logger: Logger) => {
-    let awsAccessKey: AwsAccessKey
+    let parsed
     try {
-      const parsed = JSON.parse(s3CacheString)
-      awsAccessKey = AwsAccessKey.parse(parsed)
-    } catch (e) {
-      const err = new Error(`Failed to parse env variable neede for caching`)
-      logger.error(`parsing of s3CacheString failed`, err)
-      throw e
+      parsed = JSON.parse(s3CacheString)
+    } catch (cause) {
+      const err = new Error(`env var ${s3CacheEnvVar} is not a valid JSON - ${cause}`)
+      logger.error(`JSON parsing failed`, err)
+      throw err
     }
-    logger.print(`Using AWS Access key ID "${awsAccessKey.AccessKey.AccessKeyId}"`)
+
+    const typed = z
+      .object({
+        AccessKey: z.object({
+          SecretAccessKey: z.string(),
+          AccessKeyId: z.string(),
+        }),
+      })
+      .or(
+        z.object({
+          SecretAccessKey: z.string(),
+          AccessKeyId: z.string(),
+          AccessKey: z.undefined().optional(),
+        }),
+      )
+      .safeParse(parsed)
+
+    if (!typed.success) {
+      const err = new Error(`env var ${s3CacheEnvVar} is not well formed - ${typed.error.message}`)
+      logger.error(`ZOD parsing failed`, err)
+      throw err
+    }
+    const obj = typed.data.AccessKey === undefined ? typed.data : typed.data.AccessKey
+    logger.print(`Using AWS Access key ID "${obj.AccessKeyId}"`)
 
     return new Promise<StorageClient>(res => {
       const creds: Creds = {
-        accessKeyId: awsAccessKey.AccessKey.AccessKeyId,
-        secretAccessKey: awsAccessKey.AccessKey.SecretAccessKey,
+        accessKeyId: obj.AccessKeyId,
+        secretAccessKey: obj.SecretAccessKey,
       }
       const ret = new S3StorageClient('moojo-dev-infra', 'build-raptor/cache-v1', creds, logger)
       logger.info(`S3StorageClient created successfully`)
