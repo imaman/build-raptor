@@ -5,21 +5,45 @@ set -e
 yarn build
 node --enable-source-maps modules/build-raptor/dist/src/main.js build
 
-RESULT_FILE=$(mktemp)
 
-npx monocrate publish \
-  modules/build-raptor \
-  modules/build-raptor-jest-reporter \
-  modules/build-raptor-api \
-  --bump minor \
-  --max \
-  --output-json "$RESULT_FILE"
+dir1=$(mktemp -d)
+dir2=$(mktemp -d)
+dir3=$(mktemp -d)
 
-NEXT_VERSION=$(node -p "JSON.parse(require('fs').readFileSync('$RESULT_FILE', 'utf8')).resolvedVersion")
-echo "published version: $NEXT_VERSION"
+etc/prepare-npm-package.mjs modules/build-raptor "$dir1" 
+etc/prepare-npm-package.mjs modules/build-raptor-jest-reporter "$dir2"
+etc/prepare-npm-package.mjs modules/build-raptor-api "$dir3"
 
-# Tag and push
+pushd "$dir1"
+CURRENT_VERSION=$(npm info build-raptor version)
+npm pkg set "version=$CURRENT_VERSION"
+npm version minor
+NEXT_VERSION=$(npm pkg get version | tr -d '"')
+echo "resolved new version: $NEXT_VERSION"
+npm pkg set "dependencies.build-raptor-jest-reporter=$NEXT_VERSION"
+popd
+
+
+
+pushd "$dir2"
+npm pkg set "version=$NEXT_VERSION"
+echo "pubishing build-raptor-jest-reporter $NEXT_VERSION"
+npm publish
+popd
+
+pushd "$dir3"
+npm pkg set "version=$NEXT_VERSION"
+echo "pubishing build-raptor-api $NEXT_VERSION"
+npm publish
+popd
+
+pushd "$dir1"
+echo "pubishing build-raptor $NEXT_VERSION"
+npm publish
+popd
+
+
 T="published@$NEXT_VERSION"
-echo "tagging $T"
+echo tagging "$T"
 git tag "$T"
 git push --tags
