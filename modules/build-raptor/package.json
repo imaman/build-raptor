@@ -8,15 +8,15 @@
   "type": "module",
   "main": "dist/src/index.js",
   "bin": "dist/src/main.js",
+  "files": [
+    "dist/src"
+  ],
   "scripts": {
     "build": "tsc -b",
     "build:post": "chmod 755 dist/src/main.js",
     "ncc": "ncc build/src/index.js -o build/src/index.node.js",
     "prepare-assets": "echo 'abc' > prepared-assets/x2 && echo 'def' > prepared-assets/y2",
     "test": "jest"
-  },
-  "engines": {
-    "node": ">=20.6.0"
   },
   "dependencies": {
     "build-raptor-core": "1.0.0",
@@ -32,5 +32,8 @@
   },
   "devDependencies": {
     "@types/yargs": "^17.0.7"
+  },
+  "engines": {
+    "node": ">=20.6.0"
   }
 }
