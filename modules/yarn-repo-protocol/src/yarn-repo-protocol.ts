@@ -1,5 +1,6 @@
 // Anchoring import: jest loads this at runtime via --reporters, resolved below via createRequire
 import 'build-raptor-jest-reporter'
+
 import { BuildFailedError } from 'build-failed-error'
 import { PathInRepo, RepoRoot } from 'core-types'
 import escapeStringRegexp from 'escape-string-regexp'
@@ -20,8 +21,8 @@ import {
   TypedPublisher,
   uniqueBy,
 } from 'misc'
-import * as path from 'path'
 import { createRequire } from 'module'
+import * as path from 'path'
 import {
   ExitStatus,
   Publisher,
@@ -595,7 +596,30 @@ export class YarnRepoProtocol implements RepoProtocol {
     const jof = path.join(dir, JEST_OUTPUT_FILE)
     const testsToRun = await this.computeTestsToRun(jof)
     const reporterOutputFile = (await Tmp.file()).path
-    const resolvedReporterPath = createRequire(import.meta.url).resolve('build-raptor-jest-reporter')
+    let resolvedReporterPath
+
+    const brjr = 'build-raptor-jest-reporter'
+    try {
+      resolvedReporterPath = createRequire(import.meta.url).resolve(brjr)
+    } catch (e) {
+      const u = new URL(import.meta.url)
+      let p = u.pathname
+      while (true) {
+        if (fs.existsSync(path.join(p, 'package.json'))) {
+          break
+        }
+
+        const next = path.dirname(p)
+        if (next === p) {
+          throw new Error(`not found`)
+        }
+        p = next
+      }
+
+      const d = path.join(p, `../${brjr}`)
+      resolvedReporterPath = createRequire(d).resolve(`./${brjr}`)
+    }
+
     this.logger.info(`Resolved jest reporter path: ${resolvedReporterPath}`)
     const ret = await this.run(
       'npx',
