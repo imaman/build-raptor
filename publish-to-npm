@@ -7,7 +7,7 @@ node --enable-source-maps modules/build-raptor/dist/src/main.js build
 
 RESULT_FILE=$(mktemp)
 
-npx monocrate publish \
+npx monocrate@0.15.0 publish \
   modules/build-raptor \
   modules/build-raptor-jest-reporter \
   modules/build-raptor-api \
