@@ -7,10 +7,8 @@ node --enable-source-maps modules/build-raptor/dist/src/main.js build
 
 RESULT_FILE=$(mktemp)
 
-npx monocrate@0.15.0 publish \
-  modules/build-raptor \
-  modules/build-raptor-jest-reporter \
-  modules/build-raptor-api \
+npx monocrate@0.15.0 \
+  --packages=modules/build-raptor --packages=modules/build-raptor-jest-reporter --packages=modules/build-raptor-api \
   --bump minor \
   --max \
   --output-json "$RESULT_FILE"
