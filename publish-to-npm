@@ -6,11 +6,15 @@ yarn build
 node --enable-source-maps modules/build-raptor/dist/src/main.js build
 
 RESULT_FILE=$(mktemp)
+echo RESULT_FILE=$RESULT_FILE
 
-NEXT_VERSION=$(npx monocrate@0.15.0 \
+npx monocrate@0.15.0 \
   --packages=modules/build-raptor --packages=modules/build-raptor-jest-reporter --packages=modules/build-raptor-api \
   --bump minor \
-  --max)
+  --max \
+  --report="${RESULT_FILE}"
+
+NEXT_VERSION=$(node -p "fs.readFileSync(\"$RESULT_FILE\").toString().trim()")
 
 echo "published version: $NEXT_VERSION"
 
