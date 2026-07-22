@@ -8,11 +8,7 @@ node --enable-source-maps modules/build-raptor/dist/src/main.js build
 RESULT_FILE=$(mktemp)
 echo RESULT_FILE=$RESULT_FILE
 
-npx monocrate@0.17.0 \
-  public modules/build-raptor modules/build-raptor-jest-reporter modules/build-raptor-api \
-  --bump minor \
-  --max \
-  --report="${RESULT_FILE}"
+npx monocrate@0.17.0 publish modules/build-raptor modules/build-raptor-jest-reporter modules/build-raptor-api --bump minor --max --dynamic-imports-policy=allow --report=${RESULT_FILE}
 
 NEXT_VERSION=$(node -p "fs.readFileSync(\"$RESULT_FILE\").toString().trim()")
 
