@@ -230,18 +230,36 @@ export class TaskStore {
     const metadata: Metadata = Metadata.parse(unparsed)
     const outputs = metadata.outputs.map(at => PathInRepo(at))
 
-    const removeOutputDir = async (o: PathInRepo) =>
-      await fs.promises.rm(this.repoRootDir.resolve(o), { recursive: true, force: true })
-    await promises(outputs)
-      .map(async o => await removeOutputDir(o))
-      .reify(20)
-
     const source = buf.slice(LEN_BUF_SIZE + metadataLen)
     const unzipped = await unzip(source)
+
+    // Extract to a temporary directory first, then atomically move to the final location.
+    // This prevents race conditions where other tasks might see a partially-restored output directory.
+    // The temp directory is created under the repo root to ensure it's on the same filesystem,
+    // which makes the rename operation atomic.
+    const tempDir = await Tmp.dir({ unsafeCleanup: true, tmpdir: this.repoRootDir.resolve() })
     try {
-      await TarStream.extract(unzipped, this.repoRootDir.resolve(), this.logger)
+      await TarStream.extract(unzipped, tempDir.path, this.logger)
+
+      // Atomically swap each output directory: remove old, rename temp to final location
+      for (const o of outputs) {
+        const finalPath = this.repoRootDir.resolve(o)
+        const tempPath = path.join(tempDir.path, o.val)
+
+        // Remove the existing output directory
+        await fs.promises.rm(finalPath, { recursive: true, force: true })
+
+        // Ensure parent directory exists
+        await fs.promises.mkdir(path.dirname(finalPath), { recursive: true })
+
+        // Atomically move the extracted directory to the final location
+        await fs.promises.rename(tempPath, finalPath)
+      }
     } catch (e) {
       throw new Error(`unbundling a buffer (${buf.length} bytes) has failed: ${e}`)
+    } finally {
+      // Clean up the temp directory (may have leftover empty parent dirs)
+      await fs.promises.rm(tempDir.path, { recursive: true, force: true }).catch(() => {})
     }
 
     await promises(Object.keys(metadata.publicFiles)).forEach(STORAGE_CONCURRENCY, async pir => {
