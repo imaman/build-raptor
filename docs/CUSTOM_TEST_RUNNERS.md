@@ -63,7 +63,8 @@ directory and the command gets three arguments:
 The third argument is a file the runner may use to remember which tests failed:
 
 - When a test task failed and is run again with the same inputs, build-raptor restores the file as the previous run
-  left it, before invoking the command. A runner can read it and run only the failing tests.
+  left it, before invoking the command. A runner can read it and run only the failing tests. This only happens when
+  test caching is enabled (the default); with `--test-caching=false` the file is deleted before every run.
 - When the inputs changed (or on the first run), the file does not exist.
 - The format is up to the runner; build-raptor does not read the file for custom runners. If the runner does not create
   it, build-raptor writes an empty list (`[]`).
