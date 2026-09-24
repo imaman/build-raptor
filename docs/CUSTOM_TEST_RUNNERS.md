@@ -12,7 +12,7 @@ This feature is part of the Yarn repo protocol.
    ```bash
    #!/bin/bash
    cd "$1"
-   node --test --test-reporter spec dist/tests/*.spec.js
+   node --test --test-reporter spec dist/tests/
    ```
 
 2. Make it executable: `chmod +x tools/test-runners/node-test`
@@ -48,8 +48,9 @@ directory and the command gets three arguments:
 
 ## When the command runs
 
-- **Only if there are spec files.** If the package's `tests/` directory has no `*.spec.ts` files, the test task
-  succeeds without running the command.
+- **Only if there are spec files.** If the package's `tests/` directory has no `*.spec.ts` files (at any depth), the
+  test command is not run. The task's verdict is then that of the package's `validate` script, or pass if there is
+  none.
 - **`validate` runs alongside it.** If the package has a `validate` script, it runs in parallel with the test command.
   The task fails if the test command fails; otherwise the task's verdict is that of `validate`.
 - **Caching.** The test task is skipped when its inputs are unchanged since a passing run. The inputs are the package's
