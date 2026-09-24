@@ -81,10 +81,15 @@ describe('custom-test-command', () => {
     expect(output).not.toEqual(expect.arrayContaining([expect.stringContaining('THIS SHOULD NOT RUN')]))
   })
 
-  test('should use Jest when enableCustomTestCommands is not specified (default behavior)', async () => {
+  test('should use custom test command when custom test commands are explicitly enabled globally', async () => {
     const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
 
     const recipe = {
+      '.build-raptor.json': JSON.stringify({
+        repoProtocol: {
+          enableCustomTestCommands: true,
+        },
+      }),
       'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
       'modules/a/package.json': {
         ...driver.packageJson('a'),
@@ -109,7 +114,7 @@ describe('custom-test-command', () => {
 
     const run = await fork.run('FAIL', { taskKind: 'test' })
 
-    // Should use custom test command by default (when not explicitly disabled)
+    // Explicitly enabling the feature must behave like the default (enabled)
     expect(await run.outputOf('test', 'a')).toEqual(
       expect.arrayContaining([
         '  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:',
