@@ -81,7 +81,7 @@ describe('custom-test-command', () => {
     expect(output).not.toEqual(expect.arrayContaining([expect.stringContaining('THIS SHOULD NOT RUN')]))
   })
 
-  test('should use Jest when enableCustomTestCommands is not specified (default behavior)', async () => {
+  test('should use custom test command when enableCustomTestCommands is not specified (default behavior)', async () => {
     const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol() })
 
     const recipe = {
