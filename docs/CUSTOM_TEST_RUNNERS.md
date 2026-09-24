@@ -12,7 +12,7 @@ This feature is part of the Yarn repo protocol.
    ```bash
    #!/bin/bash
    cd "$1"
-   node --test --test-reporter spec dist/tests/
+   node --test --test-reporter spec 'dist/tests/**/*.spec.js'
    ```
 
 2. Make it executable: `chmod +x tools/test-runners/node-test`

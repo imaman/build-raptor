@@ -10,8 +10,10 @@ const [, , packageDir, packageName] = process.argv
 
 console.log(`Running tests for ${packageName} in ${packageDir}`)
 
-// The package's tests/ directory is compiled into dist/tests/ by the build task.
-const testProcess = spawn('node', ['--test', '--test-reporter', 'spec', path.join(packageDir, 'dist', 'tests')], {
+// The package's tests/ directory is compiled into dist/tests/ by the build task. The pattern is passed as-is (not
+// expanded by a shell) so that node's own glob matching picks up nested spec files.
+const pattern = path.join(packageDir, 'dist', 'tests', '**', '*.spec.js')
+const testProcess = spawn('node', ['--test', '--test-reporter', 'spec', pattern], {
   cwd: packageDir,
   stdio: 'inherit',
 })
