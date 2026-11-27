@@ -5,7 +5,16 @@ import * as fs from 'fs'
 import { createWriteStream } from 'fs'
 import fse from 'fs-extra/esm'
 import { Logger } from 'logger'
-import { computeHash, computeObjectHash, DirectoryScanner, Key, promises, StorageClient, TypedPublisher } from 'misc'
+import {
+  computeHash,
+  computeObjectHash,
+  DirectoryScanner,
+  isObjectNotFoundError,
+  Key,
+  promises,
+  StorageClient,
+  TypedPublisher,
+} from 'misc'
 import * as path from 'path'
 import * as stream from 'stream'
 import { TaskName } from 'task-name'
@@ -84,13 +93,19 @@ export class TaskStore {
     return await this.client.getObject({ type: 'blob', blobId }, 'buffer')
   }
 
+  /**
+   * Returns the content of the object at the given key, or undefined if there is no such object. Other errors (e.g.,
+   * network problems) are propagated.
+   */
   private async getIfExists(k: Key): Promise<string | undefined> {
-    const exists = await this.client.objectExists(k)
-    if (!exists) {
-      return undefined
+    try {
+      return await this.client.getObject(k, 'string')
+    } catch (e) {
+      if (isObjectNotFoundError(e)) {
+        return undefined
+      }
+      throw e
     }
-
-    return await this.client.getObject(k, 'string')
   }
 
   private async putVerdict(
@@ -283,7 +298,7 @@ export class TaskStore {
   ): Promise<void> {
     const { blobId, publicFiles } = await this.recordBlob(taskName, outputs)
     this.logger.info(`task=${taskName}, outputs=${JSON.stringify(outputs)}, publicFiles=${JSON.stringify(publicFiles)}`)
-    this.putVerdict(taskName, fingerprint, verdict, blobId)
+    await this.putVerdict(taskName, fingerprint, verdict, blobId)
     await Promise.all([
       this.publisher?.publish('taskStore', {
         opcode: 'RECORDED',
@@ -302,9 +317,33 @@ export class TaskStore {
     return { blobId, publicFiles }
   }
 
-  async restoreTask(taskName: TaskName, fingerprint: Fingerprint): Promise<'FAIL' | 'OK' | 'FLAKY' | 'UNKNOWN'> {
+  /**
+   * Restores the outputs of a task from the cache and returns the verdict that was recorded for it.
+   *
+   * Returns 'UNKNOWN' if no verdict was recorded. Returns 'INCOMPLETE' if a verdict was recorded but some of the objects
+   * it refers to (the outputs bundle, or a public file) are missing from the storage. In the latter case the outputs may
+   * have been partially restored, so the caller should purge them before re-running the task. Both are cache misses.
+   * Errors other than a missing object (e.g., network problems) are propagated.
+   */
+  async restoreTask(
+    taskName: TaskName,
+    fingerprint: Fingerprint,
+  ): Promise<'FAIL' | 'OK' | 'FLAKY' | 'UNKNOWN' | 'INCOMPLETE'> {
     const [verdict, blobId] = await this.getVerdict(taskName, fingerprint)
-    const { files, publicFiles } = await this.restoreBlob(blobId)
+    let restored
+    try {
+      restored = await this.restoreBlob(blobId)
+    } catch (e) {
+      if (!isObjectNotFoundError(e)) {
+        throw e
+      }
+      this.logger.info(
+        `cache entry incomplete for task ${taskName} (fingerprint=${fingerprint}, blobId=${blobId}): ${e.message}. Treating it as a cache miss`,
+      )
+      await this.publisher?.publish('taskStoreIncomplete', { taskName, blobId, fingerprint, missing: e.message })
+      return 'INCOMPLETE'
+    }
+    const { files, publicFiles } = restored
     await Promise.all([
       this.publisher?.publish('taskStore', {
         opcode: 'RESTORED',

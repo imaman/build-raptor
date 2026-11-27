@@ -125,6 +125,18 @@ export class Engine {
         files: e.files,
       })
     })
+    this.eventPublisher.on('taskStoreIncomplete', e => {
+      const { taskKind, unitId } = TaskName().undo(e.taskName)
+      this.steps.transmit({
+        step: 'TASK_STORE_INCOMPLETE',
+        blobId: e.blobId,
+        taskName: e.taskName,
+        taskKind,
+        unitId,
+        fingerprint: e.fingerprint,
+        missing: e.missing,
+      })
+    })
     this.eventPublisher.on('testEnded', e => {
       this.steps.transmit({
         step: 'TEST_ENDED',

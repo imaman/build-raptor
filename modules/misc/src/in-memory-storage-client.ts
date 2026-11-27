@@ -1,7 +1,7 @@
 import { failMe, shouldNeverHappen } from './constructs.js'
 import { Int } from './index.js'
 import { computeHash, computeObjectHash } from './misc.js'
-import { Key, StorageClient } from './storage-client.js'
+import { Key, ObjectNotFoundError, StorageClient } from './storage-client.js'
 
 export class InMemoryStorageClient implements StorageClient {
   private byteCount_: Int = Int(0)
@@ -53,9 +53,35 @@ export class InMemoryStorageClient implements StorageClient {
   private async getObjectImpl(p: string): Promise<Buffer> {
     const encoded = this.store.get(p)
     if (encoded === undefined) {
-      throw new Error(`No object with key ${JSON.stringify(p)}`)
+      throw new ObjectNotFoundError(`No object with key ${JSON.stringify(p)}`)
     }
     return Buffer.from(encoded, 'base64')
+  }
+
+  /**
+   * Removes an object that was stored via putObject(). Intended for tests that simulate partial loss of the storage's
+   * content. Returns true if an object was removed.
+   */
+  deleteObject(key: Key): boolean {
+    return this.deleteImpl(this.keyToString(key))
+  }
+
+  /**
+   * Removes an object that was stored via putContentAddressable(). Intended for tests that simulate partial loss of
+   * the storage's content. Returns true if an object was removed.
+   */
+  deleteContentAddressable(hash: string): boolean {
+    return this.deleteImpl(`cas/${hash}`)
+  }
+
+  private deleteImpl(p: string): boolean {
+    const existing = this.store.get(p)
+    if (existing === undefined) {
+      return false
+    }
+    this.store.delete(p)
+    this.byteCount_ = Int(this.byteCount_ - existing.length)
+    return true
   }
 
   async objectExists(key: Key): Promise<boolean> {

@@ -1,7 +1,7 @@
 import * as util from 'util'
 import * as zlib from 'zlib'
 
-import { StorageClient } from '../src'
+import { isObjectNotFoundError, StorageClient } from '../src'
 
 // eslint-disable-next-line jest/no-export
 export function storageClientContract(create: () => Promise<StorageClient>) {
@@ -42,6 +42,18 @@ export function storageClientContract(create: () => Promise<StorageClient>) {
         expect((await sc.getContentAddressable(h1)).toString()).toEqual('abc')
         expect((await sc.getContentAddressable(h2)).toString()).toEqual('abb')
       })
+      test('throws an ObjectNotFoundError if there is no object with the given hash', async () => {
+        const sc = await create()
+        const h = await sc.putContentAddressable('abc')
+        const missing = h.replace(/./, c => (c === '0' ? '1' : '0'))
+        const e = await sc.getContentAddressable(missing).catch(err => err)
+        expect(isObjectNotFoundError(e)).toBe(true)
+      })
+    })
+    test('getObject() throws an ObjectNotFoundError if there is no object with the given key', async () => {
+      const sc = await create()
+      const e = await sc.getObject('no-such-key').catch(err => err)
+      expect(isObjectNotFoundError(e)).toBe(true)
     })
     test('objectExists() indicates whether an object with that key was put earlier', async () => {
       const sc = await create()

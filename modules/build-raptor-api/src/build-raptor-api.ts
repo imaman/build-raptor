@@ -31,6 +31,19 @@ export const Step = z.discriminatedUnion('step', [
     blobId: z.string(),
     files: z.string().array(),
   }),
+  /**
+   * Emitted when a verdict for the task was found in the cache, but some of the objects it refers to (the outputs
+   * bundle or a public file) are missing. The task is treated as a cache miss (and will be re-run).
+   */
+  z.object({
+    step: z.literal('TASK_STORE_INCOMPLETE'),
+    fingerprint: z.string(),
+    taskName: z.string(),
+    unitId: z.string(),
+    taskKind: z.string(),
+    blobId: z.string(),
+    missing: z.string(),
+  }),
   z.object({
     step: z.literal('TEST_ENDED'),
     taskName: z.string(),

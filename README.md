@@ -120,6 +120,10 @@ The test command receives the package directory, package name, and rerun file pa
 
 ### Caching
 
+For each task, build-raptor stores a _verdict_ (keyed by the task's fingerprint) which points at the task's cached outputs: a bundle of its output locations, plus one content-addressable object per public output. If a verdict is found but one of these objects is missing (e.g., it was removed by a cleanup of the cache storage), build-raptor treats it as a cache miss: the task is re-run, which also re-populates the cache. Such cases are reported via a `TASK_STORE_INCOMPLETE` step.
+
+When the cache is stored in S3, note that S3 reports a missing object as `403 Access Denied` (rather than `404 Not Found`) if the credentials lack the `s3:ListBucket` permission on the bucket. build-raptor therefore treats a `403` on these objects as "missing" as well. Granting `s3:ListBucket` is optional, but it allows S3 to distinguish a missing object from a genuine permission problem.
+
 ## Development
 
 One of build-raptor's main features (with yarn-repo-protocol) is its ability to auto-generate the `tscofnig.json` files for all the modules. However, in build-raptor's own code, we must have these files committed into the source control system, otherwise we would not be able to bootstrap build-raptor (although build-raptor is capable of building itself, before the first compilation is taking place we must first build it with `tsc` so we must have the `tsconfig.json` files present at that point).
