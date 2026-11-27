@@ -105,6 +105,16 @@ export class S3StorageClient implements StorageClient {
       if (e instanceof NoSuchKey) {
         throw new ObjectNotFoundError(`No object at ${JSON.stringify(p)} in S3`)
       }
+      // Without the s3:ListBucket permission, S3 reports a missing object as 403 (Access Denied) rather than 404, so a
+      // 403 is also reported as "not found". This can mask a genuine permission problem, in which case callers will
+      // treat it as a cache miss (and the problem is visible via the error message).
+      if (isAccessDenied(e)) {
+        const where = JSON.stringify(p)
+        throw new ObjectNotFoundError(
+          `Access denied for ${where} in S3, treated as a missing object (this is how S3 reports a missing object ` +
+            `when the s3:ListBucket permission is not granted; it may also indicate a permission problem)`,
+        )
+      }
       // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       const typed = e as { message?: string }
       throw new Error(`Failed to read an object from S3: ${typed.message ?? util.inspect(e)}`)
@@ -138,4 +148,20 @@ export class S3StorageClient implements StorageClient {
       return false
     }
   }
+}
+
+function isAccessDenied(e: unknown) {
+  if (typeof e !== 'object' || e === null) {
+    return false
+  }
+  if ('name' in e && e.name === 'AccessDenied') {
+    return true
+  }
+  return (
+    '$metadata' in e &&
+    typeof e.$metadata === 'object' &&
+    e.$metadata !== null &&
+    'httpStatusCode' in e.$metadata &&
+    e.$metadata.httpStatusCode === 403
+  )
 }
