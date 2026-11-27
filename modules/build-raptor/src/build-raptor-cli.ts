@@ -140,6 +140,11 @@ async function makeBootstrapper(options: Options) {
       return
     }
 
+    if (s.step === 'TASK_STORE_INCOMPLETE') {
+      logger.print(`cache entry of ${s.taskName} is incomplete (an object is missing from the cache). Re-running it.`)
+      return
+    }
+
     if (s.step === 'TEST_ENDED') {
       atLeastOneTest = true
       return

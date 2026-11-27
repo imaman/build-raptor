@@ -1,6 +1,7 @@
 import { NopAssetPublisher } from 'build-raptor-core'
 import { Driver } from 'build-raptor-core-testkit'
 import { createNopLogger } from 'logger'
+import { failMe, InMemoryStorageClient } from 'misc'
 
 import { YarnRepoProtocol } from '../src/yarn-repo-protocol.js'
 
@@ -629,6 +630,56 @@ describe('yarn-repo-protocol.e2e', () => {
 
       await fork.run('OK', { taskKind: 'build', subKind: 'do-abc' })
       expect(await fork.getPublicOutput('modules/a/.out/p')).toEqual('pretzels')
+    })
+  })
+  describe('incomplete cache entries', () => {
+    async function setup() {
+      const storageClient = new InMemoryStorageClient()
+      const driver = new Driver(testName(), { repoProtocol: newYarnRepoProtocol(), storageClient })
+      const recipe = {
+        'package.json': { name: 'foo', private: true, workspaces: ['modules/*'] },
+        'modules/a/package.json': {
+          ...driver.packageJson('a', undefined, { 'do-abc': `echo "pretzels" > .out/p && echo "x" > .out/q` }),
+          buildTasks: { 'do-abc': { labels: ['build'], inputs: [], outputs: ['.out/q'], publicOutputs: ['.out/p'] } },
+        },
+        'modules/a/src/a.ts': '// something',
+        'modules/a/tests/a.spec.ts': `test('a', () => {expect(1).toEqual(1)});`,
+      }
+
+      const fork = await driver.repo(recipe).fork()
+      const run1 = await fork.run('OK', { taskKind: 'build', subKind: 'do-abc' })
+      expect(run1.taskNames('EXECUTED')).toContain('a:build:do-abc')
+      return { storageClient, fork }
+    }
+
+    async function expectRebuildThenCacheHit(fork: Awaited<ReturnType<typeof setup>>['fork']) {
+      const run2 = await fork.run('OK', { taskKind: 'build', subKind: 'do-abc' })
+      expect(run2.taskNames('EXECUTED')).toContain('a:build:do-abc')
+      expect(fork.getSteps('TASK_STORE_INCOMPLETE')).toMatchObject([{ taskName: 'a:build:do-abc' }])
+      expect(await fork.getPublicOutput('modules/a/.out/p')).toEqual('pretzels')
+
+      const run3 = await fork.run('OK', { taskKind: 'build', subKind: 'do-abc' })
+      expect(run3.taskNames('CACHED')).toContain('a:build:do-abc')
+      expect(fork.getSteps('TASK_STORE_INCOMPLETE')).toEqual([])
+      expect(await fork.file('modules/a/.out/p').lines()).toEqual(['pretzels'])
+      expect(await fork.file('modules/a/.out/q').lines()).toEqual(['x'])
+    }
+
+    test('a missing public file is a cache miss: the task re-runs and the cache entry is repaired', async () => {
+      const { storageClient, fork } = await setup()
+      const [step] = fork.getSteps('PUBLIC_FILES')
+      const hash = step?.publicFiles['modules/a/.out/p'] ?? failMe('no PUBLIC_FILES step')
+      expect(storageClient.deleteContentAddressable(hash)).toBe(true)
+
+      await expectRebuildThenCacheHit(fork)
+    })
+    test('a missing outputs bundle is a cache miss: the task re-runs and the cache entry is repaired', async () => {
+      const { storageClient, fork } = await setup()
+      const step = fork.getSteps('TASK_STORE_PUT').find(at => at.taskName === 'a:build:do-abc')
+      const blobId = step?.blobId ?? failMe('no TASK_STORE_PUT step')
+      expect(storageClient.deleteObject({ type: 'blob', blobId })).toBe(true)
+
+      await expectRebuildThenCacheHit(fork)
     })
   })
   describe('test-runs.json', () => {

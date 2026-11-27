@@ -1,13 +1,24 @@
 import { PathInRepo, RepoRoot } from 'core-types'
 import * as fs from 'fs'
 import { createNopLogger, Logger } from 'logger'
-import { chaoticDeterministicString, folderify, InMemoryStorageClient, Int, slurpDir, StorageClient } from 'misc'
+import {
+  chaoticDeterministicString,
+  failMe,
+  folderify,
+  InMemoryStorageClient,
+  Int,
+  Key,
+  slurpDir,
+  StorageClient,
+  TypedPublisher,
+} from 'misc'
 import { TaskKind, TaskName } from 'task-name'
 import * as TmpSync from 'tmp'
 import { UnitId } from 'unit-metadata'
 
 import { Fingerprint } from '../src/fingerprint.js'
 import { TaskStore } from '../src/task-store.js'
+import { TaskStoreEvent } from '../src/task-store-event.js'
 
 async function slurp(d: RepoRoot) {
   return await slurpDir(d.resolve())
@@ -527,6 +538,121 @@ describe('task-store', () => {
           'OK',
         ),
       ).rejects.toThrowError('cannot publish an output location that is not a file: "x/z"')
+    })
+  })
+  describe('incomplete cache entries', () => {
+    async function setup(verdict: 'OK' | 'FAIL' = 'OK') {
+      const sc = new InMemoryStorageClient()
+      const publisher = new TypedPublisher<TaskStoreEvent>()
+      const recorded: TaskStoreEvent['taskStore'][] = []
+      const incomplete: TaskStoreEvent['taskStoreIncomplete'][] = []
+      publisher.on('taskStore', e => {
+        recorded.push(e)
+      })
+      publisher.on('taskStoreIncomplete', e => {
+        incomplete.push(e)
+      })
+      const store = new TaskStore(
+        RepoRoot(
+          await folderify({
+            'qux/f1.txt': 'four scores',
+            'qux/f2.txt': 'and seven years ago',
+          }),
+        ),
+        sc,
+        logger,
+        publisher,
+      )
+      await store.recordTask(
+        taskNameFoo,
+        Fingerprint('bar'),
+        [
+          { pathInRepo: PathInRepo('qux/f1.txt'), isPublic: true },
+          { pathInRepo: PathInRepo('qux/f2.txt'), isPublic: false },
+        ],
+        verdict,
+      )
+      const blobId = recorded[0]?.blobId ?? failMe('no RECORDED event')
+      const destination = new TaskStore(RepoRoot(TmpSync.dirSync().name), sc, logger, publisher)
+      return { sc, store, destination, blobId, incomplete }
+    }
+
+    test('a missing bundle is reported as a cache miss', async () => {
+      const { sc, destination, blobId, incomplete } = await setup()
+      expect(sc.deleteObject({ type: 'blob', blobId })).toBe(true)
+
+      expect(await destination.restoreTask(taskNameFoo, Fingerprint('bar'))).toEqual('UNKNOWN')
+      expect(incomplete).toEqual([
+        { taskName: taskNameFoo, blobId, fingerprint: 'bar', missing: expect.stringContaining('No object with key') },
+      ])
+    })
+    test('a missing public file is reported as a cache miss', async () => {
+      const { sc, destination, incomplete } = await setup()
+      const hash = sc
+        .toJSON()
+        .map(([k]) => String(k))
+        .find(k => k.startsWith('cas/'))
+        ?.slice('cas/'.length)
+      expect(sc.deleteContentAddressable(hash ?? failMe('no cas entry'))).toBe(true)
+
+      expect(await destination.restoreTask(taskNameFoo, Fingerprint('bar'))).toEqual('UNKNOWN')
+      expect(incomplete).toHaveLength(1)
+    })
+    test('a missing object of a FAIL verdict is reported as a cache miss', async () => {
+      const { sc, destination, blobId } = await setup('FAIL')
+      sc.deleteObject({ type: 'blob', blobId })
+
+      expect(await destination.restoreTask(taskNameFoo, Fingerprint('bar'))).toEqual('UNKNOWN')
+    })
+    test('re-recording the task repairs the cache entry', async () => {
+      const { sc, store, destination, blobId } = await setup()
+      sc.deleteObject({ type: 'blob', blobId })
+      for (const [k] of sc.toJSON()) {
+        if (String(k).startsWith('cas/')) {
+          sc.deleteContentAddressable(String(k).slice('cas/'.length))
+        }
+      }
+      expect(await destination.restoreTask(taskNameFoo, Fingerprint('bar'))).toEqual('UNKNOWN')
+
+      await store.recordTask(
+        taskNameFoo,
+        Fingerprint('bar'),
+        [
+          { pathInRepo: PathInRepo('qux/f1.txt'), isPublic: true },
+          { pathInRepo: PathInRepo('qux/f2.txt'), isPublic: false },
+        ],
+        'OK',
+      )
+      expect(await destination.restoreTask(taskNameFoo, Fingerprint('bar'))).toEqual('OK')
+      expect(await slurp(destination.repoRootDir)).toEqual({
+        'qux/f1.txt': 'four scores',
+        'qux/f2.txt': 'and seven years ago',
+      })
+    })
+    test('errors other than a missing object are propagated', async () => {
+      const { sc } = await setup()
+      class FlakyNetworkStorageClient implements StorageClient {
+        putContentAddressable(content: string | Buffer) {
+          return sc.putContentAddressable(content)
+        }
+        async getContentAddressable(_hash: string): Promise<Buffer> {
+          throw new Error('network is down')
+        }
+        putObject(key: Key, content: string | Buffer) {
+          return sc.putObject(key, content)
+        }
+        getObject(key: Key): Promise<string>
+        getObject(key: Key, type: 'string'): Promise<string>
+        getObject(key: Key, type: 'buffer'): Promise<Buffer>
+        async getObject(key: Key, type: 'string' | 'buffer' = 'string'): Promise<string | Buffer> {
+          return type === 'string' ? await sc.getObject(key, 'string') : await sc.getObject(key, 'buffer')
+        }
+        objectExists(key: Key) {
+          return sc.objectExists(key)
+        }
+      }
+      const destination = newTaskStore(new FlakyNetworkStorageClient(), logger)
+      await expect(destination.restoreTask(taskNameFoo, Fingerprint('bar'))).rejects.toThrowError('network is down')
     })
   })
 })

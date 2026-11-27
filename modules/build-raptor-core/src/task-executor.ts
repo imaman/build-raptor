@@ -268,7 +268,14 @@ class SingleTaskExecutor {
         return 'RUN_IT'
       }
       await this.purgeOutputs(true)
-      await this.restoreOutputs()
+      const restoredVerdict = await this.restoreOutputs()
+      if (restoredVerdict === 'UNKNOWN') {
+        // The cache entry is incomplete (an object it refers to is missing from the storage). The outputs may have been
+        // partially restored, so we purge them and treat this as a cache miss.
+        this.diagnose(`cache entry is incomplete`)
+        await this.purgeOutputs(false)
+        return 'RUN_IT'
+      }
 
       if (earlierVerdict === 'FAIL') {
         return 'RUN_IT'
@@ -303,8 +310,9 @@ class SingleTaskExecutor {
   private async restoreOutputs() {
     this.diagnose(`restoring outputs`)
     const t = this.task
-    await this.taskStore.restoreTask(t.name, this.fp)
-    this.diagnose(`task restored`)
+    const ret = await this.taskStore.restoreTask(t.name, this.fp)
+    this.diagnose(`task restored (verdict=${ret})`)
+    return ret
   }
 
   private async getVerdict() {

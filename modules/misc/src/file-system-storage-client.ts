@@ -5,7 +5,7 @@ import * as path from 'path'
 import { cleanDirectory } from './clean-directory.js'
 import { shouldNeverHappen } from './index.js'
 import { computeHash, computeObjectHash } from './misc.js'
-import { Key, StorageClient } from './storage-client.js'
+import { Key, ObjectNotFoundError, StorageClient } from './storage-client.js'
 
 interface Options {
   /**
@@ -49,7 +49,14 @@ export class FilesystemStorageClient implements StorageClient {
 
   async getContentAddressable(hash: string): Promise<Buffer> {
     const p = this.hashToPath('cas', hash)
-    return await fs.promises.readFile(p)
+    try {
+      return await fs.promises.readFile(p)
+    } catch (e) {
+      if (isEnoent(e)) {
+        throw new ObjectNotFoundError(`getContentAddressable() found no object for hash: ${hash}`)
+      }
+      throw e
+    }
   }
 
   getObject(key: Key): Promise<string>
@@ -66,6 +73,9 @@ export class FilesystemStorageClient implements StorageClient {
       }
       shouldNeverHappen(type)
     } catch (e) {
+      if (isEnoent(e)) {
+        throw new ObjectNotFoundError(`getObject() found no object for key: ${JSON.stringify(key)}`)
+      }
       throw new Error(`getObject() failed to read file for key: ${JSON.stringify(key)}: ${e}`)
     }
   }
@@ -73,4 +83,8 @@ export class FilesystemStorageClient implements StorageClient {
   async objectExists(key: Key): Promise<boolean> {
     return await fse.pathExists(this.keyToPath(key))
   }
+}
+
+function isEnoent(e: unknown) {
+  return typeof e === 'object' && e !== null && 'code' in e && e.code === 'ENOENT'
 }

@@ -1,6 +1,14 @@
-import { S3 } from '@aws-sdk/client-s3'
+import { NoSuchKey, S3 } from '@aws-sdk/client-s3'
 import { Logger } from 'logger'
-import { computeHash, computeObjectHash, Key, shouldNeverHappen, StorageClient, streamTobuffer } from 'misc'
+import {
+  computeHash,
+  computeObjectHash,
+  Key,
+  ObjectNotFoundError,
+  shouldNeverHappen,
+  StorageClient,
+  streamTobuffer,
+} from 'misc'
 import { Stream } from 'stream'
 import * as util from 'util'
 
@@ -94,6 +102,9 @@ export class S3StorageClient implements StorageClient {
     try {
       resp = await this.s3.getObject({ Bucket: this.bucketName, Key: p })
     } catch (e) {
+      if (e instanceof NoSuchKey) {
+        throw new ObjectNotFoundError(`No object at ${JSON.stringify(p)} in S3`)
+      }
       // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       const typed = e as { message?: string }
       throw new Error(`Failed to read an object from S3: ${typed.message ?? util.inspect(e)}`)
