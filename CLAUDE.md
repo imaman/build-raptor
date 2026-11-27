@@ -81,15 +81,19 @@ task.inputs.push(newInput)
 const newTask = new Task({ ...task, inputs: [...task.inputs, newInput] })
 ```
 
-2. **Error Handling**
+2. **Cache Error Handling**
+
+A missing cache object is a cache miss; any other storage error fails the build. Catch only the "not found" case
+(via `isObjectNotFoundError` from `misc`) and let everything else propagate:
 
 ```typescript
-// Always wrap async operations
 try {
-  await taskStore.put(task, outputs)
-} catch (error) {
-  logger.error(`Cache write failed: ${error}`)
-  // Continue without cache - don't fail build
+  restored = await this.restoreBlob(blobId)
+} catch (e) {
+  if (!isObjectNotFoundError(e)) {
+    throw e // network, throttling, genuine permission problems: fail loudly
+  }
+  // the cache entry is incomplete: treat it as a cache miss (the task re-runs and re-populates the cache)
 }
 ```
 
@@ -304,9 +308,13 @@ export class MyProtocol extends RepoProtocol {
 
 ### Cache Failures:
 
-- Automatic fallback: S3 → Local → Rebuild
-- Corrupt cache entries are auto-invalidated
-- Network failures trigger exponential backoff
+- Incomplete cache entry (a verdict exists, but the outputs bundle or a public file it refers to is missing, e.g.
+  evicted by a bucket lifecycle rule): treated as a cache miss. The task re-runs, which re-populates the cache, and a
+  `TASK_STORE_INCOMPLETE` step is emitted.
+- Any other storage error (network hiccups, throttling, permission problems): propagated, failing the build. These are
+  environment problems, not cache inconsistencies, and should not be masked as slow builds.
+- S3 caveat: without `s3:ListBucket`, S3 reports a missing object as 403, so a 403 is also treated as "missing". See
+  the "Caching" section in `README.md`.
 
 ### System Failures:
 
