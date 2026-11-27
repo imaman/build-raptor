@@ -581,7 +581,7 @@ describe('task-store', () => {
       const { sc, destination, blobId, incomplete } = await setup()
       expect(sc.deleteObject({ type: 'blob', blobId })).toBe(true)
 
-      expect(await destination.restoreTask(taskNameFoo, Fingerprint('bar'))).toEqual('UNKNOWN')
+      expect(await destination.restoreTask(taskNameFoo, Fingerprint('bar'))).toEqual('INCOMPLETE')
       expect(incomplete).toEqual([
         { taskName: taskNameFoo, blobId, fingerprint: 'bar', missing: expect.stringContaining('No object with key') },
       ])
@@ -595,14 +595,14 @@ describe('task-store', () => {
         ?.slice('cas/'.length)
       expect(sc.deleteContentAddressable(hash ?? failMe('no cas entry'))).toBe(true)
 
-      expect(await destination.restoreTask(taskNameFoo, Fingerprint('bar'))).toEqual('UNKNOWN')
+      expect(await destination.restoreTask(taskNameFoo, Fingerprint('bar'))).toEqual('INCOMPLETE')
       expect(incomplete).toHaveLength(1)
     })
     test('a missing object of a FAIL verdict is reported as a cache miss', async () => {
       const { sc, destination, blobId } = await setup('FAIL')
       sc.deleteObject({ type: 'blob', blobId })
 
-      expect(await destination.restoreTask(taskNameFoo, Fingerprint('bar'))).toEqual('UNKNOWN')
+      expect(await destination.restoreTask(taskNameFoo, Fingerprint('bar'))).toEqual('INCOMPLETE')
     })
     test('re-recording the task repairs the cache entry', async () => {
       const { sc, store, destination, blobId } = await setup()
@@ -612,7 +612,7 @@ describe('task-store', () => {
           sc.deleteContentAddressable(String(k).slice('cas/'.length))
         }
       }
-      expect(await destination.restoreTask(taskNameFoo, Fingerprint('bar'))).toEqual('UNKNOWN')
+      expect(await destination.restoreTask(taskNameFoo, Fingerprint('bar'))).toEqual('INCOMPLETE')
 
       await store.recordTask(
         taskNameFoo,
@@ -629,14 +629,21 @@ describe('task-store', () => {
         'qux/f2.txt': 'and seven years ago',
       })
     })
-    test('errors other than a missing object are propagated', async () => {
-      const { sc } = await setup()
-      class FlakyNetworkStorageClient implements StorageClient {
+    /**
+     * A storage client that delegates to the given one, except for the operations that are overridden.
+     */
+    function wrap(
+      sc: StorageClient,
+      overrides: Partial<Pick<StorageClient, 'getContentAddressable' | 'objectExists'>> & {
+        getStringObject?: (key: Key) => Promise<string>
+      },
+    ): StorageClient {
+      class Wrapped implements StorageClient {
         putContentAddressable(content: string | Buffer) {
           return sc.putContentAddressable(content)
         }
-        async getContentAddressable(_hash: string): Promise<Buffer> {
-          throw new Error('network is down')
+        getContentAddressable(hash: string): Promise<Buffer> {
+          return overrides.getContentAddressable?.(hash) ?? sc.getContentAddressable(hash)
         }
         putObject(key: Key, content: string | Buffer) {
           return sc.putObject(key, content)
@@ -645,14 +652,64 @@ describe('task-store', () => {
         getObject(key: Key, type: 'string'): Promise<string>
         getObject(key: Key, type: 'buffer'): Promise<Buffer>
         async getObject(key: Key, type: 'string' | 'buffer' = 'string'): Promise<string | Buffer> {
-          return type === 'string' ? await sc.getObject(key, 'string') : await sc.getObject(key, 'buffer')
+          if (type === 'string') {
+            return await (overrides.getStringObject?.(key) ?? sc.getObject(key, 'string'))
+          }
+          return await sc.getObject(key, 'buffer')
         }
         objectExists(key: Key) {
-          return sc.objectExists(key)
+          return overrides.objectExists?.(key) ?? sc.objectExists(key)
         }
       }
-      const destination = newTaskStore(new FlakyNetworkStorageClient(), logger)
+      return new Wrapped()
+    }
+    test('errors other than a missing object are propagated', async () => {
+      const { sc } = await setup()
+      const destination = newTaskStore(
+        wrap(sc, {
+          getContentAddressable: async () => {
+            throw new Error('network is down')
+          },
+        }),
+        logger,
+      )
       await expect(destination.restoreTask(taskNameFoo, Fingerprint('bar'))).rejects.toThrowError('network is down')
+    })
+    test('errors other than a missing object are propagated when reading the verdict', async () => {
+      const { sc } = await setup()
+      const destination = newTaskStore(
+        wrap(sc, {
+          getStringObject: async () => {
+            throw new Error('network is down')
+          },
+        }),
+        logger,
+      )
+      await expect(destination.checkVerdict(taskNameFoo, Fingerprint('bar'))).rejects.toThrowError('network is down')
+      await expect(destination.restoreTask(taskNameFoo, Fingerprint('bar'))).rejects.toThrowError('network is down')
+    })
+    test('reading the verdict does not need objectExists()', async () => {
+      const { sc } = await setup()
+      const destination = newTaskStore(
+        wrap(sc, {
+          objectExists: async () => {
+            throw new Error('objectExists() should not be called')
+          },
+        }),
+        logger,
+      )
+      expect(await destination.checkVerdict(taskNameFoo, Fingerprint('bar'))).toEqual('OK')
+      expect(await destination.checkVerdict(taskNameFoo, Fingerprint('no-such-fingerprint'))).toEqual('UNKNOWN')
+    })
+    test('a verdict that disappeared is a plain cache miss (not an incomplete entry)', async () => {
+      const { sc, destination, incomplete } = await setup()
+      expect(await destination.checkVerdict(taskNameFoo, Fingerprint('bar'))).toEqual('OK')
+      expect(
+        sc.deleteObject({ type: 'verdict', taskName: taskNameFoo, fingerprint: 'bar', verdict: 'OK', version: 2 }),
+      ).toBe(true)
+
+      expect(await destination.restoreTask(taskNameFoo, Fingerprint('bar'))).toEqual('UNKNOWN')
+      expect(incomplete).toEqual([])
     })
   })
 })

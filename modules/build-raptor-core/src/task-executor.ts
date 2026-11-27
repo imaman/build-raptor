@@ -269,10 +269,19 @@ class SingleTaskExecutor {
       }
       await this.purgeOutputs(true)
       const restoredVerdict = await this.restoreOutputs()
-      if (restoredVerdict === 'UNKNOWN') {
-        // The cache entry is incomplete (an object it refers to is missing from the storage). The outputs may have been
-        // partially restored, so we purge them and treat this as a cache miss.
-        this.diagnose(`cache entry is incomplete`)
+      if (restoredVerdict === 'INCOMPLETE' || restoredVerdict === 'UNKNOWN') {
+        // Either the cache entry is incomplete (an object it refers to is missing from the storage) or the verdict
+        // itself has disappeared since we checked it. The outputs may have been partially restored, so we purge them and
+        // treat this as a cache miss.
+        //
+        // Note that purging only removes output locations marked 'ALWAYS'. Locations marked 'NEVER' (e.g., dist,
+        // node_modules) deliberately keep whatever was restored: it is the full bundle of a run with this very
+        // fingerprint (only public files may be missing, and the task re-creates them). This is the same state a task
+        // re-runs on after restoring a FAIL verdict, or after a cache hit in an earlier build. Purging these locations
+        // would discard incremental state (forcing a full re-install/re-compile), which is a worse trade-off.
+        this.diagnose(
+          restoredVerdict === 'INCOMPLETE' ? `cache entry is incomplete` : `verdict disappeared before restoring`,
+        )
         await this.purgeOutputs(false)
         return 'RUN_IT'
       }
